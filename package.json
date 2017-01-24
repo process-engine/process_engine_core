@@ -1,0 +1,23 @@
+{
+  "name": "@process-engine-js/process_engine",
+  "publishConfig": {
+    "registry": "https://www.npmjs.com"
+  },
+  "version": "1.0.0",
+  "description": "the core components for the process engine",
+  "license": "MIT",
+  "main": "dist/commonjs/index.js",
+  "typings": "dist/index.d.ts",
+  "contributors": [
+    "Sebastian Meier <sebastian.meier@5minds.de>",
+    "Patrick Pötschke <patrick.poetschke@quantusflow.com>",
+    "Simon Reymann <simon.reymann@quantusflow.com>"
+  ],
+  "dependencies": {
+    "bluebird": "^3.4.7",
+    "bpmn-moddle": "^0.13.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  }
+}

@@ -1,0 +1,1 @@
+{"version":3,"sources":["entity_types/user_task.ts"],"names":[],"mappings":";;;;;;AAAA,iDAAmD;AAKnD;IAAoC,kCAAkB;IAEpD,wBAAY,kBAA0C,EAAE,OAAiB,EAAE,UAAuC,EAAE,OAAyB,EAAE,OAAiB;eAC9J,kBAAM,kBAAkB,EAAE,OAAO,EAAE,UAAU,EAAE,OAAO,EAAE,OAAO,CAAC;IAClE,CAAC;IACH,qBAAC;AAAD,CALA,AAKC,CALmC,kCAAkB,GAKrD;AALY,wCAAc","file":"user_task.js","sourceRoot":"../../../src"}

@@ -1,0 +1,6 @@
+{
+  "typingOptions": {
+    "enableAutoDiscovery": true,
+    "target": "es5"
+  }
+}

@@ -1,0 +1,110 @@
+import {IProcessDefEntityTypeService, BpmnDiagram} from 'process_engine_contracts';
+import {IDataModel} from 'data_model_contracts';
+import {ExecutionContext} from 'iam_contracts';
+import {IInvoker} from 'invocation_contracts';
+
+import * as fs from 'fs';
+import * as BluebirdPromise from 'bluebird';
+
+// Todo: write declaration file for bpmn-moddle
+// let BpmnModdle: any;
+// tslint:disable-next-line
+// BpmnModdle = require('bpmn-moddle');
+
+import * as BpmnModdle from 'bpmn-moddle';
+
+
+export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
+
+  private _dataModel: IDataModel = undefined;
+  private _invoker: IInvoker = undefined;
+
+  constructor(dataModel: IDataModel, invoker: IInvoker) {
+    this._dataModel = dataModel;
+    this._invoker = invoker;
+  }
+
+  private get dataModel(): IDataModel {
+    return this._dataModel;
+  }
+
+  private get invoker(): IInvoker {
+    return this._invoker;
+  }
+
+  public async importBpmnFromFile(path: string): Promise<void> {
+
+    const bpmnDiagram = await this.parseBpmnFile(path);
+
+
+  }
+
+  public async importBpmnFromXml(xml: string, context: ExecutionContext): Promise<void> {
+
+    const typeName = 'ProcessDef';
+    const bpmnDiagram = await this.parseBpmnXml(xml);
+
+    const processDefEntityType = await this.dataModel.getEntityType(typeName);
+
+    const processes = bpmnDiagram.getProcesses();
+
+    processes.forEach(async (process) => {
+
+      let processDefEntity = await processDefEntityType.getById(process.id, context);
+
+      if (!processDefEntity) {
+        
+        const processDefData = {
+          key: process.id,
+          defId: bpmnDiagram.definitions.id
+        };
+
+        processDefEntity = processDefEntityType.createEntity(context, processDefData);
+      }
+
+      processDefEntity.data.name = process.name;
+      processDefEntity.data.xml = xml;
+
+      await processDefEntity.save(context);
+
+      await this.invoker.invoke(processDefEntity, 'updateDefinitions', context);
+    });
+  }
+
+  public parseBpmnXml(xml: string): Promise<BpmnDiagram> {
+
+    const moddle = BpmnModdle();
+
+    return new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
+
+      moddle.fromXML(xml, (error, definitions) => {
+        if (error) {
+          reject(error);
+        } else {
+
+          const bpmnDiagram = new BpmnDiagram(definitions);
+          resolve(bpmnDiagram);
+        }
+      });
+    });
+  }
+
+  public parseBpmnFile(path: string): Promise<BpmnDiagram> {
+
+    return new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
+
+      fs.readFile(path, 'utf8', async (error, xmlString) => {
+        if (error) {
+          reject(error);
+        } else {
+
+          const definitions = await this.parseBpmnXml(xmlString);
+
+          const bpmnDiagram = new BpmnDiagram(definitions);
+          resolve(bpmnDiagram);
+        }
+      });
+    });
+  }
+
+}
