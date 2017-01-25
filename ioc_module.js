@@ -16,7 +16,7 @@ const ServiceTaskEntity = require('./dist/commonjs/index').ServiceTaskEntity;
 const StartEventEntity = require('./dist/commonjs/index').StartEventEntity;
 const UserTaskEntity = require('./dist/commonjs/index').UserTaskEntity;
 const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefEntityTypeService;
-const entityDiscoveryTag = require('data_model').EntityDiscoveryTag;
+const entityDiscoveryTag = require('@process-engine-js/data_model').EntityDiscoveryTag;
 
 function registerInContainer(container) {
 
