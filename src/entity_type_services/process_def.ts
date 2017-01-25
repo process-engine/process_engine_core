@@ -1,7 +1,7 @@
-import {IProcessDefEntityTypeService, BpmnDiagram} from 'process_engine_contracts';
-import {IDataModel} from 'data_model_contracts';
-import {ExecutionContext} from 'iam_contracts';
-import {IInvoker} from 'invocation_contracts';
+import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram} from '@process-engine-js/process_engine_contracts';
+import {IDataModel, IEntityType} from '@process-engine-js/data_model_contracts';
+import {ExecutionContext} from '@process-engine-js/core_contracts';
+import {IInvoker} from '@process-engine-js/invocation_contracts';
 
 import * as fs from 'fs';
 import * as BluebirdPromise from 'bluebird';
@@ -44,13 +44,13 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const typeName = 'ProcessDef';
     const bpmnDiagram = await this.parseBpmnXml(xml);
 
-    const processDefEntityType = await this.dataModel.getEntityType(typeName);
+    const processDefEntityType: IEntityType<IProcessDefEntity> = await this.dataModel.getEntityType<IProcessDefEntity>(typeName);
 
     const processes = bpmnDiagram.getProcesses();
 
     processes.forEach(async (process) => {
 
-      let processDefEntity = await processDefEntityType.getById(process.id, context);
+      let processDefEntity: IProcessDefEntity = await processDefEntityType.getById(process.id, context);
 
       if (!processDefEntity) {
         
@@ -59,11 +59,11 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           defId: bpmnDiagram.definitions.id
         };
 
-        processDefEntity = processDefEntityType.createEntity(context, processDefData);
+        processDefEntity = processDefEntityType.createEntity<IProcessDefEntity>(context, processDefData);
       }
 
-      processDefEntity.data.name = process.name;
-      processDefEntity.data.xml = xml;
+      processDefEntity.name = process.name;
+      processDefEntity.xml = xml;
 
       await processDefEntity.save(context);
 

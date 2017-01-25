@@ -1,13 +1,13 @@
-import {Entity, IEntityType, IPropertyBag, IFactory, IDataModel, ISchemas} from 'data_model_contracts';
-import {IInvoker} from 'invocation_contracts';
-import {ExecutionContext} from 'iam_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram} from 'process_engine_contracts';
+import {ExecutionContext, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {IDataModel, Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
 
 interface ICache<T> {
   [key: string]: T
 };
 
-export class ProcessDefEntity extends Entity {
+export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   static attributes: any = {
       name: { type: 'string' },
@@ -19,8 +19,8 @@ export class ProcessDefEntity extends Entity {
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _dataModel: IDataModel = undefined;
 
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schemas: ISchemas) {
-    super(propertyBagFactory, invoker, entityType, context, schemas);
+  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+    super(propertyBagFactory, invoker, entityType, context, schema);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._dataModel = dataModel;
@@ -34,12 +34,19 @@ export class ProcessDefEntity extends Entity {
     return this._dataModel;
   }
 
-  public get xml(): any {
-    return this.getProperty(this, 'xml');
+  public get xml(): string {
+    return null;
+    // return this.getProperty(this, 'xml');
   }
 
-  public get key(): any {
-    return this.getProperty(this, 'key');
+  public get key(): string {
+    return null;
+    // return this.getProperty(this, 'key');
+  }
+
+  public get name(): string {
+    return null;
+    // return this.getProperty(this, 'name');
   }
 
   public async start(context: ExecutionContext): Promise<void> {

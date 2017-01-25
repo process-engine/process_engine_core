@@ -39,12 +39,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var data_model_contracts_1 = require("data_model_contracts");
+var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 ;
 var ProcessDefEntity = (function (_super) {
     __extends(ProcessDefEntity, _super);
-    function ProcessDefEntity(processDefEntityTypeService, dataModel, propertyBagFactory, invoker, entityType, context, schemas) {
-        var _this = _super.call(this, propertyBagFactory, invoker, entityType, context, schemas) || this;
+    function ProcessDefEntity(processDefEntityTypeService, dataModel, propertyBagFactory, invoker, entityType, context, schema) {
+        var _this = _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
         _this._processDefEntityTypeService = undefined;
         _this._dataModel = undefined;
         _this._processDefEntityTypeService = processDefEntityTypeService;
@@ -67,14 +67,21 @@ var ProcessDefEntity = (function (_super) {
     });
     Object.defineProperty(ProcessDefEntity.prototype, "xml", {
         get: function () {
-            return this.getProperty(this, 'xml');
+            return null;
         },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(ProcessDefEntity.prototype, "key", {
         get: function () {
-            return this.getProperty(this, 'key');
+            return null;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ProcessDefEntity.prototype, "name", {
+        get: function () {
+            return null;
         },
         enumerable: true,
         configurable: true

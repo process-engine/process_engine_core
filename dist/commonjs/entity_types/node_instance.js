@@ -4,11 +4,11 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var data_model_contracts_1 = require("data_model_contracts");
+var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var NodeInstanceEntity = (function (_super) {
     __extends(NodeInstanceEntity, _super);
-    function NodeInstanceEntity(propertyBagFactory, invoker, entityType, context, schemas) {
-        return _super.call(this, propertyBagFactory, invoker, entityType, context, schemas) || this;
+    function NodeInstanceEntity(propertyBagFactory, invoker, entityType, context, schema) {
+        return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
     return NodeInstanceEntity;
 }(data_model_contracts_1.Entity));

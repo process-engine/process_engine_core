@@ -34,7 +34,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var process_engine_contracts_1 = require("process_engine_contracts");
+var process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 var fs = require("fs");
 var BluebirdPromise = require("bluebird");
 var BpmnModdle = require("bpmn-moddle");
@@ -101,8 +101,8 @@ var ProcessDefEntityTypeService = (function () {
                                             };
                                             processDefEntity = processDefEntityType.createEntity(context, processDefData);
                                         }
-                                        processDefEntity.data.name = process.name;
-                                        processDefEntity.data.xml = xml;
+                                        processDefEntity.name = process.name;
+                                        processDefEntity.xml = xml;
                                         return [4 /*yield*/, processDefEntity.save(context)];
                                     case 2:
                                         _a.sent();

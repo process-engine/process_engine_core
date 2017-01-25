@@ -1,7 +1,8 @@
 import {NodeInstanceEntity} from './node_instance';
-import {IEntityType, IPropertyBag, IFactory, ISchemas} from 'data_model_contracts';
-import {IInvoker} from 'invocation_contracts';
-import {ExecutionContext} from 'iam_contracts';
+import {IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext} from '@process-engine-js/core_contracts';
 
 export class ExclusiveGatewayEntity extends NodeInstanceEntity {
 
@@ -9,8 +10,8 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity {
     follow: { type: 'object' }
   };
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ExclusiveGatewayEntity>, context: ExecutionContext, schemas: ISchemas) {
-    super(propertyBagFactory, invoker, entityType, context, schemas);
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+    super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
 }

@@ -7,8 +7,8 @@ var __extends = (this && this.__extends) || function (d, b) {
 var node_instance_1 = require("./node_instance");
 var UserTaskEntity = (function (_super) {
     __extends(UserTaskEntity, _super);
-    function UserTaskEntity(propertyBagFactory, invoker, entityType, context, schemas) {
-        return _super.call(this, propertyBagFactory, invoker, entityType, context, schemas) || this;
+    function UserTaskEntity(propertyBagFactory, invoker, entityType, context, schema) {
+        return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
     return UserTaskEntity;
 }(node_instance_1.NodeInstanceEntity));

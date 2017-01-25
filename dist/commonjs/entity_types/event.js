@@ -7,8 +7,8 @@ var __extends = (this && this.__extends) || function (d, b) {
 var node_instance_1 = require("./node_instance");
 var EventEntity = (function (_super) {
     __extends(EventEntity, _super);
-    function EventEntity(propertyBagFactory, invoker, entityType, context, schemas) {
-        return _super.call(this, propertyBagFactory, invoker, entityType, context, schemas) || this;
+    function EventEntity(propertyBagFactory, invoker, entityType, context, schema) {
+        return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
     return EventEntity;
 }(node_instance_1.NodeInstanceEntity));

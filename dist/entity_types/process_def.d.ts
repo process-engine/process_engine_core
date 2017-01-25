@@ -1,16 +1,17 @@
-import { Entity, IEntityType, IPropertyBag, IFactory, IDataModel, ISchemas } from 'data_model_contracts';
-import { IInvoker } from 'invocation_contracts';
-import { ExecutionContext } from 'iam_contracts';
-import { IProcessDefEntityTypeService, BpmnDiagram } from 'process_engine_contracts';
-export declare class ProcessDefEntity extends Entity {
+import { ExecutionContext, IFactory, IInheritedSchema } from '@process-engine-js/core_contracts';
+import { IDataModel, Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { IInvoker } from '@process-engine-js/invocation_contracts';
+import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity } from '@process-engine-js/process_engine_contracts';
+export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
     static attributes: any;
     private _processDefEntityTypeService;
     private _dataModel;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schemas: ISchemas);
+    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
     private readonly processDefEntityTypeService;
     private readonly dataModel;
-    readonly xml: any;
-    readonly key: any;
+    readonly xml: string;
+    readonly key: string;
+    readonly name: string;
     start(context: ExecutionContext): Promise<void>;
     updateDefinitions(context: ExecutionContext, newBpmnDiagram?: BpmnDiagram): Promise<void>;
     private _updateLanes(lanes, context);
