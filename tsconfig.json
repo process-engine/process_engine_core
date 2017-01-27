@@ -1,6 +1,12 @@
 {
   "typingOptions": {
-    "enableAutoDiscovery": true,
-    "target": "es5"
+    "enableAutoDiscovery": true
+  },
+  "compilerOptions": {
+    "target": "es5",
+    "experimentalDecorators": true,
+    "lib": [
+      "es2015.promise"
+    ]
   }
 }
