@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
 import {IDataModel, Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
@@ -25,6 +25,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._dataModel = dataModel;
+  }
+
+  public initialize(derivedClassInstance: IEntity): void {
+    const actualInstance = derivedClassInstance || this;
+    super.initialize(actualInstance);
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {

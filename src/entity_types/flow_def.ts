@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IFlowDefEntity, IProcessDefEntity, INodeDefEntity} from '@process-engine-js/process_engine_contracts';
@@ -17,6 +17,11 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
 
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<FlowDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
+  }
+
+  public initialize(derivedClassInstance: IEntity): void {
+    const actualInstance = derivedClassInstance || this;
+    super.initialize(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

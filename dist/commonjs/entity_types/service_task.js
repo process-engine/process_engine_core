@@ -10,6 +10,10 @@ var ServiceTaskEntity = (function (_super) {
     function ServiceTaskEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    ServiceTaskEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     return ServiceTaskEntity;
 }(node_instance_1.NodeInstanceEntity));
 exports.ServiceTaskEntity = ServiceTaskEntity;

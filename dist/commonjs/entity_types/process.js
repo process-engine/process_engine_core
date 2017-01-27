@@ -18,6 +18,10 @@ var ProcessEntity = (function (_super) {
     function ProcessEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    ProcessEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     Object.defineProperty(ProcessEntity.prototype, "name", {
         get: function () {
             return this.getProperty(this, 'name');

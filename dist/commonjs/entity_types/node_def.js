@@ -53,6 +53,10 @@ var NodeDefEntity = (function (_super) {
     function NodeDefEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    NodeDefEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     Object.defineProperty(NodeDefEntity.prototype, "name", {
         get: function () {
             return this.getProperty(this, 'name');

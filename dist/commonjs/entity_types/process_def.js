@@ -59,6 +59,10 @@ var ProcessDefEntity = (function (_super) {
         _this._dataModel = dataModel;
         return _this;
     }
+    ProcessDefEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     Object.defineProperty(ProcessDefEntity.prototype, "processDefEntityTypeService", {
         get: function () {
             return this._processDefEntityTypeService;

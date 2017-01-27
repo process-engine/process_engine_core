@@ -10,6 +10,10 @@ var EndEventEntity = (function (_super) {
     function EndEventEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    EndEventEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     return EndEventEntity;
 }(event_1.EventEntity));
 exports.EndEventEntity = EndEventEntity;

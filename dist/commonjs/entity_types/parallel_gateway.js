@@ -18,6 +18,10 @@ var ParallelGatewayEntity = (function (_super) {
     function ParallelGatewayEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    ParallelGatewayEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     Object.defineProperty(ParallelGatewayEntity.prototype, "parallelType", {
         get: function () {
             return this.getProperty(this, 'parallelType');

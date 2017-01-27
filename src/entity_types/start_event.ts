@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
 import {EventEntity} from './event';
 import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
@@ -9,5 +9,10 @@ export class StartEventEntity extends EventEntity implements IStartEventEntity {
 
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<StartEventEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
+  }
+
+  public initialize(derivedClassInstance: IEntity): void {
+    const actualInstance = derivedClassInstance || this;
+    super.initialize(actualInstance);
   }
 }

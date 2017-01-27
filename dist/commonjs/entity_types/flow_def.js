@@ -18,6 +18,10 @@ var FlowDefEntity = (function (_super) {
     function FlowDefEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    FlowDefEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     Object.defineProperty(FlowDefEntity.prototype, "name", {
         get: function () {
             return this.getProperty(this, 'name');

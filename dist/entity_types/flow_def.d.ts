@@ -1,10 +1,11 @@
-import { ExecutionContext, IFactory, IInheritedSchema } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
 import { Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IFlowDefEntity, IProcessDefEntity, INodeDefEntity } from '@process-engine-js/process_engine_contracts';
 export declare class FlowDefEntity extends Entity implements IFlowDefEntity {
     static attributes: any;
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<FlowDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): void;
     name: string;
     key: string;
     getProcessDef(): Promise<IProcessDefEntity>;

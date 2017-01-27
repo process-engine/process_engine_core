@@ -18,6 +18,10 @@ var ProcessTokenEntity = (function (_super) {
     function ProcessTokenEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    ProcessTokenEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     Object.defineProperty(ProcessTokenEntity.prototype, "data", {
         get: function () {
             return this.getProperty(this, 'data');

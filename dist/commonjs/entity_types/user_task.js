@@ -10,6 +10,10 @@ var UserTaskEntity = (function (_super) {
     function UserTaskEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
+    UserTaskEntity.prototype.initialize = function (derivedClassInstance) {
+        var actualInstance = derivedClassInstance || this;
+        _super.prototype.initialize.call(this, actualInstance);
+    };
     return UserTaskEntity;
 }(node_instance_1.NodeInstanceEntity));
 exports.UserTaskEntity = UserTaskEntity;
