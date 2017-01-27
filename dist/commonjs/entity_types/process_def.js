@@ -4,6 +4,12 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -39,7 +45,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var core_contracts_1 = require("@process-engine-js/core_contracts");
 var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
+var metadata_1 = require("@process-engine-js/metadata");
 ;
 var ProcessDefEntity = (function (_super) {
     __extends(ProcessDefEntity, _super);
@@ -65,23 +73,42 @@ var ProcessDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(ProcessDefEntity.prototype, "xml", {
+    Object.defineProperty(ProcessDefEntity.prototype, "name", {
         get: function () {
-            return null;
+            return this.getProperty(this, 'name');
+        },
+        set: function (value) {
+            this.setProperty(this, 'name', value);
         },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(ProcessDefEntity.prototype, "key", {
         get: function () {
-            return null;
+            return this.getProperty(this, 'key');
+        },
+        set: function (value) {
+            this.setProperty(this, 'key', value);
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(ProcessDefEntity.prototype, "name", {
+    Object.defineProperty(ProcessDefEntity.prototype, "defId", {
         get: function () {
-            return null;
+            return this.getProperty(this, 'defId');
+        },
+        set: function (value) {
+            this.setProperty(this, 'defId', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ProcessDefEntity.prototype, "xml", {
+        get: function () {
+            return this.getProperty(this, 'xml');
+        },
+        set: function (value) {
+            this.setProperty(this, 'xml', value);
         },
         enumerable: true,
         configurable: true
@@ -114,28 +141,34 @@ var ProcessDefEntity = (function (_super) {
     };
     ProcessDefEntity.prototype.updateDefinitions = function (context, newBpmnDiagram) {
         return __awaiter(this, void 0, void 0, function () {
-            var bpmnDiagram, lanes, laneCache, nodes, nodeCache, flows;
+            var bpmnDiagram, xml, key, lanes, laneCache, nodes, nodeCache, flows;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         bpmnDiagram = newBpmnDiagram;
-                        if (!!bpmnDiagram) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.processDefEntityTypeService.parseBpmnXml(this.xml)];
+                        return [4 /*yield*/, this.xml];
                     case 1:
-                        bpmnDiagram = _a.sent();
-                        _a.label = 2;
+                        xml = _a.sent();
+                        return [4 /*yield*/, this.key];
                     case 2:
-                        lanes = bpmnDiagram.getLanes(this.key);
-                        return [4 /*yield*/, this._updateLanes(lanes, context)];
+                        key = _a.sent();
+                        if (!!bpmnDiagram) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.processDefEntityTypeService.parseBpmnXml(xml)];
                     case 3:
-                        laneCache = _a.sent();
-                        nodes = bpmnDiagram.getNodes(this.key);
-                        return [4 /*yield*/, this._updateNodes(nodes, laneCache, bpmnDiagram, context)];
+                        bpmnDiagram = _a.sent();
+                        _a.label = 4;
                     case 4:
-                        nodeCache = _a.sent();
-                        flows = bpmnDiagram.getFlows(this.key);
-                        return [4 /*yield*/, this._updateFlows(flows, nodeCache, context)];
+                        lanes = bpmnDiagram.getLanes(key);
+                        return [4 /*yield*/, this._updateLanes(lanes, context)];
                     case 5:
+                        laneCache = _a.sent();
+                        nodes = bpmnDiagram.getNodes(key);
+                        return [4 /*yield*/, this._updateNodes(nodes, laneCache, bpmnDiagram, context)];
+                    case 6:
+                        nodeCache = _a.sent();
+                        flows = bpmnDiagram.getFlows(key);
+                        return [4 /*yield*/, this._updateFlows(flows, nodeCache, context)];
+                    case 7:
                         _a.sent();
                         return [2 /*return*/];
                 }
@@ -373,6 +406,18 @@ ProcessDefEntity.attributes = {
     defId: { type: 'string' },
     xml: { type: 'string' }
 };
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "name", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "key", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "defId", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "xml", null);
 exports.ProcessDefEntity = ProcessDefEntity;
 
 //# sourceMappingURL=process_def.js.map

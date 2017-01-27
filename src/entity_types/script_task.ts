@@ -1,10 +1,11 @@
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity} from './node_instance';
-import {IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {ExecutionContext} from '@process-engine-js/core_contracts';
+import {IScriptTaskEntity} from '@process-engine-js/process_engine_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
 
-export class ScriptTaskEntity extends NodeInstanceEntity {
+export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {
 
   static attributes: any = {
     script: { type: 'string' }
@@ -12,5 +13,14 @@ export class ScriptTaskEntity extends NodeInstanceEntity {
 
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get script(): string {
+    return this.getProperty(this, 'script');
+  }
+
+  public set script(value: string) {
+    this.setProperty(this, 'script', value);
   }
 }

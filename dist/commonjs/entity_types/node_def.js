@@ -4,6 +4,12 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -39,35 +45,103 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var core_contracts_1 = require("@process-engine-js/core_contracts");
 var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
+var metadata_1 = require("@process-engine-js/metadata");
 var NodeDefEntity = (function (_super) {
     __extends(NodeDefEntity, _super);
     function NodeDefEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
-    Object.defineProperty(NodeDefEntity.prototype, "lane", {
+    Object.defineProperty(NodeDefEntity.prototype, "name", {
         get: function () {
-            return this.getProperty(this, 'lane');
+            return this.getProperty(this, 'name');
+        },
+        set: function (value) {
+            this.setProperty(this, 'name', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NodeDefEntity.prototype, "key", {
+        get: function () {
+            return this.getProperty(this, 'key');
+        },
+        set: function (value) {
+            this.setProperty(this, 'key', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    NodeDefEntity.prototype.getProcessDef = function () {
+        return this.getPropertyLazy(this, 'processDef');
+    };
+    NodeDefEntity.prototype.setProcessDef = function (value) {
+        this.setProperty(this, 'processDef', value);
+    };
+    NodeDefEntity.prototype.getLane = function () {
+        return this.getPropertyLazy(this, 'lane');
+    };
+    NodeDefEntity.prototype.setLane = function (value) {
+        this.setProperty(this, 'lane', value);
+    };
+    Object.defineProperty(NodeDefEntity.prototype, "type", {
+        get: function () {
+            return this.getProperty(this, 'type');
+        },
+        set: function (value) {
+            this.setProperty(this, 'type', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NodeDefEntity.prototype, "extensions", {
+        get: function () {
+            return this.getProperty(this, 'extensions');
+        },
+        set: function (value) {
+            this.setProperty(this, 'extensions', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    NodeDefEntity.prototype.getAttachedToNode = function () {
+        return this.getPropertyLazy(this, 'attachedToNode');
+    };
+    NodeDefEntity.prototype.setAttachedToNode = function (value) {
+        this.setProperty(this, 'attachedToNode', value);
+    };
+    Object.defineProperty(NodeDefEntity.prototype, "events", {
+        get: function () {
+            return this.getProperty(this, 'events');
+        },
+        set: function (value) {
+            this.setProperty(this, 'events', value);
         },
         enumerable: true,
         configurable: true
     });
     NodeDefEntity.prototype.getLaneRole = function (context) {
         return __awaiter(this, void 0, void 0, function () {
-            var extensions, properties, found;
+            var lane, extensions, properties, found;
             return __generator(this, function (_a) {
-                extensions = this.lane.extensions;
-                properties = (extensions && extensions.properties) ? extensions.properties : null;
-                found = null;
-                if (properties) {
-                    properties.some(function (property) {
-                        if (property.name === 'role') {
-                            found = property.value;
-                            return true;
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getLane()];
+                    case 1:
+                        lane = _a.sent();
+                        extensions = lane.extensions;
+                        properties = (extensions && extensions.properties) ? extensions.properties : null;
+                        found = null;
+                        if (properties) {
+                            properties.some(function (property) {
+                                if (property.name === 'role') {
+                                    found = property.value;
+                                    return true;
+                                }
+                            });
                         }
-                    });
+                        return [2 /*return*/, found];
                 }
-                return [2 /*return*/, found];
             });
         });
     };
@@ -83,6 +157,30 @@ NodeDefEntity.attributes = {
     attachedToNode: { type: 'NodeDef' },
     events: { type: 'object' }
 };
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "name", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "key", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'ProcessDef' })
+], NodeDefEntity.prototype, "getProcessDef", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'Lane' })
+], NodeDefEntity.prototype, "getLane", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "type", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
+], NodeDefEntity.prototype, "extensions", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'NodeDef' })
+], NodeDefEntity.prototype, "getAttachedToNode", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "events", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

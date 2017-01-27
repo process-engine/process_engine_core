@@ -1,7 +1,8 @@
-import {ExecutionContext, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {IDataModel, Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
 
 interface ICache<T> {
   [key: string]: T
@@ -34,19 +35,40 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this._dataModel;
   }
 
-  public get xml(): string {
-    return null;
-    // return this.getProperty(this, 'xml');
-  }
-
-  public get key(): string {
-    return null;
-    // return this.getProperty(this, 'key');
-  }
-
+  @schemaAttribute({ type: SchemaAttributeType.string })
   public get name(): string {
-    return null;
-    // return this.getProperty(this, 'name');
+    return this.getProperty(this, 'name');
+  }
+
+  public set name(value: string) {
+    this.setProperty(this, 'name', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get key(): string {
+    return this.getProperty(this, 'key');
+  }
+
+  public set key(value: string) {
+    this.setProperty(this, 'key', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get defId(): string {
+    return this.getProperty(this, 'defId');
+  }
+
+  public set defId(value: string) {
+    this.setProperty(this, 'defId', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get xml(): string {
+    return this.getProperty(this, 'xml');
+  }
+
+  public set xml(value: string) {
+    this.setProperty(this, 'xml', value);
   }
 
   public async start(context: ExecutionContext): Promise<void> {
@@ -71,19 +93,22 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     let bpmnDiagram = newBpmnDiagram;
 
+    const xml = await this.xml;
+    const key = await this.key;
+
     if (!bpmnDiagram) {
-      bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(this.xml);
+      bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     }
 
-    const lanes = bpmnDiagram.getLanes(this.key);
+    const lanes = bpmnDiagram.getLanes(key);
 
     const laneCache = await this._updateLanes(lanes, context);
 
-    const nodes = bpmnDiagram.getNodes(this.key);
+    const nodes = bpmnDiagram.getNodes(key);
 
     const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context);
 
-    const flows = bpmnDiagram.getFlows(this.key);
+    const flows = bpmnDiagram.getFlows(key);
     
     await this._updateFlows(flows, nodeCache, context);
   }

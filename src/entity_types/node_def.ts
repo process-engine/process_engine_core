@@ -1,9 +1,10 @@
-import {IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {ExecutionContext} from '@process-engine-js/core_contracts';
+import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
 
-export class NodeDefEntity extends Entity {
+export class NodeDefEntity extends Entity implements INodeDefEntity {
 
   static attributes: any = {
       name: { type: 'string' },
@@ -20,13 +21,82 @@ export class NodeDefEntity extends Entity {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
-  public get lane(): any {
-    return this.getProperty(this, 'lane');
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get name(): string {
+    return this.getProperty(this, 'name');
   }
 
-  public async getLaneRole(context: ExecutionContext) {
+  public set name(value: string) {
+    this.setProperty(this, 'name', value);
+  }
 
-    const extensions = this.lane.extensions;
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get key(): string {
+    return this.getProperty(this, 'key');
+  }
+
+  public set key(value: string) {
+    this.setProperty(this, 'key', value);
+  }
+
+  @schemaAttribute({ type: 'ProcessDef' })
+  public getProcessDef(): Promise<IProcessDefEntity> {
+    return this.getPropertyLazy(this, 'processDef');
+  }
+
+  public setProcessDef(value: IProcessDefEntity): void {
+    this.setProperty(this, 'processDef', value);
+  }
+
+  @schemaAttribute({ type: 'Lane' })
+  public getLane(): Promise<ILaneEntity> {
+    return this.getPropertyLazy(this, 'lane');
+  }
+
+  public setLane(value: ILaneEntity): void {
+    this.setProperty(this, 'lane', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get type(): string {
+    return this.getProperty(this, 'type');
+  }
+
+  public set type(value: string) {
+    this.setProperty(this, 'type', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.object })
+  public get extensions(): any {
+    return this.getProperty(this, 'extensions');
+  }
+
+  public set extensions(value: any) {
+    this.setProperty(this, 'extensions', value);
+  }
+
+  @schemaAttribute({ type: 'NodeDef' })
+  public getAttachedToNode(): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'attachedToNode');
+  }
+
+  public setAttachedToNode(value: INodeDefEntity): void {
+    this.setProperty(this, 'attachedToNode', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get events(): string {
+    return this.getProperty(this, 'events');
+  }
+
+  public set events(value: string) {
+    this.setProperty(this, 'events', value);
+  }
+
+  public async getLaneRole(context: ExecutionContext): Promise<string> {
+
+    const lane = await this.getLane();
+    const extensions = lane.extensions;
     const properties = (extensions && extensions.properties) ? extensions.properties : null;
 
     let found = null;

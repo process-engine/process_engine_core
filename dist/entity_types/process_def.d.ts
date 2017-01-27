@@ -9,9 +9,10 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
     private readonly processDefEntityTypeService;
     private readonly dataModel;
-    readonly xml: string;
-    readonly key: string;
-    readonly name: string;
+    name: string;
+    key: string;
+    defId: string;
+    xml: string;
     start(context: ExecutionContext): Promise<void>;
     updateDefinitions(context: ExecutionContext, newBpmnDiagram?: BpmnDiagram): Promise<void>;
     private _updateLanes(lanes, context);
