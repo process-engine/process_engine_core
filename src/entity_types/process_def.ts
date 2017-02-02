@@ -85,7 +85,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       processDef: this
     };
 
-    const processEntityType = await this.dataModel.getEntityType(typeName);
+    const processEntityType = await this.dataModel.getEntityType(undefined, typeName);
 
     const processEntity = processEntityType.createEntity(context, processData);
 
@@ -123,7 +123,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const laneCache = {};
     const typeName = 'Lane';
 
-    const laneEntityType = await this.dataModel.getEntityType(typeName);
+    const laneEntityType = await this.dataModel.getEntityType(undefined, typeName);
 
     const lanePromiseArray = lanes.map(async (lane) => {
 
@@ -161,7 +161,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const nodeCache = {};
     const typeName = 'NodeDef';
 
-    const nodeDefEntityType = await this.dataModel.getEntityType(typeName);
+    const nodeDefEntityType = await this.dataModel.getEntityType(undefined, typeName);
 
     const nodePromiseArray = nodes.map(async (node) => {
 
@@ -212,7 +212,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const typeName = 'FlowDef';
 
-    const flowDefEntityType = await this.dataModel.getEntityType(typeName);
+    const flowDefEntityType = await this.dataModel.getEntityType(undefined, typeName);
 
     const flowPromiseArray = flows.map(async (flow) => {
 

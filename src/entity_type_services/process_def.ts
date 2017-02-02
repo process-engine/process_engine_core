@@ -44,7 +44,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const typeName = 'ProcessDef';
     const bpmnDiagram = await this.parseBpmnXml(xml);
 
-    const processDefEntityType = await this.dataModel.getEntityType<IProcessDefEntity>(typeName);
+    const processDefEntityType = await this.dataModel.getEntityType<IProcessDefEntity>(undefined, typeName);
 
     const processes = bpmnDiagram.getProcesses();
 

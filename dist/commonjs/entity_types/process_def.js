@@ -128,7 +128,7 @@ var ProcessDefEntity = (function (_super) {
                             key: this.key,
                             processDef: this
                         };
-                        return [4 /*yield*/, this.dataModel.getEntityType(typeName)];
+                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 1:
                         processEntityType = _a.sent();
                         processEntity = processEntityType.createEntity(context, processData);
@@ -188,7 +188,7 @@ var ProcessDefEntity = (function (_super) {
                     case 0:
                         laneCache = {};
                         typeName = 'Lane';
-                        return [4 /*yield*/, this.dataModel.getEntityType(typeName)];
+                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 1:
                         laneEntityType = _a.sent();
                         lanePromiseArray = lanes.map(function (lane) { return __awaiter(_this, void 0, void 0, function () {
@@ -236,7 +236,7 @@ var ProcessDefEntity = (function (_super) {
                     case 0:
                         nodeCache = {};
                         typeName = 'NodeDef';
-                        return [4 /*yield*/, this.dataModel.getEntityType(typeName)];
+                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 1:
                         nodeDefEntityType = _a.sent();
                         nodePromiseArray = nodes.map(function (node) { return __awaiter(_this, void 0, void 0, function () {
@@ -292,7 +292,7 @@ var ProcessDefEntity = (function (_super) {
                 switch (_a.label) {
                     case 0:
                         typeName = 'FlowDef';
-                        return [4 /*yield*/, this.dataModel.getEntityType(typeName)];
+                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 1:
                         flowDefEntityType = _a.sent();
                         flowPromiseArray = flows.map(function (flow) { return __awaiter(_this, void 0, void 0, function () {

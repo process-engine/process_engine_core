@@ -83,7 +83,7 @@ var ProcessDefEntityTypeService = (function () {
                         return [4 /*yield*/, this.parseBpmnXml(xml)];
                     case 1:
                         bpmnDiagram = _a.sent();
-                        return [4 /*yield*/, this.dataModel.getEntityType(typeName)];
+                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 2:
                         processDefEntityType = _a.sent();
                         processes = bpmnDiagram.getProcesses();
