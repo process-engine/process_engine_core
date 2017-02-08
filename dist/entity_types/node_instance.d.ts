@@ -8,8 +8,8 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
         attribute: string;
         depth: number;
     }[];
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<NodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;
     getProcess(): Promise<IProcessEntity>;

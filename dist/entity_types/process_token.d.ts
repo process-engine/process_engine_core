@@ -4,8 +4,8 @@ import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IProcessTokenEntity, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
     static attributes: any;
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessTokenEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessTokenEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
     data: any;
     getProcess(): Promise<IProcessEntity>;
     setProcess(value: IProcessEntity): void;

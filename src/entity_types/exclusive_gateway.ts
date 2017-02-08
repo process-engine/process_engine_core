@@ -11,13 +11,13 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
     follow: { type: 'object' }
   };
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
-  public initialize(derivedClassInstance: IEntity): void {
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    super.initialize(actualInstance);
+    await super.initialize(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.object })

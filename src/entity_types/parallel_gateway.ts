@@ -11,13 +11,13 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
     parallelType: { type: 'string' }
   };
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ParallelGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IParallelGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
-  public initialize(derivedClassInstance: IEntity): void {
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    super.initialize(actualInstance);
+    await super.initialize(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

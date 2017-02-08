@@ -59,7 +59,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           defId: bpmnDiagram.definitions.id
         };
 
-        processDefEntity = processDefEntityType.createEntity<IProcessDefEntity>(context, processDefData);
+        processDefEntity = await processDefEntityType.createEntity<IProcessDefEntity>(context, processDefData);
       }
 
       processDefEntity.name = process.name;

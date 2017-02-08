@@ -12,13 +12,13 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     processDef: { type: 'ProcessDef' }
   };
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
-  public initialize(derivedClassInstance: IEntity): void {
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    super.initialize(actualInstance);
+    await super.initialize(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

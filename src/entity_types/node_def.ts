@@ -17,13 +17,13 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
       events: { type: 'object' }
   };
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<NodeDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<INodeDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
-  public initialize(derivedClassInstance: IEntity): void {
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    super.initialize(actualInstance);
+    await super.initialize(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

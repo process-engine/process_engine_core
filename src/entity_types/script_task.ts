@@ -11,13 +11,13 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
     script: { type: 'string' }
   };
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
 
-  public initialize(derivedClassInstance: IEntity): void {
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    super.initialize(actualInstance);
+    await super.initialize(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

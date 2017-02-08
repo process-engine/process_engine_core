@@ -5,8 +5,8 @@ import { ILaneEntity, IProcessDefEntity } from '@process-engine-js/process_engin
 export declare class LaneEntity extends Entity implements ILaneEntity {
     static attributes: any;
     static datasources: string[];
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<LaneEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ILaneEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;
     extensions: any;

@@ -6,8 +6,8 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     static attributes: any;
     private _processDefEntityTypeService;
     private _dataModel;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
     private readonly processDefEntityTypeService;
     private readonly dataModel;
     name: string;

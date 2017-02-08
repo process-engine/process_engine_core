@@ -4,6 +4,6 @@ import { IEntityType, IPropertyBag } from '@process-engine-js/data_model_contrac
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IServiceTaskEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTaskEntity {
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ServiceTaskEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IServiceTaskEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
 }

@@ -4,6 +4,6 @@ import { IEntityType, IPropertyBag } from '@process-engine-js/data_model_contrac
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IStartEventEntity } from '@process-engine-js/process_engine_contracts';
 export declare class StartEventEntity extends EventEntity implements IStartEventEntity {
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<StartEventEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IStartEventEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
 }

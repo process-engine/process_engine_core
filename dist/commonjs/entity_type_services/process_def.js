@@ -94,20 +94,23 @@ var ProcessDefEntityTypeService = (function () {
                                     case 0: return [4 /*yield*/, processDefEntityType.getById(process.id, context)];
                                     case 1:
                                         processDefEntity = _a.sent();
-                                        if (!processDefEntity) {
-                                            processDefData = {
-                                                key: process.id,
-                                                defId: bpmnDiagram.definitions.id
-                                            };
-                                            processDefEntity = processDefEntityType.createEntity(context, processDefData);
-                                        }
+                                        if (!!processDefEntity) return [3 /*break*/, 3];
+                                        processDefData = {
+                                            key: process.id,
+                                            defId: bpmnDiagram.definitions.id
+                                        };
+                                        return [4 /*yield*/, processDefEntityType.createEntity(context, processDefData)];
+                                    case 2:
+                                        processDefEntity = _a.sent();
+                                        _a.label = 3;
+                                    case 3:
                                         processDefEntity.name = process.name;
                                         processDefEntity.xml = xml;
                                         return [4 /*yield*/, processDefEntity.save(context)];
-                                    case 2:
+                                    case 4:
                                         _a.sent();
                                         return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'updateDefinitions', context)];
-                                    case 3:
+                                    case 5:
                                         _a.sent();
                                         return [2 /*return*/];
                                 }

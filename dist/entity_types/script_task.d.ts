@@ -5,7 +5,7 @@ import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IScriptTaskEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {
     static attributes: any;
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): void;
+    constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    initialize(derivedClassInstance: IEntity): Promise<void>;
     script: string;
 }

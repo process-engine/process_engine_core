@@ -1,9 +1,14 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -48,6 +53,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var core_contracts_1 = require("@process-engine-js/core_contracts");
 var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
+var uuid = require("uuid");
 ;
 var ProcessDefEntity = (function (_super) {
     __extends(ProcessDefEntity, _super);
@@ -60,8 +66,19 @@ var ProcessDefEntity = (function (_super) {
         return _this;
     }
     ProcessDefEntity.prototype.initialize = function (derivedClassInstance) {
-        var actualInstance = derivedClassInstance || this;
-        _super.prototype.initialize.call(this, actualInstance);
+        return __awaiter(this, void 0, void 0, function () {
+            var actualInstance;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        actualInstance = derivedClassInstance || this;
+                        return [4 /*yield*/, _super.prototype.initialize.call(this, actualInstance)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     Object.defineProperty(ProcessDefEntity.prototype, "processDefEntityTypeService", {
         get: function () {
@@ -119,9 +136,9 @@ var ProcessDefEntity = (function (_super) {
     });
     ProcessDefEntity.prototype.start = function (context) {
         return __awaiter(this, void 0, void 0, function () {
-            var typeName, processData, processEntityType, processEntity;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var typeName, processData, processEntityType, processEntity, saveOptions, argumentsPassedToSave, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         typeName = 'Process';
                         processData = {
@@ -130,14 +147,18 @@ var ProcessDefEntity = (function (_super) {
                         };
                         return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 1:
-                        processEntityType = _a.sent();
-                        processEntity = processEntityType.createEntity(context, processData);
-                        return [4 /*yield*/, processEntity.save(context)];
+                        processEntityType = _b.sent();
+                        return [4 /*yield*/, processEntityType.createEntity(context, processData)];
                     case 2:
-                        _a.sent();
-                        return [4 /*yield*/, this.invoker.invoke(processEntity, 'start', context)];
+                        processEntity = _b.sent();
+                        return [4 /*yield*/, processEntity.save(context)];
                     case 3:
-                        _a.sent();
+                        _b.sent();
+                        saveOptions = {};
+                        argumentsPassedToSave = [context, saveOptions];
+                        return [4 /*yield*/, (_a = this.invoker).invoke.apply(_a, [processEntity, 'start', context].concat(argumentsPassedToSave))];
+                    case 4:
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });
@@ -192,7 +213,7 @@ var ProcessDefEntity = (function (_super) {
                     case 1:
                         laneEntityType = _a.sent();
                         lanePromiseArray = lanes.map(function (lane) { return __awaiter(_this, void 0, void 0, function () {
-                            var queryObject, laneEntity, laneData;
+                            var queryObject, queryOptions, laneEntity, laneData;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -200,19 +221,25 @@ var ProcessDefEntity = (function (_super) {
                                             { attribute: 'key', operator: '=', value: lane.id },
                                             { attribute: 'processDef.key', operator: '=', value: this.key }
                                         ];
-                                        return [4 /*yield*/, laneEntityType.findOne(context, { query: queryObject })];
+                                        queryOptions = {
+                                            query: queryObject
+                                        };
+                                        return [4 /*yield*/, laneEntityType.findOne(context, queryOptions)];
                                     case 1:
                                         laneEntity = _a.sent();
-                                        if (!laneEntity) {
-                                            laneData = {
-                                                key: lane.id
-                                            };
-                                            laneEntity = laneEntityType.createEntity(context, laneData);
-                                        }
+                                        if (!!laneEntity) return [3 /*break*/, 3];
+                                        laneData = {
+                                            key: lane.id
+                                        };
+                                        return [4 /*yield*/, laneEntityType.createEntity(context, laneData)];
+                                    case 2:
+                                        laneEntity = _a.sent();
+                                        _a.label = 3;
+                                    case 3:
                                         laneEntity.name = lane.name;
                                         laneEntity.processDef = this;
                                         return [4 /*yield*/, laneEntity.save(context)];
-                                    case 2:
+                                    case 4:
                                         _a.sent();
                                         laneCache[lane.id] = laneEntity;
                                         return [2 /*return*/];
@@ -251,12 +278,15 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, nodeDefEntityType.findOne(context, { query: queryObject })];
                                     case 1:
                                         nodeDefEntity = _a.sent();
-                                        if (!nodeDefEntity) {
-                                            nodeDefData = {
-                                                key: node.id
-                                            };
-                                            nodeDefEntity = nodeDefEntityType.createEntity(context, nodeDefData);
-                                        }
+                                        if (!!nodeDefEntity) return [3 /*break*/, 3];
+                                        nodeDefData = {
+                                            key: node.id
+                                        };
+                                        return [4 /*yield*/, nodeDefEntityType.createEntity(context, nodeDefData)];
+                                    case 2:
+                                        nodeDefEntity = _a.sent();
+                                        _a.label = 3;
+                                    case 3:
                                         if (node.extensionElements) {
                                             extensions = this._updateExtensionElements(node.extensionElements.values);
                                             nodeDefEntity.extensions = extensions;
@@ -269,7 +299,7 @@ var ProcessDefEntity = (function (_super) {
                                             nodeDefEntity.lane = laneCache[laneId];
                                         }
                                         return [4 /*yield*/, nodeDefEntity.save(context)];
-                                    case 2:
+                                    case 4:
                                         _a.sent();
                                         nodeCache[node.id] = nodeDefEntity;
                                         return [2 /*return*/];
@@ -307,12 +337,15 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, flowDefEntityType.findOne(context, { query: queryObject })];
                                     case 1:
                                         flowDefEntity = _a.sent();
-                                        if (!flowDefEntity) {
-                                            flowDefData = {
-                                                key: flow.id
-                                            };
-                                            flowDefEntity = flowDefEntityType.createEntity(context, flowDefData);
-                                        }
+                                        if (!!flowDefEntity) return [3 /*break*/, 3];
+                                        flowDefData = {
+                                            key: flow.id
+                                        };
+                                        return [4 /*yield*/, flowDefEntityType.createEntity(context, flowDefData)];
+                                    case 2:
+                                        flowDefEntity = _a.sent();
+                                        _a.label = 3;
+                                    case 3:
                                         flowDefEntity.name = flow.name;
                                         flowDefEntity.processDef = this;
                                         sourceId = flow.sourceRef.id;
@@ -323,7 +356,7 @@ var ProcessDefEntity = (function (_super) {
                                             flowDefEntity.condition = flow.conditionExpression.body;
                                         }
                                         return [4 /*yield*/, flowDefEntity.save(context)];
-                                    case 2:
+                                    case 4:
                                         _a.sent();
                                         return [2 /*return*/];
                                 }
@@ -411,7 +444,12 @@ ProcessDefEntity.attributes = {
     xml: { type: 'string' }
 };
 __decorate([
-    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+    metadata_1.schemaAttribute({
+        type: core_contracts_1.SchemaAttributeType.string,
+        onInit: function () {
+            return uuid.v4();
+        }
+    })
 ], ProcessDefEntity.prototype, "name", null);
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

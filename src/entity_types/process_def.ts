@@ -4,6 +4,8 @@ import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
+import * as uuid from 'uuid';
+
 interface ICache<T> {
   [key: string]: T
 };
@@ -20,16 +22,16 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _dataModel: IDataModel = undefined;
 
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._dataModel = dataModel;
   }
 
-  public initialize(derivedClassInstance: IEntity): void {
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    super.initialize(actualInstance);
+    await super.initialize(actualInstance);
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -40,7 +42,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this._dataModel;
   }
 
-  @schemaAttribute({ type: SchemaAttributeType.string })
+
+  @schemaAttribute({
+    type: SchemaAttributeType.string,
+    onInit: () => {
+      return uuid.v4();
+    }
+  })
   public get name(): string {
     return this.getProperty(this, 'name');
   }
@@ -87,11 +95,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const processEntityType = await this.dataModel.getEntityType(undefined, typeName);
 
-    const processEntity = processEntityType.createEntity(context, processData);
+    const processEntity = await processEntityType.createEntity(context, processData);
 
     await processEntity.save(context);
 
-    await this.invoker.invoke(processEntity, 'start', context);
+    const saveOptions = {};
+
+    const argumentsPassedToSave: Array<any> = [context, saveOptions];
+
+    await this.invoker.invoke(processEntity, 'start', context, ...argumentsPassedToSave);
   }
 
   public async updateDefinitions(context: ExecutionContext, newBpmnDiagram?: BpmnDiagram): Promise<void> {
@@ -132,7 +144,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         { attribute: 'processDef.key', operator: '=', value: this.key }
       ];
 
-      let laneEntity: any = await laneEntityType.findOne(context, { query: queryObject });
+      const queryOptions = {
+        query: queryObject
+      };
+
+      let laneEntity: any = await laneEntityType.findOne(context, queryOptions);
 
       if (!laneEntity) {
 
@@ -140,7 +156,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           key: lane.id
         };
 
-        laneEntity = laneEntityType.createEntity(context, laneData);
+        laneEntity = await laneEntityType.createEntity(context, laneData);
       }
 
       laneEntity.name = lane.name;
@@ -178,7 +194,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           key: node.id
         };
 
-        nodeDefEntity = nodeDefEntityType.createEntity(context, nodeDefData);
+        nodeDefEntity = await nodeDefEntityType.createEntity(context, nodeDefData);
       }
       
       if (node.extensionElements) {
@@ -229,7 +245,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           key: flow.id
         };
 
-        flowDefEntity = flowDefEntityType.createEntity(context, flowDefData);
+        flowDefEntity = await flowDefEntityType.createEntity(context, flowDefData);
       }
 
       flowDefEntity.name = flow.name;
