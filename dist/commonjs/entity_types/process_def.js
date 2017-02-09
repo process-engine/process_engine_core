@@ -1,14 +1,9 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -20,7 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -177,7 +172,8 @@ var ProcessDefEntity = (function (_super) {
                         return [4 /*yield*/, this.key];
                     case 2:
                         key = _a.sent();
-                        if (!!bpmnDiagram) return [3 /*break*/, 4];
+                        if (!!bpmnDiagram)
+                            return [3 /*break*/, 4];
                         return [4 /*yield*/, this.processDefEntityTypeService.parseBpmnXml(xml)];
                     case 3:
                         bpmnDiagram = _a.sent();
@@ -227,7 +223,8 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, laneEntityType.findOne(context, queryOptions)];
                                     case 1:
                                         laneEntity = _a.sent();
-                                        if (!!laneEntity) return [3 /*break*/, 3];
+                                        if (!!laneEntity)
+                                            return [3 /*break*/, 3];
                                         laneData = {
                                             key: lane.id
                                         };
@@ -278,7 +275,8 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, nodeDefEntityType.findOne(context, { query: queryObject })];
                                     case 1:
                                         nodeDefEntity = _a.sent();
-                                        if (!!nodeDefEntity) return [3 /*break*/, 3];
+                                        if (!!nodeDefEntity)
+                                            return [3 /*break*/, 3];
                                         nodeDefData = {
                                             key: node.id
                                         };
@@ -337,7 +335,8 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, flowDefEntityType.findOne(context, { query: queryObject })];
                                     case 1:
                                         flowDefEntity = _a.sent();
-                                        if (!!flowDefEntity) return [3 /*break*/, 3];
+                                        if (!!flowDefEntity)
+                                            return [3 /*break*/, 3];
                                         flowDefData = {
                                             key: flow.id
                                         };
@@ -437,12 +436,6 @@ var ProcessDefEntity = (function (_super) {
     };
     return ProcessDefEntity;
 }(data_model_contracts_1.Entity));
-ProcessDefEntity.attributes = {
-    name: { type: 'string' },
-    key: { type: 'string' },
-    defId: { type: 'string' },
-    xml: { type: 'string' }
-};
 __decorate([
     metadata_1.schemaAttribute({
         type: core_contracts_1.SchemaAttributeType.string,

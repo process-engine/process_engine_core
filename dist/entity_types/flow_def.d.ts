@@ -3,7 +3,6 @@ import { Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IFlowDefEntity, IProcessDefEntity, INodeDefEntity } from '@process-engine-js/process_engine_contracts';
 export declare class FlowDefEntity extends Entity implements IFlowDefEntity {
-    static attributes: any;
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IFlowDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;

@@ -7,10 +7,6 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {
 
-  static attributes: any = {
-    script: { type: 'string' }
-  };
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }

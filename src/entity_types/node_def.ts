@@ -6,17 +6,6 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
-  static attributes: any = {
-      name: { type: 'string' },
-      key: { type: 'string' },
-      processDef: { type: 'ProcessDef' },
-      lane: { type: 'Lane' },
-      type: { type: 'string' },
-      extensions: { type: 'object' },
-      attachedToNode: { type: 'NodeDef'},
-      events: { type: 'object' }
-  };
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<INodeDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
@@ -45,6 +34,10 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   @schemaAttribute({ type: 'ProcessDef' })
+  public processDef(): IProcessDefEntity {
+    return this.getProperty(this, 'processDef');
+  }
+
   public getProcessDef(): Promise<IProcessDefEntity> {
     return this.getPropertyLazy(this, 'processDef');
   }

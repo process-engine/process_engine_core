@@ -7,10 +7,6 @@ import {IParallelGatewayEntity} from '@process-engine-js/process_engine_contract
 
 export class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
 
-  static attributes: any = {
-    parallelType: { type: 'string' }
-  };
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IParallelGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }

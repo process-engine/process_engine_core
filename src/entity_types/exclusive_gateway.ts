@@ -7,10 +7,6 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclusiveGatewayEntity {
 
-  static attributes: any = {
-    follow: { type: 'object' }
-  };
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }

@@ -3,7 +3,6 @@ import { Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IProcessEntity, IProcessDefEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessEntity extends Entity implements IProcessEntity {
-    static attributes: any;
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;

@@ -6,18 +6,6 @@ import {ILaneEntity, IProcessDefEntity} from '@process-engine-js/process_engine_
 
 export class LaneEntity extends Entity implements ILaneEntity {
 
-  static attributes: any = {
-      name: { type: 'string' },
-      key: { type: 'string' },
-      extensions: { type: 'object' },
-      processDef: { type: 'ProcessDef' }
-  };
-
-  // TODO: what does this exactly do?
-  static datasources = [
-      'processengine'
-  ];
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ILaneEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }

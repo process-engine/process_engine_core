@@ -1,14 +1,9 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -20,7 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -143,20 +138,6 @@ var NodeInstanceEntity = (function (_super) {
     };
     return NodeInstanceEntity;
 }(data_model_contracts_1.Entity));
-NodeInstanceEntity.attributes = {
-    name: { type: 'string' },
-    key: { type: 'string' },
-    process: { type: 'Process' },
-    nodeDef: { type: 'NodeDef' },
-    type: { type: 'string' },
-    state: { type: 'string' },
-    participant: { type: 'string' },
-    processToken: { type: 'ProcessToken' }
-};
-NodeInstanceEntity.expand = [
-    { attribute: 'nodeDef', depth: 2 },
-    { attribute: 'processToken', depth: 2 }
-];
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeInstanceEntity.prototype, "name", null);
@@ -181,6 +162,14 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessToken' })
 ], NodeInstanceEntity.prototype, "getProcessToken", null);
+NodeInstanceEntity = __decorate([
+    metadata_1.schemaClass({
+        expand: [
+            { attribute: 'nodeDef', depth: 2 },
+            { attribute: 'processToken', depth: 2 }
+        ]
+    })
+], NodeInstanceEntity);
 exports.NodeInstanceEntity = NodeInstanceEntity;
 
 //# sourceMappingURL=node_instance.js.map

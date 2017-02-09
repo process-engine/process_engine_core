@@ -4,7 +4,6 @@ import { IEntityType, IPropertyBag } from '@process-engine-js/data_model_contrac
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IParallelGatewayEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
-    static attributes: any;
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IParallelGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     parallelType: string;

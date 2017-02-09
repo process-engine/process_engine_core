@@ -3,8 +3,6 @@ import { Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { ILaneEntity, IProcessDefEntity } from '@process-engine-js/process_engine_contracts';
 export declare class LaneEntity extends Entity implements ILaneEntity {
-    static attributes: any;
-    static datasources: string[];
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<ILaneEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;

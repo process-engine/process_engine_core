@@ -12,13 +12,6 @@ interface ICache<T> {
 
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
-  static attributes: any = {
-      name: { type: 'string' },
-      key: { type: 'string' },
-      defId: { type: 'string' },
-      xml: { type: 'string' }
-  };
-
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _dataModel: IDataModel = undefined;
 

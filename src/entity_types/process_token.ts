@@ -5,11 +5,6 @@ import {IProcessTokenEntity, IProcessEntity} from '@process-engine-js/process_en
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
-  
-  static attributes: any = {
-    data: { type: 'object' },
-    process: { type: 'Process' }
-  };
 
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessTokenEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);

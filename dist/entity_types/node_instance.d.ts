@@ -3,11 +3,6 @@ import { Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
-    static attributes: any;
-    static expand: {
-        attribute: string;
-        depth: number;
-    }[];
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;

@@ -3,7 +3,6 @@ import { IDataModel, Entity, IEntityType, IPropertyBag } from '@process-engine-j
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
-    static attributes: any;
     private _processDefEntityTypeService;
     private _dataModel;
     constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);

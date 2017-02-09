@@ -6,12 +6,6 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ProcessEntity extends Entity implements IProcessEntity {
 
-  static attributes: any = {
-    name: { type: 'string' },
-    key: { type: 'string' },
-    processDef: { type: 'ProcessDef' }
-  };
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }

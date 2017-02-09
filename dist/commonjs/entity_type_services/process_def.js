@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -94,7 +94,8 @@ var ProcessDefEntityTypeService = (function () {
                                     case 0: return [4 /*yield*/, processDefEntityType.getById(process.id, context)];
                                     case 1:
                                         processDefEntity = _a.sent();
-                                        if (!!processDefEntity) return [3 /*break*/, 3];
+                                        if (!!processDefEntity)
+                                            return [3 /*break*/, 3];
                                         processDefData = {
                                             key: process.id,
                                             defId: bpmnDiagram.definitions.id
@@ -143,7 +144,8 @@ var ProcessDefEntityTypeService = (function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            if (!error) return [3 /*break*/, 1];
+                            if (!error)
+                                return [3 /*break*/, 1];
                             reject(error);
                             return [3 /*break*/, 3];
                         case 1: return [4 /*yield*/, this.parseBpmnXml(xmlString)];

@@ -6,15 +6,6 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class FlowDefEntity extends Entity implements IFlowDefEntity {
 
-  static attributes: any = {
-      name: { type: 'string' },
-      key: { type: 'string' },
-      processDef: { type: 'ProcessDef' },
-      source: { type: 'NodeDef' },
-      target: { type: 'NodeDef' },
-      condition: { type: 'string' }
-  };
-
   constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IFlowDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
   }
