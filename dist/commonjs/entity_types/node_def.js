@@ -88,20 +88,31 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeDefEntity.prototype.processDef = function () {
-        return this.getProperty(this, 'processDef');
-    };
+    Object.defineProperty(NodeDefEntity.prototype, "processDef", {
+        get: function () {
+            return this.getProperty(this, 'processDef');
+        },
+        set: function (value) {
+            this.setProperty(this, 'processDef', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeDefEntity.prototype.getProcessDef = function () {
         return this.getPropertyLazy(this, 'processDef');
     };
-    NodeDefEntity.prototype.setProcessDef = function (value) {
-        this.setProperty(this, 'processDef', value);
-    };
+    Object.defineProperty(NodeDefEntity.prototype, "lane", {
+        get: function () {
+            return this.getProperty(this, 'lane');
+        },
+        set: function (value) {
+            this.setProperty(this, 'lane', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeDefEntity.prototype.getLane = function () {
         return this.getPropertyLazy(this, 'lane');
-    };
-    NodeDefEntity.prototype.setLane = function (value) {
-        this.setProperty(this, 'lane', value);
     };
     Object.defineProperty(NodeDefEntity.prototype, "type", {
         get: function () {
@@ -123,11 +134,18 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NodeDefEntity.prototype, "attachedToNode", {
+        get: function () {
+            return this.getProperty(this, 'attachedToNode');
+        },
+        set: function (value) {
+            this.setProperty(this, 'attachedToNode', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeDefEntity.prototype.getAttachedToNode = function () {
         return this.getPropertyLazy(this, 'attachedToNode');
-    };
-    NodeDefEntity.prototype.setAttachedToNode = function (value) {
-        this.setProperty(this, 'attachedToNode', value);
     };
     Object.defineProperty(NodeDefEntity.prototype, "events", {
         get: function () {
@@ -176,7 +194,7 @@ __decorate([
 ], NodeDefEntity.prototype, "processDef", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'Lane' })
-], NodeDefEntity.prototype, "getLane", null);
+], NodeDefEntity.prototype, "lane", null);
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeDefEntity.prototype, "type", null);
@@ -185,7 +203,7 @@ __decorate([
 ], NodeDefEntity.prototype, "extensions", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef' })
-], NodeDefEntity.prototype, "getAttachedToNode", null);
+], NodeDefEntity.prototype, "attachedToNode", null);
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeDefEntity.prototype, "events", null);

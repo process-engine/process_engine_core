@@ -4,12 +4,6 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -45,15 +39,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var core_contracts_1 = require("@process-engine-js/core_contracts");
-var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
-var metadata_1 = require("@process-engine-js/metadata");
-var ProcessTokenEntity = (function (_super) {
-    __extends(ProcessTokenEntity, _super);
-    function ProcessTokenEntity(propertyBagFactory, invoker, entityType, context, schema) {
+var node_instance_1 = require("./node_instance");
+var SubprocessExternalEntity = (function (_super) {
+    __extends(SubprocessExternalEntity, _super);
+    function SubprocessExternalEntity(propertyBagFactory, invoker, entityType, context, schema) {
         return _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
     }
-    ProcessTokenEntity.prototype.initialize = function (derivedClassInstance) {
+    SubprocessExternalEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {
             var actualInstance;
             return __generator(this, function (_a) {
@@ -68,37 +60,8 @@ var ProcessTokenEntity = (function (_super) {
             });
         });
     };
-    Object.defineProperty(ProcessTokenEntity.prototype, "data", {
-        get: function () {
-            return this.getProperty(this, 'data');
-        },
-        set: function (value) {
-            this.setProperty(this, 'data', value);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ProcessTokenEntity.prototype, "process", {
-        get: function () {
-            return this.getProperty(this, 'process');
-        },
-        set: function (value) {
-            this.setProperty(this, 'process', value);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ProcessTokenEntity.prototype.getProcess = function () {
-        return this.getPropertyLazy(this, 'process');
-    };
-    return ProcessTokenEntity;
-}(data_model_contracts_1.Entity));
-__decorate([
-    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
-], ProcessTokenEntity.prototype, "data", null);
-__decorate([
-    metadata_1.schemaAttribute({ type: 'Process' })
-], ProcessTokenEntity.prototype, "process", null);
-exports.ProcessTokenEntity = ProcessTokenEntity;
+    return SubprocessExternalEntity;
+}(node_instance_1.NodeInstanceEntity));
+exports.SubprocessExternalEntity = SubprocessExternalEntity;
 
-//# sourceMappingURL=process_token.js.map
+//# sourceMappingURL=subprocess_external.js.map

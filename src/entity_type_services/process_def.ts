@@ -1,6 +1,6 @@
 import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram} from '@process-engine-js/process_engine_contracts';
 import {IDataModel, IEntityType} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 
 import * as fs from 'fs';
@@ -32,43 +32,64 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._invoker;
   }
 
-  public async importBpmnFromFile(path: string): Promise<void> {
+  public async importBpmnFromFile(context: ExecutionContext, param: any, options?: IPublicGetOptions): Promise<void> {
 
-    const bpmnDiagram = await this.parseBpmnFile(path);
+    const self = this;
+    const fileName = param && param.file ? param.file : null;
+    if (fileName) {
+      const path = process.cwd() + '/examples/bpmns/' + fileName;
 
+      return new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
+
+      fs.readFile(path, 'utf8', async (error, xmlString) => {
+        if (error) {
+          reject(error);
+        } else {
+
+          return self.importBpmnFromXml(context, { xml: xmlString }, options);
+        }
+      });
+    });
+
+    }
 
   }
 
-  public async importBpmnFromXml(xml: string, context: ExecutionContext): Promise<void> {
+  public async importBpmnFromXml(context: ExecutionContext, param: any, options?: IPublicGetOptions): Promise<void> {
 
-    const typeName = 'ProcessDef';
-    const bpmnDiagram = await this.parseBpmnXml(xml);
+    const xml = param && param.xml ? param.xml : null;
 
-    const processDefEntityType = await this.dataModel.getEntityType<IProcessDefEntity>(undefined, typeName);
+    if (xml) {
+      const typeName = 'ProcessDef';
+      const bpmnDiagram = await this.parseBpmnXml(xml);
 
-    const processes = bpmnDiagram.getProcesses();
+      const processDefEntityType = await this.dataModel.getEntityType<IProcessDefEntity>(undefined, typeName);
 
-    processes.forEach(async (process) => {
+      const processes = bpmnDiagram.getProcesses();
 
-      let processDefEntity = await processDefEntityType.getById(process.id, context);
+      processes.forEach(async (process) => {
 
-      if (!processDefEntity) {
-        
-        const processDefData = {
-          key: process.id,
-          defId: bpmnDiagram.definitions.id
-        };
+        let processDefEntity = await processDefEntityType.getById(process.id, context);
 
-        processDefEntity = await processDefEntityType.createEntity<IProcessDefEntity>(context, processDefData);
-      }
+        if (!processDefEntity) {
+          
+          const processDefData = {
+            key: process.id,
+            defId: bpmnDiagram.definitions.id
+          };
 
-      processDefEntity.name = process.name;
-      processDefEntity.xml = xml;
+          processDefEntity = await processDefEntityType.createEntity<IProcessDefEntity>(context, processDefData);
+        }
 
-      await processDefEntity.save(context);
+        processDefEntity.name = process.name;
+        processDefEntity.xml = xml;
 
-      await this.invoker.invoke(processDefEntity, 'updateDefinitions', context);
-    });
+        await processDefEntity.save(context);
+
+        await this.invoker.invoke(processDefEntity, 'updateDefinitions', context);
+      
+      });
+    }
   }
 
   public parseBpmnXml(xml: string): Promise<BpmnDiagram> {

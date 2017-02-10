@@ -13,3 +13,6 @@ export * from './start_event';
 export * from './user_task';
 export * from './event';
 export * from './process_token';
+export * from './boundary_event';
+export * from './subprocess_external';
+export * from './subprocess_internal';

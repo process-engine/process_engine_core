@@ -1,5 +1,8 @@
 'use strict';
 
+const SubprocessExternalEntity = require('./dist/commonjs/index').SubprocessExternalEntity;
+const SubprocessInternalEntity = require('./dist/commonjs/index').SubprocessInternalEntity;
+const BoundaryEventEntity = require('./dist/commonjs/index').BoundaryEventEntity;
 const EndEventEntity = require('./dist/commonjs/index').EndEventEntity;
 const EventEntity = require('./dist/commonjs/index').EventEntity;
 const ExclusiveGatewayEntity = require('./dist/commonjs/index').ExclusiveGatewayEntity;
@@ -19,6 +22,15 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 
 function registerInContainer(container) {
+
+  container.register('SubprocessExternalEntity', SubprocessExternalEntity)
+    .tags(entityDiscoveryTag);
+
+  container.register('SubprocessInternalEntity', SubprocessInternalEntity)
+    .tags(entityDiscoveryTag);
+
+  container.register('BoundaryEventEntity', BoundaryEventEntity)
+    .tags(entityDiscoveryTag);
 
   container.register('EndEventEntity', EndEventEntity)
     .tags(entityDiscoveryTag);
@@ -47,7 +59,8 @@ function registerInContainer(container) {
   container.register('ProcessEntity', ProcessEntity)
     .tags(entityDiscoveryTag);
 
-  container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService);
+  container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
+    .dependencies('DataModel', 'Invoker');
 
   container.register('ProcessDefEntity', ProcessDefEntity)
     .dependencies('ProcessDefEntityTypeService', 'DataModel')

@@ -34,26 +34,31 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   @schemaAttribute({ type: 'ProcessDef' })
-  public processDef(): IProcessDefEntity {
+  public get processDef(): IProcessDefEntity {
     return this.getProperty(this, 'processDef');
+  }
+
+  public set processDef(value: IProcessDefEntity) {
+    this.setProperty(this, 'processDef', value);
   }
 
   public getProcessDef(): Promise<IProcessDefEntity> {
     return this.getPropertyLazy(this, 'processDef');
   }
 
-  public setProcessDef(value: IProcessDefEntity): void {
-    this.setProperty(this, 'processDef', value);
+  @schemaAttribute({ type: 'Lane' })
+  public get lane(): ILaneEntity {
+    return this.getProperty(this, 'lane');
   }
 
-  @schemaAttribute({ type: 'Lane' })
+  public set lane(value: ILaneEntity) {
+    this.setProperty(this, 'lane', value);
+  }
+
   public getLane(): Promise<ILaneEntity> {
     return this.getPropertyLazy(this, 'lane');
   }
 
-  public setLane(value: ILaneEntity): void {
-    this.setProperty(this, 'lane', value);
-  }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get type(): string {
@@ -74,13 +79,18 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   @schemaAttribute({ type: 'NodeDef' })
+  public get attachedToNode(): INodeDefEntity {
+    return this.getProperty(this, 'attachedToNode');
+  }
+
+  public set attachedToNode(value: INodeDefEntity) {
+    this.setProperty(this, 'attachedToNode', value);
+  }
+
   public getAttachedToNode(): Promise<INodeDefEntity> {
     return this.getPropertyLazy(this, 'attachedToNode');
   }
 
-  public setAttachedToNode(value: INodeDefEntity): void {
-    this.setProperty(this, 'attachedToNode', value);
-  }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get events(): string {

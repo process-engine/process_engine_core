@@ -59,48 +59,65 @@ var ProcessDefEntityTypeService = (function () {
         enumerable: true,
         configurable: true
     });
-    ProcessDefEntityTypeService.prototype.importBpmnFromFile = function (path) {
+    ProcessDefEntityTypeService.prototype.importBpmnFromFile = function (context, param, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bpmnDiagram;
+            var _this = this;
+            var self, fileName, path_1;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.parseBpmnFile(path)];
-                    case 1:
-                        bpmnDiagram = _a.sent();
-                        return [2 /*return*/];
+                self = this;
+                fileName = param && param.file ? param.file : null;
+                if (fileName) {
+                    path_1 = process.cwd() + '/examples/bpmns/' + fileName;
+                    return [2 /*return*/, new BluebirdPromise(function (resolve, reject) {
+                            fs.readFile(path_1, 'utf8', function (error, xmlString) { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    if (error) {
+                                        reject(error);
+                                    }
+                                    else {
+                                        return [2 /*return*/, self.importBpmnFromXml(context, { xml: xmlString }, options)];
+                                    }
+                                    return [2 /*return*/];
+                                });
+                            }); });
+                        })];
                 }
+                return [2 /*return*/];
             });
         });
     };
-    ProcessDefEntityTypeService.prototype.importBpmnFromXml = function (xml, context) {
+    ProcessDefEntityTypeService.prototype.importBpmnFromXml = function (context, param, options) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var typeName, bpmnDiagram, processDefEntityType, processes;
+            var xml, typeName, bpmnDiagram_1, processDefEntityType_1, processes;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        xml = param && param.xml ? param.xml : null;
+                        if (!xml)
+                            return [3 /*break*/, 3];
                         typeName = 'ProcessDef';
                         return [4 /*yield*/, this.parseBpmnXml(xml)];
                     case 1:
-                        bpmnDiagram = _a.sent();
+                        bpmnDiagram_1 = _a.sent();
                         return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
                     case 2:
-                        processDefEntityType = _a.sent();
-                        processes = bpmnDiagram.getProcesses();
+                        processDefEntityType_1 = _a.sent();
+                        processes = bpmnDiagram_1.getProcesses();
                         processes.forEach(function (process) { return __awaiter(_this, void 0, void 0, function () {
                             var processDefEntity, processDefData;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, processDefEntityType.getById(process.id, context)];
+                                    case 0: return [4 /*yield*/, processDefEntityType_1.getById(process.id, context)];
                                     case 1:
                                         processDefEntity = _a.sent();
                                         if (!!processDefEntity)
                                             return [3 /*break*/, 3];
                                         processDefData = {
                                             key: process.id,
-                                            defId: bpmnDiagram.definitions.id
+                                            defId: bpmnDiagram_1.definitions.id
                                         };
-                                        return [4 /*yield*/, processDefEntityType.createEntity(context, processDefData)];
+                                        return [4 /*yield*/, processDefEntityType_1.createEntity(context, processDefData)];
                                     case 2:
                                         processDefEntity = _a.sent();
                                         _a.label = 3;
@@ -117,7 +134,8 @@ var ProcessDefEntityTypeService = (function () {
                                 }
                             });
                         }); });
-                        return [2 /*return*/];
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
             });
         });

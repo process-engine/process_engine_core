@@ -88,11 +88,18 @@ var ProcessEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(ProcessEntity.prototype, "processDef", {
+        get: function () {
+            return this.getProperty(this, 'processDef');
+        },
+        set: function (value) {
+            this.setProperty(this, 'processDef', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     ProcessEntity.prototype.getProcessDef = function () {
         return this.getPropertyLazy(this, 'processDef');
-    };
-    ProcessEntity.prototype.setProcessDef = function (value) {
-        this.setProperty(this, 'processDef', value);
     };
     return ProcessEntity;
 }(data_model_contracts_1.Entity));
@@ -104,7 +111,7 @@ __decorate([
 ], ProcessEntity.prototype, "key", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessDef' })
-], ProcessEntity.prototype, "getProcessDef", null);
+], ProcessEntity.prototype, "processDef", null);
 exports.ProcessEntity = ProcessEntity;
 
 //# sourceMappingURL=process.js.map

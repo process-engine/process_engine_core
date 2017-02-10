@@ -6,6 +6,6 @@ export declare class ProcessTokenEntity extends Entity implements IProcessTokenE
     constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessTokenEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     data: any;
+    process: IProcessEntity;
     getProcess(): Promise<IProcessEntity>;
-    setProcess(value: IProcessEntity): void;
 }

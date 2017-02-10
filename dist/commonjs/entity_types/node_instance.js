@@ -88,17 +88,31 @@ var NodeInstanceEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NodeInstanceEntity.prototype, "process", {
+        get: function () {
+            return this.getProperty(this, 'process');
+        },
+        set: function (value) {
+            this.setProperty(this, 'process', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeInstanceEntity.prototype.getProcess = function () {
         return this.getPropertyLazy(this, 'process');
     };
-    NodeInstanceEntity.prototype.setProcess = function (value) {
-        this.setProperty(this, 'process', value);
-    };
+    Object.defineProperty(NodeInstanceEntity.prototype, "nodeDef", {
+        get: function () {
+            return this.getProperty(this, 'nodeDef');
+        },
+        set: function (value) {
+            this.setProperty(this, 'nodeDef', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeInstanceEntity.prototype.getNodeDef = function () {
         return this.getPropertyLazy(this, 'nodeDef');
-    };
-    NodeInstanceEntity.prototype.setNodeDef = function (value) {
-        this.setProperty(this, 'nodeDef', value);
     };
     Object.defineProperty(NodeInstanceEntity.prototype, "type", {
         get: function () {
@@ -130,11 +144,18 @@ var NodeInstanceEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NodeInstanceEntity.prototype, "processToken", {
+        get: function () {
+            return this.getProperty(this, 'processToken');
+        },
+        set: function (value) {
+            this.setProperty(this, 'processToken', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeInstanceEntity.prototype.getProcessToken = function () {
         return this.getPropertyLazy(this, 'processToken');
-    };
-    NodeInstanceEntity.prototype.setProcessToken = function (value) {
-        this.setProperty(this, 'processToken', value);
     };
     return NodeInstanceEntity;
 }(data_model_contracts_1.Entity));
@@ -146,7 +167,10 @@ __decorate([
 ], NodeInstanceEntity.prototype, "key", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'Process' })
-], NodeInstanceEntity.prototype, "getProcess", null);
+], NodeInstanceEntity.prototype, "process", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'NodeDef' })
+], NodeInstanceEntity.prototype, "nodeDef", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef' })
 ], NodeInstanceEntity.prototype, "getNodeDef", null);
@@ -161,7 +185,7 @@ __decorate([
 ], NodeInstanceEntity.prototype, "participant", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessToken' })
-], NodeInstanceEntity.prototype, "getProcessToken", null);
+], NodeInstanceEntity.prototype, "processToken", null);
 NodeInstanceEntity = __decorate([
     metadata_1.schemaClass({
         expand: [

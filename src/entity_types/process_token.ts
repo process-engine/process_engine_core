@@ -24,13 +24,18 @@ export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
     this.setProperty(this, 'data', value);
   }
 
+
   @schemaAttribute({ type: 'Process' })
-  public getProcess(): Promise<IProcessEntity> {
-    return this.getPropertyLazy(this, 'process');
+  public get process(): IProcessEntity {
+    return this.getProperty(this, 'process');
   }
 
-  public setProcess(value: IProcessEntity): void {
+  public set process(value: IProcessEntity) {
     this.setProperty(this, 'process', value);
+  }
+
+  public getProcess(): Promise<IProcessEntity> {
+    return this.getPropertyLazy(this, 'process');
   }
 
 }

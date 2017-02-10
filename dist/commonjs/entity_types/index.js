@@ -17,5 +17,8 @@ __export(require("./start_event"));
 __export(require("./user_task"));
 __export(require("./event"));
 __export(require("./process_token"));
+__export(require("./boundary_event"));
+__export(require("./subprocess_external"));
+__export(require("./subprocess_internal"));
 
 //# sourceMappingURL=index.js.map

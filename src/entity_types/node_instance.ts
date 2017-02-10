@@ -40,12 +40,26 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   @schemaAttribute({ type: 'Process' })
+  public get process(): IProcessEntity {
+    return this.getProperty(this, 'process');
+  }
+
+  public set process(value: IProcessEntity) {
+    this.setProperty(this, 'process', value);
+  }
+
   public getProcess(): Promise<IProcessEntity> {
     return this.getPropertyLazy(this, 'process');
   }
 
-  public setProcess(value: IProcessEntity): void {
-    this.setProperty(this, 'process', value);
+
+  @schemaAttribute({ type: 'NodeDef' })
+  public get nodeDef(): INodeDefEntity {
+    return this.getProperty(this, 'nodeDef');
+  }
+
+  public set nodeDef(value: INodeDefEntity) {
+    this.setProperty(this, 'nodeDef', value);
   }
 
   @schemaAttribute({ type: 'NodeDef' })
@@ -53,9 +67,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'nodeDef');
   }
 
-  public setNodeDef(value: INodeDefEntity): void {
-    this.setProperty(this, 'nodeDef', value);
-  }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get type(): string {
@@ -84,12 +95,18 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'participant', value);
   }
 
+
   @schemaAttribute({ type: 'ProcessToken' })
+  public get processToken(): IProcessTokenEntity {
+    return this.getProperty(this, 'processToken');
+  }
+
+  public set processToken(value: IProcessTokenEntity) {
+    this.setProperty(this, 'processToken', value);
+  }
+
   public getProcessToken(): Promise<IProcessTokenEntity> {
     return this.getPropertyLazy(this, 'processToken');
   }
 
-  public setProcessToken(value: IProcessTokenEntity): void {
-    this.setProperty(this, 'processToken', value);
-  }
 }

@@ -7,13 +7,13 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;
+    process: IProcessEntity;
     getProcess(): Promise<IProcessEntity>;
-    setProcess(value: IProcessEntity): void;
+    nodeDef: INodeDefEntity;
     getNodeDef(): Promise<INodeDefEntity>;
-    setNodeDef(value: INodeDefEntity): void;
     type: string;
     state: string;
     participant: string;
+    processToken: IProcessTokenEntity;
     getProcessToken(): Promise<IProcessTokenEntity>;
-    setProcessToken(value: IProcessTokenEntity): void;
 }

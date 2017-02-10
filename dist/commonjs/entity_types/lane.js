@@ -98,11 +98,18 @@ var LaneEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(LaneEntity.prototype, "processDef", {
+        get: function () {
+            return this.getProperty(this, 'processDef');
+        },
+        set: function (value) {
+            this.setProperty(this, 'processDef', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     LaneEntity.prototype.getProcessDef = function () {
         return this.getPropertyLazy(this, 'processDef');
-    };
-    LaneEntity.prototype.setProcessDef = function (value) {
-        this.setProperty(this, 'processDef', value);
     };
     return LaneEntity;
 }(data_model_contracts_1.Entity));
@@ -117,7 +124,7 @@ __decorate([
 ], LaneEntity.prototype, "extensions", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessDef' })
-], LaneEntity.prototype, "getProcessDef", null);
+], LaneEntity.prototype, "processDef", null);
 exports.LaneEntity = LaneEntity;
 
 //# sourceMappingURL=lane.js.map

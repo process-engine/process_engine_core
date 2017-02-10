@@ -33,13 +33,18 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'key', value);
   }
 
+
   @schemaAttribute({ type: 'ProcessDef' })
-  public getProcessDef(): Promise<IProcessDefEntity> {
-    return this.getPropertyLazy(this, 'processDef');
+  public get processDef(): IProcessDefEntity {
+    return this.getProperty(this, 'processDef');
   }
 
-  public setProcessDef(value: IProcessDefEntity): void {
+  public set processDef(value: IProcessDefEntity) {
     this.setProperty(this, 'processDef', value);
+  }
+
+  public getProcessDef(): Promise<IProcessDefEntity> {
+    return this.getPropertyLazy(this, 'processDef');
   }
 
 }
