@@ -1,7 +1,8 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {IDataModel, Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import { IDatastoreService } from '@process-engine-js/datastore_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
+import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 import * as uuid from 'uuid';
@@ -13,13 +14,13 @@ interface ICache<T> {
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
-  private _dataModel: IDataModel = undefined;
+  private _datastoreService: IDatastoreService = undefined;
 
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, invoker, entityType, context, schema);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
-    this._dataModel = dataModel;
+    this._datastoreService = datastoreService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -31,8 +32,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this._processDefEntityTypeService;
   }
   
-  private get dataModel(): IDataModel {
-    return this._dataModel;
+  private get datastoreService(): IDatastoreService {
+    return this._datastoreService;
   }
 
 
@@ -79,14 +80,12 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   public async start(context: ExecutionContext): Promise<void> {
 
-    const typeName = 'Process';
-
     const processData = {
       key: this.key,
       processDef: this
     };
 
-    const processEntityType = await this.dataModel.getEntityType(undefined, typeName);
+    const processEntityType = await this.datastoreService.getEntityType('Process');
 
     const processEntity = await processEntityType.createEntity(context, processData);
 
@@ -99,12 +98,26 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     await this.invoker.invoke(processEntity, 'start', context, ...argumentsPassedToSave);
   }
 
-  public async updateDefinitions(context: ExecutionContext, newBpmnDiagram?: BpmnDiagram): Promise<void> {
 
-    let bpmnDiagram = newBpmnDiagram;
+  public async updateBpmn(context: ExecutionContext, params?: any): Promise<any> {
+    const xml = params && params.xml ? params.xml : null;
+    if (xml) {
+      this.xml = xml;
 
-    const xml = await this.xml;
-    const key = await this.key;
+      await this.save(context);
+      await this.updateDefinitions(context);
+
+      return { result: true };
+    }
+  }
+
+
+  public async updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void> {
+
+    let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
+
+    const xml = this.xml;
+    const key = this.key;
 
     if (!bpmnDiagram) {
       bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
@@ -118,6 +131,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context);
 
+    await this._createBoundaries(nodes, nodeCache, context);
+
     const flows = bpmnDiagram.getFlows(key);
     
     await this._updateFlows(flows, nodeCache, context);
@@ -126,22 +141,21 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private async _updateLanes(lanes: Array<any>, context: ExecutionContext): Promise<ICache<any>> {
 
     const laneCache = {};
-    const typeName = 'Lane';
 
-    const laneEntityType = await this.dataModel.getEntityType(undefined, typeName);
+    const Lane = await this.datastoreService.getEntityType('Lane');
 
     const lanePromiseArray = lanes.map(async (lane) => {
 
       const queryObject = [
         { attribute: 'key', operator: '=', value: lane.id },
-        { attribute: 'processDef.key', operator: '=', value: this.key }
+        { attribute: 'processDef', operator: '=', value: this.id }
       ];
 
       const queryOptions = {
         query: queryObject
       };
 
-      let laneEntity: any = await laneEntityType.findOne(context, queryOptions);
+      let laneEntity: any = await Lane.findOne(context, queryOptions);
 
       if (!laneEntity) {
 
@@ -149,7 +163,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           key: lane.id
         };
 
-        laneEntity = await laneEntityType.createEntity(context, laneData);
+        laneEntity = await Lane.createEntity(context, laneData);
       }
 
       laneEntity.name = lane.name;
@@ -168,18 +182,17 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext): Promise<ICache<any>> {
 
     const nodeCache = {};
-    const typeName = 'NodeDef';
 
-    const nodeDefEntityType = await this.dataModel.getEntityType(undefined, typeName);
+    const NodeDef = await this.datastoreService.getEntityType('NodeDef');
 
     const nodePromiseArray = nodes.map(async (node) => {
 
       const queryObject = [
         { attribute: 'key', operator: '=', value: node.id },
-        { attribute: 'processDef.key', operator: '=', value: this.key }
+        { attribute: 'processDef', operator: '=', value: this.id }
       ];
 
-      let nodeDefEntity: any = await nodeDefEntityType.findOne(context, { query: queryObject });
+      let nodeDefEntity: any = await NodeDef.findOne(context, { query: queryObject });
 
       if (!nodeDefEntity) {
 
@@ -187,9 +200,42 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           key: node.id
         };
 
-        nodeDefEntity = await nodeDefEntityType.createEntity(context, nodeDefData);
+        nodeDefEntity = await NodeDef.createEntity(context, nodeDefData);
       }
       
+      switch (node.$type) {
+        case 'bpmn:ScriptTask':
+          nodeDefEntity.script = node.script || null;
+          break;
+
+        case 'bpmn:BoundaryEvent':
+          const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
+          if (eventType) {
+            nodeDefEntity.eventType = eventType;
+            nodeDefEntity.cancelActivity = node.cancelActivity || true;
+          }
+          break;
+
+        case 'bpmn:CallActivity':
+          if (node.calledElement) {
+            nodeDefEntity.subProcessKey = node.calledElement;
+          }
+          break;
+
+        case 'bpmn:SubProcess':
+
+          const subElements = node.flowElements ? node.flowElements : [];
+
+          const subNodes = subElements.filter((element) => element.$type !== 'bpmn:SequenceFlow');
+          const subFlows = subElements.filter((element) => element.$type === 'bpmn:SequenceFlow');
+
+
+
+          break;
+
+        default:
+      }
+
       if (node.extensionElements) {
 
         const extensions = this._updateExtensionElements(node.extensionElements.values);
@@ -198,7 +244,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       }
 
       nodeDefEntity.name = node.name;
-      nodeDefEntity.type = node['$type'];
+      nodeDefEntity.type = node.$type;
       nodeDefEntity.processDef = this;
 
       const laneId = bpmnDiagram.getLaneOfElement(node.id);
@@ -219,18 +265,16 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private async _updateFlows(flows: Array<any>, nodeCache: ICache<any>, context: ExecutionContext): Promise<void> {
 
-    const typeName = 'FlowDef';
-
-    const flowDefEntityType = await this.dataModel.getEntityType(undefined, typeName);
+    const FlowDef = await this.datastoreService.getEntityType('FlowDef');
 
     const flowPromiseArray = flows.map(async (flow) => {
 
       const queryObject = [
         { attribute: 'key', operator: '=', value: flow.id },
-        { attribute: 'processDef.key', operator: '=', value: this.key }
+        { attribute: 'processDef', operator: '=', value: this.id }
       ];
 
-      let flowDefEntity: any = await flowDefEntityType.findOne(context, { query: queryObject });
+      let flowDefEntity: any = await FlowDef.findOne(context, { query: queryObject });
 
       if (!flowDefEntity) {
 
@@ -238,18 +282,22 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           key: flow.id
         };
 
-        flowDefEntity = await flowDefEntityType.createEntity(context, flowDefData);
+        flowDefEntity = await FlowDef.createEntity(context, flowDefData);
       }
 
       flowDefEntity.name = flow.name;
       flowDefEntity.processDef = this;
 
-      const sourceId = flow.sourceRef.id;
-      flowDefEntity.source = nodeCache[sourceId];
+      if (flow.sourceRef && flow.sourceRef.id) {
+        const sourceId = flow.sourceRef.id;
+        flowDefEntity.source = nodeCache[sourceId];
+      }
 
-      const targetId = flow.targetRef.id;
-      flowDefEntity.target = nodeCache[targetId];
-          
+      if (flow.targetRef && flow.targetRef.id) {
+        const targetId = flow.targetRef.id;
+        flowDefEntity.target = nodeCache[targetId];
+      }
+    
       if (flow.conditionExpression && flow.conditionExpression.body) {
         flowDefEntity.condition = flow.conditionExpression.body;
       }
@@ -260,30 +308,61 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     await Promise.all(flowPromiseArray);
   }
 
+
+  private async _createBoundaries(nodes: Array<any>, nodeCache: ICache<any>, context: ExecutionContext): Promise<void> {
+
+    const nodePromiseArray = nodes.map(async (node) => {
+
+      if (node.$type === 'bpmn:BoundaryEvent') {
+        const attachedKey = (node.attachedToRef && node.attachedToRef.id) ? node.attachedToRef.id : null;
+        if (attachedKey) {
+          const sourceEnt = nodeCache[attachedKey];
+          const boundary = nodeCache[node.id];
+          boundary.attachedToNode = sourceEnt;
+          await boundary.save(context);
+
+          const events = sourceEnt.events || {};
+          switch (boundary.eventType) {
+            case 'bpmn:ErrorEventDefinition':
+              events.error = boundary.key;
+              break;
+
+            default:
+          }
+          sourceEnt.events = events;
+          await sourceEnt.save(context);
+        }
+      }
+    });
+
+    await Promise.all(nodePromiseArray);
+  }
+
+
   private _updateExtensionElements(extensionElements: Array<any>): any {
     
     const ext: any = {};
 
     extensionElements.forEach((extensionElement) => {
 
-      if (extensionElement['$type'] === 'camunda:formData') {
+      if (extensionElement.$type === 'camunda:formData') {
 
-        const formFields = [];
+        const formFields: Array<any> = [];
 
-        extensionElement['$children'].forEach((child) => {
+        extensionElement.$children.forEach((child) => {
 
-          const formValues = [];
-          const formProperties = [];
+          const formValues: Array<any> = [];
+          const formProperties: Array<any> = [];
                   
-          child['$children'].forEach((formValue) => {
+          child.$children.forEach((formValue) => {
 
-            const childType = formValue['$type'];
+            const childType = formValue.$type;
 
             switch (childType) {
               case 'camunda:properties':
-                formValue['$children'].forEach((child) => {
+                formValue.$children.forEach((child) => {
                   const newChild = {
-                    ['$type']: child['$type'],
+                    $type: child.$type,
                     name: child.id,
                     value: child.value
                   };
@@ -295,7 +374,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
               case 'camunda:value':
                 const newFormValue = {
-                  ['$type']: formValue['$type'],
+                  $type: formValue.$type,
                   id: formValue.id,
                   name: formValue.name
                 };
@@ -309,7 +388,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           });
 
           const newChild = {
-            ['$type']: child['$type'],
+            $type: child.$type,
             id: child.id,
             label: child.label,
             type: child.type,
@@ -323,13 +402,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
         ext.formFields = formFields;
 
-      } else if (extensionElement['$type'] === 'camunda:properties') {
+      } else if (extensionElement.$type === 'camunda:properties') {
 
-        const properties = [];
-        extensionElement['$children'].forEach((child) => {
+        const properties: Array<any> = [];
+        extensionElement.$children.forEach((child) => {
 
           const newChild = {
-            ['$type']: child['$type'],
+            $type: child.$type,
             name: child.name,
             value: child.value
           };

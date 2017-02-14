@@ -34,31 +34,46 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
   }
 
   @schemaAttribute({ type: 'ProcessDef' })
+  public get processDef(): IProcessDefEntity {
+    return this.getProperty(this, 'processDef');
+  }
+
+  public set processDef(value: IProcessDefEntity) {
+    this.setProperty(this, 'processDef', value);
+  }
+
   public getProcessDef(): Promise<IProcessDefEntity> {
     return this.getPropertyLazy(this, 'processDef');
   }
 
-  public setProcessDef(value: IProcessDefEntity): void {
-    this.setProperty(this, 'processDef', value);
-  }
 
   @schemaAttribute({ type: 'NodeDef' })
+  public get source(): INodeDefEntity {
+    return this.getProperty(this, 'source');
+  }
+
+  public set source(value: INodeDefEntity) {
+    this.setProperty(this, 'source', value);
+  }
+
   public getSource(): Promise<INodeDefEntity> {
     return this.getPropertyLazy(this, 'source');
   }
 
-  public setSource(value: INodeDefEntity): void {
-    this.setProperty(this, 'source', value);
-  }
 
   @schemaAttribute({ type: 'NodeDef' })
+  public get target(): INodeDefEntity {
+    return this.getProperty(this, 'target');
+  }
+
+  public set target(value: INodeDefEntity) {
+    this.setProperty(this, 'target', value);
+  }
+
   public getTarget(): Promise<INodeDefEntity> {
     return this.getPropertyLazy(this, 'target');
   }
 
-  public setTarget(value: INodeDefEntity): void {
-    this.setProperty(this, 'source', value);
-  }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get condition(): string {

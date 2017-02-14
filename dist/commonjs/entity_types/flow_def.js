@@ -88,23 +88,44 @@ var FlowDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(FlowDefEntity.prototype, "processDef", {
+        get: function () {
+            return this.getProperty(this, 'processDef');
+        },
+        set: function (value) {
+            this.setProperty(this, 'processDef', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     FlowDefEntity.prototype.getProcessDef = function () {
         return this.getPropertyLazy(this, 'processDef');
     };
-    FlowDefEntity.prototype.setProcessDef = function (value) {
-        this.setProperty(this, 'processDef', value);
-    };
+    Object.defineProperty(FlowDefEntity.prototype, "source", {
+        get: function () {
+            return this.getProperty(this, 'source');
+        },
+        set: function (value) {
+            this.setProperty(this, 'source', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     FlowDefEntity.prototype.getSource = function () {
         return this.getPropertyLazy(this, 'source');
     };
-    FlowDefEntity.prototype.setSource = function (value) {
-        this.setProperty(this, 'source', value);
-    };
+    Object.defineProperty(FlowDefEntity.prototype, "target", {
+        get: function () {
+            return this.getProperty(this, 'target');
+        },
+        set: function (value) {
+            this.setProperty(this, 'target', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
     FlowDefEntity.prototype.getTarget = function () {
         return this.getPropertyLazy(this, 'target');
-    };
-    FlowDefEntity.prototype.setTarget = function (value) {
-        this.setProperty(this, 'source', value);
     };
     Object.defineProperty(FlowDefEntity.prototype, "condition", {
         get: function () {
@@ -126,13 +147,13 @@ __decorate([
 ], FlowDefEntity.prototype, "key", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessDef' })
-], FlowDefEntity.prototype, "getProcessDef", null);
+], FlowDefEntity.prototype, "processDef", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef' })
-], FlowDefEntity.prototype, "getSource", null);
+], FlowDefEntity.prototype, "source", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef' })
-], FlowDefEntity.prototype, "getTarget", null);
+], FlowDefEntity.prototype, "target", null);
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], FlowDefEntity.prototype, "condition", null);

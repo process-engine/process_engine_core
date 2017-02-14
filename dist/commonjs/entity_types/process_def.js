@@ -52,12 +52,12 @@ var uuid = require("uuid");
 ;
 var ProcessDefEntity = (function (_super) {
     __extends(ProcessDefEntity, _super);
-    function ProcessDefEntity(processDefEntityTypeService, dataModel, propertyBagFactory, invoker, entityType, context, schema) {
+    function ProcessDefEntity(processDefEntityTypeService, datastoreService, propertyBagFactory, invoker, entityType, context, schema) {
         var _this = _super.call(this, propertyBagFactory, invoker, entityType, context, schema) || this;
         _this._processDefEntityTypeService = undefined;
-        _this._dataModel = undefined;
+        _this._datastoreService = undefined;
         _this._processDefEntityTypeService = processDefEntityTypeService;
-        _this._dataModel = dataModel;
+        _this._datastoreService = datastoreService;
         return _this;
     }
     ProcessDefEntity.prototype.initialize = function (derivedClassInstance) {
@@ -82,9 +82,9 @@ var ProcessDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(ProcessDefEntity.prototype, "dataModel", {
+    Object.defineProperty(ProcessDefEntity.prototype, "datastoreService", {
         get: function () {
-            return this._dataModel;
+            return this._datastoreService;
         },
         enumerable: true,
         configurable: true
@@ -131,16 +131,15 @@ var ProcessDefEntity = (function (_super) {
     });
     ProcessDefEntity.prototype.start = function (context) {
         return __awaiter(this, void 0, void 0, function () {
-            var typeName, processData, processEntityType, processEntity, saveOptions, argumentsPassedToSave, _a;
+            var processData, processEntityType, processEntity, saveOptions, argumentsPassedToSave, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        typeName = 'Process';
                         processData = {
                             key: this.key,
                             processDef: this
                         };
-                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
+                        return [4 /*yield*/, this.datastoreService.getEntityType('Process')];
                     case 1:
                         processEntityType = _b.sent();
                         return [4 /*yield*/, processEntityType.createEntity(context, processData)];
@@ -159,37 +158,58 @@ var ProcessDefEntity = (function (_super) {
             });
         });
     };
-    ProcessDefEntity.prototype.updateDefinitions = function (context, newBpmnDiagram) {
+    ProcessDefEntity.prototype.updateBpmn = function (context, params) {
+        return __awaiter(this, void 0, void 0, function () {
+            var xml;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        xml = params && params.xml ? params.xml : null;
+                        if (!xml)
+                            return [3 /*break*/, 3];
+                        this.xml = xml;
+                        return [4 /*yield*/, this.save(context)];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, this.updateDefinitions(context)];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, { result: true }];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProcessDefEntity.prototype.updateDefinitions = function (context, params) {
         return __awaiter(this, void 0, void 0, function () {
             var bpmnDiagram, xml, key, lanes, laneCache, nodes, nodeCache, flows;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        bpmnDiagram = newBpmnDiagram;
-                        return [4 /*yield*/, this.xml];
-                    case 1:
-                        xml = _a.sent();
-                        return [4 /*yield*/, this.key];
-                    case 2:
-                        key = _a.sent();
+                        bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
+                        xml = this.xml;
+                        key = this.key;
                         if (!!bpmnDiagram)
-                            return [3 /*break*/, 4];
+                            return [3 /*break*/, 2];
                         return [4 /*yield*/, this.processDefEntityTypeService.parseBpmnXml(xml)];
-                    case 3:
+                    case 1:
                         bpmnDiagram = _a.sent();
-                        _a.label = 4;
-                    case 4:
+                        _a.label = 2;
+                    case 2:
                         lanes = bpmnDiagram.getLanes(key);
                         return [4 /*yield*/, this._updateLanes(lanes, context)];
-                    case 5:
+                    case 3:
                         laneCache = _a.sent();
                         nodes = bpmnDiagram.getNodes(key);
                         return [4 /*yield*/, this._updateNodes(nodes, laneCache, bpmnDiagram, context)];
-                    case 6:
+                    case 4:
                         nodeCache = _a.sent();
+                        return [4 /*yield*/, this._createBoundaries(nodes, nodeCache, context)];
+                    case 5:
+                        _a.sent();
                         flows = bpmnDiagram.getFlows(key);
                         return [4 /*yield*/, this._updateFlows(flows, nodeCache, context)];
-                    case 7:
+                    case 6:
                         _a.sent();
                         return [2 /*return*/];
                 }
@@ -199,15 +219,14 @@ var ProcessDefEntity = (function (_super) {
     ProcessDefEntity.prototype._updateLanes = function (lanes, context) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var laneCache, typeName, laneEntityType, lanePromiseArray;
+            var laneCache, Lane, lanePromiseArray;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         laneCache = {};
-                        typeName = 'Lane';
-                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
+                        return [4 /*yield*/, this.datastoreService.getEntityType('Lane')];
                     case 1:
-                        laneEntityType = _a.sent();
+                        Lane = _a.sent();
                         lanePromiseArray = lanes.map(function (lane) { return __awaiter(_this, void 0, void 0, function () {
                             var queryObject, queryOptions, laneEntity, laneData;
                             return __generator(this, function (_a) {
@@ -215,12 +234,12 @@ var ProcessDefEntity = (function (_super) {
                                     case 0:
                                         queryObject = [
                                             { attribute: 'key', operator: '=', value: lane.id },
-                                            { attribute: 'processDef.key', operator: '=', value: this.key }
+                                            { attribute: 'processDef', operator: '=', value: this.id }
                                         ];
                                         queryOptions = {
                                             query: queryObject
                                         };
-                                        return [4 /*yield*/, laneEntityType.findOne(context, queryOptions)];
+                                        return [4 /*yield*/, Lane.findOne(context, queryOptions)];
                                     case 1:
                                         laneEntity = _a.sent();
                                         if (!!laneEntity)
@@ -228,7 +247,7 @@ var ProcessDefEntity = (function (_super) {
                                         laneData = {
                                             key: lane.id
                                         };
-                                        return [4 /*yield*/, laneEntityType.createEntity(context, laneData)];
+                                        return [4 /*yield*/, Lane.createEntity(context, laneData)];
                                     case 2:
                                         laneEntity = _a.sent();
                                         _a.label = 3;
@@ -254,25 +273,24 @@ var ProcessDefEntity = (function (_super) {
     ProcessDefEntity.prototype._updateNodes = function (nodes, laneCache, bpmnDiagram, context) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var nodeCache, typeName, nodeDefEntityType, nodePromiseArray;
+            var nodeCache, NodeDef, nodePromiseArray;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         nodeCache = {};
-                        typeName = 'NodeDef';
-                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
+                        return [4 /*yield*/, this.datastoreService.getEntityType('NodeDef')];
                     case 1:
-                        nodeDefEntityType = _a.sent();
+                        NodeDef = _a.sent();
                         nodePromiseArray = nodes.map(function (node) { return __awaiter(_this, void 0, void 0, function () {
-                            var queryObject, nodeDefEntity, nodeDefData, extensions, laneId;
+                            var queryObject, nodeDefEntity, nodeDefData, eventType, subElements, subNodes, subFlows, extensions, laneId;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         queryObject = [
                                             { attribute: 'key', operator: '=', value: node.id },
-                                            { attribute: 'processDef.key', operator: '=', value: this.key }
+                                            { attribute: 'processDef', operator: '=', value: this.id }
                                         ];
-                                        return [4 /*yield*/, nodeDefEntityType.findOne(context, { query: queryObject })];
+                                        return [4 /*yield*/, NodeDef.findOne(context, { query: queryObject })];
                                     case 1:
                                         nodeDefEntity = _a.sent();
                                         if (!!nodeDefEntity)
@@ -280,17 +298,40 @@ var ProcessDefEntity = (function (_super) {
                                         nodeDefData = {
                                             key: node.id
                                         };
-                                        return [4 /*yield*/, nodeDefEntityType.createEntity(context, nodeDefData)];
+                                        return [4 /*yield*/, NodeDef.createEntity(context, nodeDefData)];
                                     case 2:
                                         nodeDefEntity = _a.sent();
                                         _a.label = 3;
                                     case 3:
+                                        switch (node.$type) {
+                                            case 'bpmn:ScriptTask':
+                                                nodeDefEntity.script = node.script || null;
+                                                break;
+                                            case 'bpmn:BoundaryEvent':
+                                                eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
+                                                if (eventType) {
+                                                    nodeDefEntity.eventType = eventType;
+                                                    nodeDefEntity.cancelActivity = node.cancelActivity || true;
+                                                }
+                                                break;
+                                            case 'bpmn:CallActivity':
+                                                if (node.calledElement) {
+                                                    nodeDefEntity.subProcessKey = node.calledElement;
+                                                }
+                                                break;
+                                            case 'bpmn:SubProcess':
+                                                subElements = node.flowElements ? node.flowElements : [];
+                                                subNodes = subElements.filter(function (element) { return element.$type !== 'bpmn:SequenceFlow'; });
+                                                subFlows = subElements.filter(function (element) { return element.$type === 'bpmn:SequenceFlow'; });
+                                                break;
+                                            default:
+                                        }
                                         if (node.extensionElements) {
                                             extensions = this._updateExtensionElements(node.extensionElements.values);
                                             nodeDefEntity.extensions = extensions;
                                         }
                                         nodeDefEntity.name = node.name;
-                                        nodeDefEntity.type = node['$type'];
+                                        nodeDefEntity.type = node.$type;
                                         nodeDefEntity.processDef = this;
                                         laneId = bpmnDiagram.getLaneOfElement(node.id);
                                         if (laneId) {
@@ -315,14 +356,12 @@ var ProcessDefEntity = (function (_super) {
     ProcessDefEntity.prototype._updateFlows = function (flows, nodeCache, context) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var typeName, flowDefEntityType, flowPromiseArray;
+            var FlowDef, flowPromiseArray;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        typeName = 'FlowDef';
-                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
+                    case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
                     case 1:
-                        flowDefEntityType = _a.sent();
+                        FlowDef = _a.sent();
                         flowPromiseArray = flows.map(function (flow) { return __awaiter(_this, void 0, void 0, function () {
                             var queryObject, flowDefEntity, flowDefData, sourceId, targetId;
                             return __generator(this, function (_a) {
@@ -330,9 +369,9 @@ var ProcessDefEntity = (function (_super) {
                                     case 0:
                                         queryObject = [
                                             { attribute: 'key', operator: '=', value: flow.id },
-                                            { attribute: 'processDef.key', operator: '=', value: this.key }
+                                            { attribute: 'processDef', operator: '=', value: this.id }
                                         ];
-                                        return [4 /*yield*/, flowDefEntityType.findOne(context, { query: queryObject })];
+                                        return [4 /*yield*/, FlowDef.findOne(context, { query: queryObject })];
                                     case 1:
                                         flowDefEntity = _a.sent();
                                         if (!!flowDefEntity)
@@ -340,17 +379,21 @@ var ProcessDefEntity = (function (_super) {
                                         flowDefData = {
                                             key: flow.id
                                         };
-                                        return [4 /*yield*/, flowDefEntityType.createEntity(context, flowDefData)];
+                                        return [4 /*yield*/, FlowDef.createEntity(context, flowDefData)];
                                     case 2:
                                         flowDefEntity = _a.sent();
                                         _a.label = 3;
                                     case 3:
                                         flowDefEntity.name = flow.name;
                                         flowDefEntity.processDef = this;
-                                        sourceId = flow.sourceRef.id;
-                                        flowDefEntity.source = nodeCache[sourceId];
-                                        targetId = flow.targetRef.id;
-                                        flowDefEntity.target = nodeCache[targetId];
+                                        if (flow.sourceRef && flow.sourceRef.id) {
+                                            sourceId = flow.sourceRef.id;
+                                            flowDefEntity.source = nodeCache[sourceId];
+                                        }
+                                        if (flow.targetRef && flow.targetRef.id) {
+                                            targetId = flow.targetRef.id;
+                                            flowDefEntity.target = nodeCache[targetId];
+                                        }
                                         if (flow.conditionExpression && flow.conditionExpression.body) {
                                             flowDefEntity.condition = flow.conditionExpression.body;
                                         }
@@ -369,65 +412,108 @@ var ProcessDefEntity = (function (_super) {
             });
         });
     };
+    ProcessDefEntity.prototype._createBoundaries = function (nodes, nodeCache, context) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var nodePromiseArray;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        nodePromiseArray = nodes.map(function (node) { return __awaiter(_this, void 0, void 0, function () {
+                            var attachedKey, sourceEnt, boundary, events;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (!(node.$type === 'bpmn:BoundaryEvent'))
+                                            return [3 /*break*/, 3];
+                                        attachedKey = (node.attachedToRef && node.attachedToRef.id) ? node.attachedToRef.id : null;
+                                        if (!attachedKey)
+                                            return [3 /*break*/, 3];
+                                        sourceEnt = nodeCache[attachedKey];
+                                        boundary = nodeCache[node.id];
+                                        boundary.attachedToNode = sourceEnt;
+                                        return [4 /*yield*/, boundary.save(context)];
+                                    case 1:
+                                        _a.sent();
+                                        events = sourceEnt.events || {};
+                                        switch (boundary.eventType) {
+                                            case 'bpmn:ErrorEventDefinition':
+                                                events.error = boundary.key;
+                                                break;
+                                            default:
+                                        }
+                                        sourceEnt.events = events;
+                                        return [4 /*yield*/, sourceEnt.save(context)];
+                                    case 2:
+                                        _a.sent();
+                                        _a.label = 3;
+                                    case 3: return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                        return [4 /*yield*/, Promise.all(nodePromiseArray)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     ProcessDefEntity.prototype._updateExtensionElements = function (extensionElements) {
         var ext = {};
         extensionElements.forEach(function (extensionElement) {
-            if (extensionElement['$type'] === 'camunda:formData') {
+            if (extensionElement.$type === 'camunda:formData') {
                 var formFields_1 = [];
-                extensionElement['$children'].forEach(function (child) {
+                extensionElement.$children.forEach(function (child) {
                     var formValues = [];
                     var formProperties = [];
-                    child['$children'].forEach(function (formValue) {
-                        var childType = formValue['$type'];
+                    child.$children.forEach(function (formValue) {
+                        var childType = formValue.$type;
                         switch (childType) {
                             case 'camunda:properties':
-                                formValue['$children'].forEach(function (child) {
-                                    var newChild = (_a = {},
-                                        _a['$type'] = child['$type'],
-                                        _a.name = child.id,
-                                        _a.value = child.value,
-                                        _a);
+                                formValue.$children.forEach(function (child) {
+                                    var newChild = {
+                                        $type: child.$type,
+                                        name: child.id,
+                                        value: child.value
+                                    };
                                     formProperties.push(newChild);
-                                    var _a;
                                 });
                                 break;
                             case 'camunda:value':
-                                var newFormValue = (_a = {},
-                                    _a['$type'] = formValue['$type'],
-                                    _a.id = formValue.id,
-                                    _a.name = formValue.name,
-                                    _a);
+                                var newFormValue = {
+                                    $type: formValue.$type,
+                                    id: formValue.id,
+                                    name: formValue.name
+                                };
                                 formValues.push(newFormValue);
                                 break;
                             default:
                                 break;
                         }
-                        var _a;
                     });
-                    var newChild = (_a = {},
-                        _a['$type'] = child['$type'],
-                        _a.id = child.id,
-                        _a.label = child.label,
-                        _a.type = child.type,
-                        _a.defaultValue = child.defaultValue,
-                        _a.formValues = formValues,
-                        _a.formProperties = formProperties,
-                        _a);
+                    var newChild = {
+                        $type: child.$type,
+                        id: child.id,
+                        label: child.label,
+                        type: child.type,
+                        defaultValue: child.defaultValue,
+                        formValues: formValues,
+                        formProperties: formProperties
+                    };
                     formFields_1.push(newChild);
-                    var _a;
                 });
                 ext.formFields = formFields_1;
             }
-            else if (extensionElement['$type'] === 'camunda:properties') {
+            else if (extensionElement.$type === 'camunda:properties') {
                 var properties_1 = [];
-                extensionElement['$children'].forEach(function (child) {
-                    var newChild = (_a = {},
-                        _a['$type'] = child['$type'],
-                        _a.name = child.name,
-                        _a.value = child.value,
-                        _a);
+                extensionElement.$children.forEach(function (child) {
+                    var newChild = {
+                        $type: child.$type,
+                        name: child.name,
+                        value: child.value
+                    };
                     properties_1.push(newChild);
-                    var _a;
                 });
                 ext.properties = properties_1;
             }

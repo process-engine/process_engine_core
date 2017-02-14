@@ -157,6 +157,59 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NodeDefEntity.prototype, "script", {
+        get: function () {
+            return this.getProperty(this, 'script');
+        },
+        set: function (value) {
+            this.setProperty(this, 'script', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NodeDefEntity.prototype, "eventType", {
+        get: function () {
+            return this.getProperty(this, 'eventType');
+        },
+        set: function (value) {
+            this.setProperty(this, 'eventType', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NodeDefEntity.prototype, "cancelActivity", {
+        get: function () {
+            return this.getProperty(this, 'cancelActivity');
+        },
+        set: function (value) {
+            this.setProperty(this, 'cancelActivity', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NodeDefEntity.prototype, "subProcessKey", {
+        get: function () {
+            return this.getProperty(this, 'subProcessKey');
+        },
+        set: function (value) {
+            this.setProperty(this, 'subProcessKey', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NodeDefEntity.prototype, "subProcessDef", {
+        get: function () {
+            return this.getProperty(this, 'subProcessDef');
+        },
+        set: function (value) {
+            this.setProperty(this, 'subProcessDef', value);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    NodeDefEntity.prototype.getSubProcessDef = function () {
+        return this.getPropertyLazy(this, 'subProcessDef');
+    };
     NodeDefEntity.prototype.getLaneRole = function (context) {
         return __awaiter(this, void 0, void 0, function () {
             var lane, extensions, properties, found;
@@ -207,6 +260,21 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeDefEntity.prototype, "events", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "script", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "eventType", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.boolean })
+], NodeDefEntity.prototype, "cancelActivity", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "subProcessKey", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'NodeDef' })
+], NodeDefEntity.prototype, "subProcessDef", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

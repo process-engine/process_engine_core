@@ -7,11 +7,11 @@ export declare class FlowDefEntity extends Entity implements IFlowDefEntity {
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;
+    processDef: IProcessDefEntity;
     getProcessDef(): Promise<IProcessDefEntity>;
-    setProcessDef(value: IProcessDefEntity): void;
+    source: INodeDefEntity;
     getSource(): Promise<INodeDefEntity>;
-    setSource(value: INodeDefEntity): void;
+    target: INodeDefEntity;
     getTarget(): Promise<INodeDefEntity>;
-    setTarget(value: INodeDefEntity): void;
     condition: string;
 }

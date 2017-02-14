@@ -39,15 +39,15 @@ var fs = require("fs");
 var BluebirdPromise = require("bluebird");
 var BpmnModdle = require("bpmn-moddle");
 var ProcessDefEntityTypeService = (function () {
-    function ProcessDefEntityTypeService(dataModel, invoker) {
-        this._dataModel = undefined;
+    function ProcessDefEntityTypeService(datastoreService, invoker) {
+        this._datastoreService = undefined;
         this._invoker = undefined;
-        this._dataModel = dataModel;
+        this._datastoreService = datastoreService;
         this._invoker = invoker;
     }
-    Object.defineProperty(ProcessDefEntityTypeService.prototype, "dataModel", {
+    Object.defineProperty(ProcessDefEntityTypeService.prototype, "datastoreService", {
         get: function () {
-            return this._dataModel;
+            return this._datastoreService;
         },
         enumerable: true,
         configurable: true
@@ -60,64 +60,68 @@ var ProcessDefEntityTypeService = (function () {
         configurable: true
     });
     ProcessDefEntityTypeService.prototype.importBpmnFromFile = function (context, param, options) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var self, fileName, path_1;
-            return __generator(this, function (_a) {
-                self = this;
-                fileName = param && param.file ? param.file : null;
-                if (fileName) {
-                    path_1 = process.cwd() + '/examples/bpmns/' + fileName;
-                    return [2 /*return*/, new BluebirdPromise(function (resolve, reject) {
-                            fs.readFile(path_1, 'utf8', function (error, xmlString) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    if (error) {
-                                        reject(error);
-                                    }
-                                    else {
-                                        return [2 /*return*/, self.importBpmnFromXml(context, { xml: xmlString }, options)];
-                                    }
-                                    return [2 /*return*/];
-                                });
-                            }); });
-                        })];
-                }
-                return [2 /*return*/];
+        var _this = this;
+        var self = this;
+        var fileName = param && param.file ? param.file : null;
+        if (fileName) {
+            var path_1 = process.cwd() + '/examples/bpmns/' + fileName;
+            return new BluebirdPromise(function (resolve, reject) {
+                fs.readFile(path_1, 'utf8', function (error, xmlString) { return __awaiter(_this, void 0, void 0, function () {
+                    return __generator(this, function (_a) {
+                        if (error) {
+                            reject(error);
+                        }
+                        else {
+                            return [2 /*return*/, self.importBpmnFromXml(context, { xml: xmlString }, options)];
+                        }
+                        return [2 /*return*/];
+                    });
+                }); });
+            })
+                .then(function () {
+                return { result: true };
             });
-        });
+        }
+        return BluebirdPromise.reject(new Error('file does not exist'));
     };
     ProcessDefEntityTypeService.prototype.importBpmnFromXml = function (context, param, options) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var xml, typeName, bpmnDiagram_1, processDefEntityType_1, processes;
+            var xml, bpmnDiagram_1, ProcessDef_1, processes;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         xml = param && param.xml ? param.xml : null;
                         if (!xml)
                             return [3 /*break*/, 3];
-                        typeName = 'ProcessDef';
                         return [4 /*yield*/, this.parseBpmnXml(xml)];
                     case 1:
                         bpmnDiagram_1 = _a.sent();
-                        return [4 /*yield*/, this.dataModel.getEntityType(undefined, typeName)];
+                        return [4 /*yield*/, this.datastoreService.getEntityType('ProcessDef')];
                     case 2:
-                        processDefEntityType_1 = _a.sent();
+                        ProcessDef_1 = _a.sent();
                         processes = bpmnDiagram_1.getProcesses();
                         processes.forEach(function (process) { return __awaiter(_this, void 0, void 0, function () {
-                            var processDefEntity, processDefData;
+                            var queryObject, processDefColl, processDefEntity, processDefData;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, processDefEntityType_1.getById(process.id, context)];
+                                    case 0:
+                                        queryObject = {
+                                            attribute: 'key',
+                                            operator: '=',
+                                            value: process.id
+                                        };
+                                        return [4 /*yield*/, ProcessDef_1.query(context, { query: queryObject })];
                                     case 1:
-                                        processDefEntity = _a.sent();
+                                        processDefColl = _a.sent();
+                                        processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
                                         if (!!processDefEntity)
                                             return [3 /*break*/, 3];
                                         processDefData = {
                                             key: process.id,
                                             defId: bpmnDiagram_1.definitions.id
                                         };
-                                        return [4 /*yield*/, processDefEntityType_1.createEntity(context, processDefData)];
+                                        return [4 /*yield*/, ProcessDef_1.createEntity(context, processDefData)];
                                     case 2:
                                         processDefEntity = _a.sent();
                                         _a.label = 3;
@@ -127,7 +131,7 @@ var ProcessDefEntityTypeService = (function () {
                                         return [4 /*yield*/, processDefEntity.save(context)];
                                     case 4:
                                         _a.sent();
-                                        return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'updateDefinitions', context)];
+                                        return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram_1 })];
                                     case 5:
                                         _a.sent();
                                         return [2 /*return*/];

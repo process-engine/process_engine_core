@@ -60,10 +60,10 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('DataModel', 'Invoker');
+    .dependencies('DatastoreService', 'Invoker');
 
   container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('ProcessDefEntityTypeService', 'DataModel')
+    .dependencies('ProcessDefEntityTypeService', 'DatastoreService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)

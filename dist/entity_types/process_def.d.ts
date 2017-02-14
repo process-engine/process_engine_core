@@ -1,22 +1,25 @@
 import { ExecutionContext, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
-import { IDataModel, Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { Entity, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { IDatastoreService } from '@process-engine-js/datastore_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity } from '@process-engine-js/process_engine_contracts';
+import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
     private _processDefEntityTypeService;
-    private _dataModel;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, dataModel: IDataModel, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    private _datastoreService;
+    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     private readonly processDefEntityTypeService;
-    private readonly dataModel;
+    private readonly datastoreService;
     name: string;
     key: string;
     defId: string;
     xml: string;
     start(context: ExecutionContext): Promise<void>;
-    updateDefinitions(context: ExecutionContext, newBpmnDiagram?: BpmnDiagram): Promise<void>;
+    updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
+    updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context);
     private _updateNodes(nodes, laneCache, bpmnDiagram, context);
     private _updateFlows(flows, nodeCache, context);
+    private _createBoundaries(nodes, nodeCache, context);
     private _updateExtensionElements(extensionElements);
 }

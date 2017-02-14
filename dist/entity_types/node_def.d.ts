@@ -16,5 +16,11 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     attachedToNode: INodeDefEntity;
     getAttachedToNode(): Promise<INodeDefEntity>;
     events: string;
+    script: string;
+    eventType: string;
+    cancelActivity: boolean;
+    subProcessKey: string;
+    subProcessDef: INodeDefEntity;
+    getSubProcessDef(): Promise<INodeDefEntity>;
     getLaneRole(context: ExecutionContext): Promise<string>;
 }

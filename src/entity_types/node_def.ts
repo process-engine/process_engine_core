@@ -101,6 +101,56 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'events', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get script(): string {
+    return this.getProperty(this, 'script');
+  }
+
+  public set script(value: string) {
+    this.setProperty(this, 'script', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get eventType(): string {
+    return this.getProperty(this, 'eventType');
+  }
+
+  public set eventType(value: string) {
+    this.setProperty(this, 'eventType', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.boolean })
+  public get cancelActivity(): boolean {
+    return this.getProperty(this, 'cancelActivity');
+  }
+
+  public set cancelActivity(value: boolean) {
+    this.setProperty(this, 'cancelActivity', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get subProcessKey(): string {
+    return this.getProperty(this, 'subProcessKey');
+  }
+
+  public set subProcessKey(value: string) {
+    this.setProperty(this, 'subProcessKey', value);
+  }
+
+
+  @schemaAttribute({ type: 'NodeDef' })
+  public get subProcessDef(): INodeDefEntity {
+    return this.getProperty(this, 'subProcessDef');
+  }
+
+  public set subProcessDef(value: INodeDefEntity) {
+    this.setProperty(this, 'subProcessDef', value);
+  }
+
+  public getSubProcessDef(): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'subProcessDef');
+  }
+
   public async getLaneRole(context: ExecutionContext): Promise<string> {
 
     const lane = await this.getLane();
