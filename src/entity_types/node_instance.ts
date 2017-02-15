@@ -62,7 +62,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'nodeDef', value);
   }
 
-  @schemaAttribute({ type: 'NodeDef' })
   public getNodeDef(): Promise<INodeDefEntity> {
     return this.getPropertyLazy(this, 'nodeDef');
   }

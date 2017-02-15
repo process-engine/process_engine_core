@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IQueryObject, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import { IDatastoreService } from '@process-engine-js/datastore_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
@@ -146,12 +146,12 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const lanePromiseArray = lanes.map(async (lane) => {
 
-      const queryObject = [
+      const queryObject: IQueryObject[] = [
         { attribute: 'key', operator: '=', value: lane.id },
         { attribute: 'processDef', operator: '=', value: this.id }
       ];
 
-      const queryOptions = {
+      const queryOptions: IPrivateQueryOptions = {
         query: queryObject
       };
 
@@ -187,7 +187,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodePromiseArray = nodes.map(async (node) => {
 
-      const queryObject = [
+      const queryObject: IQueryObject[] = [
         { attribute: 'key', operator: '=', value: node.id },
         { attribute: 'processDef', operator: '=', value: this.id }
       ];
@@ -269,7 +269,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const flowPromiseArray = flows.map(async (flow) => {
 
-      const queryObject = [
+      const queryObject: IQueryObject[] = [
         { attribute: 'key', operator: '=', value: flow.id },
         { attribute: 'processDef', operator: '=', value: this.id }
       ];

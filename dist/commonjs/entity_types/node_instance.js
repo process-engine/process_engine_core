@@ -172,9 +172,6 @@ __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef' })
 ], NodeInstanceEntity.prototype, "nodeDef", null);
 __decorate([
-    metadata_1.schemaAttribute({ type: 'NodeDef' })
-], NodeInstanceEntity.prototype, "getNodeDef", null);
-__decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeInstanceEntity.prototype, "type", null);
 __decorate([

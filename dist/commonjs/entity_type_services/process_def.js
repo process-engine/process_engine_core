@@ -102,7 +102,7 @@ var ProcessDefEntityTypeService = (function () {
                         ProcessDef_1 = _a.sent();
                         processes = bpmnDiagram_1.getProcesses();
                         processes.forEach(function (process) { return __awaiter(_this, void 0, void 0, function () {
-                            var queryObject, processDefColl, processDefEntity, processDefData;
+                            var queryObject, param, processDefColl, processDefEntity, processDefData;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -111,7 +111,8 @@ var ProcessDefEntityTypeService = (function () {
                                             operator: '=',
                                             value: process.id
                                         };
-                                        return [4 /*yield*/, ProcessDef_1.query(context, { query: queryObject })];
+                                        param = { query: queryObject };
+                                        return [4 /*yield*/, ProcessDef_1.query(context, param)];
                                     case 1:
                                         processDefColl = _a.sent();
                                         processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
