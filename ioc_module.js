@@ -1,5 +1,6 @@
 'use strict';
 
+const ProcessEngineService = require('./dist/commonjs/index').ProcessEngineService;
 const SubprocessExternalEntity = require('./dist/commonjs/index').SubprocessExternalEntity;
 const SubprocessInternalEntity = require('./dist/commonjs/index').SubprocessInternalEntity;
 const BoundaryEventEntity = require('./dist/commonjs/index').BoundaryEventEntity;
@@ -22,6 +23,10 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 
 function registerInContainer(container) {
+
+  container.register('ProcessEngineService', ProcessEngineService)
+    .dependencies('MessageBusService')
+    .singleton();
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)
     .tags(entityDiscoveryTag);
