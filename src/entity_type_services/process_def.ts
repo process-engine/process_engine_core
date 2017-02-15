@@ -1,13 +1,11 @@
-import { IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml} from '@process-engine-js/process_engine_contracts';
-import {IDatastoreService} from '@process-engine-js/datastore_contracts';
+import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml} from '@process-engine-js/process_engine_contracts';
 import {ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {IDatastoreService} from '@process-engine-js/data_model_contracts';
 
 import * as fs from 'fs';
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
-
-
 
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
 

@@ -1,8 +1,7 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IQueryObject, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import { IDatastoreService } from '@process-engine-js/datastore_contracts';
+import {Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs} from '@process-engine-js/process_engine_contracts';
+import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 import * as uuid from 'uuid';
@@ -16,8 +15,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _datastoreService: IDatastoreService = undefined;
 
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, invoker, entityType, context, schema);
+  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._datastoreService = datastoreService;

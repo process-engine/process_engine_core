@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
@@ -12,8 +12,8 @@ import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
 })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, invoker, entityType, context, schema);
+  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
