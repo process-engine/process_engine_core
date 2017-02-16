@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -59,10 +59,10 @@ var ProcessDefEntityTypeService = (function () {
         enumerable: true,
         configurable: true
     });
-    ProcessDefEntityTypeService.prototype.importBpmnFromFile = function (context, param, options) {
+    ProcessDefEntityTypeService.prototype.importBpmnFromFile = function (context, params, options) {
         var _this = this;
         var self = this;
-        var fileName = param && param.file ? param.file : null;
+        var fileName = params && params.file ? params.file : null;
         if (fileName) {
             var path_1 = process.cwd() + '/examples/bpmns/' + fileName;
             return new BluebirdPromise(function (resolve, reject) {
@@ -84,15 +84,16 @@ var ProcessDefEntityTypeService = (function () {
         }
         return BluebirdPromise.reject(new Error('file does not exist'));
     };
-    ProcessDefEntityTypeService.prototype.importBpmnFromXml = function (context, param, options) {
+    ProcessDefEntityTypeService.prototype.importBpmnFromXml = function (context, params, options) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             var xml, bpmnDiagram_1, ProcessDef_1, processes;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        xml = param && param.xml ? param.xml : null;
-                        if (!xml) return [3 /*break*/, 3];
+                        xml = params && params.xml ? params.xml : null;
+                        if (!xml)
+                            return [3 /*break*/, 3];
                         return [4 /*yield*/, this.parseBpmnXml(xml)];
                     case 1:
                         bpmnDiagram_1 = _a.sent();
@@ -101,7 +102,7 @@ var ProcessDefEntityTypeService = (function () {
                         ProcessDef_1 = _a.sent();
                         processes = bpmnDiagram_1.getProcesses();
                         processes.forEach(function (process) { return __awaiter(_this, void 0, void 0, function () {
-                            var queryObject, param, processDefColl, processDefEntity, processDefData;
+                            var queryObject, params, processDefColl, processDefEntity, processDefData;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -110,12 +111,13 @@ var ProcessDefEntityTypeService = (function () {
                                             operator: '=',
                                             value: process.id
                                         };
-                                        param = { query: queryObject };
-                                        return [4 /*yield*/, ProcessDef_1.query(context, param)];
+                                        params = { query: queryObject };
+                                        return [4 /*yield*/, ProcessDef_1.query(context, params)];
                                     case 1:
                                         processDefColl = _a.sent();
                                         processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
-                                        if (!!processDefEntity) return [3 /*break*/, 3];
+                                        if (!!processDefEntity)
+                                            return [3 /*break*/, 3];
                                         processDefData = {
                                             key: process.id,
                                             defId: bpmnDiagram_1.definitions.id
@@ -165,7 +167,8 @@ var ProcessDefEntityTypeService = (function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            if (!error) return [3 /*break*/, 1];
+                            if (!error)
+                                return [3 /*break*/, 1];
                             reject(error);
                             return [3 /*break*/, 3];
                         case 1: return [4 /*yield*/, this.parseBpmnXml(xmlString)];
@@ -178,6 +181,38 @@ var ProcessDefEntityTypeService = (function () {
                     }
                 });
             }); });
+        });
+    };
+    ProcessDefEntityTypeService.prototype.start = function (context, params, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var key, ProcessDef, queryObject, queryParams, processDefEntity, id;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        key = params ? params.key : undefined;
+                        if (!key)
+                            return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.datastoreService.getEntityType('ProcessDef')];
+                    case 1:
+                        ProcessDef = _a.sent();
+                        queryObject = {
+                            attribute: 'key',
+                            operator: '=',
+                            value: key
+                        };
+                        queryParams = { query: queryObject };
+                        return [4 /*yield*/, ProcessDef.findOne(context, queryParams)];
+                    case 2:
+                        processDefEntity = _a.sent();
+                        if (!processDefEntity)
+                            return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'start', context, context, params, options)];
+                    case 3:
+                        id = _a.sent();
+                        return [2 /*return*/, id];
+                    case 4: return [2 /*return*/, null];
+                }
+            });
         });
     };
     return ProcessDefEntityTypeService;

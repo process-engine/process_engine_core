@@ -92,7 +92,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
 
-  @schemaAttribute({ type: SchemaAttributeType.string })
+  @schemaAttribute({ type: SchemaAttributeType.object })
   public get events(): string {
     return this.getProperty(this, 'events');
   }

@@ -25,7 +25,7 @@ const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDi
 function registerInContainer(container) {
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService')
+    .dependencies('MessageBusService', 'ProcessDefEntityTypeService')
     .singleton();
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)

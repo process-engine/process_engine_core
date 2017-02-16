@@ -1,4 +1,4 @@
-import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml} from '@process-engine-js/process_engine_contracts';
+import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart} from '@process-engine-js/process_engine_contracts';
 import {ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IDatastoreService} from '@process-engine-js/data_model_contracts';
@@ -25,10 +25,10 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._invoker;
   }
 
-  public importBpmnFromFile(context: ExecutionContext, param: IParamImportFromFile, options?: IPublicGetOptions): Promise<any> {
+  public importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IPublicGetOptions): Promise<any> {
 
     const self = this;
-    const fileName = param && param.file ? param.file : null;
+    const fileName = params && params.file ? params.file : null;
     if (fileName) {
       const path = process.cwd() + '/examples/bpmns/' + fileName;
 
@@ -51,9 +51,9 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return BluebirdPromise.reject(new Error('file does not exist'));
   }
 
-  public async importBpmnFromXml(context: ExecutionContext, param: IParamImportFromXml, options?: IPublicGetOptions): Promise<void> {
+  public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IPublicGetOptions): Promise<void> {
 
-    const xml = param && param.xml ? param.xml : null;
+    const xml = params && params.xml ? params.xml : null;
 
     if (xml) {
       const bpmnDiagram = await this.parseBpmnXml(xml);
@@ -70,8 +70,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           operator: '=',
           value: process.id
         };
-        const param: IPrivateQueryOptions = { query: queryObject };
-        const processDefColl = await ProcessDef.query(context, param);
+        const params: IPrivateQueryOptions = { query: queryObject };
+        const processDefColl = await ProcessDef.query(context, params);
 
         let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity>processDefColl.data[0] : null;
         if (!processDefEntity) {
@@ -129,6 +129,30 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         }
       });
     });
+  }
+
+
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
+
+    const key: string = params ? params.key : undefined;
+
+    if (key) {
+      const ProcessDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+
+      const queryObject: IQueryObject = {
+        attribute: 'key',
+        operator: '=',
+        value: key
+      };
+      const queryParams: IPrivateQueryOptions = { query: queryObject };
+      const processDefEntity = await ProcessDef.findOne(context, queryParams);
+
+      if (processDefEntity) {
+        const id = await this.invoker.invoke(processDefEntity, 'start', context, context, params, options);
+        return id;
+      }
+    }
+    return null;
   }
 
 }

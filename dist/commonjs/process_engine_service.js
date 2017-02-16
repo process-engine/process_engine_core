@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+        step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -34,14 +34,26 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var debug = require("debug");
+var debugInfo = debug('process_engine:info');
+var debugErr = debug('process_engine:error');
 var ProcessEngineService = (function () {
-    function ProcessEngineService(messageBusService) {
+    function ProcessEngineService(messageBusService, processDefEntityTypeService) {
         this._messageBusService = undefined;
+        this._processDefEntityTypeService = undefined;
         this._messageBusService = messageBusService;
+        this._processDefEntityTypeService = processDefEntityTypeService;
     }
     Object.defineProperty(ProcessEngineService.prototype, "messageBusService", {
         get: function () {
             return this._messageBusService;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ProcessEngineService.prototype, "processDefEntityTypeService", {
+        get: function () {
+            return this._processDefEntityTypeService;
         },
         enumerable: true,
         configurable: true
@@ -56,37 +68,65 @@ var ProcessEngineService = (function () {
                         return [4 /*yield*/, this.messageBusService.subscribe('/processengine', this._messageHandler.bind(this))];
                     case 1:
                         _a.sent();
+                        debugInfo('subscribed on Messagebus');
                         return [3 /*break*/, 3];
                     case 2:
                         err_1 = _a.sent();
+                        debugErr('subscription failed on Messagebus', err_1.message);
                         throw new Error(err_1.message);
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    ProcessEngineService.prototype.start = function (context, data, options) {
+    ProcessEngineService.prototype.start = function (context, params, options) {
         return __awaiter(this, void 0, void 0, function () {
+            var id;
             return __generator(this, function (_a) {
-                return [2 /*return*/, null];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.processDefEntityTypeService.start(context, params, options)];
+                    case 1:
+                        id = _a.sent();
+                        return [2 /*return*/, id];
+                }
             });
         });
     };
     ProcessEngineService.prototype._messageHandler = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var action, ref, initialToken, source, context;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.messageBusService.verifyMessage(msg)];
+            var action, key, initialToken, source, context, _a, params, id;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        debugInfo('we got a message: ', msg);
+                        return [4 /*yield*/, this.messageBusService.verifyMessage(msg)];
                     case 1:
-                        msg = _a.sent();
+                        msg = _b.sent();
                         action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-                        ref = (msg && msg.data && msg.data.ref) ? msg.data.ref : null;
+                        key = (msg && msg.data && msg.data.key) ? msg.data.key : null;
                         initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;
                         source = (msg && msg.origin) ? msg.origin : null;
                         context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
-                        console.log(msg);
-                        return [2 /*return*/];
+                        _a = action;
+                        switch (_a) {
+                            case 'start': return [3 /*break*/, 2];
+                        }
+                        return [3 /*break*/, 4];
+                    case 2:
+                        params = {
+                            key: key,
+                            initialToken: initialToken,
+                            source: source
+                        };
+                        return [4 /*yield*/, this.processDefEntityTypeService.start(context, params)];
+                    case 3:
+                        id = _b.sent();
+                        debugInfo("process id " + id + " started: ");
+                        return [3 /*break*/, 5];
+                    case 4:
+                        debugInfo('unhandled action: ', msg);
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/];
                 }
             });
         });

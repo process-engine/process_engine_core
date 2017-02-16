@@ -1,7 +1,7 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IQueryObject, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs} from '@process-engine-js/process_engine_contracts';
+import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 import * as uuid from 'uuid';
@@ -77,7 +77,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this.setProperty(this, 'xml', value);
   }
 
-  public async start(context: ExecutionContext): Promise<void> {
+
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
 
     const processData = {
       key: this.key,
@@ -90,11 +91,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     await processEntity.save(context);
 
-    const saveOptions = {};
+    await this.invoker.invoke(processEntity, 'start', context, context, params, options);
 
-    const argumentsPassedToSave: Array<any> = [context, saveOptions];
-
-    await this.invoker.invoke(processEntity, 'start', context, ...argumentsPassedToSave);
+    return processEntity.id;
   }
 
 

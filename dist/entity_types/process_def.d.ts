@@ -1,7 +1,7 @@
-import { ExecutionContext, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IFactory, IInheritedSchema, IEntity, IPublicGetOptions } from '@process-engine-js/core_contracts';
 import { Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService } from '@process-engine-js/data_model_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs } from '@process-engine-js/process_engine_contracts';
+import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
     private _processDefEntityTypeService;
     private _datastoreService;
@@ -13,7 +13,7 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     key: string;
     defId: string;
     xml: string;
-    start(context: ExecutionContext): Promise<void>;
+    start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string>;
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context);

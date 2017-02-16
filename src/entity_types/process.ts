@@ -1,7 +1,7 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IProcessEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
+import {IProcessEntity, IProcessDefEntity, IParamStart} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ProcessEntity extends Entity implements IProcessEntity {
@@ -47,4 +47,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     return this.getPropertyLazy(this, 'processDef');
   }
 
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
+
+  }
 }
