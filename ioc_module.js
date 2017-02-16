@@ -29,52 +29,40 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('SubprocessInternalEntity', SubprocessInternalEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('BoundaryEventEntity', BoundaryEventEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('EndEventEntity', EndEventEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('EventEntity', EventEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('ExclusiveGatewayEntity', ExclusiveGatewayEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('FlowDefEntity', FlowDefEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('LaneEntity', LaneEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('NodeDefEntity', NodeDefEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('NodeInstanceEntity', NodeInstanceEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('ParallelGatewayEntity', ParallelGatewayEntity)
     .tags(entityDiscoveryTag)
-    .singleton();
 
   container.register('ProcessEntity', ProcessEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
     .dependencies('DatastoreService', 'Invoker')
@@ -82,28 +70,22 @@ function registerInContainer(container) {
 
   container.register('ProcessDefEntity', ProcessDefEntity)
     .dependencies('ProcessDefEntityTypeService', 'DatastoreService')
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('ScriptTaskEntity', ScriptTaskEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('ServiceTaskEntity', ServiceTaskEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('StartEventEntity', StartEventEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 
   container.register('UserTaskEntity', UserTaskEntity)
-    .tags(entityDiscoveryTag)
-    .singleton();
+    .tags(entityDiscoveryTag);
 }
 
 module.exports.registerInContainer = registerInContainer;
