@@ -185,7 +185,7 @@ var ProcessDefEntityTypeService = (function () {
     };
     ProcessDefEntityTypeService.prototype.start = function (context, params, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var key, ProcessDef, queryObject, queryParams, processDefEntity, id;
+            var key, ProcessDef, queryObject, queryParams, processDefEntity, processEntity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -208,8 +208,8 @@ var ProcessDefEntityTypeService = (function () {
                             return [3 /*break*/, 4];
                         return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'start', context, context, params, options)];
                     case 3:
-                        id = _a.sent();
-                        return [2 /*return*/, id];
+                        processEntity = _a.sent();
+                        return [2 /*return*/, processEntity];
                     case 4: return [2 /*return*/, null];
                 }
             });

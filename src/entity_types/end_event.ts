@@ -7,8 +7,8 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class EndEventEntity extends EventEntity implements IEndEventEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IEndEventEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IEndEventEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

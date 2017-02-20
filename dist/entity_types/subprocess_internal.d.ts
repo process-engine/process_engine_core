@@ -4,6 +4,6 @@ import { IEntityType, IPropertyBag, IEncryptionService } from '@process-engine-j
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { ISubprocessInternalEntity } from '@process-engine-js/process_engine_contracts';
 export declare class SubprocessInternalEntity extends NodeInstanceEntity implements ISubprocessInternalEntity {
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<ISubprocessInternalEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<ISubprocessInternalEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
 }

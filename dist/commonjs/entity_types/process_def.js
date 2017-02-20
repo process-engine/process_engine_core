@@ -144,14 +144,14 @@ var ProcessDefEntity = (function (_super) {
                         processEntityType = _a.sent();
                         return [4 /*yield*/, processEntityType.createEntity(context, processData)];
                     case 2:
-                        processEntity = _a.sent();
+                        processEntity = (_a.sent());
                         return [4 /*yield*/, processEntity.save(context)];
                     case 3:
                         _a.sent();
                         return [4 /*yield*/, this.invoker.invoke(processEntity, 'start', context, context, params, options)];
                     case 4:
                         _a.sent();
-                        return [2 /*return*/, processEntity.id];
+                        return [2 /*return*/, processEntity];
                 }
             });
         });

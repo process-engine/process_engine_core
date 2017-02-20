@@ -7,9 +7,10 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
   }
+
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;

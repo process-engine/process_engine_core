@@ -42,8 +42,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var node_instance_1 = require("./node_instance");
 var EventEntity = (function (_super) {
     __extends(EventEntity, _super);
-    function EventEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function EventEntity(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        return _super.call(this, nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
     }
     EventEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {

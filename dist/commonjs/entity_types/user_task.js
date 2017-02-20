@@ -42,8 +42,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var node_instance_1 = require("./node_instance");
 var UserTaskEntity = (function (_super) {
     __extends(UserTaskEntity, _super);
-    function UserTaskEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function UserTaskEntity(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        return _super.call(this, nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
     }
     UserTaskEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {

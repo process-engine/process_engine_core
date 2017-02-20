@@ -4,7 +4,7 @@ import { IEntityType, IPropertyBag, IEncryptionService } from '@process-engine-j
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IExclusiveGatewayEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclusiveGatewayEntity {
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     follow: any;
 }

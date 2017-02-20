@@ -50,8 +50,8 @@ var node_instance_1 = require("./node_instance");
 var metadata_1 = require("@process-engine-js/metadata");
 var ScriptTaskEntity = (function (_super) {
     __extends(ScriptTaskEntity, _super);
-    function ScriptTaskEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function ScriptTaskEntity(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        return _super.call(this, nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
     }
     ScriptTaskEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {

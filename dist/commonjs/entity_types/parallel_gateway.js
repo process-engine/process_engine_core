@@ -50,8 +50,8 @@ var node_instance_1 = require("./node_instance");
 var metadata_1 = require("@process-engine-js/metadata");
 var ParallelGatewayEntity = (function (_super) {
     __extends(ParallelGatewayEntity, _super);
-    function ParallelGatewayEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function ParallelGatewayEntity(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        return _super.call(this, nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
     }
     ParallelGatewayEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {

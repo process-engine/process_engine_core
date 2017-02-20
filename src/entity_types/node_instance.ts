@@ -1,8 +1,9 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
+import {Entity, IEntityType, IPropertyBag, IEncryptionService, EntityReference} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
+
 
 @schemaClass({
   expand: [
@@ -12,8 +13,16 @@ import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
 })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  private _helper: any = undefined;
+
+  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+
+    this._helper = nodeInstanceHelper;
+  }
+
+  private get helper(): any {
+    return this._helper;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -108,4 +117,111 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'processToken');
   }
 
+  public async createNode(context) {
+
+    async function nodeHandler(msg) {
+      msg = await this.messagebus.verifyMessage(msg);
+
+      const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
+      const source = (msg && msg.origin) ? msg.origin : null;
+      const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
+
+      if (action === 'changeState') {
+        const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
+
+        switch (newState) {
+          case ('start'):
+            await this.entity.start(context, source);
+            break;
+
+          case ('execute'):
+            await this.entity.execute(context);
+            break;
+
+          case ('end'):
+            await this.entity.end(context);
+            break;
+
+          default:
+          // error ???
+        }
+
+
+      }
+
+      if (action === 'proceed') {
+        const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
+        await this.entity.proceed(context, newData, source);
+      }
+
+      if (action === 'event') {
+        const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;
+        const data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
+        await this.entity.event(context, event, data);
+      }
+    }
+
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const NodeInstance = await this.helper.datastoreService.getEntityType('NodeInstance');
+    const node = await NodeInstance.createEntity(internalContext);
+
+    const binding = {
+      entity: node,
+      messagebus: this.helper.messagebusService
+    };
+
+    await this.helper.messagebusService.subscribe('/processengine/node/' + node.id, nodeHandler.bind(binding));
+
+    return node;
+  
+  }
+
+
+  public async getLaneRole(context: ExecutionContext) {
+    const nodeDef = await this.nodeDef;
+    const role = await nodeDef.getLaneRole(context);
+    return role;
+  }
+
+
+  public async start(context: ExecutionContext, source: any): Promise<void> {
+    // check if context matches to lane
+    let role = await this.getLaneRole(context);
+    if (role !== null) {
+      // Todo: refactor check if user has lane role
+
+      // const permissions = {
+      //   'execute': [role]
+      // };
+      // await context.checkPermissions(this.id + '.execute', permissions);
+    }
+
+    if (!this.state) {
+      this.state = 'start';
+    }
+
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    await this.save(internalContext);
+
+    await this.changeState(context, 'execute', this);
+  }
+
+
+  public async changeState(context: ExecutionContext, newState: string, source: any) {
+
+    const meta = {
+      jwt: context.encryptedToken
+    };
+
+    const data = {
+      action: 'changeState',
+      data: newState
+    };
+
+    // Todo: 
+    const origin = new EntityReference(source.entityType.namespace, source.entityType.name, source.id);
+
+    const msg = this.helper.messagebusService.createMessage(data, origin, meta);
+    await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+  }
 }

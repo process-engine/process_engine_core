@@ -50,8 +50,8 @@ var core_contracts_1 = require("@process-engine-js/core_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
 var ExclusiveGatewayEntity = (function (_super) {
     __extends(ExclusiveGatewayEntity, _super);
-    function ExclusiveGatewayEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function ExclusiveGatewayEntity(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        return _super.call(this, nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
     }
     ExclusiveGatewayEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {

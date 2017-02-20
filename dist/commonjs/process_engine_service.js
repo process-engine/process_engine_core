@@ -41,6 +41,7 @@ var ProcessEngineService = (function () {
     function ProcessEngineService(messageBusService, processDefEntityTypeService) {
         this._messageBusService = undefined;
         this._processDefEntityTypeService = undefined;
+        this._runningProcesses = {};
         this._messageBusService = messageBusService;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }
@@ -54,6 +55,13 @@ var ProcessEngineService = (function () {
     Object.defineProperty(ProcessEngineService.prototype, "processDefEntityTypeService", {
         get: function () {
             return this._processDefEntityTypeService;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ProcessEngineService.prototype, "runningProcesses", {
+        get: function () {
+            return this._runningProcesses;
         },
         enumerable: true,
         configurable: true
@@ -81,13 +89,14 @@ var ProcessEngineService = (function () {
     };
     ProcessEngineService.prototype.start = function (context, params, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var id;
+            var processEntity;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.processDefEntityTypeService.start(context, params, options)];
                     case 1:
-                        id = _a.sent();
-                        return [2 /*return*/, id];
+                        processEntity = _a.sent();
+                        this.runningProcesses[processEntity.id] = processEntity;
+                        return [2 /*return*/, processEntity.id];
                 }
             });
         });

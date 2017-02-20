@@ -1,4 +1,4 @@
-import { IProcessEngineService, IProcessDefEntityTypeService, IParamStart } from '@process-engine-js/process_engine_contracts';
+import { IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions } from '@process-engine-js/core_contracts';
 import * as debug from 'debug';
@@ -11,6 +11,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private _messageBusService: IMessageBusService = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
+  private _runningProcesses: any = {};
 
   constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService) {
     this._messageBusService = messageBusService;
@@ -25,6 +26,10 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._processDefEntityTypeService;
   }
 
+  private get runningProcesses(): any {
+    return this._runningProcesses;
+  }
+
   async initialize(): Promise<void> {
     try {
       await this.messageBusService.subscribe('/processengine', this._messageHandler.bind(this));
@@ -36,8 +41,9 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
-    const id = await this.processDefEntityTypeService.start(context, params, options);
-    return id;
+    const processEntity: IProcessEntity = await this.processDefEntityTypeService.start(context, params, options);
+    this.runningProcesses[processEntity.id] = processEntity;
+    return processEntity.id;
   }
 
   private async _messageHandler(msg): Promise<void> {
@@ -45,10 +51,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
     msg = await this.messageBusService.verifyMessage(msg);
 
-    const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-    const key = (msg && msg.data && msg.data.key) ? msg.data.key : null;
-    const initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-    const source = (msg && msg.origin) ? msg.origin : null;
+    const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
+    const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
+    const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
+    const source: any = (msg && msg.origin) ? msg.origin : null;
 
     const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
 

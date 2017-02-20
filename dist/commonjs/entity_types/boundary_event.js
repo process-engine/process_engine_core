@@ -42,8 +42,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var event_1 = require("./event");
 var BoundaryEventEntity = (function (_super) {
     __extends(BoundaryEventEntity, _super);
-    function BoundaryEventEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function BoundaryEventEntity(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        return _super.call(this, nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
     }
     BoundaryEventEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {

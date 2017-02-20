@@ -4,9 +4,11 @@ import { ExecutionContext, IPublicGetOptions } from '@process-engine-js/core_con
 export declare class ProcessEngineService implements IProcessEngineService {
     private _messageBusService;
     private _processDefEntityTypeService;
+    private _runningProcesses;
     constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService);
     private readonly messageBusService;
     private readonly processDefEntityTypeService;
+    private readonly runningProcesses;
     initialize(): Promise<void>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string>;
     private _messageHandler(msg);

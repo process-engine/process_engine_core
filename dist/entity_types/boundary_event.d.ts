@@ -4,6 +4,6 @@ import { IEntityType, IPropertyBag, IEncryptionService } from '@process-engine-j
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IBoundaryEventEntity } from '@process-engine-js/process_engine_contracts';
 export declare class BoundaryEventEntity extends EventEntity implements IBoundaryEventEntity {
-    constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IBoundaryEventEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IBoundaryEventEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
 }

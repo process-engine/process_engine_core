@@ -1,7 +1,7 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart} from '@process-engine-js/process_engine_contracts';
+import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 import * as uuid from 'uuid';
@@ -78,7 +78,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
 
-  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
 
     const processData = {
       key: this.key,
@@ -87,13 +87,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const processEntityType = await this.datastoreService.getEntityType('Process');
 
-    const processEntity = await processEntityType.createEntity(context, processData);
+    const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
 
     await processEntity.save(context);
 
     await this.invoker.invoke(processEntity, 'start', context, context, params, options);
 
-    return processEntity.id;
+    return processEntity;
   }
 
 

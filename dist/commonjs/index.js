@@ -5,5 +5,6 @@ function __export(m) {
 __export(require("./process_engine_service"));
 __export(require("./entity_types"));
 __export(require("./entity_type_services"));
+__export(require("./node_instance_helper"));
 
 //# sourceMappingURL=index.js.map

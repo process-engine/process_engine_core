@@ -50,9 +50,28 @@ var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
 var ProcessEntity = (function (_super) {
     __extends(ProcessEntity, _super);
-    function ProcessEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function ProcessEntity(datastoreService, iamService, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        var _this = _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+        _this._datastoreService = undefined;
+        _this._iamService = undefined;
+        _this._datastoreService = datastoreService;
+        _this._iamService = iamService;
+        return _this;
     }
+    Object.defineProperty(ProcessEntity.prototype, "datastoreService", {
+        get: function () {
+            return this._datastoreService;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ProcessEntity.prototype, "iamService", {
+        get: function () {
+            return this._iamService;
+        },
+        enumerable: true,
+        configurable: true
+    });
     ProcessEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {
             var actualInstance;
@@ -103,8 +122,68 @@ var ProcessEntity = (function (_super) {
     };
     ProcessEntity.prototype.start = function (context, params, options) {
         return __awaiter(this, void 0, void 0, function () {
+            var source, initialToken, ProcessToken, NodeDef, StartEvent, internalContext, laneContext, participant, processDef, queryObject, startEventDef, processToken, startEvent;
             return __generator(this, function (_a) {
-                return [2 /*return*/];
+                switch (_a.label) {
+                    case 0:
+                        source = params ? params.source : undefined;
+                        initialToken = params ? params.initialToken : undefined;
+                        return [4 /*yield*/, this.datastoreService.getEntityType('ProcessToken')];
+                    case 1:
+                        ProcessToken = _a.sent();
+                        return [4 /*yield*/, this.datastoreService.getEntityType('NodeDef')];
+                    case 2:
+                        NodeDef = _a.sent();
+                        return [4 /*yield*/, this.datastoreService.getEntityType('StartEvent')];
+                    case 3:
+                        StartEvent = _a.sent();
+                        return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
+                    case 4:
+                        internalContext = _a.sent();
+                        laneContext = context;
+                        participant = (source && source.id) ? source.id : null;
+                        return [4 /*yield*/, this.getProcessDef()];
+                    case 5:
+                        processDef = _a.sent();
+                        queryObject = [
+                            { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+                            { attribute: 'processDef', operator: '=', value: processDef.id }
+                        ];
+                        return [4 /*yield*/, NodeDef.findOne(internalContext, { query: queryObject })];
+                    case 6:
+                        startEventDef = _a.sent();
+                        if (!startEventDef)
+                            return [3 /*break*/, 11];
+                        return [4 /*yield*/, ProcessToken.createEntity(internalContext)];
+                    case 7:
+                        processToken = _a.sent();
+                        processToken.process = this;
+                        if (initialToken) {
+                            processToken.data = {
+                                current: initialToken
+                            };
+                        }
+                        return [4 /*yield*/, processToken.save(null, internalContext)];
+                    case 8:
+                        _a.sent();
+                        return [4 /*yield*/, StartEvent.createNode(internalContext)];
+                    case 9:
+                        startEvent = _a.sent();
+                        startEvent.name = startEventDef.name;
+                        startEvent.key = startEventDef.key;
+                        startEvent.process = this;
+                        startEvent.nodeDef = startEventDef;
+                        startEvent.type = startEventDef.type;
+                        startEvent.processToken = processToken;
+                        startEvent.participant = participant;
+                        startEvent.timeStart = Date.now();
+                        return [4 /*yield*/, startEvent.save(null, internalContext)];
+                    case 10:
+                        _a.sent();
+                        startEvent.changeState(laneContext, 'start', this);
+                        _a.label = 11;
+                    case 11: return [2 /*return*/];
+                }
             });
         });
     };
