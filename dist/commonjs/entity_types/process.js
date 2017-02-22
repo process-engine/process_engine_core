@@ -50,12 +50,14 @@ var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
 var ProcessEntity = (function (_super) {
     __extends(ProcessEntity, _super);
-    function ProcessEntity(datastoreService, iamService, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+    function ProcessEntity(datastoreService, iamService, nodeInstanceEntityTypeService, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
         var _this = _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
         _this._datastoreService = undefined;
         _this._iamService = undefined;
+        _this._nodeInstanceEntityTypeService = undefined;
         _this._datastoreService = datastoreService;
         _this._iamService = iamService;
+        _this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
         return _this;
     }
     Object.defineProperty(ProcessEntity.prototype, "datastoreService", {
@@ -68,6 +70,13 @@ var ProcessEntity = (function (_super) {
     Object.defineProperty(ProcessEntity.prototype, "iamService", {
         get: function () {
             return this._iamService;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ProcessEntity.prototype, "nodeInstanceEntityTypeService", {
+        get: function () {
+            return this._nodeInstanceEntityTypeService;
         },
         enumerable: true,
         configurable: true
@@ -153,7 +162,7 @@ var ProcessEntity = (function (_super) {
                     case 6:
                         startEventDef = _a.sent();
                         if (!startEventDef)
-                            return [3 /*break*/, 11];
+                            return [3 /*break*/, 12];
                         return [4 /*yield*/, ProcessToken.createEntity(internalContext)];
                     case 7:
                         processToken = _a.sent();
@@ -163,10 +172,10 @@ var ProcessEntity = (function (_super) {
                                 current: initialToken
                             };
                         }
-                        return [4 /*yield*/, processToken.save(null, internalContext)];
+                        return [4 /*yield*/, processToken.save(internalContext)];
                     case 8:
                         _a.sent();
-                        return [4 /*yield*/, StartEvent.createNode(internalContext)];
+                        return [4 /*yield*/, this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent)];
                     case 9:
                         startEvent = _a.sent();
                         startEvent.name = startEventDef.name;
@@ -176,13 +185,14 @@ var ProcessEntity = (function (_super) {
                         startEvent.type = startEventDef.type;
                         startEvent.processToken = processToken;
                         startEvent.participant = participant;
-                        startEvent.timeStart = Date.now();
-                        return [4 /*yield*/, startEvent.save(null, internalContext)];
+                        return [4 /*yield*/, startEvent.save(internalContext)];
                     case 10:
                         _a.sent();
-                        startEvent.changeState(laneContext, 'start', this);
-                        _a.label = 11;
-                    case 11: return [2 /*return*/];
+                        return [4 /*yield*/, startEvent.changeState(laneContext, 'start', this)];
+                    case 11:
+                        _a.sent();
+                        _a.label = 12;
+                    case 12: return [2 /*return*/];
                 }
             });
         });

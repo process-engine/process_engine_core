@@ -1,14 +1,14 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService, EntityReference} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity} from '@process-engine-js/process_engine_contracts';
-import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
+import { ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
+import { Entity, IEntityType, IPropertyBag, IEncryptionService, EntityReference } from '@process-engine-js/data_model_contracts';
+import { IInvoker } from '@process-engine-js/invocation_contracts';
+import { INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IParallelGatewayEntity } from '@process-engine-js/process_engine_contracts';
+import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 
 
 @schemaClass({
   expand: [
-    {attribute: 'nodeDef', depth: 2},
-    {attribute: 'processToken', depth: 2}
+    { attribute: 'nodeDef', depth: 2 },
+    { attribute: 'processToken', depth: 2 }
   ]
 })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
@@ -21,9 +21,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this._helper = nodeInstanceHelper;
   }
 
-  private get helper(): any {
+  public get helper(): any {
     return this._helper;
   }
+
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
@@ -117,74 +118,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'processToken');
   }
 
-  public async createNode(context) {
-
-    async function nodeHandler(msg) {
-      msg = await this.messagebus.verifyMessage(msg);
-
-      const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-      const source = (msg && msg.origin) ? msg.origin : null;
-      const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
-
-      if (action === 'changeState') {
-        const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-
-        switch (newState) {
-          case ('start'):
-            await this.entity.start(context, source);
-            break;
-
-          case ('execute'):
-            await this.entity.execute(context);
-            break;
-
-          case ('end'):
-            await this.entity.end(context);
-            break;
-
-          default:
-          // error ???
-        }
-
-
-      }
-
-      if (action === 'proceed') {
-        const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-        await this.entity.proceed(context, newData, source);
-      }
-
-      if (action === 'event') {
-        const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;
-        const data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-        await this.entity.event(context, event, data);
-      }
-    }
-
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
-    const NodeInstance = await this.helper.datastoreService.getEntityType('NodeInstance');
-    const node = await NodeInstance.createEntity(internalContext);
-
-    const binding = {
-      entity: node,
-      messagebus: this.helper.messagebusService
-    };
-
-    await this.helper.messagebusService.subscribe('/processengine/node/' + node.id, nodeHandler.bind(binding));
-
-    return node;
-  
-  }
-
 
   public async getLaneRole(context: ExecutionContext) {
-    const nodeDef = await this.nodeDef;
+    const nodeDef = await this.getNodeDef();
     const role = await nodeDef.getLaneRole(context);
     return role;
   }
 
 
-  public async start(context: ExecutionContext, source: any): Promise<void> {
+  public async start(context: ExecutionContext, source: IEntity): Promise<void> {
     // check if context matches to lane
     let role = await this.getLaneRole(context);
     if (role !== null) {
@@ -207,7 +149,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async changeState(context: ExecutionContext, newState: string, source: any) {
+  public async changeState(context: ExecutionContext, newState: string, source: IEntity) {
 
     const meta = {
       jwt: context.encryptedToken
@@ -219,9 +161,187 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     };
 
     // Todo: 
-    const origin = new EntityReference(source.entityType.namespace, source.entityType.name, source.id);
+    const origin = source.getEntityReference();
 
     const msg = this.helper.messagebusService.createMessage(data, origin, meta);
     await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+  }
+
+  public async error(context: ExecutionContext, error: any): Promise<void> {
+    const nodeDef = await this.getNodeDef();
+    if (nodeDef && nodeDef.events && nodeDef.events.error) {
+
+      const meta = {
+        jwt: context.encryptedToken
+      };
+
+      const data = {
+        action: 'event',
+        event: 'error',
+        data: error
+      };
+
+      const origin = this.getEntityReference();
+
+      const msg = this.helper.messagebusService.createMessage(data, origin, meta);
+      await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+    }
+  }
+
+
+  public async execute(context: ExecutionContext): Promise<void> {
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+
+    this.state = 'progress';
+    await this.save(internalContext);
+
+    await this.changeState(context, 'end', this);
+  }
+
+
+  public async proceed(context: ExecutionContext, data: any, source: EntityReference) {
+    // by default do nothing, implementation should be overwritten by child class
+  }
+
+
+  public async event(context: ExecutionContext, event: string, data: any) {
+
+    const nodeDefEntityType = await this.helper.datastoreService.getEntityType('NodeDef');
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+
+    // check if definition exists
+    const nodeDef = await this.getNodeDef();
+    if (nodeDef && nodeDef.events && nodeDef.events[event]) {
+      const boundaryDefKey = nodeDef.events[event];
+
+      const queryObject = {
+        attribute: 'key', operator: '=', value: boundaryDefKey
+      };
+      const boundary = await nodeDefEntityType.findOne(internalContext, { query: queryObject });
+
+      const token = await this.getProcessToken();
+
+      if (boundary && boundary.cancelActivity) {
+        await this.end(context, true);
+      }
+      await this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
+    }
+  }
+
+
+  public async cancel(context: ExecutionContext): Promise<void> {
+    const nodeDef = await this.getNodeDef();
+    if (nodeDef && nodeDef.events && nodeDef.events.cancel) {
+
+      const meta = {
+        jwt: context.encryptedToken
+      };
+
+      const data = {
+        action: 'event',
+        event: 'cancel',
+        data: null
+      };
+
+      const origin = this.getEntityReference();
+
+      const msg = this.helper.messagebusService.createMessage(data, origin, meta);
+      await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+    }
+  }
+
+
+  public async end(context: ExecutionContext, cancelFlow: boolean = false) {
+
+    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
+    const nodeDefEntityType = await this.helper.datastoreService.getEntityType('NodeDef');
+    const processTokenEntityType = await this.helper.datastoreService.getEntityType('ProcessToken');
+
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+
+    this.state = 'end';
+
+    await this.save(internalContext);
+    const nodeInstance = this as any;
+    const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
+
+    const processToken = await this.getProcessToken();
+    const tokenData = processToken.data || {};
+    tokenData.history = tokenData.history || {};
+    tokenData.history[this.key] = tokenData.current;
+    processToken.data = tokenData;
+
+    await processToken.save(internalContext);
+
+    let nextDefs = null;
+    const nodeDef = await this.getNodeDef();
+    const processDef = await nodeDef.getProcessDef();
+
+    let flowsOut = null;
+
+    if (!cancelFlow) {
+      if (nodeInstance.follow) {
+        // we have already a list of flows to follow
+        if (nodeInstance.follow.length > 0) {
+          const queryIn = nodeInstance.follow.map((id) => {
+            return { attribute: 'id', operator: '=', value: id };
+          });
+          flowsOut = await flowDefEntityType.query(internalContext, {
+            query: [
+              { or: queryIn },
+              { attribute: 'processDef', operator: '=', value: processDef.id }
+            ]
+          });
+        }
+      } else {
+        // query for all flows going out
+        flowsOut = await flowDefEntityType.query(internalContext, {
+          query: [
+            { attribute: 'source', operator: '=', value: nodeDef.id },
+            { attribute: 'processDef', operator: '=', value: processDef.id }
+          ]
+        });
+      }
+      if (flowsOut && flowsOut.length > 0) {
+        const ids: Array<string> = [];
+        for (let i = 0; i < flowsOut.data.length; i++) {
+          const flow = flowsOut.data[i];
+          const target = await flow.target;
+          ids.push(target.id);
+        }
+
+        const queryIn = ids.map((id) => {
+          return { attribute: 'id', operator: '=', value: id };
+        });
+        nextDefs = await nodeDefEntityType.query(internalContext, {
+          query: [
+            { or: queryIn },
+            { attribute: 'processDef', operator: '=', value: processDef.id }
+          ]
+        });
+
+        if (nextDefs && nextDefs.length > 0) {
+
+
+          for (let i = 0; i < nextDefs.data.length; i++) {
+            const nextDef = nextDefs.data[i];
+
+            let currentToken;
+            if (splitToken && i > 0) {
+              currentToken = await processTokenEntityType.createEntity(internalContext);
+              currentToken.process = processToken.process;
+              currentToken.data = processToken.data;
+              await currentToken.save(internalContext);
+            } else {
+              currentToken = processToken;
+            }
+
+            await this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, nextDef, currentToken);
+
+          }
+        }
+
+      }
+    }
   }
 }

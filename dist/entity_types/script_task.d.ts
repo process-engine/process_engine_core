@@ -7,4 +7,5 @@ export declare class ScriptTaskEntity extends NodeInstanceEntity implements IScr
     constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     script: string;
+    execute(context: any): Promise<void>;
 }

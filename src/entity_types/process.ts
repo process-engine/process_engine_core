@@ -1,7 +1,7 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import { Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity} from '@process-engine-js/process_engine_contracts';
+import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity, INodeInstanceEntityTypeService} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IIamService } from '@process-engine-js/iam_contracts';
 
@@ -9,12 +9,14 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   private _datastoreService: IDatastoreService = undefined;
   private _iamService: IIamService = undefined;
+  private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
-  constructor(datastoreService: IDatastoreService, iamService: IIamService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IProcessEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  constructor(datastoreService: IDatastoreService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IProcessEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
 
     this._datastoreService = datastoreService;
     this._iamService = iamService;
+    this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
   }
 
   private get datastoreService(): IDatastoreService {
@@ -23,6 +25,10 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   private get iamService(): IIamService {
     return this._iamService;
+  }
+
+  private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
+    return this._nodeInstanceEntityTypeService;
   }
 
 
@@ -95,9 +101,9 @@ export class ProcessEntity extends Entity implements IProcessEntity {
           current: initialToken
         };
       }
-      await processToken.save(null, internalContext);
+      await processToken.save(internalContext);
 
-      const startEvent = await (<IStartEventEntity>StartEvent).createNode(internalContext);
+      const startEvent: IStartEventEntity = <IStartEventEntity>await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
       startEvent.name = startEventDef.name;
       startEvent.key = startEventDef.key;
       startEvent.process = this;
@@ -106,11 +112,11 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       startEvent.processToken = processToken;
       startEvent.participant = participant;
 
-      startEvent.timeStart = Date.now();
+      // startEvent.timeStart = Date.now();
 
-      await startEvent.save(null, internalContext);
+      await startEvent.save(internalContext);
 
-      startEvent.changeState(laneContext, 'start', this);
+      await startEvent.changeState(laneContext, 'start', this);
     }
   }
 }

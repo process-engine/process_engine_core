@@ -103,7 +103,7 @@ var ProcessEngineService = (function () {
     };
     ProcessEngineService.prototype._messageHandler = function (msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var action, key, initialToken, source, context, _a, params, id;
+            var action, key, initialToken, source, context, _a, params, processEntity;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -129,8 +129,8 @@ var ProcessEngineService = (function () {
                         };
                         return [4 /*yield*/, this.processDefEntityTypeService.start(context, params)];
                     case 3:
-                        id = _b.sent();
-                        debugInfo("process id " + id + " started: ");
+                        processEntity = _b.sent();
+                        debugInfo("process id " + processEntity.id + " started: ");
                         return [3 /*break*/, 5];
                     case 4:
                         debugInfo('unhandled action: ', msg);

@@ -7,4 +7,5 @@ export declare class ExclusiveGatewayEntity extends NodeInstanceEntity implement
     constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     follow: any;
+    execute(context: ExecutionContext): Promise<void>;
 }

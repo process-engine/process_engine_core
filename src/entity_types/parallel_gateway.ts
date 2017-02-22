@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity} from './node_instance';
 import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
@@ -24,5 +24,131 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   public set parallelType(value: string) {
     this.setProperty(this, 'parallelType', value);
+  }
+
+
+  public async execute(context: ExecutionContext): Promise<void> {
+
+    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
+
+    const nodeDef = await this.getNodeDef();
+    const processDef = await nodeDef.getProcessDef();
+
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+
+    const flowsOut = await flowDefEntityType.query(internalContext, {
+      query: [
+        { attribute: 'source.id', operator: '=', value: nodeDef.id },
+        { attribute: 'processDef.id', operator: '=', value: processDef.id }
+      ]
+    });
+    const flowsIn = await flowDefEntityType.query(internalContext, {
+      query: [
+        { attribute: 'target', operator: '=', value: nodeDef.id },
+        { attribute: 'processDef', operator: '=', value: processDef.id }
+      ]
+    });
+
+    if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
+      // split
+      this.parallelType = 'split';
+      // do nothing, just change to end
+      this.state = 'progress';
+      await this.save(internalContext);
+
+      await this.changeState(context, 'end', this);
+    }
+
+    if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
+      // join
+      this.parallelType = 'join';
+
+      // we have to wait for all incoming flows
+      this.state = 'progress';
+      await this.save(internalContext);
+    }
+
+  }
+
+  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void> {
+    // check if all tokens are there
+
+    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
+    const nodeDefEntityType = await this.helper.datastoreService.getEntityType('NodeDef');
+    const sourceEntityType = await this.helper.datastoreService.getEntityType(source.type);
+
+    let prevDefs = null;
+    const nodeDef = await this.getNodeDef();
+    const processDef = await nodeDef.getProcessDef();
+
+    let flowsIn = null;
+
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+
+    // query for all flows going in
+    flowsIn = await flowDefEntityType.query(internalContext, {
+      query: [
+        { attribute: 'target', operator: '=', value: nodeDef.id },
+        { attribute: 'processDef', operator: '=', value: processDef.id }
+      ]
+    });
+
+    if (flowsIn && flowsIn.length > 0) {
+      const ids: Array<string> = [];
+      for (let i = 0; i < flowsIn.entities.length; i++) {
+        const flow = flowsIn.entities[i];
+        const source = await flow.getSource;
+        ids.push(source.id);
+      }
+
+
+      const queryIn = ids.map((id) => {
+        return { attribute: 'id', operator: '=', value: id };
+      });
+
+      prevDefs = await nodeDefEntityType.query(internalContext, {
+        query: [
+          { or: queryIn },
+          { attribute: 'processDef', operator: '=', value: processDef.id }
+        ]
+      });
+
+      const keys: Array<string> = [];
+      prevDefs.entities.forEach((prefDev) => {
+        keys.push(prefDev.key);
+      });
+
+      if (source) {
+        const sourceEnt = await sourceEntityType.getById(source.id, internalContext);
+
+        const token = await sourceEnt.getProcessToken;
+
+        let allthere = true;
+
+        const processToken = await this.getProcessToken();
+        const tokenData = processToken.data || {};
+        tokenData.history = tokenData.history || {};
+        // const sourceKey = sourceEnt.key;
+
+        // merge tokens
+        const merged = { ...tokenData.history, ...token.data.history };
+        tokenData.history = merged;
+        // tokenData.history[sourceKey] = token.data.current;
+
+        processToken.data = tokenData;
+        await processToken.save(internalContext);
+
+        keys.forEach((key) => {
+          if (!tokenData.history.hasOwnProperty(key)) {
+            allthere = false;
+          }
+        });
+        if (allthere) {
+          // end
+          await this.changeState(context, 'end', this);
+        }
+      }
+
+    }
   }
 }

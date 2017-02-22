@@ -1,11 +1,11 @@
 import { ExecutionContext, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
-import { Entity, IEntityType, IPropertyBag, IEncryptionService } from '@process-engine-js/data_model_contracts';
+import { Entity, IEntityType, IPropertyBag, IEncryptionService, EntityReference } from '@process-engine-js/data_model_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     private _helper;
     constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    private readonly helper;
+    readonly helper: any;
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;
@@ -18,8 +18,13 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     participant: string;
     processToken: IProcessTokenEntity;
     getProcessToken(): Promise<IProcessTokenEntity>;
-    createNode(context: any): Promise<any>;
     getLaneRole(context: ExecutionContext): Promise<string>;
-    start(context: ExecutionContext, source: any): Promise<void>;
-    changeState(context: ExecutionContext, newState: string, source: any): Promise<void>;
+    start(context: ExecutionContext, source: IEntity): Promise<void>;
+    changeState(context: ExecutionContext, newState: string, source: IEntity): Promise<void>;
+    error(context: ExecutionContext, error: any): Promise<void>;
+    execute(context: ExecutionContext): Promise<void>;
+    proceed(context: ExecutionContext, data: any, source: EntityReference): Promise<void>;
+    event(context: ExecutionContext, event: string, data: any): Promise<void>;
+    cancel(context: ExecutionContext): Promise<void>;
+    end(context: ExecutionContext, cancelFlow?: boolean): Promise<void>;
 }

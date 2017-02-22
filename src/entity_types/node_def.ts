@@ -1,13 +1,21 @@
 import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
+import {Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
+  private _datastoreService: IDatastoreService = undefined;
+
+  constructor(datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
     super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+
+    this._datastoreService = datastoreService;
+  }
+
+  private get datastoreService(): IDatastoreService {
+    return this._datastoreService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -93,11 +101,11 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
 
 
   @schemaAttribute({ type: SchemaAttributeType.object })
-  public get events(): string {
+  public get events(): any {
     return this.getProperty(this, 'events');
   }
 
-  public set events(value: string) {
+  public set events(value: any) {
     this.setProperty(this, 'events', value);
   }
 
@@ -171,15 +179,14 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     return found;
   }
 
-    /*getBoundaryEvents: {
-      fn: async function(context) {
-        const model = this._dataClass.model;
-        const queryObject = [
-              { attribute: 'attachedToNode.id', operator: '=', value: this.id}
-            ];
-        const boundaryColl = await model.NodeDef.query({ query: queryObject }, null, context);
-        return boundaryColl;
-      }
-    }*/
+  public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
+
+    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const queryObject = [
+      { attribute: 'attachedToNode', operator: '=', value: this.id }
+    ];
+    const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
+    return boundaryColl;
+  }
 
 }

@@ -50,9 +50,19 @@ var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
 var NodeDefEntity = (function (_super) {
     __extends(NodeDefEntity, _super);
-    function NodeDefEntity(propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
-        return _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+    function NodeDefEntity(datastoreService, propertyBagFactory, encryptionService, invoker, entityType, context, schema) {
+        var _this = _super.call(this, propertyBagFactory, encryptionService, invoker, entityType, context, schema) || this;
+        _this._datastoreService = undefined;
+        _this._datastoreService = datastoreService;
+        return _this;
     }
+    Object.defineProperty(NodeDefEntity.prototype, "datastoreService", {
+        get: function () {
+            return this._datastoreService;
+        },
+        enumerable: true,
+        configurable: true
+    });
     NodeDefEntity.prototype.initialize = function (derivedClassInstance) {
         return __awaiter(this, void 0, void 0, function () {
             var actualInstance;
@@ -230,6 +240,25 @@ var NodeDefEntity = (function (_super) {
                             });
                         }
                         return [2 /*return*/, found];
+                }
+            });
+        });
+    };
+    NodeDefEntity.prototype.getBoundaryEvents = function (context) {
+        return __awaiter(this, void 0, void 0, function () {
+            var nodeDefEntityType, queryObject, boundaryColl;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.datastoreService.getEntityType('NodeDef')];
+                    case 1:
+                        nodeDefEntityType = _a.sent();
+                        queryObject = [
+                            { attribute: 'attachedToNode', operator: '=', value: this.id }
+                        ];
+                        return [4 /*yield*/, nodeDefEntityType.query(context, { query: queryObject })];
+                    case 2:
+                        boundaryColl = _a.sent();
+                        return [2 /*return*/, boundaryColl];
                 }
             });
         });

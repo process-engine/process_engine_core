@@ -67,8 +67,8 @@ export class ProcessEngineService implements IProcessEngineService {
           source: source
         };
 
-        const id = await this.processDefEntityTypeService.start(context, params);
-        debugInfo(`process id ${id} started: `);
+        const processEntity = await this.processDefEntityTypeService.start(context, params);
+        debugInfo(`process id ${processEntity.id} started: `);
         break;
       default:
         debugInfo('unhandled action: ', msg);

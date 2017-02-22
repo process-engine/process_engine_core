@@ -78,6 +78,90 @@ var ExclusiveGatewayEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    ExclusiveGatewayEntity.prototype.execute = function (context) {
+        return __awaiter(this, void 0, void 0, function () {
+            var flowDefEntityType, nodeDef, processDef, internalContext, flowsOut, flowsIn, follow, i, flow, processToken, tokenData, result, functionString, evaluateFunction;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.helper.datastoreService.getEntityType('FlowDef')];
+                    case 1:
+                        flowDefEntityType = _a.sent();
+                        return [4 /*yield*/, this.getNodeDef()];
+                    case 2:
+                        nodeDef = _a.sent();
+                        return [4 /*yield*/, nodeDef.getProcessDef()];
+                    case 3:
+                        processDef = _a.sent();
+                        return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
+                    case 4:
+                        internalContext = _a.sent();
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
+                                query: [
+                                    { attribute: 'source', operator: '=', value: nodeDef.id },
+                                    { attribute: 'processDef', operator: '=', value: processDef.id }
+                                ]
+                            })];
+                    case 5:
+                        flowsOut = _a.sent();
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
+                                query: [
+                                    { attribute: 'target', operator: '=', value: nodeDef.id },
+                                    { attribute: 'processDef', operator: '=', value: processDef.id }
+                                ]
+                            })];
+                    case 6:
+                        flowsIn = _a.sent();
+                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1))
+                            return [3 /*break*/, 12];
+                        follow = [];
+                        i = 0;
+                        _a.label = 7;
+                    case 7:
+                        if (!(i < flowsOut._entities.length))
+                            return [3 /*break*/, 11];
+                        flow = flowsOut.data[i];
+                        if (!flow.condition)
+                            return [3 /*break*/, 9];
+                        return [4 /*yield*/, this.getProcessToken()];
+                    case 8:
+                        processToken = _a.sent();
+                        tokenData = processToken.data || {};
+                        result = false;
+                        try {
+                            functionString = 'return ' + flow.condition;
+                            evaluateFunction = new Function(functionString);
+                            result = evaluateFunction.call(tokenData);
+                        }
+                        catch (err) {
+                        }
+                        if (result) {
+                            follow.push(flow.id);
+                        }
+                        return [3 /*break*/, 10];
+                    case 9:
+                        follow.push(flow.id);
+                        _a.label = 10;
+                    case 10:
+                        i++;
+                        return [3 /*break*/, 7];
+                    case 11:
+                        this.follow = follow;
+                        _a.label = 12;
+                    case 12:
+                        if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
+                        }
+                        this.state = 'progress';
+                        return [4 /*yield*/, this.save(internalContext)];
+                    case 13:
+                        _a.sent();
+                        return [4 /*yield*/, this.changeState(context, 'end', this)];
+                    case 14:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     return ExclusiveGatewayEntity;
 }(node_instance_1.NodeInstanceEntity));
 __decorate([

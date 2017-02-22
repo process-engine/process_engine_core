@@ -78,6 +78,58 @@ var ScriptTaskEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    ScriptTaskEntity.prototype.execute = function (context) {
+        return __awaiter(this, void 0, void 0, function () {
+            var internalContext, processToken, tokenData, result, nodeDef, script, scriptFunction, err_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
+                    case 1:
+                        internalContext = _a.sent();
+                        this.state = 'progress';
+                        return [4 /*yield*/, this.save(internalContext)];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, this.getProcessToken()];
+                    case 3:
+                        processToken = _a.sent();
+                        tokenData = processToken.data || {};
+                        return [4 /*yield*/, this.getNodeDef()];
+                    case 4:
+                        nodeDef = _a.sent();
+                        script = nodeDef.script;
+                        if (!script)
+                            return [3 /*break*/, 11];
+                        _a.label = 5;
+                    case 5:
+                        _a.trys.push([5, 7, , 9]);
+                        scriptFunction = new Function('token', 'context', script);
+                        return [4 /*yield*/, scriptFunction.call(this, tokenData, context)];
+                    case 6:
+                        result = _a.sent();
+                        return [3 /*break*/, 9];
+                    case 7:
+                        err_1 = _a.sent();
+                        result = err_1;
+                        return [4 /*yield*/, this.error(context, err_1)];
+                    case 8:
+                        _a.sent();
+                        return [3 /*break*/, 9];
+                    case 9:
+                        tokenData.current = result;
+                        processToken.data = tokenData;
+                        return [4 /*yield*/, processToken.save(context)];
+                    case 10:
+                        _a.sent();
+                        _a.label = 11;
+                    case 11: return [4 /*yield*/, this.changeState(context, 'end', this)];
+                    case 12:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     return ScriptTaskEntity;
 }(node_instance_1.NodeInstanceEntity));
 __decorate([

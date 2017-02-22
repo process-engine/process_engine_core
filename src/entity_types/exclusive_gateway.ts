@@ -25,4 +25,69 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
     this.setProperty(this, 'follow', value);
   }
 
+  public async execute(context: ExecutionContext) {
+
+    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
+    const nodeDef = await this.getNodeDef();
+    const processDef = await nodeDef.getProcessDef();
+
+    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+
+    const flowsOut = await flowDefEntityType.query(internalContext, {
+      query: [
+        { attribute: 'source', operator: '=', value: nodeDef.id },
+        { attribute: 'processDef', operator: '=', value: processDef.id }
+      ]
+    });
+    const flowsIn = await flowDefEntityType.query(internalContext, {
+      query: [
+        { attribute: 'target', operator: '=', value: nodeDef.id },
+        { attribute: 'processDef', operator: '=', value: processDef.id }
+      ]
+    });
+
+    if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
+      // split
+      // evaluate conditions
+
+      const follow: Array<string> = [];
+
+      for (let i = 0; i < flowsOut._entities.length; i++) {
+        const flow = flowsOut.data[i];
+        if (flow.condition) {
+
+          const processToken = await this.getProcessToken();
+          const tokenData = processToken.data || {};
+
+          let result = false;
+          try {
+            const functionString = 'return ' + flow.condition;
+            const evaluateFunction = new Function(functionString);
+
+            result = evaluateFunction.call(tokenData);
+          } catch (err) {
+            // do nothing
+          }
+
+          if (result) {
+            follow.push(flow.id);
+          }
+        } else {
+          follow.push(flow.id);
+        }
+      }
+      this.follow = follow;
+    }
+
+    if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
+      // join
+
+    }
+
+    this.state = 'progress';
+    await this.save(internalContext);
+
+    await this.changeState(context, 'end', this);
+
+  }
 }

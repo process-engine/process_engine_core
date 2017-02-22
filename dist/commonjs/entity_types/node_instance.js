@@ -167,93 +167,12 @@ var NodeInstanceEntity = (function (_super) {
     NodeInstanceEntity.prototype.getProcessToken = function () {
         return this.getPropertyLazy(this, 'processToken');
     };
-    NodeInstanceEntity.prototype.createNode = function (context) {
-        return __awaiter(this, void 0, void 0, function () {
-            function nodeHandler(msg) {
-                return __awaiter(this, void 0, void 0, function () {
-                    var action, source, context, newState, _a, newData, event_1, data;
-                    return __generator(this, function (_b) {
-                        switch (_b.label) {
-                            case 0: return [4 /*yield*/, this.messagebus.verifyMessage(msg)];
-                            case 1:
-                                msg = _b.sent();
-                                action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-                                source = (msg && msg.origin) ? msg.origin : null;
-                                context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
-                                if (!(action === 'changeState'))
-                                    return [3 /*break*/, 8];
-                                newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-                                _a = newState;
-                                switch (_a) {
-                                    case ('start'): return [3 /*break*/, 2];
-                                    case ('execute'): return [3 /*break*/, 4];
-                                    case ('end'): return [3 /*break*/, 6];
-                                }
-                                return [3 /*break*/, 8];
-                            case 2: return [4 /*yield*/, this.entity.start(context, source)];
-                            case 3:
-                                _b.sent();
-                                return [3 /*break*/, 8];
-                            case 4: return [4 /*yield*/, this.entity.execute(context)];
-                            case 5:
-                                _b.sent();
-                                return [3 /*break*/, 8];
-                            case 6: return [4 /*yield*/, this.entity.end(context)];
-                            case 7:
-                                _b.sent();
-                                return [3 /*break*/, 8];
-                            case 8:
-                                if (!(action === 'proceed'))
-                                    return [3 /*break*/, 10];
-                                newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-                                return [4 /*yield*/, this.entity.proceed(context, newData, source)];
-                            case 9:
-                                _b.sent();
-                                _b.label = 10;
-                            case 10:
-                                if (!(action === 'event'))
-                                    return [3 /*break*/, 12];
-                                event_1 = (msg && msg.data && msg.data.event) ? msg.data.event : null;
-                                data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-                                return [4 /*yield*/, this.entity.event(context, event_1, data)];
-                            case 11:
-                                _b.sent();
-                                _b.label = 12;
-                            case 12: return [2 /*return*/];
-                        }
-                    });
-                });
-            }
-            var internalContext, NodeInstance, node, binding;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
-                    case 1:
-                        internalContext = _a.sent();
-                        return [4 /*yield*/, this.helper.datastoreService.getEntityType('NodeInstance')];
-                    case 2:
-                        NodeInstance = _a.sent();
-                        return [4 /*yield*/, NodeInstance.createEntity(internalContext)];
-                    case 3:
-                        node = _a.sent();
-                        binding = {
-                            entity: node,
-                            messagebus: this.helper.messagebusService
-                        };
-                        return [4 /*yield*/, this.helper.messagebusService.subscribe('/processengine/node/' + node.id, nodeHandler.bind(binding))];
-                    case 4:
-                        _a.sent();
-                        return [2 /*return*/, node];
-                }
-            });
-        });
-    };
     NodeInstanceEntity.prototype.getLaneRole = function (context) {
         return __awaiter(this, void 0, void 0, function () {
             var nodeDef, role;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.nodeDef];
+                    case 0: return [4 /*yield*/, this.getNodeDef()];
                     case 1:
                         nodeDef = _a.sent();
                         return [4 /*yield*/, nodeDef.getLaneRole(context)];
@@ -304,12 +223,273 @@ var NodeInstanceEntity = (function (_super) {
                             action: 'changeState',
                             data: newState
                         };
-                        origin = new data_model_contracts_1.EntityReference(source.entityType.namespace, source.entityType.name, source.id);
+                        origin = source.getEntityReference();
                         msg = this.helper.messagebusService.createMessage(data, origin, meta);
                         return [4 /*yield*/, this.helper.messagebusService.publish('/processengine/node/' + this.id, msg)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NodeInstanceEntity.prototype.error = function (context, error) {
+        return __awaiter(this, void 0, void 0, function () {
+            var nodeDef, meta, data, origin, msg;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getNodeDef()];
+                    case 1:
+                        nodeDef = _a.sent();
+                        if (!(nodeDef && nodeDef.events && nodeDef.events.error))
+                            return [3 /*break*/, 3];
+                        meta = {
+                            jwt: context.encryptedToken
+                        };
+                        data = {
+                            action: 'event',
+                            event: 'error',
+                            data: error
+                        };
+                        origin = this.getEntityReference();
+                        msg = this.helper.messagebusService.createMessage(data, origin, meta);
+                        return [4 /*yield*/, this.helper.messagebusService.publish('/processengine/node/' + this.id, msg)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NodeInstanceEntity.prototype.execute = function (context) {
+        return __awaiter(this, void 0, void 0, function () {
+            var internalContext;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
+                    case 1:
+                        internalContext = _a.sent();
+                        this.state = 'progress';
+                        return [4 /*yield*/, this.save(internalContext)];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, this.changeState(context, 'end', this)];
+                    case 3:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NodeInstanceEntity.prototype.proceed = function (context, data, source) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/];
+            });
+        });
+    };
+    NodeInstanceEntity.prototype.event = function (context, event, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            var nodeDefEntityType, internalContext, nodeDef, boundaryDefKey, queryObject, boundary, token;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.helper.datastoreService.getEntityType('NodeDef')];
+                    case 1:
+                        nodeDefEntityType = _a.sent();
+                        return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
+                    case 2:
+                        internalContext = _a.sent();
+                        return [4 /*yield*/, this.getNodeDef()];
+                    case 3:
+                        nodeDef = _a.sent();
+                        if (!(nodeDef && nodeDef.events && nodeDef.events[event]))
+                            return [3 /*break*/, 9];
+                        boundaryDefKey = nodeDef.events[event];
+                        queryObject = {
+                            attribute: 'key', operator: '=', value: boundaryDefKey
+                        };
+                        return [4 /*yield*/, nodeDefEntityType.findOne(internalContext, { query: queryObject })];
+                    case 4:
+                        boundary = _a.sent();
+                        return [4 /*yield*/, this.getProcessToken()];
+                    case 5:
+                        token = _a.sent();
+                        if (!(boundary && boundary.cancelActivity))
+                            return [3 /*break*/, 7];
+                        return [4 /*yield*/, this.end(context, true)];
+                    case 6:
+                        _a.sent();
+                        _a.label = 7;
+                    case 7: return [4 /*yield*/, this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token)];
+                    case 8:
+                        _a.sent();
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NodeInstanceEntity.prototype.cancel = function (context) {
+        return __awaiter(this, void 0, void 0, function () {
+            var nodeDef, meta, data, origin, msg;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getNodeDef()];
+                    case 1:
+                        nodeDef = _a.sent();
+                        if (!(nodeDef && nodeDef.events && nodeDef.events.cancel))
+                            return [3 /*break*/, 3];
+                        meta = {
+                            jwt: context.encryptedToken
+                        };
+                        data = {
+                            action: 'event',
+                            event: 'cancel',
+                            data: null
+                        };
+                        origin = this.getEntityReference();
+                        msg = this.helper.messagebusService.createMessage(data, origin, meta);
+                        return [4 /*yield*/, this.helper.messagebusService.publish('/processengine/node/' + this.id, msg)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NodeInstanceEntity.prototype.end = function (context, cancelFlow) {
+        if (cancelFlow === void 0) { cancelFlow = false; }
+        return __awaiter(this, void 0, void 0, function () {
+            var flowDefEntityType, nodeDefEntityType, processTokenEntityType, internalContext, nodeInstance, splitToken, processToken, tokenData, nextDefs, nodeDef, processDef, flowsOut, queryIn, ids, i, flow, target, queryIn, i, nextDef, currentToken;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.helper.datastoreService.getEntityType('FlowDef')];
+                    case 1:
+                        flowDefEntityType = _a.sent();
+                        return [4 /*yield*/, this.helper.datastoreService.getEntityType('NodeDef')];
+                    case 2:
+                        nodeDefEntityType = _a.sent();
+                        return [4 /*yield*/, this.helper.datastoreService.getEntityType('ProcessToken')];
+                    case 3:
+                        processTokenEntityType = _a.sent();
+                        return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
+                    case 4:
+                        internalContext = _a.sent();
+                        this.state = 'end';
+                        return [4 /*yield*/, this.save(internalContext)];
+                    case 5:
+                        _a.sent();
+                        nodeInstance = this;
+                        splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
+                        return [4 /*yield*/, this.getProcessToken()];
+                    case 6:
+                        processToken = _a.sent();
+                        tokenData = processToken.data || {};
+                        tokenData.history = tokenData.history || {};
+                        tokenData.history[this.key] = tokenData.current;
+                        processToken.data = tokenData;
+                        return [4 /*yield*/, processToken.save(internalContext)];
+                    case 7:
+                        _a.sent();
+                        nextDefs = null;
+                        return [4 /*yield*/, this.getNodeDef()];
+                    case 8:
+                        nodeDef = _a.sent();
+                        return [4 /*yield*/, nodeDef.getProcessDef()];
+                    case 9:
+                        processDef = _a.sent();
+                        flowsOut = null;
+                        if (!!cancelFlow)
+                            return [3 /*break*/, 27];
+                        if (!nodeInstance.follow)
+                            return [3 /*break*/, 12];
+                        if (!(nodeInstance.follow.length > 0))
+                            return [3 /*break*/, 11];
+                        queryIn = nodeInstance.follow.map(function (id) {
+                            return { attribute: 'id', operator: '=', value: id };
+                        });
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
+                                query: [
+                                    { or: queryIn },
+                                    { attribute: 'processDef', operator: '=', value: processDef.id }
+                                ]
+                            })];
+                    case 10:
+                        flowsOut = _a.sent();
+                        _a.label = 11;
+                    case 11: return [3 /*break*/, 14];
+                    case 12: return [4 /*yield*/, flowDefEntityType.query(internalContext, {
+                            query: [
+                                { attribute: 'source', operator: '=', value: nodeDef.id },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        })];
+                    case 13:
+                        flowsOut = _a.sent();
+                        _a.label = 14;
+                    case 14:
+                        if (!(flowsOut && flowsOut.length > 0))
+                            return [3 /*break*/, 27];
+                        ids = [];
+                        i = 0;
+                        _a.label = 15;
+                    case 15:
+                        if (!(i < flowsOut.data.length))
+                            return [3 /*break*/, 18];
+                        flow = flowsOut.data[i];
+                        return [4 /*yield*/, flow.target];
+                    case 16:
+                        target = _a.sent();
+                        ids.push(target.id);
+                        _a.label = 17;
+                    case 17:
+                        i++;
+                        return [3 /*break*/, 15];
+                    case 18:
+                        queryIn = ids.map(function (id) {
+                            return { attribute: 'id', operator: '=', value: id };
+                        });
+                        return [4 /*yield*/, nodeDefEntityType.query(internalContext, {
+                                query: [
+                                    { or: queryIn },
+                                    { attribute: 'processDef', operator: '=', value: processDef.id }
+                                ]
+                            })];
+                    case 19:
+                        nextDefs = _a.sent();
+                        if (!(nextDefs && nextDefs.length > 0))
+                            return [3 /*break*/, 27];
+                        i = 0;
+                        _a.label = 20;
+                    case 20:
+                        if (!(i < nextDefs.data.length))
+                            return [3 /*break*/, 27];
+                        nextDef = nextDefs.data[i];
+                        currentToken = void 0;
+                        if (!(splitToken && i > 0))
+                            return [3 /*break*/, 23];
+                        return [4 /*yield*/, processTokenEntityType.createEntity(internalContext)];
+                    case 21:
+                        currentToken = _a.sent();
+                        currentToken.process = processToken.process;
+                        currentToken.data = processToken.data;
+                        return [4 /*yield*/, currentToken.save(internalContext)];
+                    case 22:
+                        _a.sent();
+                        return [3 /*break*/, 24];
+                    case 23:
+                        currentToken = processToken;
+                        _a.label = 24;
+                    case 24: return [4 /*yield*/, this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, nextDef, currentToken)];
+                    case 25:
+                        _a.sent();
+                        _a.label = 26;
+                    case 26:
+                        i++;
+                        return [3 /*break*/, 20];
+                    case 27: return [2 /*return*/];
                 }
             });
         });

@@ -22,6 +22,7 @@ const UserTaskEntity = require('./dist/commonjs/index').UserTaskEntity;
 const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefEntityTypeService;
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 const NodeInstanceHelper = require('./dist/commonjs/index').NodeInstanceHelper;
+const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
 
 function registerInContainer(container) {
 
@@ -30,7 +31,7 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('NodeInstanceHelper', NodeInstanceHelper)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService');
+    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'NodeInstanceEntityTypeService');
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)
     .dependencies('NodeInstanceHelper')
@@ -63,10 +64,11 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('NodeDefEntity', NodeDefEntity)
+    .dependencies('DatastoreService')
     .tags(entityDiscoveryTag);
 
   container.register('NodeInstanceEntity', NodeInstanceEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceHelper', 'NodeInstanceEntityTypeService')
     .tags(entityDiscoveryTag);
 
   container.register('ParallelGatewayEntity', ParallelGatewayEntity)
@@ -74,7 +76,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessEntity', ProcessEntity)
-    .dependencies('DatastoreService', 'IamService')
+    .dependencies('DatastoreService', 'IamService', 'NodeInstanceEntityTypeService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
@@ -92,7 +94,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ServiceTaskEntity', ServiceTaskEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceHelper', 'container')
     .tags(entityDiscoveryTag);
 
   container.register('StartEventEntity', StartEventEntity)
@@ -102,6 +104,9 @@ function registerInContainer(container) {
   container.register('UserTaskEntity', UserTaskEntity)
     .dependencies('NodeInstanceHelper')
     .tags(entityDiscoveryTag);
+
+  container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
+    .dependencies('DatastoreService', 'MessageBusService', 'IamService');
 }
 
 module.exports.registerInContainer = registerInContainer;
