@@ -1,14 +1,14 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
-import {NodeInstanceEntity} from './node_instance';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
+import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {IUserTaskEntity} from '@process-engine-js/process_engine_contracts';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntity {
 
-  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IUserTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -18,7 +18,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   public async execute(context: ExecutionContext) {
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'wait';
     await this.save(null, internalContext);
 
@@ -34,13 +34,13 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       jwt: context.encryptedToken
     };
 
-    const msg = this.helper.messagebusService.createMessage(data, origin, meta);
+    const msg = this.messageBusService.createMessage(data, origin, meta);
     if (this.participant) {
-      await this.helper.messagebusService.publish('/participant/' + this.participant, msg);
+      await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
       // send message to users of lane role
       const role = await this.getLaneRole(context);
-      await this.helper.messagebusService.publish('/role/' + role, msg);
+      await this.messageBusService.publish('/role/' + role, msg);
     }
 
   }
@@ -56,7 +56,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     tokenData.current = newData;
     processToken.data = tokenData;
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
     await processToken.save(internalContext);
 
     await this.changeState(context, 'end', this);

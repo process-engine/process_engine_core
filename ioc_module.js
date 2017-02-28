@@ -21,7 +21,7 @@ const StartEventEntity = require('./dist/commonjs/index').StartEventEntity;
 const UserTaskEntity = require('./dist/commonjs/index').UserTaskEntity;
 const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefEntityTypeService;
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
-const NodeInstanceHelper = require('./dist/commonjs/index').NodeInstanceHelper;
+const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
 
 function registerInContainer(container) {
@@ -30,31 +30,32 @@ function registerInContainer(container) {
     .dependencies('MessageBusService', 'ProcessDefEntityTypeService')
     .singleton();
 
-  container.register('NodeInstanceHelper', NodeInstanceHelper)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'NodeInstanceEntityTypeService');
+  container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
+    .dependencies('DatastoreService', 'MessageBusService', 'IamService');
 
-  container.register('SubprocessExternalEntity', SubprocessExternalEntity)
-    .dependencies('NodeInstanceHelper')
-    .tags(entityDiscoveryTag);
+  container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
+    .dependencies('DatastoreService', 'Invoker');
 
-  container.register('SubprocessInternalEntity', SubprocessInternalEntity)
-    .dependencies('NodeInstanceHelper')
-    .tags(entityDiscoveryTag);
+
+  container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
+    .dependencies('MessageBusService', 'IamService', 'NodeInstanceEntityTypeService')
+    .singleton();
+    
 
   container.register('BoundaryEventEntity', BoundaryEventEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('EndEventEntity', EndEventEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('EventEntity', EventEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('ExclusiveGatewayEntity', ExclusiveGatewayEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('FlowDefEntity', FlowDefEntity)
@@ -64,49 +65,50 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('NodeDefEntity', NodeDefEntity)
-    .dependencies('DatastoreService')
     .tags(entityDiscoveryTag);
 
   container.register('NodeInstanceEntity', NodeInstanceEntity)
-    .dependencies('NodeInstanceHelper', 'NodeInstanceEntityTypeService')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('ParallelGatewayEntity', ParallelGatewayEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessEntity', ProcessEntity)
-    .dependencies('DatastoreService', 'IamService', 'NodeInstanceEntityTypeService')
+    .dependencies('IamService', 'NodeInstanceEntityTypeService')
     .tags(entityDiscoveryTag);
 
-  container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('DatastoreService', 'Invoker');
-
   container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('ProcessDefEntityTypeService', 'DatastoreService')
+    .dependencies('ProcessDefEntityTypeService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)
     .tags(entityDiscoveryTag);
 
   container.register('ScriptTaskEntity', ScriptTaskEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('ServiceTaskEntity', ServiceTaskEntity)
-    .dependencies('NodeInstanceHelper', 'container')
+    .dependencies('container', 'NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('StartEventEntity', StartEventEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
+    .tags(entityDiscoveryTag);
+
+  container.register('SubprocessInternalEntity', SubprocessInternalEntity)
+    .dependencies('NodeInstanceEntityDependencyHelper')
+    .tags(entityDiscoveryTag);
+
+  container.register('SubprocessExternalEntity', SubprocessExternalEntity)
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('UserTaskEntity', UserTaskEntity)
-    .dependencies('NodeInstanceHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
-
-  container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService');
 }
 
 module.exports.registerInContainer = registerInContainer;

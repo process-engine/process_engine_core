@@ -1,14 +1,15 @@
 import {NodeInstanceEntity} from './node_instance';
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IExclusiveGatewayEntity} from '@process-engine-js/process_engine_contracts';
+import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {IExclusiveGatewayEntity, IFlowDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclusiveGatewayEntity {
 
-  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IExclusiveGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -27,11 +28,11 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
 
   public async execute(context: ExecutionContext) {
 
-    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
+    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
     const nodeDef = await this.getNodeDef();
     const processDef = await nodeDef.getProcessDef();
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const flowsOut = await flowDefEntityType.query(internalContext, {
       query: [
@@ -52,8 +53,8 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
 
       const follow: Array<string> = [];
 
-      for (let i = 0; i < flowsOut._entities.length; i++) {
-        const flow = flowsOut.data[i];
+      for (let i = 0; i < flowsOut.data.length; i++) {
+        const flow = <IFlowDefEntity>flowsOut.data[i];
         if (flow.condition) {
 
           const processToken = await this.getProcessToken();

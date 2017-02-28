@@ -1,26 +1,19 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IPublicGetOptions} from '@process-engine-js/core_contracts';
-import { Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions} from '@process-engine-js/core_contracts';
+import { Entity, EntityDependencyHelper, IDatastoreService} from '@process-engine-js/data_model_contracts';
 import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity, INodeInstanceEntityTypeService} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IIamService } from '@process-engine-js/iam_contracts';
 
 export class ProcessEntity extends Entity implements IProcessEntity {
 
-  private _datastoreService: IDatastoreService = undefined;
   private _iamService: IIamService = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
-  constructor(datastoreService: IDatastoreService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IProcessEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, entityDependencyHelper: EntityDependencyHelper) {
+    super(entityDependencyHelper);
 
-    this._datastoreService = datastoreService;
     this._iamService = iamService;
     this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
-  }
-
-  private get datastoreService(): IDatastoreService {
-    return this._datastoreService;
   }
 
   private get iamService(): IIamService {
@@ -30,7 +23,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
   private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
     return this._nodeInstanceEntityTypeService;
   }
-
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;

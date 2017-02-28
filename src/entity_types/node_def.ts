@@ -1,21 +1,12 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService, EntityCollection} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
-  private _datastoreService: IDatastoreService = undefined;
-
-  constructor(datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
-
-    this._datastoreService = datastoreService;
-  }
-
-  private get datastoreService(): IDatastoreService {
-    return this._datastoreService;
+  constructor(entityDependencyHelper: EntityDependencyHelper) {
+    super(entityDependencyHelper);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

@@ -1,16 +1,15 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
-import {NodeInstanceEntity} from './node_instance';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
+import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {schemaAttribute} from '@process-engine-js/metadata';
-import {IParallelGatewayEntity} from '@process-engine-js/process_engine_contracts';
+import {IParallelGatewayEntity, INodeInstanceEntity} from '@process-engine-js/process_engine_contracts';
 
 export class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
 
-  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IParallelGatewayEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
   }
-
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
@@ -29,12 +28,12 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   public async execute(context: ExecutionContext): Promise<void> {
 
-    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
+    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
 
     const nodeDef = await this.getNodeDef();
     const processDef = await nodeDef.getProcessDef();
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const flowsOut = await flowDefEntityType.query(internalContext, {
       query: [
@@ -73,9 +72,9 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
   public async proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void> {
     // check if all tokens are there
 
-    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
-    const nodeDefEntityType = await this.helper.datastoreService.getEntityType('NodeDef');
-    const sourceEntityType = await this.helper.datastoreService.getEntityType(source.type);
+    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const sourceEntityType = await this.datastoreService.getEntityType(source.type);
 
     let prevDefs = null;
     const nodeDef = await this.getNodeDef();
@@ -83,7 +82,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
     let flowsIn = null;
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // query for all flows going in
     flowsIn = await flowDefEntityType.query(internalContext, {
@@ -119,9 +118,9 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       });
 
       if (source) {
-        const sourceEnt = await sourceEntityType.getById(source.id, internalContext);
+        const sourceEntity = <INodeInstanceEntity>await sourceEntityType.getById(source.id, internalContext);
 
-        const token = await sourceEnt.getProcessToken;
+        const token = await sourceEntity.getProcessToken();
 
         let allthere = true;
 

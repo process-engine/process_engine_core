@@ -1,7 +1,6 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {NodeInstanceEntity} from './node_instance';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
+import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
 import { DependencyInjectionContainer } from 'addict-ioc';
@@ -10,9 +9,11 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
   private _container: DependencyInjectionContainer = undefined;
 
-  constructor(nodeInstanceHelper: any, container: DependencyInjectionContainer, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IServiceTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
-
+  constructor(container: DependencyInjectionContainer, 
+              nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
+    
     this._container = container;
   }
 
@@ -26,7 +27,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
   }
 
   public async execute(context: ExecutionContext) {
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
     await this.save(internalContext);
 

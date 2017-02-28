@@ -1,9 +1,9 @@
-import { ExecutionContext, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
+import { IEntity } from '@process-engine-js/core_contracts';
 import { EventEntity } from './event';
-import { IEntityType, IPropertyBag, IEncryptionService } from '@process-engine-js/data_model_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
+import { EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
 import { IStartEventEntity } from '@process-engine-js/process_engine_contracts';
+import { NodeInstanceEntityDependencyHelper } from './node_instance';
 export declare class StartEventEntity extends EventEntity implements IStartEventEntity {
-    constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IStartEventEntity>, context: ExecutionContext, schema: IInheritedSchema);
+    constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper);
     initialize(derivedClassInstance: IEntity): Promise<void>;
 }

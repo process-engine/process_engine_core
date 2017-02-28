@@ -1,13 +1,13 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessTokenEntity, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IProcessTokenEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(entityDependencyHelper: EntityDependencyHelper) {
+    super(entityDependencyHelper);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

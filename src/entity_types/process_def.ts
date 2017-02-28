@@ -1,5 +1,5 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService, IDatastoreService} from '@process-engine-js/data_model_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
+import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -13,13 +13,11 @@ interface ICache<T> {
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
-  private _datastoreService: IDatastoreService = undefined;
 
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, datastoreService: IDatastoreService, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IProcessDefEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper) {
+    super(entityDependencyHelper);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
-    this._datastoreService = datastoreService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -30,11 +28,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
     return this._processDefEntityTypeService;
   }
-  
-  private get datastoreService(): IDatastoreService {
-    return this._datastoreService;
-  }
-
 
   @schemaAttribute({
     type: SchemaAttributeType.string,

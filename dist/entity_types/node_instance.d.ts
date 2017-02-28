@@ -1,11 +1,20 @@
-import { ExecutionContext, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
-import { Entity, IEntityType, IPropertyBag, IEncryptionService, EntityReference } from '@process-engine-js/data_model_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
+import { ExecutionContext, IEntity } from '@process-engine-js/core_contracts';
+import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
+import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
+import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IIamService } from '@process-engine-js/iam_contracts';
+export declare class NodeInstanceEntityDependencyHelper {
+    messageBusService: IMessageBusService;
+    iamService: IIamService;
+    nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
+    constructor(messageBusService: IMessageBusService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService);
+}
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
-    private _helper;
-    constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema);
-    readonly helper: any;
+    private _nodeInstanceEntityDependencyHelper;
+    constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper);
+    protected readonly iamService: IIamService;
+    protected readonly messageBusService: IMessageBusService;
+    protected readonly nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;

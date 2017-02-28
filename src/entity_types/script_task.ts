@@ -1,16 +1,15 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {NodeInstanceEntity} from './node_instance';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
+import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {IScriptTaskEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {
 
-  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<IScriptTaskEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(nodeInstanceHelper, propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
   }
-
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
@@ -27,7 +26,7 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
   }
 
   public async execute(context): Promise<void> {
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
     await this.save(internalContext);
 

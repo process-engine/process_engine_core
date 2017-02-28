@@ -1,9 +1,23 @@
 import { ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
-import { Entity, IEntityType, IPropertyBag, IEncryptionService, EntityReference } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IDatastoreService, IEntityType, IPropertyBag, IEncryptionService, EntityReference } from '@process-engine-js/data_model_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { INodeInstanceEntity, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IParallelGatewayEntity } from '@process-engine-js/process_engine_contracts';
+import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IParallelGatewayEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
+import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IIamService } from '@process-engine-js/iam_contracts';
 
+export class NodeInstanceEntityDependencyHelper {
+  
+  public messageBusService: IMessageBusService = undefined;
+  public iamService: IIamService = undefined;
+  public nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
+
+  constructor(messageBusService: IMessageBusService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
+    this.messageBusService = messageBusService;
+    this.iamService = iamService;
+    this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+  }
+}
 
 @schemaClass({
   expand: [
@@ -13,18 +27,25 @@ import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
-  private _helper: any = undefined;
+  private _nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper = undefined;
 
-  constructor(nodeInstanceHelper: any, propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<INodeInstanceEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper) {
+    super(entityDependencyHelper);
 
-    this._helper = nodeInstanceHelper;
+    this._nodeInstanceEntityDependencyHelper = nodeInstanceEntityDependencyHelper;
   }
 
-  public get helper(): any {
-    return this._helper;
+  protected get iamService(): IIamService {
+    return this._nodeInstanceEntityDependencyHelper.iamService;
   }
 
+  protected get messageBusService(): IMessageBusService {
+    return this._nodeInstanceEntityDependencyHelper.messageBusService;
+  }
+
+  protected get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
+    return this._nodeInstanceEntityDependencyHelper.nodeInstanceEntityTypeService;
+  }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
@@ -76,7 +97,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'nodeDef');
   }
 
-
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get type(): string {
     return this.getProperty(this, 'type');
@@ -118,7 +138,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'processToken');
   }
 
-
   public async getLaneRole(context: ExecutionContext) {
     const nodeDef = await this.getNodeDef();
     const role = await nodeDef.getLaneRole(context);
@@ -142,7 +161,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       this.state = 'start';
     }
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
     await this.save(internalContext);
 
     await this.changeState(context, 'execute', this);
@@ -163,8 +182,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     // Todo: 
     const origin = source.getEntityReference();
 
-    const msg = this.helper.messagebusService.createMessage(data, origin, meta);
-    await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+    const msg = this.messageBusService.createMessage(data, origin, meta);
+    await this.messageBusService.publish('/processengine/node/' + this.id, msg);
   }
 
   public async error(context: ExecutionContext, error: any): Promise<void> {
@@ -183,14 +202,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
       const origin = this.getEntityReference();
 
-      const msg = this.helper.messagebusService.createMessage(data, origin, meta);
-      await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+      const msg = this.messageBusService.createMessage(data, origin, meta);
+      await this.messageBusService.publish('/processengine/node/' + this.id, msg);
     }
   }
 
 
   public async execute(context: ExecutionContext): Promise<void> {
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'progress';
     await this.save(internalContext);
@@ -206,8 +225,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async event(context: ExecutionContext, event: string, data: any) {
 
-    const nodeDefEntityType = await this.helper.datastoreService.getEntityType('NodeDef');
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // check if definition exists
     const nodeDef = await this.getNodeDef();
@@ -217,14 +236,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       const queryObject = {
         attribute: 'key', operator: '=', value: boundaryDefKey
       };
-      const boundary = await nodeDefEntityType.findOne(internalContext, { query: queryObject });
+      const boundary = <INodeDefEntity>await nodeDefEntityType.findOne(internalContext, { query: queryObject });
 
       const token = await this.getProcessToken();
 
       if (boundary && boundary.cancelActivity) {
         await this.end(context, true);
       }
-      await this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
+      await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
     }
   }
 
@@ -245,19 +264,19 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
       const origin = this.getEntityReference();
 
-      const msg = this.helper.messagebusService.createMessage(data, origin, meta);
-      await this.helper.messagebusService.publish('/processengine/node/' + this.id, msg);
+      const msg = this.messageBusService.createMessage(data, origin, meta);
+      await this.messageBusService.publish('/processengine/node/' + this.id, msg);
     }
   }
 
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false) {
 
-    const flowDefEntityType = await this.helper.datastoreService.getEntityType('FlowDef');
-    const nodeDefEntityType = await this.helper.datastoreService.getEntityType('NodeDef');
-    const processTokenEntityType = await this.helper.datastoreService.getEntityType('ProcessToken');
+    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
 
-    const internalContext = await this.helper.iamService.createInternalContext('processengine_system');
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'end';
 
@@ -336,7 +355,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
               currentToken = processToken;
             }
 
-            await this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, nextDef, currentToken);
+            await this.nodeInstanceEntityTypeService.createNextNode(context, this, nextDef, currentToken);
 
           }
         }

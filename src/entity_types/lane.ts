@@ -1,13 +1,12 @@
-import {ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import {Entity, IEntityType, IPropertyBag, IEncryptionService} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ILaneEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
 
 export class LaneEntity extends Entity implements ILaneEntity {
 
-  constructor(propertyBagFactory: IFactory<IPropertyBag>, encryptionService: IEncryptionService, invoker: IInvoker, entityType: IEntityType<ILaneEntity>, context: ExecutionContext, schema: IInheritedSchema) {
-    super(propertyBagFactory, encryptionService, invoker, entityType, context, schema);
+  constructor(entityDependencyHelper: EntityDependencyHelper) {
+   super(entityDependencyHelper);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
