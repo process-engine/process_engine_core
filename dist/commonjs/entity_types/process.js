@@ -18,8 +18,8 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class ProcessEntity extends data_model_contracts_1.Entity {
-    constructor(iamService, nodeInstanceEntityTypeService, entityDependencyHelper) {
-        super(entityDependencyHelper);
+    constructor(iamService, nodeInstanceEntityTypeService, entityDependencyHelper, context, schema) {
+        super(entityDependencyHelper, context, schema);
         this._iamService = undefined;
         this._nodeInstanceEntityTypeService = undefined;
         this._iamService = iamService;

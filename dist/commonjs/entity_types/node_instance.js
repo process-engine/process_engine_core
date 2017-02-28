@@ -29,8 +29,8 @@ class NodeInstanceEntityDependencyHelper {
 }
 exports.NodeInstanceEntityDependencyHelper = NodeInstanceEntityDependencyHelper;
 let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1.Entity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper) {
-        super(entityDependencyHelper);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
+        super(entityDependencyHelper, context, schema);
         this._nodeInstanceEntityDependencyHelper = undefined;
         this._nodeInstanceEntityDependencyHelper = nodeInstanceEntityDependencyHelper;
     }

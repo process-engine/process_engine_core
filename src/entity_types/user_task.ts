@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {IUserTaskEntity} from '@process-engine-js/process_engine_contracts';
@@ -7,8 +7,10 @@ import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_ins
 export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntity {
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
+              entityDependencyHelper: EntityDependencyHelper, 
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

@@ -1,4 +1,4 @@
-import { ExecutionContext, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
@@ -11,7 +11,7 @@ export declare class NodeInstanceEntityDependencyHelper {
 }
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     private _nodeInstanceEntityDependencyHelper;
-    constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper);
+    constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     protected readonly iamService: IIamService;
     protected readonly messageBusService: IMessageBusService;
     protected readonly nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;

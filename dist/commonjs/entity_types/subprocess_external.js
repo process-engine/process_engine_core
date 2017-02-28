@@ -10,8 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
     }
     initialize(derivedClassInstance) {
         const _super = name => super[name];

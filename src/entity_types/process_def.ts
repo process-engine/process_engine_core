@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
@@ -14,8 +14,12 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
 
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper) {
-    super(entityDependencyHelper);
+
+  constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
+              entityDependencyHelper: EntityDependencyHelper, 
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
+    super(entityDependencyHelper, context, schema);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
   }

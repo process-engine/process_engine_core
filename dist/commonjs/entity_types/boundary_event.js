@@ -10,8 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
 class BoundaryEventEntity extends event_1.EventEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
     }
     initialize(derivedClassInstance) {
         const _super = name => super[name];

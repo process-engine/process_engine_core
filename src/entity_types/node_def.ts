@@ -1,12 +1,14 @@
-import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
-  constructor(entityDependencyHelper: EntityDependencyHelper) {
-    super(entityDependencyHelper);
+  constructor(entityDependencyHelper: EntityDependencyHelper, 
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
+    super(entityDependencyHelper, context, schema);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

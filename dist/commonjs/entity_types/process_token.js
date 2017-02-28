@@ -18,8 +18,8 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class ProcessTokenEntity extends data_model_contracts_1.Entity {
-    constructor(entityDependencyHelper) {
-        super(entityDependencyHelper);
+    constructor(entityDependencyHelper, context, schema) {
+        super(entityDependencyHelper, context, schema);
     }
     initialize(derivedClassInstance) {
         const _super = name => super[name];

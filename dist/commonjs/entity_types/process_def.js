@@ -20,8 +20,8 @@ const metadata_1 = require("@process-engine-js/metadata");
 const uuid = require("uuid");
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, entityDependencyHelper) {
-        super(entityDependencyHelper);
+    constructor(processDefEntityTypeService, entityDependencyHelper, context, schema) {
+        super(entityDependencyHelper, context, schema);
         this._processDefEntityTypeService = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }

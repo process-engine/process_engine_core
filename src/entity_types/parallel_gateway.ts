@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -7,8 +7,10 @@ import {IParallelGatewayEntity, INodeInstanceEntity} from '@process-engine-js/pr
 export class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
+              entityDependencyHelper: EntityDependencyHelper, 
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

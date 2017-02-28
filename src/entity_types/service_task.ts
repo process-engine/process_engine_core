@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -9,10 +9,12 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
   private _container: DependencyInjectionContainer = undefined;
 
-  constructor(container: DependencyInjectionContainer, 
+  constructor(container: DependencyInjectionContainer,
               nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper);
+              entityDependencyHelper: EntityDependencyHelper, 
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
     
     this._container = container;
   }
