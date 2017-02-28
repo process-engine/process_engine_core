@@ -24,74 +24,51 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
             const actualInstance = derivedClassInstance || this;
             yield _super("initialize").call(this, actualInstance);
         });
-    };
-    ServiceTaskEntity.prototype.execute = function (context) {
-        return __awaiter(this, void 0, void 0, function () {
-            var internalContext, processToken, tokenData, continueEnd, nodeDef, extensions, props, serviceModule_1, serviceMethod_1, paramString_1, service, params, result, functionString, evaluateFunction, err_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
-                    case 1:
-                        internalContext = _a.sent();
-                        this.state = 'progress';
-                        return [4 /*yield*/, this.save(internalContext)];
-                    case 2:
-                        _a.sent();
-                        return [4 /*yield*/, this.getProcessToken()];
-                    case 3:
-                        processToken = _a.sent();
-                        tokenData = processToken.data || {};
-                        continueEnd = true;
-                        return [4 /*yield*/, this.getNodeDef()];
-                    case 4:
-                        nodeDef = _a.sent();
-                        extensions = nodeDef.extensions || null;
-                        props = (extensions && extensions.properties) ? extensions.properties : null;
-                        if (!props) return [3 /*break*/, 11];
-                        props.forEach(function (prop) {
-                            if (prop.name === 'module') {
-                                serviceModule_1 = prop.value;
-                            }
-                            if (prop.name === 'method') {
-                                serviceMethod_1 = prop.value;
-                            }
-                            if (prop.name === 'params') {
-                                paramString_1 = prop.value;
-                            }
-                        });
-                        if (!(serviceModule_1 && serviceMethod_1)) return [3 /*break*/, 11];
-                        service = this.container.resolve(serviceModule_1);
-                        params = [];
-                        result = void 0;
-                        _a.label = 5;
-                    case 5:
-                        _a.trys.push([5, 7, , 9]);
-                        functionString = 'return ' + paramString_1;
-                        evaluateFunction = new Function(functionString);
+    }
+    execute(context) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const internalContext = yield this.iamService.createInternalContext('processengine_system');
+            this.state = 'progress';
+            yield this.save(internalContext);
+            const processToken = yield this.getProcessToken();
+            const tokenData = processToken.data || {};
+            let continueEnd = true;
+            const nodeDef = yield this.getNodeDef();
+            const extensions = nodeDef.extensions || null;
+            const props = (extensions && extensions.properties) ? extensions.properties : null;
+            if (props) {
+                let serviceModule;
+                let serviceMethod;
+                let paramString;
+                props.forEach((prop) => {
+                    if (prop.name === 'module') {
+                        serviceModule = prop.value;
+                    }
+                    if (prop.name === 'method') {
+                        serviceMethod = prop.value;
+                    }
+                    if (prop.name === 'params') {
+                        paramString = prop.value;
+                    }
+                });
+                if (serviceModule && serviceMethod) {
+                    const service = this.container.resolve(serviceModule);
+                    let params = [];
+                    let result;
+                    try {
+                        const functionString = 'return ' + paramString;
+                        const evaluateFunction = new Function(functionString);
                         params = evaluateFunction.call(tokenData);
                         result = yield service[serviceMethod].apply(this, [context].concat(params));
                     }
                     catch (err) {
                         result = err;
                         continueEnd = false;
-                        return [4 /*yield*/, this.error(context, err_1)];
-                    case 8:
-                        _a.sent();
-                        return [3 /*break*/, 9];
-                    case 9:
-                        tokenData.current = result;
-                        processToken.data = tokenData;
-                        return [4 /*yield*/, processToken.save(null, internalContext)];
-                    case 10:
-                        _a.sent();
-                        _a.label = 11;
-                    case 11:
-                        if (!continueEnd) return [3 /*break*/, 13];
-                        return [4 /*yield*/, this.changeState(context, 'end', this)];
-                    case 12:
-                        _a.sent();
-                        _a.label = 13;
-                    case 13: return [2 /*return*/];
+                        yield this.error(context, err);
+                    }
+                    tokenData.current = result;
+                    processToken.data = tokenData;
+                    yield processToken.save(null, internalContext);
                 }
             }
             if (continueEnd) {

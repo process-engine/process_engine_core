@@ -140,33 +140,23 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             const msg = this.messageBusService.createMessage(data, origin, meta);
             yield this.messageBusService.publish('/processengine/node/' + this.id, msg);
         });
-    };
-    NodeInstanceEntity.prototype.error = function (context, error) {
-        return __awaiter(this, void 0, void 0, function () {
-            var nodeDef, meta, data, origin, msg;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNodeDef()];
-                    case 1:
-                        nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events.error)) return [3 /*break*/, 3];
-                        meta = {
-                            jwt: context.encryptedToken
-                        };
-                        data = {
-                            action: 'event',
-                            event: 'error',
-                            data: error
-                        };
-                        origin = this.getEntityReference();
-                        msg = this.helper.messagebusService.createMessage(data, origin, meta);
-                        return [4 /*yield*/, this.helper.messagebusService.publish('/processengine/node/' + this.id, msg)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
-                }
-            });
+    }
+    error(context, error) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const nodeDef = yield this.getNodeDef();
+            if (nodeDef && nodeDef.events && nodeDef.events.error) {
+                const meta = {
+                    jwt: context.encryptedToken
+                };
+                const data = {
+                    action: 'event',
+                    event: 'error',
+                    data: error
+                };
+                const origin = this.getEntityReference();
+                const msg = this.messageBusService.createMessage(data, origin, meta);
+                yield this.messageBusService.publish('/processengine/node/' + this.id, msg);
+            }
         });
     }
     execute(context) {
@@ -180,121 +170,68 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     proceed(context, data, source) {
         return __awaiter(this, void 0, void 0, function* () {
         });
-    };
-    NodeInstanceEntity.prototype.event = function (context, event, data) {
-        return __awaiter(this, void 0, void 0, function () {
-            var nodeDefEntityType, internalContext, nodeDef, boundaryDefKey, queryObject, boundary, token;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.helper.datastoreService.getEntityType('NodeDef')];
-                    case 1:
-                        nodeDefEntityType = _a.sent();
-                        return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
-                    case 2:
-                        internalContext = _a.sent();
-                        return [4 /*yield*/, this.getNodeDef()];
-                    case 3:
-                        nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events[event])) return [3 /*break*/, 9];
-                        boundaryDefKey = nodeDef.events[event];
-                        queryObject = {
-                            attribute: 'key', operator: '=', value: boundaryDefKey
-                        };
-                        return [4 /*yield*/, nodeDefEntityType.findOne(internalContext, { query: queryObject })];
-                    case 4:
-                        boundary = _a.sent();
-                        return [4 /*yield*/, this.getProcessToken()];
-                    case 5:
-                        token = _a.sent();
-                        if (!(boundary && boundary.cancelActivity)) return [3 /*break*/, 7];
-                        return [4 /*yield*/, this.end(context, true)];
-                    case 6:
-                        _a.sent();
-                        _a.label = 7;
-                    case 7: return [4 /*yield*/, this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token)];
-                    case 8:
-                        _a.sent();
-                        _a.label = 9;
-                    case 9: return [2 /*return*/];
+    }
+    event(context, event, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const nodeDefEntityType = yield this.datastoreService.getEntityType('NodeDef');
+            const internalContext = yield this.iamService.createInternalContext('processengine_system');
+            const nodeDef = yield this.getNodeDef();
+            if (nodeDef && nodeDef.events && nodeDef.events[event]) {
+                const boundaryDefKey = nodeDef.events[event];
+                const queryObject = {
+                    attribute: 'key', operator: '=', value: boundaryDefKey
+                };
+                const boundary = yield nodeDefEntityType.findOne(internalContext, { query: queryObject });
+                const token = yield this.getProcessToken();
+                if (boundary && boundary.cancelActivity) {
+                    yield this.end(context, true);
                 }
                 yield this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
             }
         });
-    };
-    NodeInstanceEntity.prototype.cancel = function (context) {
-        return __awaiter(this, void 0, void 0, function () {
-            var nodeDef, meta, data, origin, msg;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNodeDef()];
-                    case 1:
-                        nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events.cancel)) return [3 /*break*/, 3];
-                        meta = {
-                            jwt: context.encryptedToken
-                        };
-                        data = {
-                            action: 'event',
-                            event: 'cancel',
-                            data: null
-                        };
-                        origin = this.getEntityReference();
-                        msg = this.helper.messagebusService.createMessage(data, origin, meta);
-                        return [4 /*yield*/, this.helper.messagebusService.publish('/processengine/node/' + this.id, msg)];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
-                }
-            });
+    }
+    cancel(context) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const nodeDef = yield this.getNodeDef();
+            if (nodeDef && nodeDef.events && nodeDef.events.cancel) {
+                const meta = {
+                    jwt: context.encryptedToken
+                };
+                const data = {
+                    action: 'event',
+                    event: 'cancel',
+                    data: null
+                };
+                const origin = this.getEntityReference();
+                const msg = this.messageBusService.createMessage(data, origin, meta);
+                yield this.messageBusService.publish('/processengine/node/' + this.id, msg);
+            }
         });
-    };
-    NodeInstanceEntity.prototype.end = function (context, cancelFlow) {
-        if (cancelFlow === void 0) { cancelFlow = false; }
-        return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, nodeDefEntityType, processTokenEntityType, internalContext, nodeInstance, splitToken, processToken, tokenData, nextDefs, nodeDef, processDef, flowsOut, queryIn, ids, i, flow, target, queryIn, i, nextDef, currentToken;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.helper.datastoreService.getEntityType('FlowDef')];
-                    case 1:
-                        flowDefEntityType = _a.sent();
-                        return [4 /*yield*/, this.helper.datastoreService.getEntityType('NodeDef')];
-                    case 2:
-                        nodeDefEntityType = _a.sent();
-                        return [4 /*yield*/, this.helper.datastoreService.getEntityType('ProcessToken')];
-                    case 3:
-                        processTokenEntityType = _a.sent();
-                        return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
-                    case 4:
-                        internalContext = _a.sent();
-                        this.state = 'end';
-                        return [4 /*yield*/, this.save(internalContext)];
-                    case 5:
-                        _a.sent();
-                        nodeInstance = this;
-                        splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
-                        return [4 /*yield*/, this.getProcessToken()];
-                    case 6:
-                        processToken = _a.sent();
-                        tokenData = processToken.data || {};
-                        tokenData.history = tokenData.history || {};
-                        tokenData.history[this.key] = tokenData.current;
-                        processToken.data = tokenData;
-                        return [4 /*yield*/, processToken.save(internalContext)];
-                    case 7:
-                        _a.sent();
-                        nextDefs = null;
-                        return [4 /*yield*/, this.getNodeDef()];
-                    case 8:
-                        nodeDef = _a.sent();
-                        return [4 /*yield*/, nodeDef.getProcessDef()];
-                    case 9:
-                        processDef = _a.sent();
-                        flowsOut = null;
-                        if (!!cancelFlow) return [3 /*break*/, 27];
-                        if (!nodeInstance.follow) return [3 /*break*/, 12];
-                        if (!(nodeInstance.follow.length > 0)) return [3 /*break*/, 11];
-                        queryIn = nodeInstance.follow.map(function (id) {
+    }
+    end(context, cancelFlow = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const flowDefEntityType = yield this.datastoreService.getEntityType('FlowDef');
+            const nodeDefEntityType = yield this.datastoreService.getEntityType('NodeDef');
+            const processTokenEntityType = yield this.datastoreService.getEntityType('ProcessToken');
+            const internalContext = yield this.iamService.createInternalContext('processengine_system');
+            this.state = 'end';
+            yield this.save(internalContext);
+            const nodeInstance = this;
+            const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
+            const processToken = yield this.getProcessToken();
+            const tokenData = processToken.data || {};
+            tokenData.history = tokenData.history || {};
+            tokenData.history[this.key] = tokenData.current;
+            processToken.data = tokenData;
+            yield processToken.save(internalContext);
+            let nextDefs = null;
+            const nodeDef = yield this.getNodeDef();
+            const processDef = yield nodeDef.getProcessDef();
+            let flowsOut = null;
+            if (!cancelFlow) {
+                if (nodeInstance.follow) {
+                    if (nodeInstance.follow.length > 0) {
+                        const queryIn = nodeInstance.follow.map((id) => {
                             return { attribute: 'id', operator: '=', value: id };
                         });
                         flowsOut = yield flowDefEntityType.query(internalContext, {
@@ -302,66 +239,8 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                                 { or: queryIn },
                                 { attribute: 'processDef', operator: '=', value: processDef.id }
                             ]
-                        })];
-                    case 13:
-                        flowsOut = _a.sent();
-                        _a.label = 14;
-                    case 14:
-                        if (!(flowsOut && flowsOut.length > 0)) return [3 /*break*/, 27];
-                        ids = [];
-                        i = 0;
-                        _a.label = 15;
-                    case 15:
-                        if (!(i < flowsOut.data.length)) return [3 /*break*/, 18];
-                        flow = flowsOut.data[i];
-                        return [4 /*yield*/, flow.target];
-                    case 16:
-                        target = _a.sent();
-                        ids.push(target.id);
-                        _a.label = 17;
-                    case 17:
-                        i++;
-                        return [3 /*break*/, 15];
-                    case 18:
-                        queryIn = ids.map(function (id) {
-                            return { attribute: 'id', operator: '=', value: id };
                         });
-                        return [4 /*yield*/, nodeDefEntityType.query(internalContext, {
-                                query: [
-                                    { or: queryIn },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
-                    case 19:
-                        nextDefs = _a.sent();
-                        if (!(nextDefs && nextDefs.length > 0)) return [3 /*break*/, 27];
-                        i = 0;
-                        _a.label = 20;
-                    case 20:
-                        if (!(i < nextDefs.data.length)) return [3 /*break*/, 27];
-                        nextDef = nextDefs.data[i];
-                        currentToken = void 0;
-                        if (!(splitToken && i > 0)) return [3 /*break*/, 23];
-                        return [4 /*yield*/, processTokenEntityType.createEntity(internalContext)];
-                    case 21:
-                        currentToken = _a.sent();
-                        currentToken.process = processToken.process;
-                        currentToken.data = processToken.data;
-                        return [4 /*yield*/, currentToken.save(internalContext)];
-                    case 22:
-                        _a.sent();
-                        return [3 /*break*/, 24];
-                    case 23:
-                        currentToken = processToken;
-                        _a.label = 24;
-                    case 24: return [4 /*yield*/, this.helper.nodeInstanceEntityTypeService.createNextNode(context, this, nextDef, currentToken)];
-                    case 25:
-                        _a.sent();
-                        _a.label = 26;
-                    case 26:
-                        i++;
-                        return [3 /*break*/, 20];
-                    case 27: return [2 /*return*/];
+                    }
                 }
                 else {
                     flowsOut = yield flowDefEntityType.query(internalContext, {

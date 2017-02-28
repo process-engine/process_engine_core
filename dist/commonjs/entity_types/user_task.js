@@ -43,46 +43,18 @@ class UserTaskEntity extends node_instance_1.NodeInstanceEntity {
                 yield this.messageBusService.publish('/role/' + role, msg);
             }
         });
-    };
-    UserTaskEntity.prototype.execute = function (context) {
-        return __awaiter(this, void 0, void 0, function () {
-            var internalContext, pojo, data, origin, meta, msg, role;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.helper.iamService.createInternalContext('processengine_system')];
-                    case 1:
-                        internalContext = _a.sent();
-                        this.state = 'wait';
-                        return [4 /*yield*/, this.save(null, internalContext)];
-                    case 2:
-                        _a.sent();
-                        return [4 /*yield*/, this.toPojo(internalContext)];
-                    case 3:
-                        pojo = _a.sent();
-                        data = {
-                            action: 'userTask',
-                            data: pojo
-                        };
-                        origin = this.getEntityReference();
-                        meta = {
-                            jwt: context.encryptedToken
-                        };
-                        msg = this.helper.messagebusService.createMessage(data, origin, meta);
-                        if (!this.participant) return [3 /*break*/, 5];
-                        return [4 /*yield*/, this.helper.messagebusService.publish('/participant/' + this.participant, msg)];
-                    case 4:
-                        _a.sent();
-                        return [3 /*break*/, 8];
-                    case 5: return [4 /*yield*/, this.getLaneRole(context)];
-                    case 6:
-                        role = _a.sent();
-                        return [4 /*yield*/, this.helper.messagebusService.publish('/role/' + role, msg)];
-                    case 7:
-                        _a.sent();
-                        _a.label = 8;
-                    case 8: return [2 /*return*/];
-                }
-            });
+    }
+    proceed(context, newData, source) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.participant !== source.id) {
+            }
+            const processToken = yield this.getProcessToken();
+            const tokenData = processToken.data || {};
+            tokenData.current = newData;
+            processToken.data = tokenData;
+            const internalContext = yield this.iamService.createInternalContext('processengine_system');
+            yield processToken.save(internalContext);
+            yield this.changeState(context, 'end', this);
         });
     }
 }
