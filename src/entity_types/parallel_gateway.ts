@@ -95,8 +95,8 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
     if (flowsIn && flowsIn.length > 0) {
       const ids: Array<string> = [];
-      for (let i = 0; i < flowsIn.entities.length; i++) {
-        const flow = flowsIn.entities[i];
+      for (let i = 0; i < flowsIn.data.length; i++) {
+        const flow = flowsIn.data[i];
         const source = await flow.getSource;
         ids.push(source.id);
       }
@@ -114,7 +114,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       });
 
       const keys: Array<string> = [];
-      prevDefs.entities.forEach((prefDev) => {
+      prevDefs.data.forEach((prefDev) => {
         keys.push(prefDev.key);
       });
 

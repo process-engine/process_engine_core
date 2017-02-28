@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -92,8 +92,7 @@ var ServiceTaskEntity = (function (_super) {
                         nodeDef = _a.sent();
                         extensions = nodeDef.extensions || null;
                         props = (extensions && extensions.properties) ? extensions.properties : null;
-                        if (!props)
-                            return [3 /*break*/, 11];
+                        if (!props) return [3 /*break*/, 11];
                         props.forEach(function (prop) {
                             if (prop.name === 'module') {
                                 serviceModule_1 = prop.value;
@@ -105,8 +104,7 @@ var ServiceTaskEntity = (function (_super) {
                                 paramString_1 = prop.value;
                             }
                         });
-                        if (!(serviceModule_1 && serviceMethod_1))
-                            return [3 /*break*/, 11];
+                        if (!(serviceModule_1 && serviceMethod_1)) return [3 /*break*/, 11];
                         service = this.container.resolve(serviceModule_1);
                         params = [];
                         result = void 0;
@@ -136,8 +134,7 @@ var ServiceTaskEntity = (function (_super) {
                         _a.sent();
                         _a.label = 11;
                     case 11:
-                        if (!continueEnd)
-                            return [3 /*break*/, 13];
+                        if (!continueEnd) return [3 /*break*/, 13];
                         return [4 /*yield*/, this.changeState(context, 'end', this)];
                     case 12:
                         _a.sent();

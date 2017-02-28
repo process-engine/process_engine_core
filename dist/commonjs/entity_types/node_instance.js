@@ -15,7 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -241,8 +241,7 @@ var NodeInstanceEntity = (function (_super) {
                     case 0: return [4 /*yield*/, this.getNodeDef()];
                     case 1:
                         nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events.error))
-                            return [3 /*break*/, 3];
+                        if (!(nodeDef && nodeDef.events && nodeDef.events.error)) return [3 /*break*/, 3];
                         meta = {
                             jwt: context.encryptedToken
                         };
@@ -303,8 +302,7 @@ var NodeInstanceEntity = (function (_super) {
                         return [4 /*yield*/, this.getNodeDef()];
                     case 3:
                         nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events[event]))
-                            return [3 /*break*/, 9];
+                        if (!(nodeDef && nodeDef.events && nodeDef.events[event])) return [3 /*break*/, 9];
                         boundaryDefKey = nodeDef.events[event];
                         queryObject = {
                             attribute: 'key', operator: '=', value: boundaryDefKey
@@ -315,8 +313,7 @@ var NodeInstanceEntity = (function (_super) {
                         return [4 /*yield*/, this.getProcessToken()];
                     case 5:
                         token = _a.sent();
-                        if (!(boundary && boundary.cancelActivity))
-                            return [3 /*break*/, 7];
+                        if (!(boundary && boundary.cancelActivity)) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.end(context, true)];
                     case 6:
                         _a.sent();
@@ -338,8 +335,7 @@ var NodeInstanceEntity = (function (_super) {
                     case 0: return [4 /*yield*/, this.getNodeDef()];
                     case 1:
                         nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events.cancel))
-                            return [3 /*break*/, 3];
+                        if (!(nodeDef && nodeDef.events && nodeDef.events.cancel)) return [3 /*break*/, 3];
                         meta = {
                             jwt: context.encryptedToken
                         };
@@ -401,12 +397,9 @@ var NodeInstanceEntity = (function (_super) {
                     case 9:
                         processDef = _a.sent();
                         flowsOut = null;
-                        if (!!cancelFlow)
-                            return [3 /*break*/, 27];
-                        if (!nodeInstance.follow)
-                            return [3 /*break*/, 12];
-                        if (!(nodeInstance.follow.length > 0))
-                            return [3 /*break*/, 11];
+                        if (!!cancelFlow) return [3 /*break*/, 27];
+                        if (!nodeInstance.follow) return [3 /*break*/, 12];
+                        if (!(nodeInstance.follow.length > 0)) return [3 /*break*/, 11];
                         queryIn = nodeInstance.follow.map(function (id) {
                             return { attribute: 'id', operator: '=', value: id };
                         });
@@ -430,14 +423,12 @@ var NodeInstanceEntity = (function (_super) {
                         flowsOut = _a.sent();
                         _a.label = 14;
                     case 14:
-                        if (!(flowsOut && flowsOut.length > 0))
-                            return [3 /*break*/, 27];
+                        if (!(flowsOut && flowsOut.length > 0)) return [3 /*break*/, 27];
                         ids = [];
                         i = 0;
                         _a.label = 15;
                     case 15:
-                        if (!(i < flowsOut.data.length))
-                            return [3 /*break*/, 18];
+                        if (!(i < flowsOut.data.length)) return [3 /*break*/, 18];
                         flow = flowsOut.data[i];
                         return [4 /*yield*/, flow.target];
                     case 16:
@@ -459,17 +450,14 @@ var NodeInstanceEntity = (function (_super) {
                             })];
                     case 19:
                         nextDefs = _a.sent();
-                        if (!(nextDefs && nextDefs.length > 0))
-                            return [3 /*break*/, 27];
+                        if (!(nextDefs && nextDefs.length > 0)) return [3 /*break*/, 27];
                         i = 0;
                         _a.label = 20;
                     case 20:
-                        if (!(i < nextDefs.data.length))
-                            return [3 /*break*/, 27];
+                        if (!(i < nextDefs.data.length)) return [3 /*break*/, 27];
                         nextDef = nextDefs.data[i];
                         currentToken = void 0;
-                        if (!(splitToken && i > 0))
-                            return [3 /*break*/, 23];
+                        if (!(splitToken && i > 0)) return [3 /*break*/, 23];
                         return [4 /*yield*/, processTokenEntityType.createEntity(internalContext)];
                     case 21:
                         currentToken = _a.sent();

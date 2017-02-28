@@ -15,7 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -111,17 +111,14 @@ var ExclusiveGatewayEntity = (function (_super) {
                             })];
                     case 6:
                         flowsIn = _a.sent();
-                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1))
-                            return [3 /*break*/, 12];
+                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1)) return [3 /*break*/, 12];
                         follow = [];
                         i = 0;
                         _a.label = 7;
                     case 7:
-                        if (!(i < flowsOut._entities.length))
-                            return [3 /*break*/, 11];
+                        if (!(i < flowsOut.data.length)) return [3 /*break*/, 11];
                         flow = flowsOut.data[i];
-                        if (!flow.condition)
-                            return [3 /*break*/, 9];
+                        if (!flow.condition) return [3 /*break*/, 9];
                         return [4 /*yield*/, this.getProcessToken()];
                     case 8:
                         processToken = _a.sent();

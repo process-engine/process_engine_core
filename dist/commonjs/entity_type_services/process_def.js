@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -92,8 +92,7 @@ var ProcessDefEntityTypeService = (function () {
                 switch (_a.label) {
                     case 0:
                         xml = params && params.xml ? params.xml : null;
-                        if (!xml)
-                            return [3 /*break*/, 3];
+                        if (!xml) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.parseBpmnXml(xml)];
                     case 1:
                         bpmnDiagram_1 = _a.sent();
@@ -116,8 +115,7 @@ var ProcessDefEntityTypeService = (function () {
                                     case 1:
                                         processDefColl = _a.sent();
                                         processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
-                                        if (!!processDefEntity)
-                                            return [3 /*break*/, 3];
+                                        if (!!processDefEntity) return [3 /*break*/, 3];
                                         processDefData = {
                                             key: process.id,
                                             defId: bpmnDiagram_1.definitions.id
@@ -167,8 +165,7 @@ var ProcessDefEntityTypeService = (function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            if (!error)
-                                return [3 /*break*/, 1];
+                            if (!error) return [3 /*break*/, 1];
                             reject(error);
                             return [3 /*break*/, 3];
                         case 1: return [4 /*yield*/, this.parseBpmnXml(xmlString)];
@@ -190,8 +187,7 @@ var ProcessDefEntityTypeService = (function () {
                 switch (_a.label) {
                     case 0:
                         key = params ? params.key : undefined;
-                        if (!key)
-                            return [3 /*break*/, 4];
+                        if (!key) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.datastoreService.getEntityType('ProcessDef')];
                     case 1:
                         ProcessDef = _a.sent();
@@ -204,8 +200,7 @@ var ProcessDefEntityTypeService = (function () {
                         return [4 /*yield*/, ProcessDef.findOne(context, queryParams)];
                     case 2:
                         processDefEntity = _a.sent();
-                        if (!processDefEntity)
-                            return [3 /*break*/, 4];
+                        if (!processDefEntity) return [3 /*break*/, 4];
                         return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'start', context, context, params, options)];
                     case 3:
                         processEntity = _a.sent();

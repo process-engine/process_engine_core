@@ -23,7 +23,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -119,8 +119,7 @@ var ParallelGatewayEntity = (function (_super) {
                             })];
                     case 6:
                         flowsIn = _a.sent();
-                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1))
-                            return [3 /*break*/, 9];
+                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1)) return [3 /*break*/, 9];
                         this.parallelType = 'split';
                         this.state = 'progress';
                         return [4 /*yield*/, this.save(internalContext)];
@@ -131,8 +130,7 @@ var ParallelGatewayEntity = (function (_super) {
                         _a.sent();
                         _a.label = 9;
                     case 9:
-                        if (!(flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1))
-                            return [3 /*break*/, 11];
+                        if (!(flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1)) return [3 /*break*/, 11];
                         this.parallelType = 'join';
                         this.state = 'progress';
                         return [4 /*yield*/, this.save(internalContext)];
@@ -177,15 +175,13 @@ var ParallelGatewayEntity = (function (_super) {
                             })];
                     case 7:
                         flowsIn = _a.sent();
-                        if (!(flowsIn && flowsIn.length > 0))
-                            return [3 /*break*/, 18];
+                        if (!(flowsIn && flowsIn.length > 0)) return [3 /*break*/, 18];
                         ids = [];
                         i = 0;
                         _a.label = 8;
                     case 8:
-                        if (!(i < flowsIn.entities.length))
-                            return [3 /*break*/, 11];
-                        flow = flowsIn.entities[i];
+                        if (!(i < flowsIn.data.length)) return [3 /*break*/, 11];
+                        flow = flowsIn.data[i];
                         return [4 /*yield*/, flow.getSource];
                     case 9:
                         source_1 = _a.sent();
@@ -207,11 +203,10 @@ var ParallelGatewayEntity = (function (_super) {
                     case 12:
                         prevDefs = _a.sent();
                         keys_1 = [];
-                        prevDefs.entities.forEach(function (prefDev) {
+                        prevDefs.data.forEach(function (prefDev) {
                             keys_1.push(prefDev.key);
                         });
-                        if (!source)
-                            return [3 /*break*/, 18];
+                        if (!source) return [3 /*break*/, 18];
                         return [4 /*yield*/, sourceEntityType.getById(source.id, internalContext)];
                     case 13:
                         sourceEnt = _a.sent();
@@ -235,8 +230,7 @@ var ParallelGatewayEntity = (function (_super) {
                                 allthere_1 = false;
                             }
                         });
-                        if (!allthere_1)
-                            return [3 /*break*/, 18];
+                        if (!allthere_1) return [3 /*break*/, 18];
                         return [4 /*yield*/, this.changeState(context, 'end', this)];
                     case 17:
                         _a.sent();

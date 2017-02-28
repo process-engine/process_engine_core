@@ -52,7 +52,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
 
       const follow: Array<string> = [];
 
-      for (let i = 0; i < flowsOut._entities.length; i++) {
+      for (let i = 0; i < flowsOut.data.length; i++) {
         const flow = flowsOut.data[i];
         if (flow.condition) {
 
