@@ -45,44 +45,62 @@ class ProcessDefEntityTypeService {
             });
         }
         return BluebirdPromise.reject(new Error('file does not exist'));
-    }
-    importBpmnFromXml(context, params, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const xml = params && params.xml ? params.xml : null;
-            if (xml) {
-                const bpmnDiagram = yield this.parseBpmnXml(xml);
-                const ProcessDef = yield this.datastoreService.getEntityType('ProcessDef');
-                const processes = bpmnDiagram.getProcesses();
-                processes.forEach((process) => __awaiter(this, void 0, void 0, function* () {
-                    const queryObject = {
-                        attribute: 'key',
-                        operator: '=',
-                        value: process.id
-                    };
-                    const params = { query: queryObject };
-                    const processDefColl = yield ProcessDef.query(context, params);
-                    let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
-                    if (!processDefEntity) {
-                        const processDefData = {
-                            key: process.id,
-                            defId: bpmnDiagram.definitions.id
-                        };
-                        processDefEntity = yield ProcessDef.createEntity(context, processDefData);
-                    }
-                    processDefEntity.name = process.name;
-                    processDefEntity.xml = xml;
-                    yield processDefEntity.save(context);
-                    yield this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram });
-                }));
-            }
-        });
-    }
-    parseBpmnXml(xml) {
-        const moddle = BpmnModdle();
-        return new BluebirdPromise((resolve, reject) => {
-            moddle.fromXML(xml, (error, definitions) => {
-                if (error) {
-                    reject(error);
+    };
+    ProcessDefEntityTypeService.prototype.importBpmnFromXml = function (context, params, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var xml, bpmnDiagram_1, ProcessDef_1, processes;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        xml = params && params.xml ? params.xml : null;
+                        if (!xml) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.parseBpmnXml(xml)];
+                    case 1:
+                        bpmnDiagram_1 = _a.sent();
+                        return [4 /*yield*/, this.datastoreService.getEntityType('ProcessDef')];
+                    case 2:
+                        ProcessDef_1 = _a.sent();
+                        processes = bpmnDiagram_1.getProcesses();
+                        processes.forEach(function (process) { return __awaiter(_this, void 0, void 0, function () {
+                            var queryObject, params, processDefColl, processDefEntity, processDefData;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        queryObject = {
+                                            attribute: 'key',
+                                            operator: '=',
+                                            value: process.id
+                                        };
+                                        params = { query: queryObject };
+                                        return [4 /*yield*/, ProcessDef_1.query(context, params)];
+                                    case 1:
+                                        processDefColl = _a.sent();
+                                        processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
+                                        if (!!processDefEntity) return [3 /*break*/, 3];
+                                        processDefData = {
+                                            key: process.id,
+                                            defId: bpmnDiagram_1.definitions.id
+                                        };
+                                        return [4 /*yield*/, ProcessDef_1.createEntity(context, processDefData)];
+                                    case 2:
+                                        processDefEntity = _a.sent();
+                                        _a.label = 3;
+                                    case 3:
+                                        processDefEntity.name = process.name;
+                                        processDefEntity.xml = xml;
+                                        return [4 /*yield*/, processDefEntity.save(context)];
+                                    case 4:
+                                        _a.sent();
+                                        return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram_1 })];
+                                    case 5:
+                                        _a.sent();
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
                 else {
                     const bpmnDiagram = new process_engine_contracts_1.BpmnDiagram(definitions);
@@ -104,22 +122,56 @@ class ProcessDefEntityTypeService {
                 }
             }));
         });
-    }
-    start(context, params, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const key = params ? params.key : undefined;
-            if (key) {
-                const ProcessDef = yield this.datastoreService.getEntityType('ProcessDef');
-                const queryObject = {
-                    attribute: 'key',
-                    operator: '=',
-                    value: key
-                };
-                const queryParams = { query: queryObject };
-                const processDefEntity = yield ProcessDef.findOne(context, queryParams);
-                if (processDefEntity) {
-                    const processEntity = yield this.invoker.invoke(processDefEntity, 'start', context, context, params, options);
-                    return processEntity;
+    };
+    ProcessDefEntityTypeService.prototype.parseBpmnFile = function (path) {
+        var _this = this;
+        return new BluebirdPromise(function (resolve, reject) {
+            fs.readFile(path, 'utf8', function (error, xmlString) { return __awaiter(_this, void 0, void 0, function () {
+                var definitions, bpmnDiagram;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!error) return [3 /*break*/, 1];
+                            reject(error);
+                            return [3 /*break*/, 3];
+                        case 1: return [4 /*yield*/, this.parseBpmnXml(xmlString)];
+                        case 2:
+                            definitions = _a.sent();
+                            bpmnDiagram = new process_engine_contracts_1.BpmnDiagram(definitions);
+                            resolve(bpmnDiagram);
+                            _a.label = 3;
+                        case 3: return [2 /*return*/];
+                    }
+                });
+            }); });
+        });
+    };
+    ProcessDefEntityTypeService.prototype.start = function (context, params, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var key, ProcessDef, queryObject, queryParams, processDefEntity, processEntity;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        key = params ? params.key : undefined;
+                        if (!key) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.datastoreService.getEntityType('ProcessDef')];
+                    case 1:
+                        ProcessDef = _a.sent();
+                        queryObject = {
+                            attribute: 'key',
+                            operator: '=',
+                            value: key
+                        };
+                        queryParams = { query: queryObject };
+                        return [4 /*yield*/, ProcessDef.findOne(context, queryParams)];
+                    case 2:
+                        processDefEntity = _a.sent();
+                        if (!processDefEntity) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.invoker.invoke(processDefEntity, 'start', context, context, params, options)];
+                    case 3:
+                        processEntity = _a.sent();
+                        return [2 /*return*/, processEntity];
+                    case 4: return [2 /*return*/, null];
                 }
             }
             return null;

@@ -58,30 +58,70 @@ class ProcessEntity extends data_model_contracts_1.Entity {
     }
     getProcessDef() {
         return this.getPropertyLazy(this, 'processDef');
-    }
-    start(context, params, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const source = params ? params.source : undefined;
-            const initialToken = params ? params.initialToken : undefined;
-            const ProcessToken = yield this.datastoreService.getEntityType('ProcessToken');
-            const NodeDef = yield this.datastoreService.getEntityType('NodeDef');
-            const StartEvent = yield this.datastoreService.getEntityType('StartEvent');
-            const internalContext = yield this.iamService.createInternalContext('processengine_system');
-            let laneContext = context;
-            const participant = (source && source.id) ? source.id : null;
-            const processDef = yield this.getProcessDef();
-            const queryObject = [
-                { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
-                { attribute: 'processDef', operator: '=', value: processDef.id }
-            ];
-            const startEventDef = yield NodeDef.findOne(internalContext, { query: queryObject });
-            if (startEventDef) {
-                const processToken = yield ProcessToken.createEntity(internalContext);
-                processToken.process = this;
-                if (initialToken) {
-                    processToken.data = {
-                        current: initialToken
-                    };
+    };
+    ProcessEntity.prototype.start = function (context, params, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var source, initialToken, ProcessToken, NodeDef, StartEvent, internalContext, laneContext, participant, processDef, queryObject, startEventDef, processToken, startEvent;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        source = params ? params.source : undefined;
+                        initialToken = params ? params.initialToken : undefined;
+                        return [4 /*yield*/, this.datastoreService.getEntityType('ProcessToken')];
+                    case 1:
+                        ProcessToken = _a.sent();
+                        return [4 /*yield*/, this.datastoreService.getEntityType('NodeDef')];
+                    case 2:
+                        NodeDef = _a.sent();
+                        return [4 /*yield*/, this.datastoreService.getEntityType('StartEvent')];
+                    case 3:
+                        StartEvent = _a.sent();
+                        return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
+                    case 4:
+                        internalContext = _a.sent();
+                        laneContext = context;
+                        participant = (source && source.id) ? source.id : null;
+                        return [4 /*yield*/, this.getProcessDef()];
+                    case 5:
+                        processDef = _a.sent();
+                        queryObject = [
+                            { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+                            { attribute: 'processDef', operator: '=', value: processDef.id }
+                        ];
+                        return [4 /*yield*/, NodeDef.findOne(internalContext, { query: queryObject })];
+                    case 6:
+                        startEventDef = _a.sent();
+                        if (!startEventDef) return [3 /*break*/, 12];
+                        return [4 /*yield*/, ProcessToken.createEntity(internalContext)];
+                    case 7:
+                        processToken = _a.sent();
+                        processToken.process = this;
+                        if (initialToken) {
+                            processToken.data = {
+                                current: initialToken
+                            };
+                        }
+                        return [4 /*yield*/, processToken.save(internalContext)];
+                    case 8:
+                        _a.sent();
+                        return [4 /*yield*/, this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent)];
+                    case 9:
+                        startEvent = _a.sent();
+                        startEvent.name = startEventDef.name;
+                        startEvent.key = startEventDef.key;
+                        startEvent.process = this;
+                        startEvent.nodeDef = startEventDef;
+                        startEvent.type = startEventDef.type;
+                        startEvent.processToken = processToken;
+                        startEvent.participant = participant;
+                        return [4 /*yield*/, startEvent.save(internalContext)];
+                    case 10:
+                        _a.sent();
+                        return [4 /*yield*/, startEvent.changeState(laneContext, 'start', this)];
+                    case 11:
+                        _a.sent();
+                        _a.label = 12;
+                    case 12: return [2 /*return*/];
                 }
                 yield processToken.save(internalContext);
                 const startEvent = yield this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
