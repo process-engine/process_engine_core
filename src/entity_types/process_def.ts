@@ -34,10 +34,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   @schemaAttribute({
-    type: SchemaAttributeType.string,
-    onInit: () => {
-      return uuid.v4();
-    }
+    type: SchemaAttributeType.string
   })
   public get name(): string {
     return this.getProperty(this, 'name');
