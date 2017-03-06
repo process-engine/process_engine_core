@@ -12,6 +12,6 @@ export declare class ProcessEntity extends Entity implements IProcessEntity {
     name: string;
     key: string;
     processDef: IProcessDefEntity;
-    getProcessDef(): Promise<IProcessDefEntity>;
+    getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void>;
 }

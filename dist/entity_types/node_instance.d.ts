@@ -19,14 +19,14 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     name: string;
     key: string;
     process: IProcessEntity;
-    getProcess(): Promise<IProcessEntity>;
+    getProcess(context: ExecutionContext): Promise<IProcessEntity>;
     nodeDef: INodeDefEntity;
-    getNodeDef(): Promise<INodeDefEntity>;
+    getNodeDef(context: ExecutionContext): Promise<INodeDefEntity>;
     type: string;
     state: string;
     participant: string;
     processToken: IProcessTokenEntity;
-    getProcessToken(): Promise<IProcessTokenEntity>;
+    getProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     start(context: ExecutionContext, source: IEntity): Promise<void>;
     changeState(context: ExecutionContext, newState: string, source: IEntity): Promise<void>;

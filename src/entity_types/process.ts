@@ -62,8 +62,8 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'processDef', value);
   }
 
-  public getProcessDef(): Promise<IProcessDefEntity> {
-    return this.getPropertyLazy(this, 'processDef');
+  public getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity> {
+    return this.getPropertyLazy(this, 'processDef', context);
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
@@ -81,7 +81,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     // Todo: handle source as parent process
     const participant = (source && source.id) ? source.id : null;
 
-    const processDef = await this.getProcessDef();
+    const processDef = await this.getProcessDef(internalContext);
     // get start event
     const queryObject = [
       { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },

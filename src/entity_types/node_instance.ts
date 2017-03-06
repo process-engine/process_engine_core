@@ -20,9 +20,9 @@ export class NodeInstanceEntityDependencyHelper {
 }
 
 @schemaClass({
-  expand: [
-    { attribute: 'nodeDef', depth: 2 },
-    { attribute: 'processToken', depth: 2 }
+  expandEntity: [
+    { attribute: 'nodeDef'},
+    { attribute: 'processToken'}
   ]
 })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
@@ -82,8 +82,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'process', value);
   }
 
-  public getProcess(): Promise<IProcessEntity> {
-    return this.getPropertyLazy(this, 'process');
+  public getProcess(context: ExecutionContext): Promise<IProcessEntity> {
+    return this.getPropertyLazy(this, 'process', context);
   }
 
 
@@ -96,8 +96,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'nodeDef', value);
   }
 
-  public getNodeDef(): Promise<INodeDefEntity> {
-    return this.getPropertyLazy(this, 'nodeDef');
+  public getNodeDef(context: ExecutionContext): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'nodeDef', context);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
@@ -137,12 +137,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'processToken', value);
   }
 
-  public getProcessToken(): Promise<IProcessTokenEntity> {
-    return this.getPropertyLazy(this, 'processToken');
+  public getProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity> {
+    return this.getPropertyLazy(this, 'processToken', context);
   }
 
-  public async getLaneRole(context: ExecutionContext) {
-    const nodeDef = await this.getNodeDef();
+  public async getLaneRole(context: ExecutionContext): Promise<string> {
+    const nodeDef = await this.getNodeDef(context);
     const role = await nodeDef.getLaneRole(context);
     return role;
   }
@@ -190,7 +190,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async error(context: ExecutionContext, error: any): Promise<void> {
-    const nodeDef = await this.getNodeDef();
+    const nodeDef = await this.getNodeDef(context);
     if (nodeDef && nodeDef.events && nodeDef.events.error) {
 
       const meta = {
@@ -232,7 +232,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // check if definition exists
-    const nodeDef = await this.getNodeDef();
+    const nodeDef = await this.getNodeDef(internalContext);
     if (nodeDef && nodeDef.events && nodeDef.events[event]) {
       const boundaryDefKey = nodeDef.events[event];
 
@@ -241,7 +241,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       };
       const boundary = <INodeDefEntity>await nodeDefEntityType.findOne(internalContext, { query: queryObject });
 
-      const token = await this.getProcessToken();
+      const token = await this.getProcessToken(internalContext);
 
       if (boundary && boundary.cancelActivity) {
         await this.end(context, true);
@@ -252,7 +252,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
 
   public async cancel(context: ExecutionContext): Promise<void> {
-    const nodeDef = await this.getNodeDef();
+    const nodeDef = await this.getNodeDef(context);
     if (nodeDef && nodeDef.events && nodeDef.events.cancel) {
 
       const meta = {
@@ -287,7 +287,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const nodeInstance = this as any;
     const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
 
-    const processToken = await this.getProcessToken();
+    const processToken = await this.getProcessToken(internalContext);
     const tokenData = processToken.data || {};
     tokenData.history = tokenData.history || {};
     tokenData.history[this.key] = tokenData.current;
@@ -296,8 +296,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     await processToken.save(internalContext);
 
     let nextDefs = null;
-    const nodeDef = await this.getNodeDef();
-    const processDef = await nodeDef.getProcessDef();
+    const nodeDef = await this.getNodeDef(internalContext);
+    const processDef = await nodeDef.getProcessDef(internalContext);
 
     let flowsOut = null;
 

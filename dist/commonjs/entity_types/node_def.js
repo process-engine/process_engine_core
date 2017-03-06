@@ -1,9 +1,14 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -15,7 +20,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -45,6 +50,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var core_contracts_1 = require("@process-engine-js/core_contracts");
 var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
@@ -98,8 +104,8 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeDefEntity.prototype.getProcessDef = function () {
-        return this.getPropertyLazy(this, 'processDef');
+    NodeDefEntity.prototype.getProcessDef = function (context) {
+        return this.getPropertyLazy(this, 'processDef', context);
     };
     Object.defineProperty(NodeDefEntity.prototype, "lane", {
         get: function () {
@@ -111,8 +117,8 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeDefEntity.prototype.getLane = function () {
-        return this.getPropertyLazy(this, 'lane');
+    NodeDefEntity.prototype.getLane = function (context) {
+        return this.getPropertyLazy(this, 'lane', context);
     };
     Object.defineProperty(NodeDefEntity.prototype, "type", {
         get: function () {
@@ -144,8 +150,8 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeDefEntity.prototype.getAttachedToNode = function () {
-        return this.getPropertyLazy(this, 'attachedToNode');
+    NodeDefEntity.prototype.getAttachedToNode = function (context) {
+        return this.getPropertyLazy(this, 'attachedToNode', context);
     };
     Object.defineProperty(NodeDefEntity.prototype, "events", {
         get: function () {
@@ -207,15 +213,15 @@ var NodeDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeDefEntity.prototype.getSubProcessDef = function () {
-        return this.getPropertyLazy(this, 'subProcessDef');
+    NodeDefEntity.prototype.getSubProcessDef = function (context) {
+        return this.getPropertyLazy(this, 'subProcessDef', context);
     };
     NodeDefEntity.prototype.getLaneRole = function (context) {
         return __awaiter(this, void 0, void 0, function () {
             var lane, extensions, properties, found;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getLane()];
+                    case 0: return [4 /*yield*/, this.getLane(context)];
                     case 1:
                         lane = _a.sent();
                         extensions = lane.extensions;

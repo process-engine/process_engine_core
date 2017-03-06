@@ -7,10 +7,10 @@ export declare class FlowDefEntity extends Entity implements IFlowDefEntity {
     name: string;
     key: string;
     processDef: IProcessDefEntity;
-    getProcessDef(): Promise<IProcessDefEntity>;
+    getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity>;
     source: INodeDefEntity;
-    getSource(): Promise<INodeDefEntity>;
+    getSource(context: ExecutionContext): Promise<INodeDefEntity>;
     target: INodeDefEntity;
-    getTarget(): Promise<INodeDefEntity>;
+    getTarget(context: ExecutionContext): Promise<INodeDefEntity>;
     condition: string;
 }

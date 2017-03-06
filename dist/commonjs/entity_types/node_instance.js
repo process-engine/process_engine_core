@@ -1,9 +1,14 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -15,7 +20,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -45,6 +50,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var core_contracts_1 = require("@process-engine-js/core_contracts");
 var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
@@ -134,8 +140,8 @@ var NodeInstanceEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeInstanceEntity.prototype.getProcess = function () {
-        return this.getPropertyLazy(this, 'process');
+    NodeInstanceEntity.prototype.getProcess = function (context) {
+        return this.getPropertyLazy(this, 'process', context);
     };
     Object.defineProperty(NodeInstanceEntity.prototype, "nodeDef", {
         get: function () {
@@ -147,8 +153,8 @@ var NodeInstanceEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeInstanceEntity.prototype.getNodeDef = function () {
-        return this.getPropertyLazy(this, 'nodeDef');
+    NodeInstanceEntity.prototype.getNodeDef = function (context) {
+        return this.getPropertyLazy(this, 'nodeDef', context);
     };
     Object.defineProperty(NodeInstanceEntity.prototype, "type", {
         get: function () {
@@ -190,15 +196,15 @@ var NodeInstanceEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    NodeInstanceEntity.prototype.getProcessToken = function () {
-        return this.getPropertyLazy(this, 'processToken');
+    NodeInstanceEntity.prototype.getProcessToken = function (context) {
+        return this.getPropertyLazy(this, 'processToken', context);
     };
     NodeInstanceEntity.prototype.getLaneRole = function (context) {
         return __awaiter(this, void 0, void 0, function () {
             var nodeDef, role;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNodeDef()];
+                    case 0: return [4 /*yield*/, this.getNodeDef(context)];
                     case 1:
                         nodeDef = _a.sent();
                         return [4 /*yield*/, nodeDef.getLaneRole(context)];
@@ -264,11 +270,10 @@ var NodeInstanceEntity = (function (_super) {
             var nodeDef, meta, data, origin, msg;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNodeDef()];
+                    case 0: return [4 /*yield*/, this.getNodeDef(context)];
                     case 1:
                         nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events.error))
-                            return [3 /*break*/, 3];
+                        if (!(nodeDef && nodeDef.events && nodeDef.events.error)) return [3 /*break*/, 3];
                         meta = {
                             jwt: context.encryptedToken
                         };
@@ -326,11 +331,10 @@ var NodeInstanceEntity = (function (_super) {
                         return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
                     case 2:
                         internalContext = _a.sent();
-                        return [4 /*yield*/, this.getNodeDef()];
+                        return [4 /*yield*/, this.getNodeDef(internalContext)];
                     case 3:
                         nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events[event]))
-                            return [3 /*break*/, 9];
+                        if (!(nodeDef && nodeDef.events && nodeDef.events[event])) return [3 /*break*/, 9];
                         boundaryDefKey = nodeDef.events[event];
                         queryObject = {
                             attribute: 'key', operator: '=', value: boundaryDefKey
@@ -338,11 +342,10 @@ var NodeInstanceEntity = (function (_super) {
                         return [4 /*yield*/, nodeDefEntityType.findOne(internalContext, { query: queryObject })];
                     case 4:
                         boundary = _a.sent();
-                        return [4 /*yield*/, this.getProcessToken()];
+                        return [4 /*yield*/, this.getProcessToken(internalContext)];
                     case 5:
                         token = _a.sent();
-                        if (!(boundary && boundary.cancelActivity))
-                            return [3 /*break*/, 7];
+                        if (!(boundary && boundary.cancelActivity)) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.end(context, true)];
                     case 6:
                         _a.sent();
@@ -361,11 +364,10 @@ var NodeInstanceEntity = (function (_super) {
             var nodeDef, meta, data, origin, msg;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNodeDef()];
+                    case 0: return [4 /*yield*/, this.getNodeDef(context)];
                     case 1:
                         nodeDef = _a.sent();
-                        if (!(nodeDef && nodeDef.events && nodeDef.events.cancel))
-                            return [3 /*break*/, 3];
+                        if (!(nodeDef && nodeDef.events && nodeDef.events.cancel)) return [3 /*break*/, 3];
                         meta = {
                             jwt: context.encryptedToken
                         };
@@ -409,7 +411,7 @@ var NodeInstanceEntity = (function (_super) {
                         _a.sent();
                         nodeInstance = this;
                         splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
-                        return [4 /*yield*/, this.getProcessToken()];
+                        return [4 /*yield*/, this.getProcessToken(internalContext)];
                     case 6:
                         processToken = _a.sent();
                         tokenData = processToken.data || {};
@@ -420,19 +422,16 @@ var NodeInstanceEntity = (function (_super) {
                     case 7:
                         _a.sent();
                         nextDefs = null;
-                        return [4 /*yield*/, this.getNodeDef()];
+                        return [4 /*yield*/, this.getNodeDef(internalContext)];
                     case 8:
                         nodeDef = _a.sent();
-                        return [4 /*yield*/, nodeDef.getProcessDef()];
+                        return [4 /*yield*/, nodeDef.getProcessDef(internalContext)];
                     case 9:
                         processDef = _a.sent();
                         flowsOut = null;
-                        if (!!cancelFlow)
-                            return [3 /*break*/, 27];
-                        if (!nodeInstance.follow)
-                            return [3 /*break*/, 12];
-                        if (!(nodeInstance.follow.length > 0))
-                            return [3 /*break*/, 11];
+                        if (!!cancelFlow) return [3 /*break*/, 27];
+                        if (!nodeInstance.follow) return [3 /*break*/, 12];
+                        if (!(nodeInstance.follow.length > 0)) return [3 /*break*/, 11];
                         queryIn = nodeInstance.follow.map(function (id) {
                             return { attribute: 'id', operator: '=', value: id };
                         });
@@ -456,14 +455,12 @@ var NodeInstanceEntity = (function (_super) {
                         flowsOut = _a.sent();
                         _a.label = 14;
                     case 14:
-                        if (!(flowsOut && flowsOut.length > 0))
-                            return [3 /*break*/, 27];
+                        if (!(flowsOut && flowsOut.length > 0)) return [3 /*break*/, 27];
                         ids = [];
                         i = 0;
                         _a.label = 15;
                     case 15:
-                        if (!(i < flowsOut.data.length))
-                            return [3 /*break*/, 18];
+                        if (!(i < flowsOut.data.length)) return [3 /*break*/, 18];
                         flow = flowsOut.data[i];
                         return [4 /*yield*/, flow.target];
                     case 16:
@@ -485,17 +482,14 @@ var NodeInstanceEntity = (function (_super) {
                             })];
                     case 19:
                         nextDefs = _a.sent();
-                        if (!(nextDefs && nextDefs.length > 0))
-                            return [3 /*break*/, 27];
+                        if (!(nextDefs && nextDefs.length > 0)) return [3 /*break*/, 27];
                         i = 0;
                         _a.label = 20;
                     case 20:
-                        if (!(i < nextDefs.data.length))
-                            return [3 /*break*/, 27];
+                        if (!(i < nextDefs.data.length)) return [3 /*break*/, 27];
                         nextDef = nextDefs.data[i];
                         currentToken = void 0;
-                        if (!(splitToken && i > 0))
-                            return [3 /*break*/, 23];
+                        if (!(splitToken && i > 0)) return [3 /*break*/, 23];
                         return [4 /*yield*/, processTokenEntityType.createEntity(internalContext)];
                     case 21:
                         currentToken = _a.sent();
@@ -548,9 +542,9 @@ __decorate([
 ], NodeInstanceEntity.prototype, "processToken", null);
 NodeInstanceEntity = __decorate([
     metadata_1.schemaClass({
-        expand: [
-            { attribute: 'nodeDef', depth: 2 },
-            { attribute: 'processToken', depth: 2 }
+        expandEntity: [
+            { attribute: 'nodeDef' },
+            { attribute: 'processToken' }
         ]
     })
 ], NodeInstanceEntity);

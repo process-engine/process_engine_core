@@ -52,8 +52,8 @@ export class LaneEntity extends Entity implements ILaneEntity {
     this.setProperty(this, 'processDef', value);
   }
 
-  public getProcessDef(): Promise<IProcessDefEntity> {
-    return this.getPropertyLazy(this, 'processDef');
+  public getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity> {
+    return this.getPropertyLazy(this, 'processDef', context);
   }
   
 }

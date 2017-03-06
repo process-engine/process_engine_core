@@ -28,17 +28,17 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
     await super.initialize(actualInstance);
   }
 
-  public async execute(context: ExecutionContext) {
+  public async execute(context: ExecutionContext): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
     await this.save(internalContext);
 
-    const processToken = await this.getProcessToken();
+    const processToken = await this.getProcessToken(internalContext);
     const tokenData = processToken.data || {};
     let continueEnd = true;
 
     // call service
-    const nodeDef = await this.getNodeDef();
+    const nodeDef = await this.getNodeDef(internalContext);
     const extensions = nodeDef.extensions || null;
     const props = (extensions && extensions.properties) ? extensions.properties : null;
     if (props) {

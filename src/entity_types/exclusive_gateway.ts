@@ -31,11 +31,13 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
   public async execute(context: ExecutionContext) {
 
     const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-    const nodeDef = await this.getNodeDef();
-    const processDef = await nodeDef.getProcessDef();
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
+    const nodeDef = await this.getNodeDef(internalContext);
+    const processDef = await nodeDef.getProcessDef(internalContext);
+
+    
     const flowsOut = await flowDefEntityType.query(internalContext, {
       query: [
         { attribute: 'source', operator: '=', value: nodeDef.id },
@@ -59,7 +61,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
         const flow = <IFlowDefEntity>flowsOut.data[i];
         if (flow.condition) {
 
-          const processToken = await this.getProcessToken();
+          const processToken = await this.getProcessToken(internalContext);
           const tokenData = processToken.data || {};
 
           let result = false;

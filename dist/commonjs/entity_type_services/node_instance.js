@@ -4,7 +4,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -34,6 +34,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var NodeInstanceEntityTypeService = (function () {
     function NodeInstanceEntityTypeService(datastoreService, messagebusService, iamService) {
         this._datastoreService = undefined;
@@ -77,8 +78,7 @@ var NodeInstanceEntityTypeService = (function () {
                                 action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
                                 source = (msg && msg.origin) ? msg.origin : null;
                                 context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
-                                if (!(action === 'changeState'))
-                                    return [3 /*break*/, 8];
+                                if (!(action === 'changeState')) return [3 /*break*/, 8];
                                 newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
                                 _a = newState;
                                 switch (_a) {
@@ -100,16 +100,14 @@ var NodeInstanceEntityTypeService = (function () {
                                 _b.sent();
                                 return [3 /*break*/, 8];
                             case 8:
-                                if (!(action === 'proceed'))
-                                    return [3 /*break*/, 10];
+                                if (!(action === 'proceed')) return [3 /*break*/, 10];
                                 newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
                                 return [4 /*yield*/, this.entity.proceed(context, newData, source)];
                             case 9:
                                 _b.sent();
                                 _b.label = 10;
                             case 10:
-                                if (!(action === 'event'))
-                                    return [3 /*break*/, 12];
+                                if (!(action === 'event')) return [3 /*break*/, 12];
                                 event_1 = (msg && msg.data && msg.data.event) ? msg.data.event : null;
                                 data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
                                 return [4 /*yield*/, this.entity.event(context, event_1, data)];
@@ -179,8 +177,7 @@ var NodeInstanceEntityTypeService = (function () {
                         return [4 /*yield*/, nextDef.getLane()];
                     case 6:
                         nextLane = _a.sent();
-                        if (!(currentLane && nextLane && currentLane.id !== nextLane.id))
-                            return [3 /*break*/, 8];
+                        if (!(currentLane && nextLane && currentLane.id !== nextLane.id)) return [3 /*break*/, 8];
                         return [4 /*yield*/, nextDef.getLaneRole(internalContext)];
                     case 7:
                         role = _a.sent();
@@ -190,8 +187,7 @@ var NodeInstanceEntityTypeService = (function () {
                         _a.label = 8;
                     case 8:
                         node = null;
-                        if (!!forceCreateNode)
-                            return [3 /*break*/, 10];
+                        if (!!forceCreateNode) return [3 /*break*/, 10];
                         queryObj = [
                             { attribute: 'process', operator: '=', value: process.id },
                             { attribute: 'key', operator: '=', value: nextDef.key }
@@ -201,8 +197,7 @@ var NodeInstanceEntityTypeService = (function () {
                         node = _a.sent();
                         _a.label = 10;
                     case 10:
-                        if (!node)
-                            return [3 /*break*/, 12];
+                        if (!node) return [3 /*break*/, 12];
                         meta = {
                             jwt: context.encryptedToken
                         };

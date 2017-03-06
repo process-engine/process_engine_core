@@ -1,9 +1,14 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -15,7 +20,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -45,6 +50,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var core_contracts_1 = require("@process-engine-js/core_contracts");
 var data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 var metadata_1 = require("@process-engine-js/metadata");
@@ -153,8 +159,7 @@ var ProcessDefEntity = (function (_super) {
                 switch (_a.label) {
                     case 0:
                         xml = params && params.xml ? params.xml : null;
-                        if (!xml)
-                            return [3 /*break*/, 3];
+                        if (!xml) return [3 /*break*/, 3];
                         this.xml = xml;
                         return [4 /*yield*/, this.save(context)];
                     case 1:
@@ -177,8 +182,7 @@ var ProcessDefEntity = (function (_super) {
                         bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
                         xml = this.xml;
                         key = this.key;
-                        if (!!bpmnDiagram)
-                            return [3 /*break*/, 2];
+                        if (!!bpmnDiagram) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.processDefEntityTypeService.parseBpmnXml(xml)];
                     case 1:
                         bpmnDiagram = _a.sent();
@@ -230,8 +234,7 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, Lane.findOne(context, queryOptions)];
                                     case 1:
                                         laneEntity = _a.sent();
-                                        if (!!laneEntity)
-                                            return [3 /*break*/, 3];
+                                        if (!!laneEntity) return [3 /*break*/, 3];
                                         laneData = {
                                             key: lane.id
                                         };
@@ -281,8 +284,7 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, NodeDef.findOne(context, { query: queryObject })];
                                     case 1:
                                         nodeDefEntity = _a.sent();
-                                        if (!!nodeDefEntity)
-                                            return [3 /*break*/, 3];
+                                        if (!!nodeDefEntity) return [3 /*break*/, 3];
                                         nodeDefData = {
                                             key: node.id
                                         };
@@ -362,8 +364,7 @@ var ProcessDefEntity = (function (_super) {
                                         return [4 /*yield*/, FlowDef.findOne(context, { query: queryObject })];
                                     case 1:
                                         flowDefEntity = _a.sent();
-                                        if (!!flowDefEntity)
-                                            return [3 /*break*/, 3];
+                                        if (!!flowDefEntity) return [3 /*break*/, 3];
                                         flowDefData = {
                                             key: flow.id
                                         };
@@ -412,11 +413,9 @@ var ProcessDefEntity = (function (_super) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        if (!(node.$type === 'bpmn:BoundaryEvent'))
-                                            return [3 /*break*/, 3];
+                                        if (!(node.$type === 'bpmn:BoundaryEvent')) return [3 /*break*/, 3];
                                         attachedKey = (node.attachedToRef && node.attachedToRef.id) ? node.attachedToRef.id : null;
-                                        if (!attachedKey)
-                                            return [3 /*break*/, 3];
+                                        if (!attachedKey) return [3 /*break*/, 3];
                                         sourceEnt = nodeCache[attachedKey];
                                         boundary = nodeCache[node.id];
                                         boundary.attachedToNode = sourceEnt;

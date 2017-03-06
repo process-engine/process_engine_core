@@ -1,9 +1,14 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __assign = (this && this.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
@@ -23,7 +28,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -53,6 +58,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var core_contracts_1 = require("@process-engine-js/core_contracts");
 var node_instance_1 = require("./node_instance");
 var metadata_1 = require("@process-engine-js/metadata");
@@ -88,21 +94,21 @@ var ParallelGatewayEntity = (function (_super) {
     });
     ParallelGatewayEntity.prototype.execute = function (context) {
         return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, nodeDef, processDef, internalContext, flowsOut, flowsIn;
+            var flowDefEntityType, internalContext, nodeDef, processDef, flowsOut, flowsIn;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
                     case 1:
                         flowDefEntityType = _a.sent();
-                        return [4 /*yield*/, this.getNodeDef()];
-                    case 2:
-                        nodeDef = _a.sent();
-                        return [4 /*yield*/, nodeDef.getProcessDef()];
-                    case 3:
-                        processDef = _a.sent();
                         return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
-                    case 4:
+                    case 2:
                         internalContext = _a.sent();
+                        return [4 /*yield*/, this.getNodeDef(internalContext)];
+                    case 3:
+                        nodeDef = _a.sent();
+                        return [4 /*yield*/, nodeDef.getProcessDef(internalContext)];
+                    case 4:
+                        processDef = _a.sent();
                         return [4 /*yield*/, flowDefEntityType.query(internalContext, {
                                 query: [
                                     { attribute: 'source.id', operator: '=', value: nodeDef.id },
@@ -119,8 +125,7 @@ var ParallelGatewayEntity = (function (_super) {
                             })];
                     case 6:
                         flowsIn = _a.sent();
-                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1))
-                            return [3 /*break*/, 9];
+                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1)) return [3 /*break*/, 9];
                         this.parallelType = 'split';
                         this.state = 'progress';
                         return [4 /*yield*/, this.save(internalContext)];
@@ -131,8 +136,7 @@ var ParallelGatewayEntity = (function (_super) {
                         _a.sent();
                         _a.label = 9;
                     case 9:
-                        if (!(flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1))
-                            return [3 /*break*/, 11];
+                        if (!(flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1)) return [3 /*break*/, 11];
                         this.parallelType = 'join';
                         this.state = 'progress';
                         return [4 /*yield*/, this.save(internalContext)];
@@ -146,29 +150,29 @@ var ParallelGatewayEntity = (function (_super) {
     };
     ParallelGatewayEntity.prototype.proceed = function (context, newData, source) {
         return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, nodeDefEntityType, sourceEntityType, prevDefs, nodeDef, processDef, flowsIn, internalContext, ids, i, flow, source_1, queryIn, keys_1, sourceEntity, token, allthere_1, processToken, tokenData_1, merged;
+            var internalContext, flowDefEntityType, nodeDefEntityType, sourceEntityType, prevDefs, nodeDef, processDef, flowsIn, ids, i, flow, source_1, queryIn, keys_1, sourceEntity, token, allthere_1, processToken, tokenData_1, merged;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
+                    case 0: return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
                     case 1:
+                        internalContext = _a.sent();
+                        return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
+                    case 2:
                         flowDefEntityType = _a.sent();
                         return [4 /*yield*/, this.datastoreService.getEntityType('NodeDef')];
-                    case 2:
+                    case 3:
                         nodeDefEntityType = _a.sent();
                         return [4 /*yield*/, this.datastoreService.getEntityType(source.type)];
-                    case 3:
+                    case 4:
                         sourceEntityType = _a.sent();
                         prevDefs = null;
-                        return [4 /*yield*/, this.getNodeDef()];
-                    case 4:
-                        nodeDef = _a.sent();
-                        return [4 /*yield*/, nodeDef.getProcessDef()];
+                        return [4 /*yield*/, this.getNodeDef(internalContext)];
                     case 5:
+                        nodeDef = _a.sent();
+                        return [4 /*yield*/, nodeDef.getProcessDef(internalContext)];
+                    case 6:
                         processDef = _a.sent();
                         flowsIn = null;
-                        return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
-                    case 6:
-                        internalContext = _a.sent();
                         return [4 /*yield*/, flowDefEntityType.query(internalContext, {
                                 query: [
                                     { attribute: 'target', operator: '=', value: nodeDef.id },
@@ -177,14 +181,12 @@ var ParallelGatewayEntity = (function (_super) {
                             })];
                     case 7:
                         flowsIn = _a.sent();
-                        if (!(flowsIn && flowsIn.length > 0))
-                            return [3 /*break*/, 18];
+                        if (!(flowsIn && flowsIn.length > 0)) return [3 /*break*/, 18];
                         ids = [];
                         i = 0;
                         _a.label = 8;
                     case 8:
-                        if (!(i < flowsIn.data.length))
-                            return [3 /*break*/, 11];
+                        if (!(i < flowsIn.data.length)) return [3 /*break*/, 11];
                         flow = flowsIn.data[i];
                         return [4 /*yield*/, flow.getSource];
                     case 9:
@@ -210,16 +212,15 @@ var ParallelGatewayEntity = (function (_super) {
                         prevDefs.data.forEach(function (prefDev) {
                             keys_1.push(prefDev.key);
                         });
-                        if (!source)
-                            return [3 /*break*/, 18];
+                        if (!source) return [3 /*break*/, 18];
                         return [4 /*yield*/, sourceEntityType.getById(source.id, internalContext)];
                     case 13:
                         sourceEntity = _a.sent();
-                        return [4 /*yield*/, sourceEntity.getProcessToken()];
+                        return [4 /*yield*/, sourceEntity.getProcessToken(internalContext)];
                     case 14:
                         token = _a.sent();
                         allthere_1 = true;
-                        return [4 /*yield*/, this.getProcessToken()];
+                        return [4 /*yield*/, this.getProcessToken(internalContext)];
                     case 15:
                         processToken = _a.sent();
                         tokenData_1 = processToken.data || {};
@@ -235,8 +236,7 @@ var ParallelGatewayEntity = (function (_super) {
                                 allthere_1 = false;
                             }
                         });
-                        if (!allthere_1)
-                            return [3 /*break*/, 18];
+                        if (!allthere_1) return [3 /*break*/, 18];
                         return [4 /*yield*/, this.changeState(context, 'end', this)];
                     case 17:
                         _a.sent();
