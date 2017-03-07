@@ -86,7 +86,7 @@ var ExclusiveGatewayEntity = (function (_super) {
     });
     ExclusiveGatewayEntity.prototype.execute = function (context) {
         return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, internalContext, nodeDef, processDef, flowsOut, flowsIn, follow, i, flow, processToken, tokenData, result, functionString, evaluateFunction;
+            var flowDefEntityType, internalContext, nodeDef, processDef, queryObjectOut, flowsOut, queryObjectIn, flowsIn, follow, i, flow, processToken, tokenData, result, functionString, evaluateFunction;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
@@ -101,20 +101,24 @@ var ExclusiveGatewayEntity = (function (_super) {
                         return [4 /*yield*/, nodeDef.getProcessDef(internalContext)];
                     case 4:
                         processDef = _a.sent();
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                                query: [
-                                    { attribute: 'source', operator: '=', value: nodeDef.id },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectOut = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'source', operator: '=', value: nodeDef.id },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectOut })];
                     case 5:
                         flowsOut = _a.sent();
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                                query: [
-                                    { attribute: 'target', operator: '=', value: nodeDef.id },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectIn = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'target', operator: '=', value: nodeDef.id },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectIn })];
                     case 6:
                         flowsIn = _a.sent();
                         if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1)) return [3 /*break*/, 12];

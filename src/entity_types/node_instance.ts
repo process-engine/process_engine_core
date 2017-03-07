@@ -1,7 +1,6 @@
-import { ExecutionContext, SchemaAttributeType, IFactory, IInheritedSchema, IEntity} from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, IDatastoreService, IEntityType, IPropertyBag, IEncryptionService, EntityReference } from '@process-engine-js/data_model_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IParallelGatewayEntity } from '@process-engine-js/process_engine_contracts';
+import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause } from '@process-engine-js/core_contracts';
+import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
+import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { IIamService } from '@process-engine-js/iam_contracts';
@@ -305,24 +304,28 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       if (nodeInstance.follow) {
         // we have already a list of flows to follow
         if (nodeInstance.follow.length > 0) {
-          const queryIn = nodeInstance.follow.map((id) => {
-            return { attribute: 'id', operator: '=', value: id };
-          });
-          flowsOut = await flowDefEntityType.query(internalContext, {
-            query: [
-              { or: queryIn },
+
+          const queryObjectFollow: ICombinedQueryClause = {
+            operator: 'and',
+            queries: [
+              { attribute: 'id', operator: 'in', value: nodeInstance.follow },
               { attribute: 'processDef', operator: '=', value: processDef.id }
             ]
-          });
+          };
+
+          flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectFollow });
         }
       } else {
         // query for all flows going out
-        flowsOut = await flowDefEntityType.query(internalContext, {
-          query: [
+        const queryObjectAll: ICombinedQueryClause = {
+          operator: 'and',
+          queries: [
             { attribute: 'source', operator: '=', value: nodeDef.id },
             { attribute: 'processDef', operator: '=', value: processDef.id }
           ]
-        });
+        };
+
+        flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
       }
       if (flowsOut && flowsOut.length > 0) {
         const ids: Array<string> = [];
@@ -332,15 +335,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           ids.push(target.id);
         }
 
-        const queryIn = ids.map((id) => {
-          return { attribute: 'id', operator: '=', value: id };
-        });
-        nextDefs = await nodeDefEntityType.query(internalContext, {
-          query: [
-            { or: queryIn },
+        const queryObjectIn: ICombinedQueryClause = {
+          operator: 'and',
+          queries: [
+            { attribute: 'id', operator: 'in', value: ids },
             { attribute: 'processDef', operator: '=', value: processDef.id }
           ]
-        });
+        };
+
+        nextDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectIn });
 
         if (nextDefs && nextDefs.length > 0) {
 

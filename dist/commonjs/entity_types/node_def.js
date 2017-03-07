@@ -248,9 +248,11 @@ var NodeDefEntity = (function (_super) {
                     case 0: return [4 /*yield*/, this.datastoreService.getEntityType('NodeDef')];
                     case 1:
                         nodeDefEntityType = _a.sent();
-                        queryObject = [
-                            { attribute: 'attachedToNode', operator: '=', value: this.id }
-                        ];
+                        queryObject = {
+                            attribute: 'attachedToNode',
+                            operator: '=',
+                            value: this.id
+                        };
                         return [4 /*yield*/, nodeDefEntityType.query(context, { query: queryObject })];
                     case 2:
                         boundaryColl = _a.sent();

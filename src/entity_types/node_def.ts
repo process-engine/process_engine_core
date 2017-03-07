@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryClause} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -175,9 +175,13 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
 
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-    const queryObject = [
-      { attribute: 'attachedToNode', operator: '=', value: this.id }
-    ];
+    
+    const queryObject: IQueryClause = {
+      attribute: 'attachedToNode',
+      operator: '=',
+      value: this.id
+    };
+
     const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
     return boundaryColl;
   }

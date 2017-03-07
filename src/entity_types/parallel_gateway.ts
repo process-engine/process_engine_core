@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema, ICombinedQueryClause} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -37,18 +37,25 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
     const nodeDef = await this.getNodeDef(internalContext);
     const processDef = await nodeDef.getProcessDef(internalContext);
 
-    const flowsOut = await flowDefEntityType.query(internalContext, {
-      query: [
-        { attribute: 'source.id', operator: '=', value: nodeDef.id },
-        { attribute: 'processDef.id', operator: '=', value: processDef.id }
+    const queryObjectOut: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        { attribute: 'source', operator: '=', value: nodeDef.id },
+        { attribute: 'processDef', operator: '=', value: processDef.id }
       ]
-    });
-    const flowsIn = await flowDefEntityType.query(internalContext, {
-      query: [
+    };
+
+    const flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectOut });
+
+    const queryObjectIn: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
         { attribute: 'target', operator: '=', value: nodeDef.id },
         { attribute: 'processDef', operator: '=', value: processDef.id }
       ]
-    });
+    };
+
+    const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
 
     if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
       // split
@@ -87,12 +94,15 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
     let flowsIn = null;
 
     // query for all flows going in
-    flowsIn = await flowDefEntityType.query(internalContext, {
-      query: [
+    const queryObjectAll: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
         { attribute: 'target', operator: '=', value: nodeDef.id },
         { attribute: 'processDef', operator: '=', value: processDef.id }
       ]
-    });
+    };
+
+    flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
 
     if (flowsIn && flowsIn.length > 0) {
       const ids: Array<string> = [];
@@ -103,16 +113,15 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       }
 
 
-      const queryIn = ids.map((id) => {
-        return { attribute: 'id', operator: '=', value: id };
-      });
-
-      prevDefs = await nodeDefEntityType.query(internalContext, {
-        query: [
-          { or: queryIn },
+      const queryObjectDefs: ICombinedQueryClause = {
+        operator: 'and',
+        queries: [
+          { attribute: 'id', operator: 'in', value: ids },
           { attribute: 'processDef', operator: '=', value: processDef.id }
         ]
-      });
+      };
+
+      prevDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectDefs });
 
       const keys: Array<string> = [];
       prevDefs.data.forEach((prefDev) => {

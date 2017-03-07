@@ -1,5 +1,5 @@
 import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
-import {ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IDatastoreService} from '@process-engine-js/data_model_contracts';
 
@@ -65,7 +65,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       processes.forEach(async (process) => {
 
         // query with key
-        const queryObject: IQueryObject = {
+        const queryObject: IQueryClause = {
           attribute: 'key',
           operator: '=',
           value: process.id

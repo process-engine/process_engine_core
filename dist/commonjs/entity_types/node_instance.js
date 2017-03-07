@@ -390,7 +390,7 @@ var NodeInstanceEntity = (function (_super) {
     NodeInstanceEntity.prototype.end = function (context, cancelFlow) {
         if (cancelFlow === void 0) { cancelFlow = false; }
         return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, nodeDefEntityType, processTokenEntityType, internalContext, nodeInstance, splitToken, processToken, tokenData, nextDefs, nodeDef, processDef, flowsOut, queryIn, ids, i, flow, target, queryIn, i, nextDef, currentToken;
+            var flowDefEntityType, nodeDefEntityType, processTokenEntityType, internalContext, nodeInstance, splitToken, processToken, tokenData, nextDefs, nodeDef, processDef, flowsOut, queryObjectFollow, queryObjectAll, ids, i, flow, target, queryObjectIn, i, nextDef, currentToken;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
@@ -432,25 +432,27 @@ var NodeInstanceEntity = (function (_super) {
                         if (!!cancelFlow) return [3 /*break*/, 27];
                         if (!nodeInstance.follow) return [3 /*break*/, 12];
                         if (!(nodeInstance.follow.length > 0)) return [3 /*break*/, 11];
-                        queryIn = nodeInstance.follow.map(function (id) {
-                            return { attribute: 'id', operator: '=', value: id };
-                        });
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                                query: [
-                                    { or: queryIn },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectFollow = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'id', operator: 'in', value: nodeInstance.follow },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectFollow })];
                     case 10:
                         flowsOut = _a.sent();
                         _a.label = 11;
                     case 11: return [3 /*break*/, 14];
-                    case 12: return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                            query: [
+                    case 12:
+                        queryObjectAll = {
+                            operator: 'and',
+                            queries: [
                                 { attribute: 'source', operator: '=', value: nodeDef.id },
                                 { attribute: 'processDef', operator: '=', value: processDef.id }
                             ]
-                        })];
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectAll })];
                     case 13:
                         flowsOut = _a.sent();
                         _a.label = 14;
@@ -471,15 +473,14 @@ var NodeInstanceEntity = (function (_super) {
                         i++;
                         return [3 /*break*/, 15];
                     case 18:
-                        queryIn = ids.map(function (id) {
-                            return { attribute: 'id', operator: '=', value: id };
-                        });
-                        return [4 /*yield*/, nodeDefEntityType.query(internalContext, {
-                                query: [
-                                    { or: queryIn },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectIn = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'id', operator: 'in', value: ids },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, nodeDefEntityType.query(internalContext, { query: queryObjectIn })];
                     case 19:
                         nextDefs = _a.sent();
                         if (!(nextDefs && nextDefs.length > 0)) return [3 /*break*/, 27];

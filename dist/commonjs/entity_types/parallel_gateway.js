@@ -94,7 +94,7 @@ var ParallelGatewayEntity = (function (_super) {
     });
     ParallelGatewayEntity.prototype.execute = function (context) {
         return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, internalContext, nodeDef, processDef, flowsOut, flowsIn;
+            var flowDefEntityType, internalContext, nodeDef, processDef, queryObjectOut, flowsOut, queryObjectIn, flowsIn;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
@@ -109,20 +109,24 @@ var ParallelGatewayEntity = (function (_super) {
                         return [4 /*yield*/, nodeDef.getProcessDef(internalContext)];
                     case 4:
                         processDef = _a.sent();
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                                query: [
-                                    { attribute: 'source.id', operator: '=', value: nodeDef.id },
-                                    { attribute: 'processDef.id', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectOut = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'source', operator: '=', value: nodeDef.id },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectOut })];
                     case 5:
                         flowsOut = _a.sent();
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                                query: [
-                                    { attribute: 'target', operator: '=', value: nodeDef.id },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectIn = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'target', operator: '=', value: nodeDef.id },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectIn })];
                     case 6:
                         flowsIn = _a.sent();
                         if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1)) return [3 /*break*/, 9];
@@ -150,7 +154,7 @@ var ParallelGatewayEntity = (function (_super) {
     };
     ParallelGatewayEntity.prototype.proceed = function (context, newData, source) {
         return __awaiter(this, void 0, void 0, function () {
-            var internalContext, flowDefEntityType, nodeDefEntityType, sourceEntityType, prevDefs, nodeDef, processDef, flowsIn, ids, i, flow, source_1, queryIn, keys_1, sourceEntity, token, allthere_1, processToken, tokenData_1, merged;
+            var internalContext, flowDefEntityType, nodeDefEntityType, sourceEntityType, prevDefs, nodeDef, processDef, flowsIn, queryObjectAll, ids, i, flow, source_1, queryObjectDefs, keys_1, sourceEntity, token, allthere_1, processToken, tokenData_1, merged;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
@@ -173,12 +177,14 @@ var ParallelGatewayEntity = (function (_super) {
                     case 6:
                         processDef = _a.sent();
                         flowsIn = null;
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, {
-                                query: [
-                                    { attribute: 'target', operator: '=', value: nodeDef.id },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectAll = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'target', operator: '=', value: nodeDef.id },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectAll })];
                     case 7:
                         flowsIn = _a.sent();
                         if (!(flowsIn && flowsIn.length > 0)) return [3 /*break*/, 18];
@@ -197,15 +203,14 @@ var ParallelGatewayEntity = (function (_super) {
                         i++;
                         return [3 /*break*/, 8];
                     case 11:
-                        queryIn = ids.map(function (id) {
-                            return { attribute: 'id', operator: '=', value: id };
-                        });
-                        return [4 /*yield*/, nodeDefEntityType.query(internalContext, {
-                                query: [
-                                    { or: queryIn },
-                                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                                ]
-                            })];
+                        queryObjectDefs = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'id', operator: 'in', value: ids },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
+                        return [4 /*yield*/, nodeDefEntityType.query(internalContext, { query: queryObjectDefs })];
                     case 12:
                         prevDefs = _a.sent();
                         keys_1 = [];
