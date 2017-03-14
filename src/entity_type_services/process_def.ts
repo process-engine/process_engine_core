@@ -139,7 +139,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     if (key) {
       const ProcessDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
-      const queryObject: IQueryObject = {
+      const queryObject: IQueryClause = {
         attribute: 'key',
         operator: '=',
         value: key

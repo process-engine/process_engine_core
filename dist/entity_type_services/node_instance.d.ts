@@ -1,8 +1,7 @@
 import { INodeInstanceEntityTypeService } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IEntity, IIamService } from '@process-engine-js/core_contracts';
 import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IIamService } from '@process-engine-js/iam_contracts';
 export declare class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeService {
     private _datastoreService;
     private _messagebusService;

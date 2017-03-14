@@ -1,9 +1,8 @@
 import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IIamService } from '@process-engine-js/iam_contracts';
 
 export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeService {
 
