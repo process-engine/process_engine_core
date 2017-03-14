@@ -1,8 +1,7 @@
-import { ExecutionContext, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IInheritedSchema, IEntity, IIamService } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IIamService } from '@process-engine-js/iam_contracts';
 export declare class NodeInstanceEntityDependencyHelper {
     messageBusService: IMessageBusService;
     iamService: IIamService;

@@ -1,9 +1,8 @@
-import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause } from '@process-engine-js/core_contracts';
+import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IIamService } from '@process-engine-js/iam_contracts';
 
 export class NodeInstanceEntityDependencyHelper {
   
@@ -18,12 +17,12 @@ export class NodeInstanceEntityDependencyHelper {
   }
 }
 
-@schemaClass({
-  expandEntity: [
-    { attribute: 'nodeDef'},
-    { attribute: 'processToken'}
-  ]
-})
+// @schemaClass({
+//   expandEntity: [
+//     { attribute: 'nodeDef'},
+//     { attribute: 'processToken'}
+//   ]
+// })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   private _nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper = undefined;

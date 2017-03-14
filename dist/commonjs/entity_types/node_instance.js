@@ -541,14 +541,6 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessToken' })
 ], NodeInstanceEntity.prototype, "processToken", null);
-NodeInstanceEntity = __decorate([
-    metadata_1.schemaClass({
-        expandEntity: [
-            { attribute: 'nodeDef' },
-            { attribute: 'processToken' }
-        ]
-    })
-], NodeInstanceEntity);
 exports.NodeInstanceEntity = NodeInstanceEntity;
 
 //# sourceMappingURL=node_instance.js.map
