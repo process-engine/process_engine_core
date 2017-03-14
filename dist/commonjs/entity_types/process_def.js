@@ -125,6 +125,16 @@ var ProcessDefEntity = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(ProcessDefEntity.prototype, "nodeDefCollection", {
+        get: function () {
+            return this.getProperty(this, 'nodeDefCollection');
+        },
+        enumerable: true,
+        configurable: true
+    });
+    ProcessDefEntity.prototype.getNodeDefCollection = function (context) {
+        return this.getPropertyLazy(this, 'nodeDefCollection', context);
+    };
     ProcessDefEntity.prototype.start = function (context, params, options) {
         return __awaiter(this, void 0, void 0, function () {
             var processData, processEntityType, processEntity;
@@ -523,6 +533,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], ProcessDefEntity.prototype, "xml", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
+], ProcessDefEntity.prototype, "nodeDefCollection", null);
 exports.ProcessDefEntity = ProcessDefEntity;
 
 //# sourceMappingURL=process_def.js.map

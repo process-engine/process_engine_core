@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -71,6 +71,14 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this.setProperty(this, 'xml', value);
   }
 
+  @schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
+  public get nodeDefCollection(): EntityCollection {
+    return this.getProperty(this, 'nodeDefCollection');
+  }
+
+  public getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection> {
+    return this.getPropertyLazy(this, 'nodeDefCollection', context);
+  }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
 
