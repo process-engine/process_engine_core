@@ -1,5 +1,5 @@
 import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
     private _processDefEntityTypeService;
@@ -10,6 +10,8 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     key: string;
     defId: string;
     xml: string;
+    readonly nodeDefCollection: EntityCollection;
+    getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity>;
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;

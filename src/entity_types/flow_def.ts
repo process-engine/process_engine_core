@@ -43,8 +43,8 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     this.setProperty(this, 'processDef', value);
   }
 
-  public getProcessDef(): Promise<IProcessDefEntity> {
-    return this.getPropertyLazy(this, 'processDef');
+  public getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity> {
+    return this.getPropertyLazy(this, 'processDef', context);
   }
 
 
@@ -57,8 +57,8 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     this.setProperty(this, 'source', value);
   }
 
-  public getSource(): Promise<INodeDefEntity> {
-    return this.getPropertyLazy(this, 'source');
+  public getSource(context: ExecutionContext): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'source', context);
   }
 
 
@@ -71,8 +71,8 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     this.setProperty(this, 'target', value);
   }
 
-  public getTarget(): Promise<INodeDefEntity> {
-    return this.getPropertyLazy(this, 'target');
+  public getTarget(context: ExecutionContext): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'target', context);
   }
 
 

@@ -36,8 +36,8 @@ export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
     this.setProperty(this, 'process', value);
   }
 
-  public getProcess(): Promise<IProcessEntity> {
-    return this.getPropertyLazy(this, 'process');
+  public getProcess(context: ExecutionContext): Promise<IProcessEntity> {
+    return this.getPropertyLazy(this, 'process', context);
   }
 
 }

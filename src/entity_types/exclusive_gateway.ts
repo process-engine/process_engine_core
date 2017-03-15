@@ -1,6 +1,6 @@
 import {NodeInstanceEntity} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, ICombinedQueryClause} from '@process-engine-js/core_contracts';
 import {IExclusiveGatewayEntity, IFlowDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
@@ -31,23 +31,31 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
   public async execute(context: ExecutionContext) {
 
     const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-    const nodeDef = await this.getNodeDef();
-    const processDef = await nodeDef.getProcessDef();
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
-    const flowsOut = await flowDefEntityType.query(internalContext, {
-      query: [
+    const nodeDef = await this.getNodeDef(internalContext);
+    const processDef = await nodeDef.getProcessDef(internalContext);
+
+    const queryObjectOut: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
         { attribute: 'source', operator: '=', value: nodeDef.id },
         { attribute: 'processDef', operator: '=', value: processDef.id }
       ]
-    });
-    const flowsIn = await flowDefEntityType.query(internalContext, {
-      query: [
+    };
+
+    const flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectOut });
+
+    const queryObjectIn: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
         { attribute: 'target', operator: '=', value: nodeDef.id },
         { attribute: 'processDef', operator: '=', value: processDef.id }
       ]
-    });
+    };
+
+    const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
 
     if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
       // split
@@ -59,7 +67,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
         const flow = <IFlowDefEntity>flowsOut.data[i];
         if (flow.condition) {
 
-          const processToken = await this.getProcessToken();
+          const processToken = await this.getProcessToken(internalContext);
           const tokenData = processToken.data || {};
 
           let result = false;

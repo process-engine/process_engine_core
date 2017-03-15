@@ -7,20 +7,20 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     name: string;
     key: string;
     processDef: IProcessDefEntity;
-    getProcessDef(): Promise<IProcessDefEntity>;
+    getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity>;
     lane: ILaneEntity;
-    getLane(): Promise<ILaneEntity>;
+    getLane(context: ExecutionContext): Promise<ILaneEntity>;
     type: string;
     extensions: any;
     attachedToNode: INodeDefEntity;
-    getAttachedToNode(): Promise<INodeDefEntity>;
+    getAttachedToNode(context: ExecutionContext): Promise<INodeDefEntity>;
     events: any;
     script: string;
     eventType: string;
     cancelActivity: boolean;
     subProcessKey: string;
     subProcessDef: INodeDefEntity;
-    getSubProcessDef(): Promise<INodeDefEntity>;
+    getSubProcessDef(context: ExecutionContext): Promise<INodeDefEntity>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection>;
 }

@@ -6,5 +6,5 @@ export declare class ProcessTokenEntity extends Entity implements IProcessTokenE
     initialize(derivedClassInstance: IEntity): Promise<void>;
     data: any;
     process: IProcessEntity;
-    getProcess(): Promise<IProcessEntity>;
+    getProcess(context: ExecutionContext): Promise<IProcessEntity>;
 }

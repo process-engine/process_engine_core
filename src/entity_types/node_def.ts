@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryClause} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -43,8 +43,8 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'processDef', value);
   }
 
-  public getProcessDef(): Promise<IProcessDefEntity> {
-    return this.getPropertyLazy(this, 'processDef');
+  public getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity> {
+    return this.getPropertyLazy(this, 'processDef', context);
   }
 
   @schemaAttribute({ type: 'Lane' })
@@ -56,8 +56,8 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'lane', value);
   }
 
-  public getLane(): Promise<ILaneEntity> {
-    return this.getPropertyLazy(this, 'lane');
+  public getLane(context: ExecutionContext): Promise<ILaneEntity> {
+    return this.getPropertyLazy(this, 'lane', context);
   }
 
 
@@ -88,8 +88,8 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'attachedToNode', value);
   }
 
-  public getAttachedToNode(): Promise<INodeDefEntity> {
-    return this.getPropertyLazy(this, 'attachedToNode');
+  public getAttachedToNode(context: ExecutionContext): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'attachedToNode', context);
   }
 
 
@@ -148,13 +148,13 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'subProcessDef', value);
   }
 
-  public getSubProcessDef(): Promise<INodeDefEntity> {
-    return this.getPropertyLazy(this, 'subProcessDef');
+  public getSubProcessDef(context: ExecutionContext): Promise<INodeDefEntity> {
+    return this.getPropertyLazy(this, 'subProcessDef', context);
   }
 
   public async getLaneRole(context: ExecutionContext): Promise<string> {
 
-    const lane = await this.getLane();
+    const lane = await this.getLane(context);
     const extensions = lane.extensions;
     const properties = (extensions && extensions.properties) ? extensions.properties : null;
 
@@ -175,9 +175,13 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
 
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-    const queryObject = [
-      { attribute: 'attachedToNode', operator: '=', value: this.id }
-    ];
+    
+    const queryObject: IQueryClause = {
+      attribute: 'attachedToNode',
+      operator: '=',
+      value: this.id
+    };
+
     const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
     return boundaryColl;
   }

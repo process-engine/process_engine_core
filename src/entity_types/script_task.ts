@@ -32,12 +32,12 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
     this.state = 'progress';
     await this.save(internalContext);
 
-    const processToken = await this.getProcessToken();
+    const processToken = await this.getProcessToken(internalContext);
     const tokenData = processToken.data || {};
     let result;
 
     // call service
-    const nodeDef = await this.getNodeDef();
+    const nodeDef = await this.getNodeDef(internalContext);
     const script = nodeDef.script;
 
     if (script) {

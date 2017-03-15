@@ -1,8 +1,7 @@
-import { ExecutionContext, IInheritedSchema, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IInheritedSchema, IEntity, IIamService } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IIamService } from '@process-engine-js/iam_contracts';
 export declare class NodeInstanceEntityDependencyHelper {
     messageBusService: IMessageBusService;
     iamService: IIamService;
@@ -19,14 +18,14 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     name: string;
     key: string;
     process: IProcessEntity;
-    getProcess(): Promise<IProcessEntity>;
+    getProcess(context: ExecutionContext): Promise<IProcessEntity>;
     nodeDef: INodeDefEntity;
-    getNodeDef(): Promise<INodeDefEntity>;
+    getNodeDef(context: ExecutionContext): Promise<INodeDefEntity>;
     type: string;
     state: string;
     participant: string;
     processToken: IProcessTokenEntity;
-    getProcessToken(): Promise<IProcessTokenEntity>;
+    getProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     start(context: ExecutionContext, source: IEntity): Promise<void>;
     changeState(context: ExecutionContext, newState: string, source: IEntity): Promise<void>;

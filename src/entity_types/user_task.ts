@@ -47,18 +47,20 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference) {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void> {
+    
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
     // check if participant changed
     if (this.participant !== source.id) {
 
     }
     // save new data in token
-    const processToken = await this.getProcessToken();
+    const processToken = await this.getProcessToken(internalContext);
     const tokenData = processToken.data || {};
     tokenData.current = newData;
     processToken.data = tokenData;
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
     await processToken.save(internalContext);
 
     await this.changeState(context, 'end', this);

@@ -1,15 +1,20 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -39,6 +44,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var node_instance_1 = require("./node_instance");
 var UserTaskEntity = (function (_super) {
     __extends(UserTaskEntity, _super);
@@ -84,8 +90,7 @@ var UserTaskEntity = (function (_super) {
                             jwt: context.encryptedToken
                         };
                         msg = this.messageBusService.createMessage(data, origin, meta);
-                        if (!this.participant)
-                            return [3 /*break*/, 5];
+                        if (!this.participant) return [3 /*break*/, 5];
                         return [4 /*yield*/, this.messageBusService.publish('/participant/' + this.participant, msg)];
                     case 4:
                         _a.sent();
@@ -104,21 +109,20 @@ var UserTaskEntity = (function (_super) {
     };
     UserTaskEntity.prototype.proceed = function (context, newData, source) {
         return __awaiter(this, void 0, void 0, function () {
-            var processToken, tokenData, internalContext;
+            var internalContext, processToken, tokenData;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
+                    case 0: return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
+                    case 1:
+                        internalContext = _a.sent();
                         if (this.participant !== source.id) {
                         }
-                        return [4 /*yield*/, this.getProcessToken()];
-                    case 1:
+                        return [4 /*yield*/, this.getProcessToken(internalContext)];
+                    case 2:
                         processToken = _a.sent();
                         tokenData = processToken.data || {};
                         tokenData.current = newData;
                         processToken.data = tokenData;
-                        return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
-                    case 2:
-                        internalContext = _a.sent();
                         return [4 /*yield*/, processToken.save(internalContext)];
                     case 3:
                         _a.sent();
