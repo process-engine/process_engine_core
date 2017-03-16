@@ -135,7 +135,7 @@ var ServiceTaskEntity = (function (_super) {
                     case 9:
                         tokenData.current = result;
                         processToken.data = tokenData;
-                        return [4 /*yield*/, processToken.save(null, internalContext)];
+                        return [4 /*yield*/, processToken.save(internalContext)];
                     case 10:
                         _a.sent();
                         _a.label = 11;

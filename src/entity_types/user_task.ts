@@ -1,9 +1,15 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
+import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
 import {IUserTaskEntity} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
+@schemaClass({
+  expandEntity: [
+    { attribute: 'nodeDef' },
+    { attribute: 'processToken' }
+  ]
+})
 export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntity {
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
@@ -22,7 +28,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'wait';
-    await this.save(null, internalContext);
+    await this.save(internalContext);
 
     const pojo = await this.toPojo(internalContext);
     const data = {
@@ -41,7 +47,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
       // send message to users of lane role
-      const role = await this.getLaneRole(context);
+      const role = await this.getLaneRole(internalContext);
       await this.messageBusService.publish('/role/' + role, msg);
     }
 

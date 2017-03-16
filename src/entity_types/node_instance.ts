@@ -17,12 +17,12 @@ export class NodeInstanceEntityDependencyHelper {
   }
 }
 
-// @schemaClass({
-//   expandEntity: [
-//     { attribute: 'nodeDef'},
-//     { attribute: 'processToken'}
-//   ]
-// })
+@schemaClass({
+  expandEntity: [
+    { attribute: 'nodeDef'},
+    { attribute: 'processToken'}
+  ]
+})
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   private _nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper = undefined;

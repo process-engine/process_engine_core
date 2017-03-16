@@ -151,10 +151,13 @@ var ProcessEntity = (function (_super) {
                         return [4 /*yield*/, this.getProcessDef(internalContext)];
                     case 5:
                         processDef = _a.sent();
-                        queryObject = [
-                            { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
-                            { attribute: 'processDef', operator: '=', value: processDef.id }
-                        ];
+                        queryObject = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+                                { attribute: 'processDef', operator: '=', value: processDef.id }
+                            ]
+                        };
                         return [4 /*yield*/, NodeDef.findOne(internalContext, { query: queryObject })];
                     case 6:
                         startEventDef = _a.sent();

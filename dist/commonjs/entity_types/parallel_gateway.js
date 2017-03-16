@@ -194,7 +194,7 @@ var ParallelGatewayEntity = (function (_super) {
                     case 8:
                         if (!(i < flowsIn.data.length)) return [3 /*break*/, 11];
                         flow = flowsIn.data[i];
-                        return [4 /*yield*/, flow.getSource];
+                        return [4 /*yield*/, flow.getSource(internalContext)];
                     case 9:
                         source_1 = _a.sent();
                         ids.push(source_1.id);

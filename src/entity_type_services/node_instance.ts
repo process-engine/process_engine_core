@@ -90,10 +90,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<void> {
 
-    const process = await source.getProcess();
-    let participant = source.participant;
-
     const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const process = await source.getProcess(internalContext);
+    let participant = source.participant;
 
     const forceCreateNode = (nextDef.type === 'bpmn:BoundaryEvent') ? true : false;
 
@@ -112,10 +111,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const className = map.get(nextDef.type);
     const entityType = await this.datastoreService.getEntityType(className);
 
-    const currentDef = await source.getNodeDef();
-    const currentLane = await currentDef.getLane();
+    const currentDef = await source.getNodeDef(internalContext);
+    const currentLane = await currentDef.getLane(internalContext);
 
-    const nextLane = await nextDef.getLane();
+    const nextLane = await nextDef.getLane(internalContext);
     // check for lane change
     if (currentLane && nextLane && currentLane.id !== nextLane.id) {
       // if we have a new lane, create a temporary context with lane role
@@ -142,10 +141,12 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     if (!forceCreateNode) {
 
       
-      const queryObj = [
+      const queryObj: IQueryObject = {
+        operator: 'and',
+        queries: [
         { attribute: 'process', operator: '=', value: process.id },
         { attribute: 'key', operator: '=', value: nextDef.key }
-      ];
+      ]};
 
       node = await entityType.findOne(internalContext, { query: queryObj });
     }

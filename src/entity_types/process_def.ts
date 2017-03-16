@@ -146,10 +146,12 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const lanePromiseArray = lanes.map(async (lane) => {
 
-      const queryObject: IQueryObject[] = [
+      const queryObject: IQueryObject = {
+        operator: 'and',
+        queries: [
         { attribute: 'key', operator: '=', value: lane.id },
         { attribute: 'processDef', operator: '=', value: this.id }
-      ];
+      ]};
 
       const queryOptions: IPrivateQueryOptions = {
         query: queryObject
@@ -187,10 +189,12 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodePromiseArray = nodes.map(async (node) => {
 
-      const queryObject: IQueryObject[] = [
+      const queryObject: IQueryObject = {
+        operator: 'and',
+        queries: [
         { attribute: 'key', operator: '=', value: node.id },
         { attribute: 'processDef', operator: '=', value: this.id }
-      ];
+      ]};
 
       let nodeDefEntity: any = await NodeDef.findOne(context, { query: queryObject });
 
@@ -269,10 +273,12 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const flowPromiseArray = flows.map(async (flow) => {
 
-      const queryObject: IQueryObject[] = [
+      const queryObject: IQueryObject = {
+        operator: 'and',
+        queries: [
         { attribute: 'key', operator: '=', value: flow.id },
         { attribute: 'processDef', operator: '=', value: this.id }
-      ];
+      ]};
 
       let flowDefEntity: any = await FlowDef.findOne(context, { query: queryObject });
 

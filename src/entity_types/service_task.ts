@@ -81,7 +81,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         tokenData.current = result;
         processToken.data = tokenData;
 
-        await processToken.save(null, internalContext);
+        await processToken.save(internalContext);
       }
 
 

@@ -82,10 +82,12 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     const processDef = await this.getProcessDef(internalContext);
     // get start event
-    const queryObject = [
+    const queryObject = {
+      operator: 'and',
+      queries: [
       { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
       { attribute: 'processDef', operator: '=', value: processDef.id }
-    ];
+    ]};
     const startEventDef: any = await NodeDef.findOne(internalContext, { query: queryObject });
 
     if (startEventDef) {

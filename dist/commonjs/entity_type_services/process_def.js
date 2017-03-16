@@ -193,9 +193,7 @@ var ProcessDefEntityTypeService = (function () {
                     case 1:
                         ProcessDef = _a.sent();
                         queryObject = {
-                            attribute: 'key',
-                            operator: '=',
-                            value: key
+                            attribute: 'key', operator: '=', value: key
                         };
                         queryParams = { query: queryObject };
                         return [4 /*yield*/, ProcessDef.findOne(context, queryParams)];

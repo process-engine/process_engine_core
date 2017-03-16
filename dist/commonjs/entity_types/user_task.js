@@ -9,6 +9,12 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -45,6 +51,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var metadata_1 = require("@process-engine-js/metadata");
 var node_instance_1 = require("./node_instance");
 var UserTaskEntity = (function (_super) {
     __extends(UserTaskEntity, _super);
@@ -75,7 +82,7 @@ var UserTaskEntity = (function (_super) {
                     case 1:
                         internalContext = _a.sent();
                         this.state = 'wait';
-                        return [4 /*yield*/, this.save(null, internalContext)];
+                        return [4 /*yield*/, this.save(internalContext)];
                     case 2:
                         _a.sent();
                         return [4 /*yield*/, this.toPojo(internalContext)];
@@ -95,7 +102,7 @@ var UserTaskEntity = (function (_super) {
                     case 4:
                         _a.sent();
                         return [3 /*break*/, 8];
-                    case 5: return [4 /*yield*/, this.getLaneRole(context)];
+                    case 5: return [4 /*yield*/, this.getLaneRole(internalContext)];
                     case 6:
                         role = _a.sent();
                         return [4 /*yield*/, this.messageBusService.publish('/role/' + role, msg)];
@@ -136,6 +143,14 @@ var UserTaskEntity = (function (_super) {
     };
     return UserTaskEntity;
 }(node_instance_1.NodeInstanceEntity));
+UserTaskEntity = __decorate([
+    metadata_1.schemaClass({
+        expandEntity: [
+            { attribute: 'nodeDef' },
+            { attribute: 'processToken' }
+        ]
+    })
+], UserTaskEntity);
 exports.UserTaskEntity = UserTaskEntity;
 
 //# sourceMappingURL=user_task.js.map

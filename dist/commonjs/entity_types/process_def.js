@@ -234,10 +234,13 @@ var ProcessDefEntity = (function (_super) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        queryObject = [
-                                            { attribute: 'key', operator: '=', value: lane.id },
-                                            { attribute: 'processDef', operator: '=', value: this.id }
-                                        ];
+                                        queryObject = {
+                                            operator: 'and',
+                                            queries: [
+                                                { attribute: 'key', operator: '=', value: lane.id },
+                                                { attribute: 'processDef', operator: '=', value: this.id }
+                                            ]
+                                        };
                                         queryOptions = {
                                             query: queryObject
                                         };
@@ -287,10 +290,13 @@ var ProcessDefEntity = (function (_super) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        queryObject = [
-                                            { attribute: 'key', operator: '=', value: node.id },
-                                            { attribute: 'processDef', operator: '=', value: this.id }
-                                        ];
+                                        queryObject = {
+                                            operator: 'and',
+                                            queries: [
+                                                { attribute: 'key', operator: '=', value: node.id },
+                                                { attribute: 'processDef', operator: '=', value: this.id }
+                                            ]
+                                        };
                                         return [4 /*yield*/, NodeDef.findOne(context, { query: queryObject })];
                                     case 1:
                                         nodeDefEntity = _a.sent();
@@ -367,10 +373,13 @@ var ProcessDefEntity = (function (_super) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        queryObject = [
-                                            { attribute: 'key', operator: '=', value: flow.id },
-                                            { attribute: 'processDef', operator: '=', value: this.id }
-                                        ];
+                                        queryObject = {
+                                            operator: 'and',
+                                            queries: [
+                                                { attribute: 'key', operator: '=', value: flow.id },
+                                                { attribute: 'processDef', operator: '=', value: this.id }
+                                            ]
+                                        };
                                         return [4 /*yield*/, FlowDef.findOne(context, { query: queryObject })];
                                     case 1:
                                         flowDefEntity = _a.sent();

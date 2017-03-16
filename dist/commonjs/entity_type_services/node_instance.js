@@ -142,16 +142,16 @@ var NodeInstanceEntityTypeService = (function () {
     };
     NodeInstanceEntityTypeService.prototype.createNextNode = function (context, source, nextDef, token) {
         return __awaiter(this, void 0, void 0, function () {
-            var process, participant, internalContext, forceCreateNode, map, className, entityType, currentDef, currentLane, nextLane, role, node, queryObj, meta, data, origin, msg;
+            var internalContext, process, participant, forceCreateNode, map, className, entityType, currentDef, currentLane, nextLane, role, node, queryObj, meta, data, origin, msg;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, source.getProcess()];
+                    case 0: return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
                     case 1:
+                        internalContext = _a.sent();
+                        return [4 /*yield*/, source.getProcess(internalContext)];
+                    case 2:
                         process = _a.sent();
                         participant = source.participant;
-                        return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
-                    case 2:
-                        internalContext = _a.sent();
                         forceCreateNode = (nextDef.type === 'bpmn:BoundaryEvent') ? true : false;
                         map = new Map();
                         map.set('bpmn:UserTask', 'UserTask');
@@ -168,13 +168,13 @@ var NodeInstanceEntityTypeService = (function () {
                         return [4 /*yield*/, this.datastoreService.getEntityType(className)];
                     case 3:
                         entityType = _a.sent();
-                        return [4 /*yield*/, source.getNodeDef()];
+                        return [4 /*yield*/, source.getNodeDef(internalContext)];
                     case 4:
                         currentDef = _a.sent();
-                        return [4 /*yield*/, currentDef.getLane()];
+                        return [4 /*yield*/, currentDef.getLane(internalContext)];
                     case 5:
                         currentLane = _a.sent();
-                        return [4 /*yield*/, nextDef.getLane()];
+                        return [4 /*yield*/, nextDef.getLane(internalContext)];
                     case 6:
                         nextLane = _a.sent();
                         if (!(currentLane && nextLane && currentLane.id !== nextLane.id)) return [3 /*break*/, 8];
@@ -188,10 +188,13 @@ var NodeInstanceEntityTypeService = (function () {
                     case 8:
                         node = null;
                         if (!!forceCreateNode) return [3 /*break*/, 10];
-                        queryObj = [
-                            { attribute: 'process', operator: '=', value: process.id },
-                            { attribute: 'key', operator: '=', value: nextDef.key }
-                        ];
+                        queryObj = {
+                            operator: 'and',
+                            queries: [
+                                { attribute: 'process', operator: '=', value: process.id },
+                                { attribute: 'key', operator: '=', value: nextDef.key }
+                            ]
+                        };
                         return [4 /*yield*/, entityType.findOne(internalContext, { query: queryObj })];
                     case 9:
                         node = _a.sent();
