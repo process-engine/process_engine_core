@@ -1,176 +1,81 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-    return { next: verb(0), "throw": verb(1), "return": verb(2) };
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var node_instance_1 = require("./node_instance");
-var core_contracts_1 = require("@process-engine-js/core_contracts");
-var metadata_1 = require("@process-engine-js/metadata");
-var ExclusiveGatewayEntity = (function (_super) {
-    __extends(ExclusiveGatewayEntity, _super);
-    function ExclusiveGatewayEntity(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        return _super.call(this, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) || this;
+const node_instance_1 = require("./node_instance");
+const core_contracts_1 = require("@process-engine-js/core_contracts");
+const metadata_1 = require("@process-engine-js/metadata");
+class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
     }
-    ExclusiveGatewayEntity.prototype.initialize = function (derivedClassInstance) {
-        return __awaiter(this, void 0, void 0, function () {
-            var actualInstance;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        actualInstance = derivedClassInstance || this;
-                        return [4 /*yield*/, _super.prototype.initialize.call(this, actualInstance)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Object.defineProperty(ExclusiveGatewayEntity.prototype, "follow", {
-        get: function () {
-            return this.getProperty(this, 'follow');
-        },
-        set: function (value) {
-            this.setProperty(this, 'follow', value);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ExclusiveGatewayEntity.prototype.execute = function (context) {
-        return __awaiter(this, void 0, void 0, function () {
-            var flowDefEntityType, internalContext, nodeDef, processDef, queryObjectOut, flowsOut, queryObjectIn, flowsIn, follow, i, flow, processToken, tokenData, result, functionString, evaluateFunction;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.datastoreService.getEntityType('FlowDef')];
-                    case 1:
-                        flowDefEntityType = _a.sent();
-                        return [4 /*yield*/, this.iamService.createInternalContext('processengine_system')];
-                    case 2:
-                        internalContext = _a.sent();
-                        return [4 /*yield*/, this.getNodeDef(internalContext)];
-                    case 3:
-                        nodeDef = _a.sent();
-                        return [4 /*yield*/, nodeDef.getProcessDef(internalContext)];
-                    case 4:
-                        processDef = _a.sent();
-                        queryObjectOut = {
-                            operator: 'and',
-                            queries: [
-                                { attribute: 'source', operator: '=', value: nodeDef.id },
-                                { attribute: 'processDef', operator: '=', value: processDef.id }
-                            ]
-                        };
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectOut })];
-                    case 5:
-                        flowsOut = _a.sent();
-                        queryObjectIn = {
-                            operator: 'and',
-                            queries: [
-                                { attribute: 'target', operator: '=', value: nodeDef.id },
-                                { attribute: 'processDef', operator: '=', value: processDef.id }
-                            ]
-                        };
-                        return [4 /*yield*/, flowDefEntityType.query(internalContext, { query: queryObjectIn })];
-                    case 6:
-                        flowsIn = _a.sent();
-                        if (!(flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1)) return [3 /*break*/, 12];
-                        follow = [];
-                        i = 0;
-                        _a.label = 7;
-                    case 7:
-                        if (!(i < flowsOut.data.length)) return [3 /*break*/, 11];
-                        flow = flowsOut.data[i];
-                        if (!flow.condition) return [3 /*break*/, 9];
-                        return [4 /*yield*/, this.getProcessToken(internalContext)];
-                    case 8:
-                        processToken = _a.sent();
-                        tokenData = processToken.data || {};
-                        result = false;
-                        try {
-                            functionString = 'return ' + flow.condition;
-                            evaluateFunction = new Function(functionString);
-                            result = evaluateFunction.call(tokenData);
-                        }
-                        catch (err) {
-                        }
-                        if (result) {
-                            follow.push(flow.id);
-                        }
-                        return [3 /*break*/, 10];
-                    case 9:
+    async initialize(derivedClassInstance) {
+        const actualInstance = derivedClassInstance || this;
+        await super.initialize(actualInstance);
+    }
+    get follow() {
+        return this.getProperty(this, 'follow');
+    }
+    set follow(value) {
+        this.setProperty(this, 'follow', value);
+    }
+    async execute(context) {
+        const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const nodeDef = await this.getNodeDef(internalContext);
+        const processDef = await nodeDef.getProcessDef(internalContext);
+        const queryObjectOut = {
+            operator: 'and',
+            queries: [
+                { attribute: 'source', operator: '=', value: nodeDef.id },
+                { attribute: 'processDef', operator: '=', value: processDef.id }
+            ]
+        };
+        const flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectOut });
+        const queryObjectIn = {
+            operator: 'and',
+            queries: [
+                { attribute: 'target', operator: '=', value: nodeDef.id },
+                { attribute: 'processDef', operator: '=', value: processDef.id }
+            ]
+        };
+        const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
+        if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
+            const follow = [];
+            for (let i = 0; i < flowsOut.data.length; i++) {
+                const flow = flowsOut.data[i];
+                if (flow.condition) {
+                    const processToken = await this.getProcessToken(internalContext);
+                    const tokenData = processToken.data || {};
+                    let result = false;
+                    try {
+                        const functionString = 'return ' + flow.condition;
+                        const evaluateFunction = new Function(functionString);
+                        result = evaluateFunction.call(tokenData);
+                    }
+                    catch (err) {
+                    }
+                    if (result) {
                         follow.push(flow.id);
-                        _a.label = 10;
-                    case 10:
-                        i++;
-                        return [3 /*break*/, 7];
-                    case 11:
-                        this.follow = follow;
-                        _a.label = 12;
-                    case 12:
-                        if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
-                        }
-                        this.state = 'progress';
-                        return [4 /*yield*/, this.save(internalContext)];
-                    case 13:
-                        _a.sent();
-                        return [4 /*yield*/, this.changeState(context, 'end', this)];
-                    case 14:
-                        _a.sent();
-                        return [2 /*return*/];
+                    }
                 }
-            });
-        });
-    };
-    return ExclusiveGatewayEntity;
-}(node_instance_1.NodeInstanceEntity));
+                else {
+                    follow.push(flow.id);
+                }
+            }
+            this.follow = follow;
+        }
+        if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
+        }
+        this.state = 'progress';
+        await this.save(internalContext);
+        await this.changeState(context, 'end', this);
+    }
+}
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
 ], ExclusiveGatewayEntity.prototype, "follow", null);
