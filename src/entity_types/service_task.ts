@@ -69,7 +69,8 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
           const params = evaluateFunction.call(tokenData) || [];
 
-          const argumentsToPassThrough = [context].concat(params);
+          const argumentsPassedToMethod = [context].concat(params);
+          result = await this.invoker.invoke(service, serviceMethod, context, ...argumentsPassedToMethod);
 
           result = await this.invoker.invoke(serviceInstance, serviceMethod, context, ...argumentsToPassThrough);
 
