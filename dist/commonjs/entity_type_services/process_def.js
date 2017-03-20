@@ -17,26 +17,27 @@ class ProcessDefEntityTypeService {
     get invoker() {
         return this._invoker;
     }
-    importBpmnFromFile(context, params, options) {
-        const self = this;
+    async importBpmnFromFile(context, params, options) {
         const fileName = params && params.file ? params.file : null;
         if (fileName) {
             const path = process.cwd() + '/examples/bpmns/' + fileName;
-            return new BluebirdPromise((resolve, reject) => {
-                fs.readFile(path, 'utf8', async (error, xmlString) => {
-                    if (error) {
-                        reject(error);
-                    }
-                    else {
-                        return self.importBpmnFromXml(context, { xml: xmlString }, options);
-                    }
+            async function getFile() {
+                return new BluebirdPromise((resolve, reject) => {
+                    fs.readFile(path, 'utf8', (error, xmlString) => {
+                        if (error) {
+                            reject(error);
+                        }
+                        else {
+                            resolve(xmlString);
+                        }
+                    });
                 });
-            })
-                .then(() => {
-                return { result: true };
-            });
+            }
+            const xmlString = await getFile();
+            await this.importBpmnFromXml(context, { xml: xmlString }, options);
+            return { result: true };
         }
-        return BluebirdPromise.reject(new Error('file does not exist'));
+        throw new Error('file does not exist');
     }
     async importBpmnFromXml(context, params, options) {
         const xml = params && params.xml ? params.xml : null;
@@ -44,7 +45,8 @@ class ProcessDefEntityTypeService {
             const bpmnDiagram = await this.parseBpmnXml(xml);
             const ProcessDef = await this.datastoreService.getEntityType('ProcessDef');
             const processes = bpmnDiagram.getProcesses();
-            processes.forEach(async (process) => {
+            for (let i = 0; i < processes.length; i++) {
+                const process = processes[i];
                 const queryObject = {
                     attribute: 'key',
                     operator: '=',
@@ -64,7 +66,7 @@ class ProcessDefEntityTypeService {
                 processDefEntity.xml = xml;
                 await processDefEntity.save(context);
                 await this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram });
-            });
+            }
         }
     }
     parseBpmnXml(xml) {
