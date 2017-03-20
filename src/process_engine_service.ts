@@ -43,6 +43,13 @@ export class ProcessEngineService implements IProcessEngineService {
     try {
       await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
       debugInfo(`subscribed on Messagebus with id ${this.id}`);
+
+      // we still subscribe on the old channel to leave frontend intact
+      if (this.messageBusService.isMaster) {
+        await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+        debugInfo(`subscribed on Messagebus Master`);
+      }
+
     } catch (err) {
       debugErr('subscription failed on Messagebus', err.message);
       throw new Error(err.message);

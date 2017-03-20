@@ -31,6 +31,10 @@ class ProcessEngineService {
         try {
             await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
             debugInfo(`subscribed on Messagebus with id ${this.id}`);
+            if (this.messageBusService.isMaster) {
+                await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                debugInfo(`subscribed on Messagebus Master`);
+            }
         }
         catch (err) {
             debugErr('subscription failed on Messagebus', err.message);
