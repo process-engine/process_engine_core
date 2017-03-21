@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
     constructor(container, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
@@ -42,11 +41,9 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
             if (serviceModule && serviceMethod) {
                 const serviceInstance = this.container.resolve(serviceModule);
                 let result;
+                const that = this;
                 try {
-                    const functionString = 'return ' + paramString;
-                    const evaluateFunction = new Function(functionString);
-                    const params = evaluateFunction.call(tokenData) || [];
-                    const argumentsToPassThrough = [context].concat(params);
+                    const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString))(context, tokenData) || [];
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, context, ...argumentsToPassThrough);
                 }
                 catch (err) {
