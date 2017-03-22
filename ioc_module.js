@@ -28,7 +28,8 @@ function registerInContainer(container) {
 
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'ProcessDefEntityTypeService')
-    .singleton();
+    .singleton()
+    .configure('process_engine:process_engine_service');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
     .dependencies('DatastoreService', 'MessageBusService', 'IamService');
@@ -40,7 +41,6 @@ function registerInContainer(container) {
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
     .dependencies('MessageBusService', 'IamService', 'NodeInstanceEntityTypeService')
     .singleton();
-    
 
   container.register('BoundaryEventEntity', BoundaryEventEntity)
     .dependencies('NodeInstanceEntityDependencyHelper')

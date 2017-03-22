@@ -9,6 +9,41 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         const actualInstance = derivedClassInstance || this;
         await super.initialize(actualInstance);
     }
+    async execute(context) {
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        this.state = 'wait';
+        await this.save(internalContext);
+        const processToken = await this.getProcessToken(internalContext);
+        const tokenData = processToken.data || {};
+        const nodeDef = await this.getNodeDef(internalContext);
+        const subProcessKey = nodeDef.subProcessKey || null;
+        if (subProcessKey) {
+            const meta = {
+                jwt: context.encryptedToken
+            };
+            const origin = this.getEntityReference();
+            const data = {
+                action: 'start',
+                data: {
+                    key: subProcessKey,
+                    token: tokenData,
+                    origin: origin,
+                    isSubProcess: true
+                }
+            };
+            const msg = this.messageBusService.createMessage(data, origin, meta);
+            await this.messageBusService.publish('/processengine', msg);
+        }
+    }
+    async proceed(context, newData, source) {
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const processToken = await this.getProcessToken(internalContext);
+        const tokenData = processToken.data || {};
+        tokenData.current = newData;
+        processToken.data = tokenData;
+        await processToken.save(internalContext);
+        await this.changeState(context, 'end', this);
+    }
 }
 exports.SubprocessExternalEntity = SubprocessExternalEntity;
 

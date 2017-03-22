@@ -5,10 +5,13 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private _messageBusService;
     private _processDefEntityTypeService;
     private _runningProcesses;
+    private _id;
+    config: any;
     constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService);
     private readonly messageBusService;
     private readonly processDefEntityTypeService;
     private readonly runningProcesses;
+    readonly id: string;
     initialize(): Promise<void>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string>;
     private _messageHandler(msg);

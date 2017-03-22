@@ -48,15 +48,34 @@ class ProcessEntity extends data_model_contracts_1.Entity {
     getProcessDef(context) {
         return this.getPropertyLazy(this, 'processDef', context);
     }
+    get isSubProcess() {
+        return this.getProperty(this, 'isSubProcess');
+    }
+    set isSubProcess(value) {
+        this.setProperty(this, 'isSubProcess', value);
+    }
+    get callerId() {
+        return this.getProperty(this, 'callerId');
+    }
+    set callerId(value) {
+        this.setProperty(this, 'callerId', value);
+    }
     async start(context, params, options) {
         const source = params ? params.source : undefined;
+        const isSubProcess = params ? params.isSubProcess : false;
         const initialToken = params ? params.initialToken : undefined;
         const ProcessToken = await this.datastoreService.getEntityType('ProcessToken');
         const NodeDef = await this.datastoreService.getEntityType('NodeDef');
         const StartEvent = await this.datastoreService.getEntityType('StartEvent');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         let laneContext = context;
-        const participant = (source && source.id) ? source.id : null;
+        let participant = null;
+        this.isSubProcess = isSubProcess;
+        this.callerId = (isSubProcess && source) ? source.id : null;
+        await this.save(internalContext);
+        if (!isSubProcess) {
+            participant = (source && source.id) ? source.id : null;
+        }
         const processDef = await this.getProcessDef(internalContext);
         const queryObject = {
             operator: 'and',
@@ -87,6 +106,11 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             await startEvent.changeState(laneContext, 'start', this);
         }
     }
+    async end(context, processToken) {
+        if (this.isSubProcess) {
+            const callerId = this.callerId;
+        }
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
@@ -97,6 +121,12 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessDef' })
 ], ProcessEntity.prototype, "processDef", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.boolean })
+], ProcessEntity.prototype, "isSubProcess", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessEntity.prototype, "callerId", null);
 exports.ProcessEntity = ProcessEntity;
 
 //# sourceMappingURL=process.js.map
