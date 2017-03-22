@@ -25,31 +25,35 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._invoker;
   }
 
-  public importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IPublicGetOptions): Promise<any> {
+  public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IPublicGetOptions): Promise<any> {
 
-    const self = this;
     const fileName = params && params.file ? params.file : null;
     if (fileName) {
       const path = process.cwd() + '/examples/bpmns/' + fileName;
 
-      return new BluebirdPromise<any>((resolve, reject) => {
+      const xmlString = await this._getFile(path);
 
-        fs.readFile(path, 'utf8', async (error, xmlString) => {
-          if (error) {
-            reject(error);
-          } else {
-
-            return self.importBpmnFromXml(context, { xml: xmlString }, options);
-          }
-        });
-      })
-      .then(() => {
-        return { result: true };
-      });
+      await this.importBpmnFromXml(context, { xml: xmlString }, options);
+      return { result: true };
 
     }
-    return BluebirdPromise.reject(new Error('file does not exist'));
+
+    throw new Error('file does not exist');
   }
+
+
+  private async _getFile(path: string): Promise<string> {
+    return new BluebirdPromise<any>((resolve, reject) => {
+      fs.readFile(path, 'utf8', (error, xmlString) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(xmlString);
+        }
+      });
+    });
+  }
+
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IPublicGetOptions): Promise<void> {
 
@@ -62,7 +66,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
       const processes = bpmnDiagram.getProcesses();
 
-      processes.forEach(async (process) => {
+      for (let i = 0; i < processes.length; i++) {
+        const process = processes[i];
 
         // query with key
         const queryObject: IQueryClause = {
@@ -90,8 +95,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         await processDefEntity.save(context);
 
         await this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram });
-      
-      });
+      }
     }
   }
 

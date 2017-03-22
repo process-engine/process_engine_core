@@ -2,6 +2,7 @@ import { IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProc
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions } from '@process-engine-js/core_contracts';
 import * as debug from 'debug';
+import * as uuid from 'uuid';
 
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
@@ -12,7 +13,10 @@ export class ProcessEngineService implements IProcessEngineService {
   private _messageBusService: IMessageBusService = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _runningProcesses: any = {};
+  private _id: string = undefined;
 
+  public config: any = undefined;
+  
   constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService) {
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -30,10 +34,22 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._runningProcesses;
   }
 
+  public get id(): string {
+    return this._id;
+  }
+
   async initialize(): Promise<void> {
+    this._id = this.config.id || uuid.v4();
     try {
-      await this.messageBusService.subscribe('/processengine', this._messageHandler.bind(this));
-      debugInfo('subscribed on Messagebus');
+      await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
+      debugInfo(`subscribed on Messagebus with id ${this.id}`);
+
+      // we still subscribe on the old channel to leave frontend intact
+      if (this.messageBusService.isMaster) {
+        await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+        debugInfo(`subscribed on Messagebus Master`);
+      }
+
     } catch (err) {
       debugErr('subscription failed on Messagebus', err.message);
       throw new Error(err.message);
