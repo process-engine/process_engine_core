@@ -44,6 +44,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
     if (props) {
       let serviceModule;
       let serviceMethod;
+      let namespace;
       let paramString;
 
       props.forEach((prop) => {
@@ -55,6 +56,9 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         }
         if (prop.name === 'params') {
           paramString = prop.value;
+        }
+        if (prop.name === 'namespace') {
+          namespace = prop.value;
         }
       });
 
@@ -68,7 +72,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
           const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString))(context, tokenData) || [];
 
-          result = await this.invoker.invoke(serviceInstance, serviceMethod, context, ...argumentsToPassThrough);
+          result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
 
         } catch (err) {
           result = err;

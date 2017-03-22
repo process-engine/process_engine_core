@@ -93,7 +93,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     await processEntity.save(context);
 
-    await this.invoker.invoke(processEntity, 'start', context, context, params, options);
+    await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
 
     return processEntity;
   }

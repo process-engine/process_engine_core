@@ -62,7 +62,7 @@ class ProcessDefEntityTypeService {
                 processDefEntity.name = process.name;
                 processDefEntity.xml = xml;
                 await processDefEntity.save(context);
-                await this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram });
+                await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
             });
         }
     }
@@ -104,7 +104,7 @@ class ProcessDefEntityTypeService {
             const queryParams = { query: queryObject };
             const processDefEntity = await ProcessDef.findOne(context, queryParams);
             if (processDefEntity) {
-                const processEntity = await this.invoker.invoke(processDefEntity, 'start', context, context, params, options);
+                const processEntity = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
                 return processEntity;
             }
         }
