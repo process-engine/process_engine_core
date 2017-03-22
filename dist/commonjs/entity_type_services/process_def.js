@@ -21,23 +21,23 @@ class ProcessDefEntityTypeService {
         const fileName = params && params.file ? params.file : null;
         if (fileName) {
             const path = process.cwd() + '/examples/bpmns/' + fileName;
-            async function getFile() {
-                return new BluebirdPromise((resolve, reject) => {
-                    fs.readFile(path, 'utf8', (error, xmlString) => {
-                        if (error) {
-                            reject(error);
-                        }
-                        else {
-                            resolve(xmlString);
-                        }
-                    });
-                });
-            }
-            const xmlString = await getFile();
+            const xmlString = await this._getFile(path);
             await this.importBpmnFromXml(context, { xml: xmlString }, options);
             return { result: true };
         }
         throw new Error('file does not exist');
+    }
+    async _getFile(path) {
+        return new BluebirdPromise((resolve, reject) => {
+            fs.readFile(path, 'utf8', (error, xmlString) => {
+                if (error) {
+                    reject(error);
+                }
+                else {
+                    resolve(xmlString);
+                }
+            });
+        });
     }
     async importBpmnFromXml(context, params, options) {
         const xml = params && params.xml ? params.xml : null;

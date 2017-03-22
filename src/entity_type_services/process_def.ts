@@ -31,19 +31,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     if (fileName) {
       const path = process.cwd() + '/examples/bpmns/' + fileName;
 
-      async function getFile(): Promise<string> {
-        return new BluebirdPromise<any>((resolve, reject) => {
-          fs.readFile(path, 'utf8', (error, xmlString) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(xmlString);
-            }
-          });
-        });
-      }
-
-      const xmlString = await getFile();
+      const xmlString = await this._getFile(path);
 
       await this.importBpmnFromXml(context, { xml: xmlString }, options);
       return { result: true };
@@ -52,6 +40,20 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     throw new Error('file does not exist');
   }
+
+
+  private async _getFile(path: string): Promise<string> {
+    return new BluebirdPromise<any>((resolve, reject) => {
+      fs.readFile(path, 'utf8', (error, xmlString) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(xmlString);
+        }
+      });
+    });
+  }
+
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IPublicGetOptions): Promise<void> {
 
