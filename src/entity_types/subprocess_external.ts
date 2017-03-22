@@ -17,4 +17,55 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
   }
+
+  public async execute(context: ExecutionContext): Promise<void> {
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    this.state = 'wait';
+    await this.save(internalContext);
+
+    const processToken = await this.getProcessToken(internalContext);
+    const tokenData = processToken.data || {};
+
+    // call sub process
+    const nodeDef = await this.getNodeDef(internalContext);
+    const subProcessKey = nodeDef.subProcessKey || null;
+    if (subProcessKey) {
+      
+      const meta = {
+        jwt: context.encryptedToken
+      };
+
+      const origin = this.getEntityReference();
+
+      const data = {
+        action: 'start',
+        data: {
+          key: subProcessKey,
+          token: tokenData,
+          origin: origin,
+          isSubProcess: true
+        }
+      };
+
+      const msg = this.messageBusService.createMessage(data, origin, meta);
+      await this.messageBusService.publish('/processengine', msg);
+
+    }
+    
+  }
+
+  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void> {
+
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    // save new data in token
+    const processToken = await this.getProcessToken(internalContext);
+    const tokenData = processToken.data || {};
+    tokenData.current = newData;
+    processToken.data = tokenData;
+
+    await processToken.save(internalContext);
+
+    await this.changeState(context, 'end', this);
+  }
 }

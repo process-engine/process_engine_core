@@ -65,9 +65,29 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     return this.getPropertyLazy(this, 'processDef', context);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.boolean })
+  public get isSubProcess(): boolean {
+    return this.getProperty(this, 'isSubProcess');
+  }
+
+  public set isSubProcess(value: boolean) {
+    this.setProperty(this, 'isSubProcess', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get callerId(): string {
+    return this.getProperty(this, 'callerId');
+  }
+
+  public set callerId(value: string) {
+    this.setProperty(this, 'callerId', value);
+  }
+
+
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
     
     const source = params ? params.source : undefined;
+    const isSubProcess = params ? params.isSubProcess : false;
     const initialToken = params ? params.initialToken : undefined;
 
     const ProcessToken = await this.datastoreService.getEntityType('ProcessToken');
@@ -77,9 +97,16 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     let laneContext = context;
 
-    // Todo: handle source as parent process
-    const participant = (source && source.id) ? source.id : null;
+    let participant = null;
 
+    this.isSubProcess = isSubProcess;
+    this.callerId = (isSubProcess && source) ? source.id : null;
+    await this.save(internalContext);
+
+    if (!isSubProcess) {
+      participant = (source && source.id) ? source.id : null;
+    }
+  
     const processDef = await this.getProcessDef(internalContext);
     // get start event
     const queryObject = {
@@ -115,6 +142,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       await startEvent.save(internalContext);
 
       await startEvent.changeState(laneContext, 'start', this);
+    }
+  }
+
+  public async end(context: ExecutionContext, processToken: any): Promise<void> {
+    if (this.isSubProcess) {
+      const callerId = this.callerId;
+
+      // send proceed message
+
     }
   }
 }

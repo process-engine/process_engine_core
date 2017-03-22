@@ -51,6 +51,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return BluebirdPromise.reject(new Error('file does not exist'));
   }
 
+
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IPublicGetOptions): Promise<void> {
 
     const xml = params && params.xml ? params.xml : null;

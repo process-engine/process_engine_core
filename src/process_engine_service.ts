@@ -55,6 +55,7 @@ export class ProcessEngineService implements IProcessEngineService {
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
     const source: any = (msg && msg.origin) ? msg.origin : null;
+    const isSubProcess: boolean = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
 
     const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
 
@@ -64,7 +65,8 @@ export class ProcessEngineService implements IProcessEngineService {
         const params: IParamStart = {
           key: key,
           initialToken: initialToken,
-          source: source
+          source: source,
+          isSubProcess: isSubProcess
         };
 
         const processEntity = await this.processDefEntityTypeService.start(context, params);
