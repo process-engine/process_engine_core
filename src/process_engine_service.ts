@@ -2,11 +2,12 @@ import { IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProc
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions } from '@process-engine-js/core_contracts';
 import * as debug from 'debug';
-import * as uuid from 'uuid';
+import * as uuidModule from 'uuid';
 
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 
+const uuid: any = uuidModule;
 
 export class ProcessEngineService implements IProcessEngineService {
 
