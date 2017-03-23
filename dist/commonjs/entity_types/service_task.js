@@ -47,7 +47,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 const serviceInstance = this.container.resolve(serviceModule);
                 let result;
                 try {
-                    const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString))(context, tokenData) || [];
+                    const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
                 }
                 catch (err) {

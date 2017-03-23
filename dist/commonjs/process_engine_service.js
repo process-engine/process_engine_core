@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
+const uuid = require("uuid");
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 class ProcessEngineService {
@@ -8,6 +9,8 @@ class ProcessEngineService {
         this._messageBusService = undefined;
         this._processDefEntityTypeService = undefined;
         this._runningProcesses = {};
+        this._id = undefined;
+        this.config = undefined;
         this._messageBusService = messageBusService;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }
@@ -20,10 +23,18 @@ class ProcessEngineService {
     get runningProcesses() {
         return this._runningProcesses;
     }
+    get id() {
+        return this._id;
+    }
     async initialize() {
+        this._id = this.config.id || uuid.v4();
         try {
-            await this.messageBusService.subscribe('/processengine', this._messageHandler.bind(this));
-            debugInfo('subscribed on Messagebus');
+            await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
+            debugInfo(`subscribed on Messagebus with id ${this.id}`);
+            if (this.messageBusService.isMaster) {
+                await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                debugInfo(`subscribed on Messagebus Master`);
+            }
         }
         catch (err) {
             debugErr('subscription failed on Messagebus', err.message);

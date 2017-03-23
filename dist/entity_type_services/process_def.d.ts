@@ -9,6 +9,7 @@ export declare class ProcessDefEntityTypeService implements IProcessDefEntityTyp
     private readonly datastoreService;
     private readonly invoker;
     importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IPublicGetOptions): Promise<any>;
+    private _getFile(path);
     importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IPublicGetOptions): Promise<void>;
     parseBpmnXml(xml: string): Promise<BpmnDiagram>;
     parseBpmnFile(path: string): Promise<BpmnDiagram>;

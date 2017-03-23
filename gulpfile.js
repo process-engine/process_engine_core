@@ -3,8 +3,7 @@
 const gulptraum = require('gulptraum');
 const tsconfig = require('tsconfig');
 
-const buildSystemConfig = {
-};
+const buildSystemConfig = {};
 
 const buildSystem = new gulptraum.BuildSystem(buildSystemConfig);
 
