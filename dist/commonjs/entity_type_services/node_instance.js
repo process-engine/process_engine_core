@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 class NodeInstanceEntityTypeService {
     constructor(datastoreService, messagebusService, iamService) {
         this._datastoreService = undefined;

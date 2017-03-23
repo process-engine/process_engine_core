@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
     constructor(container, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
