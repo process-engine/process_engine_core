@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
-const uuid = require("uuid");
+const uuidModule = require("uuid");
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
+const uuid = uuidModule;
 class ProcessEngineService {
     constructor(messageBusService, processDefEntityTypeService) {
         this._messageBusService = undefined;

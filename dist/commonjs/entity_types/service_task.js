@@ -27,6 +27,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
         if (props) {
             let serviceModule;
             let serviceMethod;
+            let namespace;
             let paramString;
             props.forEach((prop) => {
                 if (prop.name === 'module') {
@@ -38,13 +39,16 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 if (prop.name === 'params') {
                     paramString = prop.value;
                 }
+                if (prop.name === 'namespace') {
+                    namespace = prop.value;
+                }
             });
             if (serviceModule && serviceMethod) {
                 const serviceInstance = this.container.resolve(serviceModule);
                 let result;
                 try {
                     const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
-                    result = await this.invoker.invoke(serviceInstance, serviceMethod, context, ...argumentsToPassThrough);
+                    result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
                 }
                 catch (err) {
                     result = err;
