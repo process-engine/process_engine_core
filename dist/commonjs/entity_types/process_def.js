@@ -61,7 +61,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const processEntityType = await this.datastoreService.getEntityType('Process');
         const processEntity = (await processEntityType.createEntity(context, processData));
         await processEntity.save(context);
-        await this.invoker.invoke(processEntity, 'start', context, context, params, options);
+        await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
         return processEntity;
     }
     async updateBpmn(context, params) {

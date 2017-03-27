@@ -94,7 +94,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
         await processDefEntity.save(context);
 
-        await this.invoker.invoke(processDefEntity, 'updateDefinitions', context, context, { bpmnDiagram: bpmnDiagram });
+        await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
       }
     }
   }
@@ -150,7 +150,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const processDefEntity = await ProcessDef.findOne(context, queryParams);
 
       if (processDefEntity) {
-        const processEntity: IProcessEntity = await this.invoker.invoke(processDefEntity, 'start', context, context, params, options);
+        const processEntity: IProcessEntity = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
         return processEntity;
       }
     }
