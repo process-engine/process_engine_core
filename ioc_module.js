@@ -32,7 +32,7 @@ function registerInContainer(container) {
     .configure('process_engine:process_engine_service');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService');
+    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'FeatureService', 'RoutingService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
     .dependencies('DatastoreService', 'Invoker');

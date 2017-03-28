@@ -2,6 +2,7 @@ import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '
 import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ILaneEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
+import {IFeature} from '@process-engine-js/feature_contracts';
 
 export class LaneEntity extends Entity implements ILaneEntity {
 
@@ -56,4 +57,22 @@ export class LaneEntity extends Entity implements ILaneEntity {
     return this.getPropertyLazy(this, 'processDef', context);
   }
   
+  public get features(): Array<IFeature> {
+    return this._extractFeatures();
+  }
+
+  private _extractFeatures(): Array<IFeature> {
+    let features = undefined;
+    const extensions = this.extensions || null;
+    const props = (extensions && extensions.properties) ? extensions.properties : null;
+
+    if (props) {
+      props.forEach((prop) => {
+        if (prop.name === 'features') {
+          features = JSON.parse(prop.value);
+        }
+      });
+    }
+    return features;
+  }
 }

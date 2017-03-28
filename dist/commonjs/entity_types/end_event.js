@@ -19,11 +19,7 @@ class EndEventEntity extends event_1.EventEntity {
             action: 'endEvent',
             data: currentToken
         };
-        const origin = this.getEntityReference();
-        const meta = {
-            jwt: context.encryptedToken
-        };
-        const msg = this.messageBusService.createMessage(data, origin, meta);
+        const msg = this.messageBusService.createEntityMessage(data, this, context);
         if (this.participant) {
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }

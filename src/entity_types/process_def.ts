@@ -1,13 +1,13 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import { IFeature } from '@process-engine-js/feature_contracts';
 
 import * as uuid from 'uuid';
 
 interface ICache<T> {
-  [key: string]: T
+  [key: string]: T;
 };
 
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
@@ -71,6 +71,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this.setProperty(this, 'xml', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.object })
+  public get extensions(): any {
+    return this.getProperty(this, 'extensions');
+  }
+
+  public set extensions(value: any) {
+    this.setProperty(this, 'extensions', value);
+  }
+
   @schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
   public get nodeDefCollection(): EntityCollection {
     return this.getProperty(this, 'nodeDefCollection');
@@ -79,6 +88,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   public getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection> {
     return this.getPropertyLazy(this, 'nodeDefCollection', context);
   }
+
+  public get features(): Array<IFeature> {
+    return this._extractFeatures();
+  }
+
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
 
@@ -104,7 +118,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     if (xml) {
       this.xml = xml;
 
-      await this.save(context);
       await this.updateDefinitions(context);
 
       return { result: true };
@@ -122,6 +135,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     if (!bpmnDiagram) {
       bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     }
+
+    const processes = bpmnDiagram.getProcesses();
+    const currentProcess = processes.find((item) => item.id === key);
+
+    if (currentProcess.extensionElements) {
+      const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
+      this.extensions = extensions;
+    }
+    await this.save(context);
 
     const lanes = bpmnDiagram.getLanes(key);
 
@@ -160,16 +182,17 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       let laneEntity: any = await Lane.findOne(context, queryOptions);
 
       if (!laneEntity) {
-
-        const laneData = {
-          key: lane.id
-        };
-
-        laneEntity = await Lane.createEntity(context, laneData);
+        laneEntity = await Lane.createEntity(context);
       }
 
+      laneEntity.key = lane.id;
       laneEntity.name = lane.name;
       laneEntity.processDef = this;
+
+      if (lane.extensionElements) {
+        const extensions = this._updateExtensionElements(lane.extensionElements.values);
+        laneEntity.extensions = extensions;
+      }
 
       await laneEntity.save(context);
       
@@ -429,4 +452,18 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return ext;
   }
   
+  private _extractFeatures(): Array<IFeature> {
+    let features = undefined;
+    const extensions = this.extensions || null;
+    const props = (extensions && extensions.properties) ? extensions.properties : null;
+
+    if (props) {
+      props.forEach((prop) => {
+        if (prop.name === 'features') {
+          features = JSON.parse(prop.value);
+        }
+      });
+    }
+    return features;
+  }
 }

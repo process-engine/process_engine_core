@@ -64,7 +64,6 @@ class ProcessDefEntityTypeService {
                 }
                 processDefEntity.name = process.name;
                 processDefEntity.xml = xml;
-                await processDefEntity.save(context);
                 await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
             }
         }

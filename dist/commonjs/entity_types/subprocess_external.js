@@ -18,9 +18,6 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         const nodeDef = await this.getNodeDef(internalContext);
         const subProcessKey = nodeDef.subProcessKey || null;
         if (subProcessKey) {
-            const meta = {
-                jwt: context.encryptedToken
-            };
             const origin = this.getEntityReference();
             const data = {
                 action: 'start',
@@ -31,7 +28,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
                     isSubProcess: true
                 }
             };
-            const msg = this.messageBusService.createMessage(data, origin, meta);
+            const msg = this.messageBusService.createEntityMessage(data, this, context);
             await this.messageBusService.publish('/processengine', msg);
         }
     }

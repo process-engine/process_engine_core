@@ -30,10 +30,6 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const nodeDef = await this.getNodeDef(internalContext);
     const subProcessKey = nodeDef.subProcessKey || null;
     if (subProcessKey) {
-      
-      const meta = {
-        jwt: context.encryptedToken
-      };
 
       const origin = this.getEntityReference();
 
@@ -47,7 +43,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
         }
       };
 
-      const msg = this.messageBusService.createMessage(data, origin, meta);
+      const msg = this.messageBusService.createEntityMessage(data, this, context);
       await this.messageBusService.publish('/processengine', msg);
 
     }
