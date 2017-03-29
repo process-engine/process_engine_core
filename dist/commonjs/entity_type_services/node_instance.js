@@ -30,7 +30,7 @@ class NodeInstanceEntityTypeService {
     }
     async createNode(context, entityType) {
         async function nodeHandler(msg) {
-            msg = await this.messagebus.verifyMessage(msg);
+            await this.messagebus.verifyMessage(msg);
             const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
             const source = (msg && msg.origin) ? msg.origin : null;
             const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
@@ -207,18 +207,20 @@ class NodeInstanceEntityTypeService {
                         await this.createNextNode(context, nodeInstance, nextDef, currentToken);
                     }
                     else {
-                        const appInstances = this.featureService.getApplicationInstanceIdsByFeatures(features);
+                        const appInstances = this.featureService.getApplicationIdsByFeatures(features);
                         if (appInstances.length > 0) {
                             const appInstanceId = appInstances[0];
-                            const data = {
-                                route: 'service/ProcessDef/continueFromRemote',
-                                params: {
-                                    source: nodeInstance.getEntityReference(),
-                                    nextDef: nextDef.getEntityReference(),
-                                    token: currentToken.getEntityReference()
-                                }
+                            const options = {
+                                action: 'POST',
+                                typeName: 'ProcessDef',
+                                method: 'continueFromRemote'
                             };
-                            const message = this.messagebusService.createEntityMessage(data, nextDef, context);
+                            const data = {
+                                source: nodeInstance.getEntityReference(),
+                                nextDef: nextDef.getEntityReference(),
+                                token: currentToken.getEntityReference()
+                            };
+                            const message = this.messagebusService.createDatastoreMessage(options, context, data);
                             await this.routingService.send(appInstanceId, message);
                         }
                         throw new Error('can not route, no matching instance found');

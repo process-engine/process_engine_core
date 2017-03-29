@@ -66,15 +66,15 @@ export class ProcessEngineService implements IProcessEngineService {
   private async _messageHandler(msg): Promise<void> {
     debugInfo('we got a message: ', msg);
 
-    msg = await this.messageBusService.verifyMessage(msg);
+    await this.messageBusService.verifyMessage(msg);
 
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-    const source: any = (msg && msg.origin) ? msg.origin : null;
+    const source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
     const isSubProcess: boolean = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
 
-    const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
+    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
 
     switch (action) {
       case 'start':
