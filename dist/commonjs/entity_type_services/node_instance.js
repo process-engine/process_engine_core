@@ -79,21 +79,9 @@ class NodeInstanceEntityTypeService {
         const currentDef = await source.getNodeDef(internalContext);
         const currentLane = await currentDef.getLane(internalContext);
         const nextLane = await nextDef.getLane(internalContext);
-        // check for lane change
         if (currentLane && nextLane && currentLane.id !== nextLane.id) {
-            // if we have a new lane, create a temporary context with lane role
             const role = await nextDef.getLaneRole(internalContext);
             if (role) {
-                // Todo: refactor lane change
-                /*const identityContext = await context.createNewContext('identity');
-                const tempUser = role + source.id;
-        
-                const identity = model._datastore._processengine.identity;
-                await identity.addSystemUser(tempUser, { roles: [role] }, identityContext);
-        
-                const jwt = await identity.loginByToken(tempUser);
-                // use new context of temporary lane user
-                context = await identity.token.verifyToken(jwt);*/
                 participant = null;
             }
         }

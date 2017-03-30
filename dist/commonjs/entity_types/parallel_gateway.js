@@ -45,23 +45,18 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
         };
         const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
         if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
-            // split
             this.parallelType = 'split';
-            // do nothing, just change to end
             this.state = 'progress';
             await this.save(internalContext);
             await this.changeState(context, 'end', this);
         }
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
-            // join
             this.parallelType = 'join';
-            // we have to wait for all incoming flows
             this.state = 'progress';
             await this.save(internalContext);
         }
     }
     async proceed(context, newData, source) {
-        // check if all tokens are there
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
@@ -70,7 +65,6 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
         const nodeDef = await this.getNodeDef(internalContext);
         const processDef = await nodeDef.getProcessDef(internalContext);
         let flowsIn = null;
-        // query for all flows going in
         const queryObjectAll = {
             operator: 'and',
             queries: [
@@ -105,11 +99,8 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                 const processToken = await this.getProcessToken(internalContext);
                 const tokenData = processToken.data || {};
                 tokenData.history = tokenData.history || {};
-                // const sourceKey = sourceEnt.key;
-                // merge tokens
                 const merged = Object.assign({}, tokenData.history, token.data.history);
                 tokenData.history = merged;
-                // tokenData.history[sourceKey] = token.data.current;
                 processToken.data = tokenData;
                 await processToken.save(internalContext);
                 keys.forEach((key) => {
@@ -118,7 +109,6 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                     }
                 });
                 if (allthere) {
-                    // end
                     await this.changeState(context, 'end', this);
                 }
             }

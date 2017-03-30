@@ -47,7 +47,6 @@ class ProcessDefEntityTypeService {
             const processes = bpmnDiagram.getProcesses();
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
-                // query with key
                 const queryObject = {
                     attribute: 'key',
                     operator: '=',

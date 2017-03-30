@@ -21,7 +21,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
         const processToken = await this.getProcessToken(internalContext);
         const tokenData = processToken.data || {};
         let continueEnd = true;
-        // call service
         const nodeDef = await this.getNodeDef(internalContext);
         const extensions = nodeDef.extensions || null;
         const props = (extensions && extensions.properties) ? extensions.properties : null;

@@ -32,7 +32,6 @@ class ProcessEngineService {
         try {
             await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
             debugInfo(`subscribed on Messagebus with id ${this.id}`);
-            // we still subscribe on the old channel to leave frontend intact
             if (this.messageBusService.isMaster) {
                 await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);
