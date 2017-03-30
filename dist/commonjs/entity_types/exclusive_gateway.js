@@ -45,6 +45,8 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
         };
         const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
         if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
+            // split
+            // evaluate conditions
             const follow = [];
             for (let i = 0; i < flowsOut.data.length; i++) {
                 const flow = flowsOut.data[i];
@@ -58,6 +60,7 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
                         result = evaluateFunction.call(tokenData);
                     }
                     catch (err) {
+                        // do nothing
                     }
                     if (result) {
                         follow.push(flow.id);
@@ -70,6 +73,7 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
             this.follow = follow;
         }
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
+            // join
         }
         this.state = 'progress';
         await this.save(internalContext);

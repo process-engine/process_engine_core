@@ -56,8 +56,10 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         const StartEvent = await this.datastoreService.getEntityType('StartEvent');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         let laneContext = context;
+        // Todo: handle source as parent process
         const participant = (source && source.id) ? source.id : null;
         const processDef = await this.getProcessDef(internalContext);
+        // get start event
         const queryObject = {
             operator: 'and',
             queries: [
@@ -67,6 +69,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         };
         const startEventDef = await NodeDef.findOne(internalContext, { query: queryObject });
         if (startEventDef) {
+            // create an empty process token
             const processToken = await ProcessToken.createEntity(internalContext);
             processToken.process = this;
             if (initialToken) {
@@ -83,6 +86,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             startEvent.type = startEventDef.type;
             startEvent.processToken = processToken;
             startEvent.participant = participant;
+            // startEvent.timeStart = Date.now();
             await startEvent.save(internalContext);
             await startEvent.changeState(laneContext, 'start', this);
         }
