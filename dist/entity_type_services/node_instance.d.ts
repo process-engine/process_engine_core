@@ -16,6 +16,7 @@ export declare class NodeInstanceEntityTypeService implements INodeInstanceEntit
     private readonly iamService;
     private readonly featureService;
     private readonly routingService;
+    private _nodeHandler(msg);
     createNode(context: ExecutionContext, entityType: IEntityType<IEntity>): Promise<IEntity>;
     createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<void>;
     continueExecution(context: ExecutionContext, source: IEntity): Promise<void>;

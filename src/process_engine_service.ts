@@ -42,10 +42,9 @@ export class ProcessEngineService implements IProcessEngineService {
   async initialize(): Promise<void> {
     this._id = this.config.id || uuid.v4();
     try {
-      await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
-      debugInfo(`subscribed on Messagebus with id ${this.id}`);
 
-      // we still subscribe on the old channel to leave frontend intact
+      // Todo: we subscribe on the old channel to leave frontend intact
+      // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
         await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
         debugInfo(`subscribed on Messagebus Master`);

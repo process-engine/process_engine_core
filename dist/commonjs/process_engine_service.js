@@ -30,8 +30,6 @@ class ProcessEngineService {
     async initialize() {
         this._id = this.config.id || uuid.v4();
         try {
-            await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
-            debugInfo(`subscribed on Messagebus with id ${this.id}`);
             if (this.messageBusService.isMaster) {
                 await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);

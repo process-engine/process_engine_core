@@ -172,7 +172,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   public async changeState(context: ExecutionContext, newState: string, source: IEntity) {
 
     const data = {
-      action: 'start',
+      action: 'changeState',
       data: newState
     };
 

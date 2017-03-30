@@ -114,7 +114,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async changeState(context, newState, source) {
         const data = {
-            action: 'start',
+            action: 'changeState',
             data: newState
         };
         const msg = this.messageBusService.createEntityMessage(data, source, context);

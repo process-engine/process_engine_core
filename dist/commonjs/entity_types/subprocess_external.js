@@ -18,13 +18,13 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         const nodeDef = await this.getNodeDef(internalContext);
         const subProcessKey = nodeDef.subProcessKey || null;
         if (subProcessKey) {
-            const origin = this.getEntityReference();
+            const source = this.getEntityReference();
             const data = {
                 action: 'start',
                 data: {
                     key: subProcessKey,
                     token: tokenData,
-                    origin: origin,
+                    source: source,
                     isSubProcess: true
                 }
             };

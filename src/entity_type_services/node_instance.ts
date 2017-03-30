@@ -7,6 +7,11 @@ import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessa
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
 
+interface Binding {
+  messagebusService: IMessageBusService;
+  entity: any;
+}
+
 export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
@@ -43,59 +48,61 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return this._routingService;
   }
 
-  public async createNode(context: ExecutionContext, entityType: IEntityType<IEntity>): Promise<IEntity> {
+  private async _nodeHandler(msg: any): Promise<void> {
+    const binding: Binding = <any>this;
 
-    async function nodeHandler(msg: any) {
-      await this.messagebus.verifyMessage(msg);
+    await binding.messagebusService.verifyMessage(msg);
 
-      const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-      const source: IEntityReference = (msg && msg.origin) ? msg.origin : null;
-      const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
+    const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
+    const source: IEntityReference = (msg && msg.source) ? msg.source : null;
+    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
 
-      if (action === 'changeState') {
+    if (action === 'changeState') {
         const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
 
         switch (newState) {
-          case ('start'):
-            await this.entity.start(context, source);
-            break;
+            case ('start'):
+                await binding.entity.start(context, source);
+                break;
 
-          case ('execute'):
-            await this.entity.execute(context);
-            break;
+            case ('execute'):
+                await binding.entity.execute(context);
+                break;
 
-          case ('end'):
-            await this.entity.end(context);
-            break;
+            case ('end'):
+                await binding.entity.end(context);
+                break;
 
-          default:
-          // error ???
+            default:
+            // error ???
         }
 
 
-      }
+    }
 
-      if (action === 'proceed') {
+    if (action === 'proceed') {
         const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-        await this.entity.proceed(context, newData, source);
-      }
+        await binding.entity.proceed(context, newData, source);
+    }
 
-      if (action === 'event') {
+    if (action === 'event') {
         const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;
         const data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-        await this.entity.event(context, event, data);
-      }
+        await binding.entity.event(context, event, data);
     }
+  }
+
+  public async createNode(context: ExecutionContext, entityType: IEntityType<IEntity>): Promise<IEntity> {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     const node = await entityType.createEntity(internalContext);
 
-    const binding = {
+    const binding: Binding = {
       entity: node,
-      messagebus: this.messagebusService
+      messagebusService: this.messagebusService
     };
 
-    await this.messagebusService.subscribe('/processengine/node/' + node.id, nodeHandler.bind(binding));
+    await this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
 
     return node;
 

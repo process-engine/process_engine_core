@@ -28,44 +28,45 @@ class NodeInstanceEntityTypeService {
     get routingService() {
         return this._routingService;
     }
-    async createNode(context, entityType) {
-        async function nodeHandler(msg) {
-            await this.messagebus.verifyMessage(msg);
-            const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-            const source = (msg && msg.origin) ? msg.origin : null;
-            const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
-            if (action === 'changeState') {
-                const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-                switch (newState) {
-                    case ('start'):
-                        await this.entity.start(context, source);
-                        break;
-                    case ('execute'):
-                        await this.entity.execute(context);
-                        break;
-                    case ('end'):
-                        await this.entity.end(context);
-                        break;
-                    default:
-                }
-            }
-            if (action === 'proceed') {
-                const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-                await this.entity.proceed(context, newData, source);
-            }
-            if (action === 'event') {
-                const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;
-                const data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-                await this.entity.event(context, event, data);
+    async _nodeHandler(msg) {
+        const binding = this;
+        await binding.messagebusService.verifyMessage(msg);
+        const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
+        const source = (msg && msg.source) ? msg.source : null;
+        const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+        if (action === 'changeState') {
+            const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
+            switch (newState) {
+                case ('start'):
+                    await binding.entity.start(context, source);
+                    break;
+                case ('execute'):
+                    await binding.entity.execute(context);
+                    break;
+                case ('end'):
+                    await binding.entity.end(context);
+                    break;
+                default:
             }
         }
+        if (action === 'proceed') {
+            const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
+            await binding.entity.proceed(context, newData, source);
+        }
+        if (action === 'event') {
+            const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;
+            const data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
+            await binding.entity.event(context, event, data);
+        }
+    }
+    async createNode(context, entityType) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const node = await entityType.createEntity(internalContext);
         const binding = {
             entity: node,
-            messagebus: this.messagebusService
+            messagebusService: this.messagebusService
         };
-        await this.messagebusService.subscribe('/processengine/node/' + node.id, nodeHandler.bind(binding));
+        await this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
         return node;
     }
     async createNextNode(context, source, nextDef, token) {

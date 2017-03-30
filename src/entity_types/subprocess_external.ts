@@ -31,14 +31,14 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const subProcessKey = nodeDef.subProcessKey || null;
     if (subProcessKey) {
 
-      const origin = this.getEntityReference();
+      const source = this.getEntityReference();
 
       const data = {
         action: 'start',
         data: {
           key: subProcessKey,
           token: tokenData,
-          origin: origin,
+          source: source,
           isSubProcess: true
         }
       };
