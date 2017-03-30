@@ -28,6 +28,7 @@ class EndEventEntity extends event_1.EventEntity {
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }
         else {
+            // send message to users of lane role
             const role = await this.getLaneRole(internalContext);
             await this.messageBusService.publish('/role/' + role, msg);
         }

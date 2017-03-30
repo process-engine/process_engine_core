@@ -102,8 +102,14 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         return role;
     }
     async start(context, source) {
+        // check if context matches to lane
         let role = await this.getLaneRole(context);
         if (role !== null) {
+            // Todo: refactor check if user has lane role
+            // const permissions = {
+            //   'execute': [role]
+            // };
+            // await context.checkPermissions(this.id + '.execute', permissions);
         }
         if (!this.state) {
             this.state = 'start';
@@ -120,6 +126,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             action: 'changeState',
             data: newState
         };
+        // Todo: 
         const origin = source.getEntityReference();
         const msg = this.messageBusService.createMessage(data, origin, meta);
         await this.messageBusService.publish('/processengine/node/' + this.id, msg);
@@ -147,10 +154,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         await this.changeState(context, 'end', this);
     }
     async proceed(context, data, source) {
+        // by default do nothing, implementation should be overwritten by child class
     }
     async event(context, event, data) {
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
+        // check if definition exists
         const nodeDef = await this.getNodeDef(internalContext);
         if (nodeDef && nodeDef.events && nodeDef.events[event]) {
             const boundaryDefKey = nodeDef.events[event];
@@ -202,6 +211,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         let flowsOut = null;
         if (!cancelFlow) {
             if (nodeInstance.follow) {
+                // we have already a list of flows to follow
                 if (nodeInstance.follow.length > 0) {
                     const queryObjectFollow = {
                         operator: 'and',
@@ -214,6 +224,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 }
             }
             else {
+                // query for all flows going out
                 const queryObjectAll = {
                     operator: 'and',
                     queries: [
