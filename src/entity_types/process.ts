@@ -104,7 +104,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     await this.save(internalContext);
 
     if (!isSubProcess) {
-      participant = (source && source.id) ? source.id : null;
+      participant = source || null;
     }
   
     const processDef = await this.getProcessDef(internalContext);

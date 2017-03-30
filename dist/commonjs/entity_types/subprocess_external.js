@@ -32,7 +32,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
             await this.messageBusService.publish('/processengine', msg);
         }
     }
-    async proceed(context, newData, source) {
+    async proceed(context, newData, source, applicationId) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const processToken = await this.getProcessToken(internalContext);
         const tokenData = processToken.data || {};

@@ -34,9 +34,9 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
             await this.messageBusService.publish('/role/' + role, msg);
         }
     }
-    async proceed(context, newData, source) {
+    async proceed(context, newData, source, applicationId) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        if (this.participant !== source.id) {
+        if (this.participant !== applicationId) {
         }
         const processToken = await this.getProcessToken(internalContext);
         const tokenData = processToken.data || {};

@@ -78,7 +78,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void> {
     // check if all tokens are there
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');

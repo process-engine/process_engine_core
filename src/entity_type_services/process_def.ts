@@ -1,5 +1,5 @@
 import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
-import {ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory} from '@process-engine-js/core_contracts';
 import {IInvoker} from '@process-engine-js/invocation_contracts';
 import {IDatastoreService} from '@process-engine-js/data_model_contracts';
 
@@ -10,14 +10,18 @@ import * as BpmnModdle from 'bpmn-moddle';
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
+  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
   private _invoker: IInvoker = undefined;
 
-  constructor(datastoreService: IDatastoreService, invoker: IInvoker) {
-    this._datastoreService = datastoreService;
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, invoker: IInvoker) {
+    this._datastoreServiceFactory = datastoreServiceFactory;
     this._invoker = invoker;
   }
 
   private get datastoreService(): IDatastoreService {
+    if (!this._datastoreService) {
+      this._datastoreService = this._datastoreServiceFactory();
+    }
     return this._datastoreService;
   }
 

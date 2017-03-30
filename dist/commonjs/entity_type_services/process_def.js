@@ -5,13 +5,17 @@ const fs = require("fs");
 const BluebirdPromise = require("bluebird");
 const BpmnModdle = require("bpmn-moddle");
 class ProcessDefEntityTypeService {
-    constructor(datastoreService, invoker) {
+    constructor(datastoreServiceFactory, invoker) {
         this._datastoreService = undefined;
+        this._datastoreServiceFactory = undefined;
         this._invoker = undefined;
-        this._datastoreService = datastoreService;
+        this._datastoreServiceFactory = datastoreServiceFactory;
         this._invoker = invoker;
     }
     get datastoreService() {
+        if (!this._datastoreService) {
+            this._datastoreService = this._datastoreServiceFactory();
+        }
         return this._datastoreService;
     }
     get invoker() {

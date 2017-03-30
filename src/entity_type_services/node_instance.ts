@@ -1,6 +1,6 @@
 import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, 
   IParamStart, IProcessEntity, IParamsContinueFromRemote } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
 import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
@@ -15,13 +15,14 @@ interface Binding {
 export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
+  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
   private _messagebusService: IMessageBusService = undefined;
   private _iamService: IIamService = undefined;
   private _featureService: IFeatureService = undefined;
   private _routingService: IRoutingService = undefined;
 
-  constructor(datastoreService: IDatastoreService, messagebusService: IMessageBusService, iamService: IIamService, featureService: IFeatureService, routingService: IRoutingService) {
-    this._datastoreService = datastoreService;
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, featureService: IFeatureService, routingService: IRoutingService) {
+    this._datastoreServiceFactory = datastoreServiceFactory;
     this._messagebusService = messagebusService;
     this._iamService = iamService;
     this._featureService = featureService;
@@ -29,6 +30,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   private get datastoreService(): IDatastoreService {
+    if (!this._datastoreService) {
+      this._datastoreService = this._datastoreServiceFactory();
+    }
     return this._datastoreService;
   }
 
@@ -56,6 +60,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const source: IEntityReference = (msg && msg.source) ? msg.source : null;
     const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+    const applicationId = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
 
     if (action === 'changeState') {
         const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
@@ -82,7 +87,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     if (action === 'proceed') {
         const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-        await binding.entity.proceed(context, newData, source);
+        await binding.entity.proceed(context, newData, source, applicationId);
     }
 
     if (action === 'event') {

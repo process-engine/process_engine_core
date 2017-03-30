@@ -206,7 +206,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async proceed(context: ExecutionContext, data: any, source: EntityReference) {
+  public async proceed(context: ExecutionContext, data: any, source: EntityReference, applicationId: string) {
     // by default do nothing, implementation should be overwritten by child class
   }
 

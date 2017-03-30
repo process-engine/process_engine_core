@@ -1,19 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class NodeInstanceEntityTypeService {
-    constructor(datastoreService, messagebusService, iamService, featureService, routingService) {
+    constructor(datastoreServiceFactory, messagebusService, iamService, featureService, routingService) {
         this._datastoreService = undefined;
+        this._datastoreServiceFactory = undefined;
         this._messagebusService = undefined;
         this._iamService = undefined;
         this._featureService = undefined;
         this._routingService = undefined;
-        this._datastoreService = datastoreService;
+        this._datastoreServiceFactory = datastoreServiceFactory;
         this._messagebusService = messagebusService;
         this._iamService = iamService;
         this._featureService = featureService;
         this._routingService = routingService;
     }
     get datastoreService() {
+        if (!this._datastoreService) {
+            this._datastoreService = this._datastoreServiceFactory();
+        }
         return this._datastoreService;
     }
     get messagebusService() {
@@ -34,6 +38,7 @@ class NodeInstanceEntityTypeService {
         const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
         const source = (msg && msg.source) ? msg.source : null;
         const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+        const applicationId = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
         if (action === 'changeState') {
             const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
             switch (newState) {
@@ -51,7 +56,7 @@ class NodeInstanceEntityTypeService {
         }
         if (action === 'proceed') {
             const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-            await binding.entity.proceed(context, newData, source);
+            await binding.entity.proceed(context, newData, source, applicationId);
         }
         if (action === 'event') {
             const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;

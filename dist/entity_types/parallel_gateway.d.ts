@@ -7,5 +7,5 @@ export declare class ParallelGatewayEntity extends NodeInstanceEntity implements
     initialize(derivedClassInstance: IEntity): Promise<void>;
     parallelType: string;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void>;
+    proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void>;
 }

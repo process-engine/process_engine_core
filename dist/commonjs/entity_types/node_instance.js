@@ -138,7 +138,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         await this.save(internalContext);
         await this.changeState(context, 'end', this);
     }
-    async proceed(context, data, source) {
+    async proceed(context, data, source, applicationId) {
     }
     async event(context, event, data) {
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');

@@ -56,7 +56,7 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
             await this.save(internalContext);
         }
     }
-    async proceed(context, newData, source) {
+    async proceed(context, newData, source, applicationId) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');

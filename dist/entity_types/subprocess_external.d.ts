@@ -6,5 +6,5 @@ export declare class SubprocessExternalEntity extends NodeInstanceEntity impleme
     constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void>;
+    proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void>;
 }
