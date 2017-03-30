@@ -1,6 +1,8 @@
 import { IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions } from '@process-engine-js/core_contracts';
+import { IFeatureService } from '@process-engine-js/feature_contracts';
+
 import * as debug from 'debug';
 import * as uuidModule from 'uuid';
 
@@ -13,14 +15,17 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private _messageBusService: IMessageBusService = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
+  private _featureService: IFeatureService = undefined;
+
   private _runningProcesses: any = {};
   private _id: string = undefined;
 
   public config: any = undefined;
   
-  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService) {
+  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService) {
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
+    this._featureService = featureService;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -29,6 +34,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
     return this._processDefEntityTypeService;
+  }
+
+  private get featureService(): IFeatureService {
+    return this._featureService;
   }
 
   private get runningProcesses(): any {
@@ -41,6 +50,9 @@ export class ProcessEngineService implements IProcessEngineService {
 
   async initialize(): Promise<void> {
     this._id = this.config.id || uuid.v4();
+
+    this.featureService.initialize();
+    
     try {
 
       // Todo: we subscribe on the old channel to leave frontend intact

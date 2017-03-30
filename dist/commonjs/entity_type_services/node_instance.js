@@ -228,6 +228,7 @@ class NodeInstanceEntityTypeService {
                             };
                             const message = this.messagebusService.createDatastoreMessage(options, context, data);
                             await this.routingService.send(appInstanceId, message);
+                            return;
                         }
                         throw new Error('can not route, no matching instance found');
                     }

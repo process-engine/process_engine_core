@@ -6,20 +6,25 @@ const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 const uuid = uuidModule;
 class ProcessEngineService {
-    constructor(messageBusService, processDefEntityTypeService) {
+    constructor(messageBusService, processDefEntityTypeService, featureService) {
         this._messageBusService = undefined;
         this._processDefEntityTypeService = undefined;
+        this._featureService = undefined;
         this._runningProcesses = {};
         this._id = undefined;
         this.config = undefined;
         this._messageBusService = messageBusService;
         this._processDefEntityTypeService = processDefEntityTypeService;
+        this._featureService = featureService;
     }
     get messageBusService() {
         return this._messageBusService;
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
+    }
+    get featureService() {
+        return this._featureService;
     }
     get runningProcesses() {
         return this._runningProcesses;
@@ -29,6 +34,7 @@ class ProcessEngineService {
     }
     async initialize() {
         this._id = this.config.id || uuid.v4();
+        this.featureService.initialize();
         try {
             if (this.messageBusService.isMaster) {
                 await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
