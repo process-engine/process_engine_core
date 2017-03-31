@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 class NodeInstanceEntityTypeService {
     constructor(datastoreServiceFactory, messagebusService, iamService, featureService, routingService) {
         this._datastoreService = undefined;
@@ -218,13 +219,13 @@ class NodeInstanceEntityTypeService {
                             const appInstanceId = appInstances[0];
                             const options = {
                                 action: 'POST',
-                                typeName: 'ProcessDef',
+                                typeName: 'NodeInstance',
                                 method: 'continueFromRemote'
                             };
                             const data = {
-                                source: nodeInstance.getEntityReference(),
-                                nextDef: nextDef.getEntityReference(),
-                                token: currentToken.getEntityReference()
+                                source: nodeInstance.getEntityReference().toPojo(),
+                                nextDef: nextDef.getEntityReference().toPojo(),
+                                token: currentToken.getEntityReference().toPojo()
                             };
                             const message = this.messagebusService.createDatastoreMessage(options, context, data);
                             await this.routingService.send(appInstanceId, message);
@@ -237,16 +238,26 @@ class NodeInstanceEntityTypeService {
         }
     }
     async continueFromRemote(context, params, options) {
+        let source = undefined;
+        let token = undefined;
+        let nextDef = undefined;
         const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-        const sourceRef = params.source;
+        const sourceRef = new data_model_contracts_1.EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
         const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
-        const source = await sourceEntityType.getById(sourceRef.id, context);
-        const tokenRef = params.token;
-        const token = await processTokenEntityType.getById(tokenRef.id, context);
-        const nextDefRef = params.nextDef;
-        const nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
-        await this.createNextNode(context, source, nextDef, token);
+        if (sourceEntityType && sourceRef.id) {
+            source = await sourceEntityType.getById(sourceRef.id, context);
+        }
+        const tokenRef = new data_model_contracts_1.EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
+        token = await processTokenEntityType.getById(tokenRef.id, context);
+        const nextDefRef = new data_model_contracts_1.EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
+        nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
+        if (source && token && nextDef) {
+            await this.createNextNode(context, source, nextDef, token);
+        }
+        else {
+            throw new Error('param is missing');
+        }
     }
 }
 exports.NodeInstanceEntityTypeService = NodeInstanceEntityTypeService;

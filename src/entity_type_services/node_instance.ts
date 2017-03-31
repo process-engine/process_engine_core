@@ -2,7 +2,7 @@ import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamI
   IParamStart, IProcessEntity, IParamsContinueFromRemote } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
+import { IDatastoreService, IEntityType, EntityReference } from '@process-engine-js/data_model_contracts';
 import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
@@ -307,13 +307,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               // Todo: set correct message format
               const options: IDatastoreMessageOptions = {
                 action: 'POST',
-                typeName: 'ProcessDef',
+                typeName: 'NodeInstance',
                 method: 'continueFromRemote'
               };
               const data = {
-                source: nodeInstance.getEntityReference(),
-                nextDef: nextDef.getEntityReference(),
-                token: currentToken.getEntityReference()
+                source: nodeInstance.getEntityReference().toPojo(),
+                nextDef: nextDef.getEntityReference().toPojo(),
+                token: currentToken.getEntityReference().toPojo()
               };
               const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
               await this.routingService.send(appInstanceId, message);
@@ -321,8 +321,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             }
             throw new Error('can not route, no matching instance found');
           }
-
-          
 
         }
       }
@@ -333,19 +331,30 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
 
+    let source = undefined;
+    let token = undefined;
+    let nextDef = undefined;
+
     // Todo: restore entities from references respecting namespaces
     const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
 
-    const sourceRef = params.source;
+    const sourceRef = new EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
     const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
-    const source = await sourceEntityType.getById(sourceRef.id, context);
+    if (sourceEntityType && sourceRef.id) {
+      source = await sourceEntityType.getById(sourceRef.id, context);
+    }
 
-    const tokenRef = params.token;
-    const token = await processTokenEntityType.getById(tokenRef.id, context);
+    const tokenRef = new EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
+    token = await processTokenEntityType.getById(tokenRef.id, context);
 
-    const nextDefRef = params.nextDef;
-    const nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
-    await this.createNextNode(context, source, nextDef, token);
+    const nextDefRef = new EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
+    nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
+
+    if (source && token && nextDef) {
+      await this.createNextNode(context, source, nextDef, token);
+    } else {
+      throw new Error('param is missing');
+    }
   }
 }
