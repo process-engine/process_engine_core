@@ -237,57 +237,65 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         extensionElements.forEach((extensionElement) => {
             if (extensionElement.$type === 'camunda:formData') {
                 const formFields = [];
-                extensionElement.$children.forEach((child) => {
-                    const formValues = [];
-                    const formProperties = [];
-                    child.$children.forEach((formValue) => {
-                        const childType = formValue.$type;
-                        switch (childType) {
-                            case 'camunda:properties':
-                                formValue.$children.forEach((child) => {
-                                    const newChild = {
-                                        $type: child.$type,
-                                        name: child.id,
-                                        value: child.value
-                                    };
-                                    formProperties.push(newChild);
-                                });
-                                break;
-                            case 'camunda:value':
-                                const newFormValue = {
-                                    $type: formValue.$type,
-                                    id: formValue.id,
-                                    name: formValue.name
-                                };
-                                formValues.push(newFormValue);
-                                break;
-                            default:
-                                break;
+                if (extensionElement.$children) {
+                    extensionElement.$children.forEach((child) => {
+                        const formValues = [];
+                        const formProperties = [];
+                        if (child.$children) {
+                            child.$children.forEach((formValue) => {
+                                const childType = formValue.$type;
+                                switch (childType) {
+                                    case 'camunda:properties':
+                                        if (formValue.$children) {
+                                            formValue.$children.forEach((child) => {
+                                                const newChild = {
+                                                    $type: child.$type,
+                                                    name: child.id,
+                                                    value: child.value
+                                                };
+                                                formProperties.push(newChild);
+                                            });
+                                        }
+                                        break;
+                                    case 'camunda:value':
+                                        const newFormValue = {
+                                            $type: formValue.$type,
+                                            id: formValue.id,
+                                            name: formValue.name
+                                        };
+                                        formValues.push(newFormValue);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            });
                         }
+                        const newChild = {
+                            $type: child.$type,
+                            id: child.id,
+                            label: child.label,
+                            type: child.type,
+                            defaultValue: child.defaultValue,
+                            formValues: formValues,
+                            formProperties: formProperties
+                        };
+                        formFields.push(newChild);
                     });
-                    const newChild = {
-                        $type: child.$type,
-                        id: child.id,
-                        label: child.label,
-                        type: child.type,
-                        defaultValue: child.defaultValue,
-                        formValues: formValues,
-                        formProperties: formProperties
-                    };
-                    formFields.push(newChild);
-                });
+                }
                 ext.formFields = formFields;
             }
             else if (extensionElement.$type === 'camunda:properties') {
                 const properties = [];
-                extensionElement.$children.forEach((child) => {
-                    const newChild = {
-                        $type: child.$type,
-                        name: child.name,
-                        value: child.value
-                    };
-                    properties.push(newChild);
-                });
+                if (extensionElement.$children) {
+                    extensionElement.$children.forEach((child) => {
+                        const newChild = {
+                            $type: child.$type,
+                            name: child.name,
+                            value: child.value
+                        };
+                        properties.push(newChild);
+                    });
+                }
                 ext.properties = properties;
             }
         });
