@@ -378,72 +378,81 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
         const formFields: Array<any> = [];
 
-        extensionElement.$children.forEach((child) => {
+        if (extensionElement.$children) {
+          extensionElement.$children.forEach((child) => {
 
-          const formValues: Array<any> = [];
-          const formProperties: Array<any> = [];
-                  
-          child.$children.forEach((formValue) => {
+            const formValues: Array<any> = [];
+            const formProperties: Array<any> = [];
 
-            const childType = formValue.$type;
+            if (child.$children) {
+              child.$children.forEach((formValue) => {
 
-            switch (childType) {
-              case 'camunda:properties':
-                formValue.$children.forEach((child) => {
-                  const newChild = {
-                    $type: child.$type,
-                    name: child.id,
-                    value: child.value
-                  };
-                  
-                  formProperties.push(newChild);
-                });
+                const childType = formValue.$type;
 
-                break;
+                switch (childType) {
+                  case 'camunda:properties':
+                    if (formValue.$children) {
+                      formValue.$children.forEach((child) => {
+                        const newChild = {
+                          $type: child.$type,
+                          name: child.id,
+                          value: child.value
+                        };
 
-              case 'camunda:value':
-                const newFormValue = {
-                  $type: formValue.$type,
-                  id: formValue.id,
-                  name: formValue.name
-                };
-                formValues.push(newFormValue);
-                break;
+                        formProperties.push(newChild);
+                      });
+                    }
 
-              default:
+                    break;
 
-                break;
+                  case 'camunda:value':
+                    const newFormValue = {
+                      $type: formValue.$type,
+                      id: formValue.id,
+                      name: formValue.name
+                    };
+                    formValues.push(newFormValue);
+                    break;
+
+                  default:
+
+                    break;
+                }
+              });
             }
-          });
 
-          const newChild = {
-            $type: child.$type,
-            id: child.id,
-            label: child.label,
-            type: child.type,
-            defaultValue: child.defaultValue,
-            formValues: formValues,
-            formProperties: formProperties
-          };
-          
-          formFields.push(newChild);
-        });
+            const newChild = {
+              $type: child.$type,
+              id: child.id,
+              label: child.label,
+              type: child.type,
+              defaultValue: child.defaultValue,
+              formValues: formValues,
+              formProperties: formProperties
+            };
+
+            formFields.push(newChild);
+          });
+        }
 
         ext.formFields = formFields;
 
       } else if (extensionElement.$type === 'camunda:properties') {
 
         const properties: Array<any> = [];
-        extensionElement.$children.forEach((child) => {
+        if (extensionElement.$children) {
+          extensionElement.$children.forEach((child) => {
 
-          const newChild = {
-            $type: child.$type,
-            name: child.name,
-            value: child.value
-          };
-          
-          properties.push(newChild);
-        });
+            const newChild = {
+              $type: child.$type,
+              name: child.name,
+              value: child.value
+            };
+
+            properties.push(newChild);
+          });
+        }
+
 
         ext.properties = properties;
       }

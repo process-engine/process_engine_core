@@ -1,7 +1,10 @@
-import {IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
-import {ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory} from '@process-engine-js/core_contracts';
-import {IInvoker} from '@process-engine-js/invocation_contracts';
-import {IDatastoreService} from '@process-engine-js/data_model_contracts';
+import {
+  IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile,
+  IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions
+} from '@process-engine-js/process_engine_contracts';
+import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory } from '@process-engine-js/core_contracts';
+import { IInvoker } from '@process-engine-js/invocation_contracts';
+import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 
 import * as fs from 'fs';
 import * as BluebirdPromise from 'bluebird';
@@ -29,7 +32,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._invoker;
   }
 
-  public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IPublicGetOptions): Promise<any> {
+  public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
 
     const fileName = params && params.file ? params.file : null;
     if (fileName) {
@@ -59,7 +62,9 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   }
 
 
-  public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IPublicGetOptions): Promise<void> {
+  public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromFileOptions): Promise<void> {
+
+    const overwrite: boolean = options && options.hasOwnProperty('overwrite') ? options.overwrite : true;
 
     const xml = params && params.xml ? params.xml : null;
 
@@ -83,20 +88,30 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         const processDefColl = await ProcessDef.query(context, params);
 
         let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity>processDefColl.data[0] : null;
+
+        let canSave = false;
         if (!processDefEntity) {
-          
+
           const processDefData = {
             key: process.id,
             defId: bpmnDiagram.definitions.id
           };
 
           processDefEntity = await ProcessDef.createEntity<IProcessDefEntity>(context, processDefData);
+
+          // always create new processes
+          canSave = true;
+        } else {
+          // check if we can overwrite existing processes
+          canSave = overwrite;
         }
 
-        processDefEntity.name = process.name;
-        processDefEntity.xml = xml;
+        if (canSave) {
+          processDefEntity.name = process.name;
+          processDefEntity.xml = xml;
 
-        await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
+          await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
+        }
       }
     }
   }
@@ -169,36 +184,36 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       key,
       defId,
       xml:
-        '<?xml version="1.0" encoding="UTF-8"?>' +
-        '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + defId + '" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +
-          '<bpmn:collaboration id="Collaboration_0ge6yss">' +
-          '<bpmn:participant id="Participant_03ad0kv" name="' + name + '" processRef="' + key + '" />' +
-          '</bpmn:collaboration>' +
-        '<bpmn:process id="' + key + '" name="' + name + '" isExecutable="false">' +
-          '<bpmn:laneSet>' +
-        '<bpmn:lane id="Lane_0g5v1sg">' +
-          '<bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>' +
-        '</bpmn:lane>' +
-        '</bpmn:laneSet>' +
-        '<bpmn:startEvent id="StartEvent_1" name="' + name + '" />' +
-          '</bpmn:process>' +
-        '<bpmndi:BPMNDiagram id="BPMNDiagram_1">' +
-          '<bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0ge6yss">' +
-          '<bpmndi:BPMNShape id="Participant_03ad0kv_di" bpmnElement="Participant_03ad0kv">' +
-          '<dc:Bounds x="151" y="116" width="606" height="190" />' +
-          '</bpmndi:BPMNShape>' +
-        '<bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">' +
-          '<dc:Bounds x="231" y="191" width="36" height="36" />' +
-          '<bpmndi:BPMNLabel>' +
-        '<dc:Bounds x="235" y="227" width="29" height="13" />' +
-          '</bpmndi:BPMNLabel>' +
-        '</bpmndi:BPMNShape>' +
-        '<bpmndi:BPMNShape id="Lane_0g5v1sg_di" bpmnElement="Lane_0g5v1sg">' +
-          '<dc:Bounds x="181" y="116" width="576" height="190" />' +
-          '</bpmndi:BPMNShape>' +
-        '</bpmndi:BPMNPlane>' +
-        '</bpmndi:BPMNDiagram>' +
-        '</bpmn:definitions>'
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + defId + '" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +
+      '<bpmn:collaboration id="Collaboration_0ge6yss">' +
+      '<bpmn:participant id="Participant_03ad0kv" name="' + name + '" processRef="' + key + '" />' +
+      '</bpmn:collaboration>' +
+      '<bpmn:process id="' + key + '" name="' + name + '" isExecutable="false">' +
+      '<bpmn:laneSet>' +
+      '<bpmn:lane id="Lane_0g5v1sg">' +
+      '<bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>' +
+      '</bpmn:lane>' +
+      '</bpmn:laneSet>' +
+      '<bpmn:startEvent id="StartEvent_1" name="' + name + '" />' +
+      '</bpmn:process>' +
+      '<bpmndi:BPMNDiagram id="BPMNDiagram_1">' +
+      '<bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0ge6yss">' +
+      '<bpmndi:BPMNShape id="Participant_03ad0kv_di" bpmnElement="Participant_03ad0kv">' +
+      '<dc:Bounds x="151" y="116" width="606" height="190" />' +
+      '</bpmndi:BPMNShape>' +
+      '<bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">' +
+      '<dc:Bounds x="231" y="191" width="36" height="36" />' +
+      '<bpmndi:BPMNLabel>' +
+      '<dc:Bounds x="235" y="227" width="29" height="13" />' +
+      '</bpmndi:BPMNLabel>' +
+      '</bpmndi:BPMNShape>' +
+      '<bpmndi:BPMNShape id="Lane_0g5v1sg_di" bpmnElement="Lane_0g5v1sg">' +
+      '<dc:Bounds x="181" y="116" width="576" height="190" />' +
+      '</bpmndi:BPMNShape>' +
+      '</bpmndi:BPMNPlane>' +
+      '</bpmndi:BPMNDiagram>' +
+      '</bpmn:definitions>'
     };
 
     const createOptions = {};

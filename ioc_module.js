@@ -27,7 +27,7 @@ const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInsta
 function registerInContainer(container) {
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'ProcessDefEntityTypeService', 'FeatureService')
+    .dependencies('MessageBusService', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService')
     .singleton()
     .configure('process_engine:process_engine_service');
 
