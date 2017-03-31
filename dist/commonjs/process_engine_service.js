@@ -55,10 +55,10 @@ class ProcessEngineService {
         const options = {
             overwrite: false
         };
-        const bpmns = [
-            'createProcessDef.bpmn',
-            'reservation.bpmn'
-        ];
+        let bpmns = [];
+        if (this.config && this.config.initialBPMNs) {
+            bpmns = this.config.initialBPMNs;
+        }
         for (let i = 0; i < bpmns.length; i++) {
             const params = {
                 file: bpmns[i]
