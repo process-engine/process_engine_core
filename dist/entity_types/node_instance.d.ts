@@ -31,7 +31,7 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     changeState(context: ExecutionContext, newState: string, source: IEntity): Promise<void>;
     error(context: ExecutionContext, error: any): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, data: any, source: EntityReference): Promise<void>;
+    proceed(context: ExecutionContext, data: any, source: EntityReference, applicationId: string): Promise<void>;
     event(context: ExecutionContext, event: string, data: any): Promise<void>;
     cancel(context: ExecutionContext): Promise<void>;
     end(context: ExecutionContext, cancelFlow?: boolean): Promise<void>;

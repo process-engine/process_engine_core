@@ -47,11 +47,20 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     set xml(value) {
         this.setProperty(this, 'xml', value);
     }
+    get extensions() {
+        return this.getProperty(this, 'extensions');
+    }
+    set extensions(value) {
+        this.setProperty(this, 'extensions', value);
+    }
     get nodeDefCollection() {
         return this.getProperty(this, 'nodeDefCollection');
     }
     getNodeDefCollection(context) {
         return this.getPropertyLazy(this, 'nodeDefCollection', context);
+    }
+    get features() {
+        return this._extractFeatures();
     }
     async start(context, params, options) {
         const processData = {
@@ -68,7 +77,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const xml = params && params.xml ? params.xml : null;
         if (xml) {
             this.xml = xml;
-            await this.save(context);
             await this.updateDefinitions(context);
             return { result: true };
         }
@@ -80,6 +88,13 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         if (!bpmnDiagram) {
             bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
         }
+        const processes = bpmnDiagram.getProcesses();
+        const currentProcess = processes.find((item) => item.id === key);
+        if (currentProcess.extensionElements) {
+            const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
+            this.extensions = extensions;
+        }
+        await this.save(context);
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context);
         const nodes = bpmnDiagram.getNodes(key);
@@ -104,13 +119,15 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             };
             let laneEntity = await Lane.findOne(context, queryOptions);
             if (!laneEntity) {
-                const laneData = {
-                    key: lane.id
-                };
-                laneEntity = await Lane.createEntity(context, laneData);
+                laneEntity = await Lane.createEntity(context);
             }
+            laneEntity.key = lane.id;
             laneEntity.name = lane.name;
             laneEntity.processDef = this;
+            if (lane.extensionElements) {
+                const extensions = this._updateExtensionElements(lane.extensionElements.values);
+                laneEntity.extensions = extensions;
+            }
             await laneEntity.save(context);
             laneCache[lane.id] = laneEntity;
         });
@@ -301,6 +318,19 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         });
         return ext;
     }
+    _extractFeatures() {
+        let features = undefined;
+        const extensions = this.extensions || null;
+        const props = (extensions && extensions.properties) ? extensions.properties : null;
+        if (props) {
+            props.forEach((prop) => {
+                if (prop.name === 'features') {
+                    features = JSON.parse(prop.value);
+                }
+            });
+        }
+        return features;
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({
@@ -316,6 +346,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], ProcessDefEntity.prototype, "xml", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
+], ProcessDefEntity.prototype, "extensions", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
 ], ProcessDefEntity.prototype, "nodeDefCollection", null);

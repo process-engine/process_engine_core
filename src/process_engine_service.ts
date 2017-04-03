@@ -56,11 +56,13 @@ export class ProcessEngineService implements IProcessEngineService {
 
   async initialize(): Promise<void> {
     this._id = this.config.id || uuid.v4();
-    try {
-      await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
-      debugInfo(`subscribed on Messagebus with id ${this.id}`);
 
-      // we still subscribe on the old channel to leave frontend intact
+    this.featureService.initialize();
+    
+    try {
+
+      // Todo: we subscribe on the old channel to leave frontend intact
+      // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
         await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
         debugInfo(`subscribed on Messagebus Master`);
@@ -101,14 +103,20 @@ export class ProcessEngineService implements IProcessEngineService {
   private async _messageHandler(msg): Promise<void> {
     debugInfo('we got a message: ', msg);
 
-    msg = await this.messageBusService.verifyMessage(msg);
+    await this.messageBusService.verifyMessage(msg);
 
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-    const source: any = (msg && msg.origin) ? msg.origin : null;
+    let source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+    
+    // fallback to old origin
+    if (!source) {
+      source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
+    }
+    const isSubProcess: boolean = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
 
-    const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
+    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
 
     switch (action) {
       case 'start':
@@ -116,7 +124,8 @@ export class ProcessEngineService implements IProcessEngineService {
         const params: IParamStart = {
           key: key,
           initialToken: initialToken,
-          source: source
+          source: source,
+          isSubProcess: isSubProcess
         };
 
         const processEntity = await this.processDefEntityTypeService.start(context, params);

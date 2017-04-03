@@ -13,14 +13,18 @@ import * as BpmnModdle from 'bpmn-moddle';
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
+  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
   private _invoker: IInvoker = undefined;
 
-  constructor(datastoreService: IDatastoreService, invoker: IInvoker) {
-    this._datastoreService = datastoreService;
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, invoker: IInvoker) {
+    this._datastoreServiceFactory = datastoreServiceFactory;
     this._invoker = invoker;
   }
 
   private get datastoreService(): IDatastoreService {
+    if (!this._datastoreService) {
+      this._datastoreService = this._datastoreServiceFactory();
+    }
     return this._datastoreService;
   }
 

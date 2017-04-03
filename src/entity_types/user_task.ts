@@ -36,13 +36,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       data: pojo
     };
 
-    const origin = this.getEntityReference();
-
-    const meta = {
-      jwt: context.encryptedToken
-    };
-
-    const msg = this.messageBusService.createMessage(data, origin, meta);
+    const msg = this.messageBusService.createEntityMessage(data, this, context);
     if (this.participant) {
       await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
@@ -53,12 +47,12 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void> {
     
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // check if participant changed
-    if (this.participant !== source.id) {
+    if (this.participant !== applicationId) {
 
     }
     // save new data in token

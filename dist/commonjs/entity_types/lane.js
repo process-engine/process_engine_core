@@ -44,6 +44,22 @@ class LaneEntity extends data_model_contracts_1.Entity {
     getProcessDef(context) {
         return this.getPropertyLazy(this, 'processDef', context);
     }
+    get features() {
+        return this._extractFeatures();
+    }
+    _extractFeatures() {
+        let features = undefined;
+        const extensions = this.extensions || null;
+        const props = (extensions && extensions.properties) ? extensions.properties : null;
+        if (props) {
+            props.forEach((prop) => {
+                if (prop.name === 'features') {
+                    features = JSON.parse(prop.value);
+                }
+            });
+        }
+        return features;
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

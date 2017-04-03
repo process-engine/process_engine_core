@@ -39,9 +39,8 @@ class ProcessEngineService {
     }
     async initialize() {
         this._id = this.config.id || uuid.v4();
+        this.featureService.initialize();
         try {
-            await this.messageBusService.subscribe(`/processengine/${this.id}`, this._messageHandler.bind(this));
-            debugInfo(`subscribed on Messagebus with id ${this.id}`);
             if (this.messageBusService.isMaster) {
                 await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);
@@ -73,18 +72,23 @@ class ProcessEngineService {
     }
     async _messageHandler(msg) {
         debugInfo('we got a message: ', msg);
-        msg = await this.messageBusService.verifyMessage(msg);
+        await this.messageBusService.verifyMessage(msg);
         const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
         const key = (msg && msg.data && msg.data.key) ? msg.data.key : null;
         const initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-        const source = (msg && msg.origin) ? msg.origin : null;
-        const context = (msg && msg.meta && msg.meta.context) ? msg.meta.context : {};
+        let source = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+        if (!source) {
+            source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
+        }
+        const isSubProcess = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
+        const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
         switch (action) {
             case 'start':
                 const params = {
                     key: key,
                     initialToken: initialToken,
-                    source: source
+                    source: source,
+                    isSubProcess: isSubProcess
                 };
                 const processEntity = await this.processDefEntityTypeService.start(context, params);
                 debugInfo(`process id ${processEntity.id} started: `);

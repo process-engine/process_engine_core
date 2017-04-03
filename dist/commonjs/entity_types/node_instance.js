@@ -113,30 +113,22 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         await this.changeState(context, 'execute', this);
     }
     async changeState(context, newState, source) {
-        const meta = {
-            jwt: context.encryptedToken
-        };
         const data = {
             action: 'changeState',
             data: newState
         };
-        const origin = source.getEntityReference();
-        const msg = this.messageBusService.createMessage(data, origin, meta);
+        const msg = this.messageBusService.createEntityMessage(data, source, context);
         await this.messageBusService.publish('/processengine/node/' + this.id, msg);
     }
     async error(context, error) {
         const nodeDef = await this.getNodeDef(context);
         if (nodeDef && nodeDef.events && nodeDef.events.error) {
-            const meta = {
-                jwt: context.encryptedToken
-            };
             const data = {
                 action: 'event',
                 event: 'error',
                 data: error
             };
-            const origin = this.getEntityReference();
-            const msg = this.messageBusService.createMessage(data, origin, meta);
+            const msg = this.messageBusService.createEntityMessage(data, this, context);
             await this.messageBusService.publish('/processengine/node/' + this.id, msg);
         }
     }
@@ -146,7 +138,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         await this.save(internalContext);
         await this.changeState(context, 'end', this);
     }
-    async proceed(context, data, source) {
+    async proceed(context, data, source, applicationId) {
     }
     async event(context, event, data) {
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
@@ -168,93 +160,33 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     async cancel(context) {
         const nodeDef = await this.getNodeDef(context);
         if (nodeDef && nodeDef.events && nodeDef.events.cancel) {
-            const meta = {
-                jwt: context.encryptedToken
-            };
             const data = {
                 action: 'event',
                 event: 'cancel',
                 data: null
             };
-            const origin = this.getEntityReference();
-            const msg = this.messageBusService.createMessage(data, origin, meta);
+            const msg = this.messageBusService.createEntityMessage(data, this, context);
             await this.messageBusService.publish('/processengine/node/' + this.id, msg);
         }
     }
     async end(context, cancelFlow = false) {
-        const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-        const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-        const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'end';
         await this.save(internalContext);
         const nodeInstance = this;
-        const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
+        const isEndEvent = (nodeInstance.type === 'bpmn:EndEvent');
         const processToken = await this.getProcessToken(internalContext);
         const tokenData = processToken.data || {};
         tokenData.history = tokenData.history || {};
         tokenData.history[this.key] = tokenData.current;
         processToken.data = tokenData;
         await processToken.save(internalContext);
-        let nextDefs = null;
-        const nodeDef = await this.getNodeDef(internalContext);
-        const processDef = await nodeDef.getProcessDef(internalContext);
-        let flowsOut = null;
-        if (!cancelFlow) {
-            if (nodeInstance.follow) {
-                if (nodeInstance.follow.length > 0) {
-                    const queryObjectFollow = {
-                        operator: 'and',
-                        queries: [
-                            { attribute: 'id', operator: 'in', value: nodeInstance.follow },
-                            { attribute: 'processDef', operator: '=', value: processDef.id }
-                        ]
-                    };
-                    flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectFollow });
-                }
-            }
-            else {
-                const queryObjectAll = {
-                    operator: 'and',
-                    queries: [
-                        { attribute: 'source', operator: '=', value: nodeDef.id },
-                        { attribute: 'processDef', operator: '=', value: processDef.id }
-                    ]
-                };
-                flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
-            }
-            if (flowsOut && flowsOut.length > 0) {
-                const ids = [];
-                for (let i = 0; i < flowsOut.data.length; i++) {
-                    const flow = flowsOut.data[i];
-                    const target = await flow.target;
-                    ids.push(target.id);
-                }
-                const queryObjectIn = {
-                    operator: 'and',
-                    queries: [
-                        { attribute: 'id', operator: 'in', value: ids },
-                        { attribute: 'processDef', operator: '=', value: processDef.id }
-                    ]
-                };
-                nextDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectIn });
-                if (nextDefs && nextDefs.length > 0) {
-                    for (let i = 0; i < nextDefs.data.length; i++) {
-                        const nextDef = nextDefs.data[i];
-                        let currentToken;
-                        if (splitToken && i > 0) {
-                            currentToken = await processTokenEntityType.createEntity(internalContext);
-                            currentToken.process = processToken.process;
-                            currentToken.data = processToken.data;
-                            await currentToken.save(internalContext);
-                        }
-                        else {
-                            currentToken = processToken;
-                        }
-                        await this.nodeInstanceEntityTypeService.createNextNode(context, this, nextDef, currentToken);
-                    }
-                }
-            }
+        if (!isEndEvent && !cancelFlow) {
+            await this.nodeInstanceEntityTypeService.continueExecution(internalContext, nodeInstance);
+        }
+        else {
+            const process = await this.getProcess(internalContext);
+            await process.end(internalContext, processToken);
         }
     }
 };

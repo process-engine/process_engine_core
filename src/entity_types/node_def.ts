@@ -2,6 +2,7 @@ import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQuery
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import { IFeature } from '@process-engine-js/feature_contracts';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
@@ -152,6 +153,10 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     return this.getPropertyLazy(this, 'subProcessDef', context);
   }
 
+  public get features(): Array<IFeature> {
+    return this._extractFeatures();
+  }
+
   public async getLaneRole(context: ExecutionContext): Promise<string> {
 
     const lane = await this.getLane(context);
@@ -186,4 +191,18 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     return boundaryColl;
   }
 
+  private _extractFeatures(): Array<IFeature> {
+    let features = undefined;
+    const extensions = this.extensions || null;
+    const props = (extensions && extensions.properties) ? extensions.properties : null;
+
+    if (props) {
+      props.forEach((prop) => {
+        if (prop.name === 'features') {
+          features = JSON.parse(prop.value);
+        }
+      });
+    }
+    return features;
+  }
 }

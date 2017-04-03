@@ -107,6 +107,9 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     getSubProcessDef(context) {
         return this.getPropertyLazy(this, 'subProcessDef', context);
     }
+    get features() {
+        return this._extractFeatures();
+    }
     async getLaneRole(context) {
         const lane = await this.getLane(context);
         const extensions = lane.extensions;
@@ -131,6 +134,19 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
         };
         const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
         return boundaryColl;
+    }
+    _extractFeatures() {
+        let features = undefined;
+        const extensions = this.extensions || null;
+        const props = (extensions && extensions.properties) ? extensions.properties : null;
+        if (props) {
+            props.forEach((prop) => {
+                if (prop.name === 'features') {
+                    features = JSON.parse(prop.value);
+                }
+            });
+        }
+        return features;
     }
 }
 __decorate([

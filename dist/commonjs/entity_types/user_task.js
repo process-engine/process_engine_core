@@ -25,11 +25,7 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
             action: 'userTask',
             data: pojo
         };
-        const origin = this.getEntityReference();
-        const meta = {
-            jwt: context.encryptedToken
-        };
-        const msg = this.messageBusService.createMessage(data, origin, meta);
+        const msg = this.messageBusService.createEntityMessage(data, this, context);
         if (this.participant) {
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }
@@ -38,9 +34,9 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
             await this.messageBusService.publish('/role/' + role, msg);
         }
     }
-    async proceed(context, newData, source) {
+    async proceed(context, newData, source, applicationId) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        if (this.participant !== source.id) {
+        if (this.participant !== applicationId) {
         }
         const processToken = await this.getProcessToken(internalContext);
         const tokenData = processToken.data || {};
