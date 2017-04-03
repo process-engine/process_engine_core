@@ -78,14 +78,14 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: any, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void> {
     // check if all tokens are there
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-    const sourceEntityType = await this.datastoreService.getEntityType(source._meta.type);
+    const sourceEntityType = await this.datastoreService.getEntityType((<any>source)._meta.type);
 
     let prevDefs = null;
     const nodeDef = await this.getNodeDef(internalContext);
