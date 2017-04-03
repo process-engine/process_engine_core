@@ -301,25 +301,25 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             await this.createNextNode(context, nodeInstance, nextDef, currentToken);
           } else {
             const appInstances = this.featureService.getApplicationIdsByFeatures(features);
-            if (appInstances.length > 0) {
-              const appInstanceId = appInstances[0];
-
-              // Todo: set correct message format
-              const options: IDatastoreMessageOptions = {
-                action: 'POST',
-                typeName: 'NodeInstance',
-                method: 'continueFromRemote'
-              };
-              const data = {
-                source: nodeInstance.getEntityReference().toPojo(),
-                nextDef: nextDef.getEntityReference().toPojo(),
-                token: currentToken.getEntityReference().toPojo()
-              };
-              const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
-              await this.routingService.send(appInstanceId, message);
-              return;
+            if (appInstances.length === 0) {
+              throw new Error('can not route, no matching instance found');
             }
-            throw new Error('can not route, no matching instance found');
+
+            const appInstanceId = appInstances[0];
+
+            // Todo: set correct message format
+            const options: IDatastoreMessageOptions = {
+              action: 'POST',
+              typeName: 'NodeInstance',
+              method: 'continueFromRemote'
+            };
+            const data = {
+              source: nodeInstance.getEntityReference().toPojo(),
+              nextDef: nextDef.getEntityReference().toPojo(),
+              token: currentToken.getEntityReference().toPojo()
+            };
+            const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
+            await this.routingService.send(appInstanceId, message);
           }
 
         }

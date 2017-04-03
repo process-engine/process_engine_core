@@ -215,23 +215,22 @@ class NodeInstanceEntityTypeService {
                     }
                     else {
                         const appInstances = this.featureService.getApplicationIdsByFeatures(features);
-                        if (appInstances.length > 0) {
-                            const appInstanceId = appInstances[0];
-                            const options = {
-                                action: 'POST',
-                                typeName: 'NodeInstance',
-                                method: 'continueFromRemote'
-                            };
-                            const data = {
-                                source: nodeInstance.getEntityReference().toPojo(),
-                                nextDef: nextDef.getEntityReference().toPojo(),
-                                token: currentToken.getEntityReference().toPojo()
-                            };
-                            const message = this.messagebusService.createDatastoreMessage(options, context, data);
-                            await this.routingService.send(appInstanceId, message);
-                            return;
+                        if (appInstances.length === 0) {
+                            throw new Error('can not route, no matching instance found');
                         }
-                        throw new Error('can not route, no matching instance found');
+                        const appInstanceId = appInstances[0];
+                        const options = {
+                            action: 'POST',
+                            typeName: 'NodeInstance',
+                            method: 'continueFromRemote'
+                        };
+                        const data = {
+                            source: nodeInstance.getEntityReference().toPojo(),
+                            nextDef: nextDef.getEntityReference().toPojo(),
+                            token: currentToken.getEntityReference().toPojo()
+                        };
+                        const message = this.messagebusService.createDatastoreMessage(options, context, data);
+                        await this.routingService.send(appInstanceId, message);
                     }
                 }
             }
