@@ -293,17 +293,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           const laneFeatures = lane.features;
           const processFeatures = processDef.features;
 
-          let features = [];
-          if (nodeFeatures) {
-            features = features.concat(nodeFeatures);
-          }
-          if (laneFeatures) {
-            features = features.concat(laneFeatures);
-          }
-          if (processFeatures) {
-            features = features.concat(processFeatures);
-          }
-
           const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
 
           if (features.length === 0 || this.featureService.hasFeatures(features)) {
