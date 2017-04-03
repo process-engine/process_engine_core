@@ -1,11 +1,18 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const node_instance_1 = require("./node_instance");
 const metadata_1 = require("@process-engine-js/metadata");
@@ -99,7 +106,7 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                 const processToken = await this.getProcessToken(internalContext);
                 const tokenData = processToken.data || {};
                 tokenData.history = tokenData.history || {};
-                const merged = Object.assign({}, tokenData.history, token.data.history);
+                const merged = __assign({}, tokenData.history, token.data.history);
                 tokenData.history = merged;
                 processToken.data = tokenData;
                 await processToken.save(internalContext);

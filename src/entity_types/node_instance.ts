@@ -3,15 +3,18 @@ import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 
 export class NodeInstanceEntityDependencyHelper {
   
   public messageBusService: IMessageBusService = undefined;
+  public eventAggregator: IEventAggregator = undefined;
   public iamService: IIamService = undefined;
   public nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
-  constructor(messageBusService: IMessageBusService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
     this.messageBusService = messageBusService;
+    this.eventAggregator = eventAggregator;
     this.iamService = iamService;
     this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
   }

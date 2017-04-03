@@ -1,15 +1,16 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 class NodeInstanceEntityTypeService {
-    constructor(datastoreServiceFactory, messagebusService, iamService, featureService, routingService) {
+    constructor(datastoreServiceFactory, messagebusService, iamService, eventAggregator, featureService, routingService) {
         this._datastoreService = undefined;
         this._datastoreServiceFactory = undefined;
         this._messagebusService = undefined;
+        this._eventAggregator = undefined;
         this._iamService = undefined;
         this._featureService = undefined;
         this._routingService = undefined;
         this._datastoreServiceFactory = datastoreServiceFactory;
         this._messagebusService = messagebusService;
+        this._eventAggregator = eventAggregator;
         this._iamService = iamService;
         this._featureService = featureService;
         this._routingService = routingService;
@@ -23,6 +24,9 @@ class NodeInstanceEntityTypeService {
     get messagebusService() {
         return this._messagebusService;
     }
+    get eventAggregator() {
+        return this._eventAggregator;
+    }
     get iamService() {
         return this._iamService;
     }
@@ -34,7 +38,6 @@ class NodeInstanceEntityTypeService {
     }
     async _nodeHandler(msg) {
         const binding = this;
-        await binding.messagebusService.verifyMessage(msg);
         const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
         const source = (msg && msg.source) ? msg.source : null;
         const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
@@ -69,9 +72,9 @@ class NodeInstanceEntityTypeService {
         const node = await entityType.createEntity(internalContext);
         const binding = {
             entity: node,
-            messagebusService: this.messagebusService
+            eventAggregator: this.eventAggregator
         };
-        await this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
+        await this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
         return node;
     }
     async createNextNode(context, source, nextDef, token) {

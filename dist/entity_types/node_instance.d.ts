@@ -2,11 +2,13 @@ import { ExecutionContext, IInheritedSchema, IEntity, IIamService } from '@proce
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 export declare class NodeInstanceEntityDependencyHelper {
     messageBusService: IMessageBusService;
+    eventAggregator: IEventAggregator;
     iamService: IIamService;
     nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
-    constructor(messageBusService: IMessageBusService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService);
+    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService);
 }
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     private _nodeInstanceEntityDependencyHelper;

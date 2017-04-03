@@ -6,9 +6,10 @@ import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_co
 import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 
 interface Binding {
-  messagebusService: IMessageBusService;
+  eventAggregator: IEventAggregator;
   entity: any;
 }
 
@@ -17,13 +18,15 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   private _datastoreService: IDatastoreService = undefined;
   private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
   private _messagebusService: IMessageBusService = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
   private _iamService: IIamService = undefined;
   private _featureService: IFeatureService = undefined;
   private _routingService: IRoutingService = undefined;
 
-  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, featureService: IFeatureService, routingService: IRoutingService) {
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService) {
     this._datastoreServiceFactory = datastoreServiceFactory;
     this._messagebusService = messagebusService;
+    this._eventAggregator = eventAggregator;
     this._iamService = iamService;
     this._featureService = featureService;
     this._routingService = routingService;
@@ -38,6 +41,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   private get messagebusService(): IMessageBusService {
     return this._messagebusService;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   private get iamService(): IIamService {
@@ -55,7 +62,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   private async _nodeHandler(msg: any): Promise<void> {
     const binding: Binding = <any>this;
 
-    await binding.messagebusService.verifyMessage(msg);
+    // await binding.messagebusService.verifyMessage(msg);
 
     const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const source: IEntityReference = (msg && msg.source) ? msg.source : null;
@@ -104,10 +111,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const binding: Binding = {
       entity: node,
-      messagebusService: this.messagebusService
+      eventAggregator: this.eventAggregator
     };
 
-    await this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
+    await this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
 
     return node;
 
@@ -296,6 +303,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           if (processFeatures) {
             features = features.concat(processFeatures);
           }
+
+          const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
 
           if (features.length === 0 || this.featureService.hasFeatures(features)) {
             await this.createNextNode(context, nodeInstance, nextDef, currentToken);
