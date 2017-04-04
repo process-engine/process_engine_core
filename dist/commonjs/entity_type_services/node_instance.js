@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 class NodeInstanceEntityTypeService {
     constructor(datastoreServiceFactory, messagebusService, iamService, featureService, routingService) {

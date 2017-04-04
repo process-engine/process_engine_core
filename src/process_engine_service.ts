@@ -17,17 +17,18 @@ export class ProcessEngineService implements IProcessEngineService {
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _featureService: IFeatureService = undefined;
   private _iamService: IIamService = undefined;
+  private _processRepository: any = undefined;
 
   private _runningProcesses: any = {};
-  private _id: string = undefined;
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService) {
+  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: any) {
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._featureService = featureService;
     this._iamService = iamService;
+    this._processRepository = processRepository;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -46,17 +47,17 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._iamService;
   }
 
+  private get processRepository(): any {
+    return this._processRepository;
+  }
+
   private get runningProcesses(): any {
     return this._runningProcesses;
   }
 
-  public get id(): string {
-    return this._id;
-  }
-
   async initialize(): Promise<void> {
-    this._id = this.config.id || uuid.v4();
-
+    
+    this.processRepository.initialize();
     this.featureService.initialize();
     
     try {
@@ -72,7 +73,6 @@ export class ProcessEngineService implements IProcessEngineService {
       debugErr('subscription failed on Messagebus', err.message);
       throw new Error(err.message);
     }
-
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     const options: IImportFromFileOptions = {

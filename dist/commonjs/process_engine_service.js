@@ -1,23 +1,23 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
 const uuidModule = require("uuid");
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 const uuid = uuidModule;
 class ProcessEngineService {
-    constructor(messageBusService, processDefEntityTypeService, featureService, iamService) {
+    constructor(messageBusService, processDefEntityTypeService, featureService, iamService, processRepository) {
         this._messageBusService = undefined;
         this._processDefEntityTypeService = undefined;
         this._featureService = undefined;
         this._iamService = undefined;
+        this._processRepository = undefined;
         this._runningProcesses = {};
-        this._id = undefined;
         this.config = undefined;
         this._messageBusService = messageBusService;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._featureService = featureService;
         this._iamService = iamService;
+        this._processRepository = processRepository;
     }
     get messageBusService() {
         return this._messageBusService;
@@ -31,14 +31,14 @@ class ProcessEngineService {
     get iamService() {
         return this._iamService;
     }
+    get processRepository() {
+        return this._processRepository;
+    }
     get runningProcesses() {
         return this._runningProcesses;
     }
-    get id() {
-        return this._id;
-    }
     async initialize() {
-        this._id = this.config.id || uuid.v4();
+        this.processRepository.initialize();
         this.featureService.initialize();
         try {
             if (this.messageBusService.isMaster) {
