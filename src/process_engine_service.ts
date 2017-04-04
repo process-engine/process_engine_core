@@ -1,4 +1,4 @@
-import { IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity, IImportFromFileOptions, IParamImportFromFile } from '@process-engine-js/process_engine_contracts';
+import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity, IImportFromFileOptions, IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions, IIamService } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
@@ -17,13 +17,13 @@ export class ProcessEngineService implements IProcessEngineService {
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _featureService: IFeatureService = undefined;
   private _iamService: IIamService = undefined;
-  private _processRepository: any = undefined;
+  private _processRepository: IProcessRepository = undefined;
 
   private _runningProcesses: any = {};
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: any) {
+  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository) {
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._featureService = featureService;
@@ -47,7 +47,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._iamService;
   }
 
-  private get processRepository(): any {
+  private get processRepository(): IProcessRepository {
     return this._processRepository;
   }
 
@@ -55,43 +55,10 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._runningProcesses;
   }
 
-  async initialize(): Promise<void> {
-    
-    this.processRepository.initialize();
+  public async initialize(): Promise<void> {
     this.featureService.initialize();
-    
-    try {
-
-      // Todo: we subscribe on the old channel to leave frontend intact
-      // this is deprecated and should be replaced with the new datastore api
-      if (this.messageBusService.isMaster) {
-        await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
-        debugInfo(`subscribed on Messagebus Master`);
-      }
-
-    } catch (err) {
-      debugErr('subscription failed on Messagebus', err.message);
-      throw new Error(err.message);
-    }
-
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-    const options: IImportFromFileOptions = {
-      overwrite: false
-    };
-
-    let bpmns = [];
-
-    if (this.config && this.config.initialBPMNs) {
-      bpmns = this.config.initialBPMNs
-    }
-
-    for (let i = 0; i < bpmns.length; i++) {
-      const params: IParamImportFromFile = {
-        file: bpmns[i]
-      };
-      await this.processDefEntityTypeService.importBpmnFromFile(internalContext, params, options);
-    }
-
+    await this._initializeMessageBus();
+    await this._initializeProcesses();
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -134,6 +101,44 @@ export class ProcessEngineService implements IProcessEngineService {
       default:
         debugInfo('unhandled action: ', msg);
         break;
+    }
+  }
+
+  private async _initializeMessageBus(): Promise<void> {
+    
+    try {
+
+      // Todo: we subscribe on the old channel to leave frontend intact
+      // this is deprecated and should be replaced with the new datastore api
+      if (this.messageBusService.isMaster) {
+        await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+        debugInfo(`subscribed on Messagebus Master`);
+      }
+
+    } catch (err) {
+      debugErr('subscription failed on Messagebus', err.message);
+      throw new Error(err.message);
+    }
+  }
+
+  private async _initializeProcesses(): Promise<void> {
+
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const options: IImportFromFileOptions = {
+      overwriteExisting: false
+    };
+
+    this.processRepository.initialize();
+
+    const bpmns = this.processRepository.getProcessesByCategory('internal');
+
+    for (let i = 0; i < bpmns.length; i++) {
+
+      const params: IParamImportFromXml = {
+        xml: bpmns[i]
+      };
+
+      await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
     }
   }
 }

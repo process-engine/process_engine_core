@@ -93,7 +93,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this._extractFeatures();
   }
 
-
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
 
     const processData = {

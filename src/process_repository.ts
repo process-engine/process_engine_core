@@ -1,22 +1,24 @@
 import {DependencyInjectionContainer} from 'addict-ioc';
+import {IProcessRepository} from '@process-engine-js/process_engine_contracts';
 
 import * as bluebirdPromise from 'bluebird';
 import * as path from 'path';
 import * as fs from 'fs';
 
 interface IProcessCache {
-  [key: string]: IProcessCacheEntry;
+  [name: string]: IProcessCacheEntry;
 }
 
 interface IProcessCacheEntry {
-  process: any;
+  name: string;
+  process: string;
   category: string;
   module: string;
   path: string;
   readonly: boolean;
 }
 
-export class ProcessRepository {
+export class ProcessRepository implements IProcessRepository {
   
   private _container: DependencyInjectionContainer = undefined;
 
@@ -42,44 +44,30 @@ export class ProcessRepository {
     this._loadStaticProcesses();
   }
 
-  private _loadStaticProcesses(): void {
-
-    const processKeys = this.container.getKeysByAttributes({
-      bpmn_process: 'internal'
-    });
-
-    processKeys.forEach((processKey) => {
-      const registration = this.container._getRegistration(processKey);
-
-      const entry = {
-        process: registration.settings.type,
-        category: registration.settings.tags['bpmn_process'],
-        module: registration.settings.tags['module'],
-        path: registration.settings.tags['path'],
-        readonly: registration.settings.tags['readonly'] !== undefined
-      };
-
-      this.processCache[processKey] = entry;
-    });
-  }
-
-  private _getEntry(processKey: string): IProcessCacheEntry {
-    return this._processCache[processKey];
-  }
-
-  public getProcess(processKey: string): any {
-    const entry = this._getEntry(processKey);
+  public getProcess(processName: string): string {
+    const entry = this._getEntry(processName);
     return entry.process;
   }
 
-  public saveProcess(processKey: string): Promise<void> {
+  public getProcessesByCategory(category: string): Array<string> {
+    const entries = this._getEntriesByCategory(category);
+    return entries.map((entry) => {
+      return entry.process;
+    });
+  }
+
+  public saveProcess(processName: string, processXml?: string): Promise<void> {
 
     return new bluebirdPromise((resolve, reject) => {
 
-      const entry = this._getEntry(processKey);
+      const entry = this._getEntry(processName);
+
+      if (processXml) {
+        this._updateProcess(processName, processXml);
+      }
 
       if (entry.readonly) {
-        throw new Error(`process ${processKey} is readonly and mustn't be saved`);
+        throw new Error(`process ${processName} is readonly and mustn't be saved`);
       }
 
       const processPath = path.join(process.cwd(), entry.module, entry.path);
@@ -94,4 +82,49 @@ export class ProcessRepository {
       });
     });
   }
+
+  private _updateProcess(processName: string, processXml: string): void {
+    const entry = this._getEntry(processName);
+    entry.process = processXml;
+  }
+
+  private _loadStaticProcesses(): void {
+
+    const entries = this._getEntriesByCategory('internal');
+
+    entries.forEach((entry) => {
+      this._cacheEntry(entry);
+    });
+  }
+
+  private _cacheEntry(entry: IProcessCacheEntry): void {
+    this._processCache[entry.name] = entry;
+  }
+
+  private _getEntry(processName: string): IProcessCacheEntry {
+    return this._processCache[processName];
+  }
+
+  private _getEntriesByCategory(category: string): Array<any> {
+
+    const processNames = this.container.getKeysByAttributes({
+      bpmn_process: category
+    });
+
+    return processNames.map((processName) => {
+      const registration = this.container._getRegistration(processName);
+
+      const entry = {
+        name: processName,
+        process: registration.settings.type,
+        category: registration.settings.tags['bpmn_process'],
+        module: registration.settings.tags['module'],
+        path: registration.settings.tags['path'],
+        readonly: registration.settings.tags['readonly'] !== undefined
+      };
+
+      return entry;
+    });
+  }
+
 }

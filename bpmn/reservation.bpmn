@@ -3,7 +3,7 @@
   <bpmn:collaboration id="Collaboration_045wrtb">
     <bpmn:participant id="Participant_1i31rgo" name="Reservierungsprozess" processRef="ReservationProcess" />
   </bpmn:collaboration>
-  <bpmn:process id="ReservationProcess" name="Reservierungsprozess" isExecutable="false">
+  <bpmn:process id="ReservationProcess" name="Reservierungsprozess" isExecutable="false" camunda:versionTag="this_is_not_really_a_version">
     <bpmn:laneSet>
       <bpmn:lane id="Lane_1efnqeo" name="Agent">
         <bpmn:extensionElements>

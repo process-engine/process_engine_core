@@ -43,7 +43,7 @@ class ProcessDefEntityTypeService {
         });
     }
     async importBpmnFromXml(context, params, options) {
-        const overwrite = options && options.hasOwnProperty('overwrite') ? options.overwrite : true;
+        const overwriteExisting = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
         const xml = params && params.xml ? params.xml : null;
         if (xml) {
             const bpmnDiagram = await this.parseBpmnXml(xml);
@@ -51,6 +51,7 @@ class ProcessDefEntityTypeService {
             const processes = bpmnDiagram.getProcesses();
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
+                const processVersion = process.$attrs ? process.$attrs['camunda:versionTag'] : '';
                 const queryObject = {
                     attribute: 'key',
                     operator: '=',
@@ -63,13 +64,14 @@ class ProcessDefEntityTypeService {
                 if (!processDefEntity) {
                     const processDefData = {
                         key: process.id,
-                        defId: bpmnDiagram.definitions.id
+                        defId: bpmnDiagram.definitions.id,
+                        version: processVersion
                     };
                     processDefEntity = await ProcessDef.createEntity(context, processDefData);
                     canSave = true;
                 }
                 else {
-                    canSave = overwrite;
+                    canSave = overwriteExisting;
                 }
                 if (canSave) {
                     processDefEntity.name = process.name;
