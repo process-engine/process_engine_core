@@ -117,6 +117,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<void> {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
+
     const process = await source.getProcess(internalContext);
     let participant = source.participant;
 
@@ -204,6 +205,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
 
   public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
@@ -213,8 +215,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
 
     let nextDefs = null;
-    const nodeDef = await nodeInstance.getNodeDef(context);
-    const processDef = await nodeDef.getProcessDef(context);
+    const nodeDef = await nodeInstance.getNodeDef(internalContext);
+    const processDef = await nodeDef.getProcessDef(internalContext);
 
     let flowsOut = null;
 
@@ -230,7 +232,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           ]
         };
 
-        flowsOut = await flowDefEntityType.query(context, { query: queryObjectFollow });
+        flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectFollow });
       }
     } else {
       // query for all flows going out
@@ -242,7 +244,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         ]
       };
 
-      flowsOut = await flowDefEntityType.query(context, { query: queryObjectAll });
+      flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
     }
     if (flowsOut && flowsOut.length > 0) {
       const ids: Array<string> = [];
@@ -260,27 +262,27 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         ]
       };
 
-      nextDefs = await nodeDefEntityType.query(context, { query: queryObjectIn });
+      nextDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectIn });
 
       if (nextDefs && nextDefs.length > 0) {
 
-        const processToken = await nodeInstance.getProcessToken(context);
+        const processToken = await nodeInstance.getProcessToken(internalContext);
 
         for (let i = 0; i < nextDefs.data.length; i++) {
           const nextDef = nextDefs.data[i];
 
           let currentToken;
           if (splitToken && i > 0) {
-            currentToken = await processTokenEntityType.createEntity(context);
+            currentToken = await processTokenEntityType.createEntity(internalContext);
             currentToken.process = processToken.process;
             currentToken.data = processToken.data;
-            await currentToken.save(context);
+            await currentToken.save(internalContext);
           } else {
             currentToken = processToken;
           }
 
-          const lane = await nextDef.getLane(context);
-          const processDef = await nextDef.getProcessDef(context);
+          const lane = await nextDef.getLane(internalContext);
+          const processDef = await nextDef.getProcessDef(internalContext);
 
           const nodeFeatures = nextDef.features;
           const laneFeatures = lane.features;

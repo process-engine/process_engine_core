@@ -4,6 +4,7 @@ import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
 import { DependencyInjectionContainer } from 'addict-ioc';
+import {IToPojoOptions} from "../../../../VorstartPortal/portal/node_modules/@process-engine-js/core_contracts/dist/interfaces";
 
 export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTaskEntity {
 
@@ -70,7 +71,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         
         try {
 
-          const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
+          const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
 
           result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
 
@@ -80,7 +81,15 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
           await this.error(context, err);
         }
 
-        tokenData.current = result;
+        let finalResult = result;
+        const toPojoOptions: IToPojoOptions = { skipCalculation: true };
+        if (result && typeof result.toPojos === 'function') {
+          finalResult = await result.toPojos(context, toPojoOptions);
+        } else if (result && typeof result.toPojo === 'function') {
+          finalResult = await result.toPojo(context, toPojoOptions);
+        }
+
+        tokenData.current = finalResult;
         processToken.data = tokenData;
 
         await processToken.save(internalContext);
