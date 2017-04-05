@@ -110,8 +110,6 @@ export class ProcessEngineService implements IProcessEngineService {
   private async _messageHandler(msg): Promise<void> {
     debugInfo('we got a message: ', msg);
 
-    await this.messageBusService.verifyMessage(msg);
-
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
