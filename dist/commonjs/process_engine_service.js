@@ -47,7 +47,7 @@ class ProcessEngineService {
         this.featureService.initialize();
         try {
             if (this.messageBusService.isMaster) {
-                this.eventAggregator.subscribe(`/processengine`, this._messageHandler.bind(this));
+                this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);
             }
         }
@@ -77,6 +77,7 @@ class ProcessEngineService {
     }
     async _messageHandler(msg) {
         debugInfo('we got a message: ', msg);
+        await this.messageBusService.verifyMessage(msg);
         const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
         const key = (msg && msg.data && msg.data.key) ? msg.data.key : null;
         const initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;

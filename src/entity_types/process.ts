@@ -141,7 +141,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
       await startEvent.save(internalContext);
 
-      await startEvent.changeState(laneContext, 'start', this);
+      startEvent.changeState(laneContext, 'start', this);
     }
   }
 

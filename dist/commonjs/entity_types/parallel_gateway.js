@@ -48,7 +48,7 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
             this.parallelType = 'split';
             this.state = 'progress';
             await this.save(internalContext);
-            await this.changeState(context, 'end', this);
+            this.changeState(context, 'end', this);
         }
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
             this.parallelType = 'join';
@@ -109,7 +109,7 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                     }
                 });
                 if (allthere) {
-                    await this.changeState(context, 'end', this);
+                    this.changeState(context, 'end', this);
                 }
             }
         }

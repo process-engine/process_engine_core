@@ -12,9 +12,12 @@ export declare class NodeInstanceEntityDependencyHelper {
 }
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     private _nodeInstanceEntityDependencyHelper;
+    messagebusSubscription: any;
+    eventAggregatorSubscription: any;
     constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     protected readonly iamService: IIamService;
     protected readonly messageBusService: IMessageBusService;
+    protected readonly eventAggregator: IEventAggregator;
     protected readonly nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
@@ -30,8 +33,8 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     getProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     start(context: ExecutionContext, source: IEntity): Promise<void>;
-    changeState(context: ExecutionContext, newState: string, source: IEntity): Promise<void>;
-    error(context: ExecutionContext, error: any): Promise<void>;
+    changeState(context: ExecutionContext, newState: string, source: IEntity): void;
+    error(context: ExecutionContext, error: any): void;
     execute(context: ExecutionContext): Promise<void>;
     proceed(context: ExecutionContext, data: any, source: EntityReference, applicationId: string): Promise<void>;
     event(context: ExecutionContext, event: string, data: any): Promise<void>;

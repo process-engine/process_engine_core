@@ -71,7 +71,7 @@ export class ProcessEngineService implements IProcessEngineService {
       // Todo: we subscribe on the old channel to leave frontend intact
       // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
-        this.eventAggregator.subscribe(`/processengine`, this._messageHandler.bind(this));
+        this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
         debugInfo(`subscribed on Messagebus Master`);
       }
 
@@ -110,6 +110,8 @@ export class ProcessEngineService implements IProcessEngineService {
   private async _messageHandler(msg): Promise<void> {
     debugInfo('we got a message: ', msg);
 
+    await this.messageBusService.verifyMessage(msg);
+    
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;

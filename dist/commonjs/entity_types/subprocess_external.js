@@ -39,7 +39,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         tokenData.current = newData;
         processToken.data = tokenData;
         await processToken.save(internalContext);
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 }
 exports.SubprocessExternalEntity = SubprocessExternalEntity;

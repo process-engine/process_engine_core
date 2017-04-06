@@ -73,7 +73,7 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
         }
         this.state = 'progress';
         await this.save(internalContext);
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 }
 __decorate([

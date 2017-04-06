@@ -43,6 +43,6 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
       await this.messageBusService.publish('/role/' + role, msg);
     }
 
-    await this.changeState(context, 'end', this);
+    this.changeState(context, 'end', this);
   }
 }

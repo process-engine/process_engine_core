@@ -63,6 +63,6 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
     await processToken.save(internalContext);
 
-    await this.changeState(context, 'end', this);
+    this.changeState(context, 'end', this);
   }
 }

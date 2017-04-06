@@ -38,14 +38,14 @@ class NodeInstanceEntityTypeService {
     get routingService() {
         return this._routingService;
     }
-    async _nodeHandler(msg) {
+    async _nodeHandler(event) {
         const binding = this;
-        const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
-        const source = (msg && msg.source) ? msg.source : null;
-        const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
-        const applicationId = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+        const action = (event && event.data && event.data.action) ? event.data.action : null;
+        const source = (event && event.source) ? event.source : null;
+        const context = (event && event.metadata && event.metadata.context) ? event.metadata.context : {};
+        const applicationId = (event && event.metadata && event.metadata.applicationId) ? event.metadata.applicationId : null;
         if (action === 'changeState') {
-            const newState = (msg && msg.data && msg.data.data) ? msg.data.data : null;
+            const newState = (event && event.data && event.data.data) ? event.data.data : null;
             switch (newState) {
                 case ('start'):
                     await binding.entity.start(context, source);
@@ -60,24 +60,42 @@ class NodeInstanceEntityTypeService {
             }
         }
         if (action === 'proceed') {
-            const newData = (msg && msg.data && msg.data.token) ? msg.data.token : null;
+            const newData = (event && event.data && event.data.token) ? event.data.token : null;
             await binding.entity.proceed(context, newData, source, applicationId);
         }
         if (action === 'event') {
-            const event = (msg && msg.data && msg.data.event) ? msg.data.event : null;
-            const data = (msg && msg.data && msg.data.data) ? msg.data.data : null;
-            await binding.entity.event(context, event, data);
+            const nodeEvent = (event && event.data && event.data.event) ? event.data.event : null;
+            const data = (event && event.data && event.data.data) ? event.data.data : null;
+            await binding.entity.event(context, nodeEvent, data);
         }
+    }
+    async _nodeHandlerMessagebus(msg) {
+        const binding = this;
+        await binding.messagebusService.verifyMessage(msg);
+        const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+        const sourceRef = (msg && msg.source) ? msg.source : null;
+        let source = null;
+        if (sourceRef) {
+            const entityType = await binding.datastoreService.getEntityType(sourceRef.type);
+            source = await entityType.getById(context, sourceRef.id);
+        }
+        const data = (msg && msg.data) ? msg.data : null;
+        const event = binding.eventAggregator.createEntityEvent(data, source, context);
+        binding.eventAggregator.publish('/processengine/node/' + binding.entity.id, event);
     }
     async createNode(context, entityType) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const node = await entityType.createEntity(internalContext);
         const binding = {
             entity: node,
-            eventAggregator: this.eventAggregator
+            eventAggregator: this.eventAggregator,
+            messagebusService: this.messagebusService,
+            datastoreService: this.datastoreService
         };
-        await this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
-        return node;
+        const anyNode = node;
+        anyNode.eventAggregatorSubscription = this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
+        anyNode.messagebusSubscription = this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandlerMessagebus.bind(binding));
+        return anyNode;
     }
     async createNextNode(context, source, nextDef, token) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -135,7 +153,7 @@ class NodeInstanceEntityTypeService {
             node.processToken = token;
             node.participant = participant;
             await node.save(internalContext);
-            await node.changeState(context, 'start', source);
+            node.changeState(context, 'start', source);
         }
     }
     async continueExecution(context, source) {

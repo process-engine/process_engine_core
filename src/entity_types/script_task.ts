@@ -63,6 +63,6 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
       await processToken.save(context);
     }
 
-    await this.changeState(context, 'end', this);
+    this.changeState(context, 'end', this);
   }
 }
