@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
 const uuidModule = require("uuid");
 const debugInfo = debug('process_engine:info');

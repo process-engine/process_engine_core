@@ -124,6 +124,24 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     }
   }
 
+  private async startTimers(processes: Array<any>): Promise<void> {
+
+    processes.forEach((process) => {
+      
+      const startEvents = process.flowElements.filter((element) => {
+        return element.$type === 'bpmn:StartEvent';
+      });
+
+      if (startEvents.length === 0) {
+        return;
+      }
+
+      startEvents.forEach((startEvent) => {
+
+      });
+
+    });
+  }
 
   public async updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void> {
 
@@ -144,6 +162,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       this.extensions = extensions;
     }
     await this.save(context);
+
+    await this.startTimers(processes);
 
     const lanes = bpmnDiagram.getLanes(key);
 

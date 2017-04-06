@@ -5,7 +5,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
@@ -81,6 +80,18 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             return { result: true };
         }
     }
+    async startTimers(processes) {
+        processes.forEach((process) => {
+            const startEvents = process.flowElements.filter((element) => {
+                return element.$type === 'bpmn:StartEvent';
+            });
+            if (startEvents.length === 0) {
+                return;
+            }
+            startEvents.forEach((startEvent) => {
+            });
+        });
+    }
     async updateDefinitions(context, params) {
         let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
         const xml = this.xml;
@@ -95,6 +106,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             this.extensions = extensions;
         }
         await this.save(context);
+        await this.startTimers(processes);
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context);
         const nodes = bpmnDiagram.getNodes(key);

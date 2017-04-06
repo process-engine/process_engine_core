@@ -16,3 +16,4 @@ export * from './process_token';
 export * from './boundary_event';
 export * from './subprocess_external';
 export * from './subprocess_internal';
+export * from './timer_event';

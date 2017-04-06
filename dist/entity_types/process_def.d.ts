@@ -17,6 +17,7 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     readonly features: Array<IFeature>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity>;
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
+    private startTimers(processes);
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context);
     private _updateNodes(nodes, laneCache, bpmnDiagram, context);
