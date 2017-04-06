@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {IScriptTaskEntity} from '@process-engine-js/process_engine_contracts';
@@ -49,7 +49,15 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
         await this.error(context, err);
       }
 
-      tokenData.current = result;
+      let finalResult = result;
+      const toPojoOptions: IToPojoOptions = { skipCalculation: true };
+      if (result && typeof result.toPojos === 'function') {
+        finalResult = await result.toPojos(context, toPojoOptions);
+      } else if (result && typeof result.toPojo === 'function') {
+        finalResult = await result.toPojo(context, toPojoOptions);
+      }
+
+      tokenData.current = finalResult;
       processToken.data = tokenData;
 
       await processToken.save(context);
