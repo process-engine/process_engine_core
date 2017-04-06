@@ -64,7 +64,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromFileOptions): Promise<void> {
 
-    const overwrite: boolean = options && options.hasOwnProperty('overwrite') ? options.overwrite : true;
+    const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
     const xml = params && params.xml ? params.xml : null;
 
@@ -77,6 +77,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
       for (let i = 0; i < processes.length; i++) {
         const process = processes[i];
+
+        const processVersion = process.$attrs ? process.$attrs['camunda:versionTag'] : '';
 
         // query with key
         const queryObject: IQueryClause = {
@@ -94,7 +96,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
           const processDefData = {
             key: process.id,
-            defId: bpmnDiagram.definitions.id
+            defId: bpmnDiagram.definitions.id,
+            // version: processVersion
           };
 
           processDefEntity = await ProcessDef.createEntity<IProcessDefEntity>(context, processDefData);
@@ -103,7 +106,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           canSave = true;
         } else {
           // check if we can overwrite existing processes
-          canSave = overwrite;
+          canSave = overwriteExisting;
         }
 
         if (canSave) {

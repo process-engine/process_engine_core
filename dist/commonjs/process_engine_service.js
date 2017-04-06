@@ -5,18 +5,19 @@ const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 const uuid = uuidModule;
 class ProcessEngineService {
-    constructor(messageBusService, processDefEntityTypeService, featureService, iamService) {
+    constructor(messageBusService, processDefEntityTypeService, featureService, iamService, processRepository) {
         this._messageBusService = undefined;
         this._processDefEntityTypeService = undefined;
         this._featureService = undefined;
         this._iamService = undefined;
+        this._processRepository = undefined;
         this._runningProcesses = {};
-        this._id = undefined;
         this.config = undefined;
         this._messageBusService = messageBusService;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._featureService = featureService;
         this._iamService = iamService;
+        this._processRepository = processRepository;
     }
     get messageBusService() {
         return this._messageBusService;
@@ -30,39 +31,16 @@ class ProcessEngineService {
     get iamService() {
         return this._iamService;
     }
+    get processRepository() {
+        return this._processRepository;
+    }
     get runningProcesses() {
         return this._runningProcesses;
     }
-    get id() {
-        return this._id;
-    }
     async initialize() {
-        this._id = this.config.id || uuid.v4();
         this.featureService.initialize();
-        try {
-            if (this.messageBusService.isMaster) {
-                await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
-                debugInfo(`subscribed on Messagebus Master`);
-            }
-        }
-        catch (err) {
-            debugErr('subscription failed on Messagebus', err.message);
-            throw new Error(err.message);
-        }
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const options = {
-            overwrite: false
-        };
-        let bpmns = [];
-        if (this.config && this.config.initialBPMNs) {
-            bpmns = this.config.initialBPMNs;
-        }
-        for (let i = 0; i < bpmns.length; i++) {
-            const params = {
-                file: bpmns[i]
-            };
-            await this.processDefEntityTypeService.importBpmnFromFile(internalContext, params, options);
-        }
+        await this._initializeMessageBus();
+        await this._initializeProcesses();
     }
     async start(context, params, options) {
         const processEntity = await this.processDefEntityTypeService.start(context, params, options);
@@ -95,6 +73,32 @@ class ProcessEngineService {
             default:
                 debugInfo('unhandled action: ', msg);
                 break;
+        }
+    }
+    async _initializeMessageBus() {
+        try {
+            if (this.messageBusService.isMaster) {
+                await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                debugInfo(`subscribed on Messagebus Master`);
+            }
+        }
+        catch (err) {
+            debugErr('subscription failed on Messagebus', err.message);
+            throw new Error(err.message);
+        }
+    }
+    async _initializeProcesses() {
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const options = {
+            overwriteExisting: false
+        };
+        this.processRepository.initialize();
+        const bpmns = this.processRepository.getProcessesByCategory('internal');
+        for (let i = 0; i < bpmns.length; i++) {
+            const params = {
+                xml: bpmns[i]
+            };
+            await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
         }
     }
 }

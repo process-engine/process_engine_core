@@ -23,11 +23,27 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
+const ProcessRepository = require('./dist/commonjs/index').ProcessRepository;
+
+const fs = require('fs');
+const path = require('path');
+// const testDiagram = require('./bpmn/reservation.bpmn');
+const testDiagram = fs.readFileSync(path.join(__dirname, 'bpmn/reservation.bpmn'), 'utf8');
 
 function registerInContainer(container) {
 
+  container.registerObject('InternalSomethingDiagram', testDiagram)
+    .setAttribute('bpmn_process', 'internal') // category: internal
+    .setAttribute('module', 'process_engine') // the source module
+    .setAttribute('path', 'bpmn/test.bpmn')   // the file path
+    .tags('readonly');
+
+  container.register('ProcessRepository', ProcessRepository)
+    .dependencies('container')
+    .singleton();
+
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService')
+    .dependencies('MessageBusService', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository')
     .singleton()
     .configure('process_engine:process_engine_service');
 
