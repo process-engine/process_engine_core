@@ -7,6 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 const event_1 = require("./event");
 const core_contracts_1 = require("@process-engine-js/core_contracts");
+const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 const moment = require("moment");
 class TimerEventEntity extends event_1.EventEntity {
@@ -39,7 +40,24 @@ class TimerEventEntity extends event_1.EventEntity {
         const actualInstance = derivedClassInstance || this;
         await super.initialize(actualInstance);
     }
-    async _startTimer(timerDefinitionType, timerDefinition) {
+    async execute(context) {
+        await this._startTimer(this.timerDefinitionType, this.timerDefinition, context);
+    }
+    async proceed(context, data, source, applicationId) {
+        if (this.timerDefinitionType === process_engine_contracts_1.TimerDefinitionType.cycle) {
+            await this.event(context, 'timer', {});
+        }
+        else {
+            await this.changeState(context, 'end', this);
+        }
+    }
+    async _startTimer(timerDefinitionType, timerDefinition, context) {
+        switch (timerDefinitionType) {
+            case process_engine_contracts_1.TimerDefinitionType.cycle: await this._startCycleTimer(timerDefinition, context);
+            case process_engine_contracts_1.TimerDefinitionType.date: await this._startDateTimer(timerDefinition, context);
+            case process_engine_contracts_1.TimerDefinitionType.duration: await this._startDurationTimer(timerDefinition, context);
+            default: return;
+        }
     }
     async _startCycleTimer(timerDefinition, context) {
         const duration = moment.duration(timerDefinition);
@@ -52,57 +70,34 @@ class TimerEventEntity extends event_1.EventEntity {
             second: duration.seconds()
         };
         const channelName = `events/timer/${this.id}`;
-        this.eventAggregator.subscribe(channelName, async () => {
-            const data = {};
-            const message = this.messageBusService.createEntityMessage(data, this, context);
-            await this.changeState(context, 'end', this);
-            await this.messageBusService.publish(channelName, message);
-        });
+        await this._prepareStartTimer(channelName, context);
         await this.timingService.periodic(timingRule, channelName, context);
     }
     async _startDurationTimer(timerDefinition, context) {
         const duration = moment.duration(timerDefinition);
         const date = moment().add(duration).toDate();
         const channelName = `events/timer/${this.id}`;
-        this.eventAggregator.subscribeOnce(channelName, async () => {
-            const data = {};
-            const message = this.messageBusService.createEntityMessage(data, this, context);
-            await this.changeState(context, 'end', this);
-            await this.messageBusService.publish(channelName, message);
-        });
+        await this._prepareStartTimer(channelName, context);
         await this.timingService.once(date, channelName, context);
     }
     async _startDateTimer(timerDefinition, context) {
         const date = moment(timerDefinition).toDate();
         const channelName = `events/timer/${this.id}`;
-        this.eventAggregator.subscribeOnce(channelName, async () => {
-            const data = {};
-            const message = this.messageBusService.createEntityMessage(data, this, context);
-            await this.changeState(context, 'end', this);
-            await this.messageBusService.publish(channelName, message);
-        });
+        await this._prepareStartTimer(channelName, context);
         await this.timingService.once(date, channelName, context);
     }
-    async execute(context) {
-        await this._startTimer(this.timerDefinitionType, this.timerDefinition);
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        this.state = 'progress';
-        await this.save(internalContext);
-        const processToken = await this.getProcessToken(internalContext);
-        const currentToken = processToken.data.current;
+    async _prepareStartTimer(channelName, context) {
+        this.eventAggregator.subscribeOnce(channelName, async () => {
+            await this._timerElapsed(context);
+        });
+        await this.changeState(context, 'wait', this);
+    }
+    async _timerElapsed(context) {
         const data = {
-            action: 'endEvent',
-            data: currentToken
+            action: 'proceed'
         };
-        const msg = this.messageBusService.createEntityMessage(data, this, context);
-        if (this.participant) {
-            await this.messageBusService.publish('/participant/' + this.participant, msg);
-        }
-        else {
-            const role = await this.getLaneRole(internalContext);
-            await this.messageBusService.publish('/role/' + role, msg);
-        }
-        await this.changeState(context, 'end', this);
+        const message = this.messageBusService.createEntityMessage(data, this, context);
+        await this.messageBusService.publish(`/processengine/node/${this.id}`, message);
     }
 }
 __decorate([

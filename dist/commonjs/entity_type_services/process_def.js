@@ -65,7 +65,6 @@ class ProcessDefEntityTypeService {
                     const processDefData = {
                         key: process.id,
                         defId: bpmnDiagram.definitions.id,
-                        version: processVersion
                     };
                     processDefEntity = await ProcessDef.createEntity(context, processDefData);
                     canSave = true;

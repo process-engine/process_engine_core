@@ -1,5 +1,5 @@
-import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
+import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService, IEntityReference } from '@process-engine-js/core_contracts';
+import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
@@ -169,7 +169,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async changeState(context: ExecutionContext, newState: string, source: IEntity) {
+  public async changeState(context: ExecutionContext, newState: string, source: IEntity): Promise<void> {
 
     const data = {
       action: 'changeState',
@@ -206,12 +206,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async proceed(context: ExecutionContext, data: any, source: EntityReference, applicationId: string) {
+  public async proceed(context: ExecutionContext, data: any, source: IEntityReference, applicationId: string): Promise<void> {
     // by default do nothing, implementation should be overwritten by child class
   }
 
 
-  public async event(context: ExecutionContext, event: string, data: any) {
+  public async event(context: ExecutionContext, event: string, data: any): Promise<void> {
 
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
     const internalContext = await this.iamService.createInternalContext('processengine_system');

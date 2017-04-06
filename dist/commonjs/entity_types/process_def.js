@@ -7,17 +7,23 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
+const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, entityDependencyHelper, context, schema) {
+    constructor(timingService, processDefEntityTypeService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
+        this._timingService = undefined;
         this._processDefEntityTypeService = undefined;
+        this._timingService = timingService;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
         await super.initialize(actualInstance);
+    }
+    get timingService() {
+        return this._timingService;
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
@@ -80,6 +86,30 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             return { result: true };
         }
     }
+    _parseTimerDefinitionType(eventDefinition) {
+        if (eventDefinition.timeDuration) {
+            return process_engine_contracts_1.TimerDefinitionType.duration;
+        }
+        if (eventDefinition.timeCycle) {
+            return process_engine_contracts_1.TimerDefinitionType.cycle;
+        }
+        if (eventDefinition.timeDate) {
+            return process_engine_contracts_1.TimerDefinitionType.date;
+        }
+        return undefined;
+    }
+    _parseTimerDefinition(eventDefinition) {
+        if (eventDefinition.timeDuration) {
+            return eventDefinition.timeDuration.body;
+        }
+        if (eventDefinition.timeCycle) {
+            return eventDefinition.timeCycle.body;
+        }
+        if (eventDefinition.timeDate) {
+            return eventDefinition.timeDate.body;
+        }
+        return undefined;
+    }
     async startTimers(processes) {
         processes.forEach((process) => {
             const startEvents = process.flowElements.filter((element) => {
@@ -89,6 +119,16 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 return;
             }
             startEvents.forEach((startEvent) => {
+                startEvent.eventDefinitions.forEach((eventDefinition) => {
+                    if (eventDefinition.$type !== 'bpmn:TimerEventDefinition') {
+                        return;
+                    }
+                    const timerDefinitionType = this._parseTimerDefinitionType(eventDefinition);
+                    const timerDefinition = this._parseTimerDefinition(eventDefinition);
+                    if (timerDefinitionType === undefined || timerDefinition === undefined) {
+                        return;
+                    }
+                });
             });
         });
     }

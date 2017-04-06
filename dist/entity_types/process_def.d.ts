@@ -2,10 +2,13 @@ import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions } from '
 import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 import { IFeature } from '@process-engine-js/feature_contracts';
+import { ITimingService } from '@process-engine-js/timing_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
+    private _timingService;
     private _processDefEntityTypeService;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
+    constructor(timingService: ITimingService, processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
+    private readonly timingService;
     private readonly processDefEntityTypeService;
     name: string;
     key: string;
@@ -17,6 +20,8 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     readonly features: Array<IFeature>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity>;
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
+    private _parseTimerDefinitionType(eventDefinition);
+    private _parseTimerDefinition(eventDefinition);
     private startTimers(processes);
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context);

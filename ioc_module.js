@@ -28,7 +28,7 @@ const ProcessRepository = require('./dist/commonjs/index').ProcessRepository;
 const fs = require('fs');
 const path = require('path');
 // const testDiagram = require('./bpmn/reservation.bpmn');
-const testDiagram = fs.readFileSync(path.join(__dirname, 'bpmn/reservation.bpmn'), 'utf8');
+const testDiagram = fs.readFileSync(path.join(__dirname, 'bpmn/test.bpmn'), 'utf8');
 
 function registerInContainer(container) {
 
@@ -98,7 +98,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('ProcessDefEntityTypeService')
+    .dependencies('TimingService', 'ProcessDefEntityTypeService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)

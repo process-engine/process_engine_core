@@ -1,8 +1,9 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
+import {TimerDefinitionType, IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
-import { IFeature } from '@process-engine-js/feature_contracts';
+import {IFeature} from '@process-engine-js/feature_contracts';
+import {ITimingService} from '@process-engine-js/timing_contracts';
 
 import * as uuid from 'uuid';
 
@@ -12,21 +13,27 @@ interface ICache<T> {
 
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
+  private _timingService: ITimingService = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
 
-
-  constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
+  constructor(timingService: ITimingService,
+              processDefEntityTypeService: IProcessDefEntityTypeService,
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
 
+    this._timingService = timingService;
     this._processDefEntityTypeService = processDefEntityTypeService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
+  }
+
+  private get timingService(): ITimingService {
+    return this._timingService;
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -123,6 +130,32 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     }
   }
 
+  private _parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
+    if (eventDefinition.timeDuration) {
+      return TimerDefinitionType.duration;
+    }
+    if (eventDefinition.timeCycle) {
+      return TimerDefinitionType.cycle;
+    }
+    if (eventDefinition.timeDate) {
+      return TimerDefinitionType.date;
+    }
+    return undefined;
+  }
+
+  private _parseTimerDefinition(eventDefinition: any): string {
+    if (eventDefinition.timeDuration) {
+      return eventDefinition.timeDuration.body;
+    }
+    if (eventDefinition.timeCycle) {
+      return eventDefinition.timeCycle.body;
+    }
+    if (eventDefinition.timeDate) {
+      return eventDefinition.timeDate.body;
+    }
+    return undefined;
+  }
+
   private async startTimers(processes: Array<any>): Promise<void> {
 
     processes.forEach((process) => {
@@ -136,7 +169,23 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       }
 
       startEvents.forEach((startEvent) => {
+        startEvent.eventDefinitions.forEach((eventDefinition) => {
 
+          if (eventDefinition.$type !== 'bpmn:TimerEventDefinition') {
+            return;
+          }
+
+          const timerDefinitionType = this._parseTimerDefinitionType(eventDefinition);
+          const timerDefinition = this._parseTimerDefinition(eventDefinition);
+          
+          if (timerDefinitionType === undefined || timerDefinition === undefined) {
+            return;
+          }
+
+
+
+
+        });
       });
 
     });
