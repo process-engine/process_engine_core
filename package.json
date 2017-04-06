@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -23,6 +23,7 @@
     "@process-engine-js/metadata": "^1.0.4",
     "@process-engine-js/metadata_contracts": "^1.0.1",
     "@process-engine-js/process_engine_contracts": "^1.0.10",
+    "@process-engine-js/routing_contracts": "^1.0.0",
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.13.0",
     "debug": "^2.6.1"

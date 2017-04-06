@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
 const uuidModule = require("uuid");
 const debugInfo = debug('process_engine:info');
@@ -79,7 +80,10 @@ class ProcessEngineService {
         const action = (msg && msg.data && msg.data.action) ? msg.data.action : null;
         const key = (msg && msg.data && msg.data.key) ? msg.data.key : null;
         const initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-        const source = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+        let source = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+        if (!source) {
+            source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
+        }
         const isSubProcess = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
         const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
         switch (action) {

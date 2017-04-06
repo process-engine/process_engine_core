@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
     constructor(container, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
@@ -46,7 +47,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 const serviceInstance = this.container.resolve(serviceModule);
                 let result;
                 try {
-                    const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
+                    const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
                 }
                 catch (err) {
@@ -54,7 +55,15 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                     continueEnd = false;
                     await this.error(context, err);
                 }
-                tokenData.current = result;
+                let finalResult = result;
+                const toPojoOptions = { skipCalculation: true };
+                if (result && typeof result.toPojos === 'function') {
+                    finalResult = await result.toPojos(context, toPojoOptions);
+                }
+                else if (result && typeof result.toPojo === 'function') {
+                    finalResult = await result.toPojo(context, toPojoOptions);
+                }
+                tokenData.current = finalResult;
                 processToken.data = tokenData;
                 await processToken.save(internalContext);
             }

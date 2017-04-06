@@ -1,4 +1,6 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 class NodeInstanceEntityTypeService {
     constructor(datastoreServiceFactory, messagebusService, iamService, eventAggregator, featureService, routingService) {
         this._datastoreService = undefined;
@@ -137,14 +139,15 @@ class NodeInstanceEntityTypeService {
         }
     }
     async continueExecution(context, source) {
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
         const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
         const nodeInstance = source;
         const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
         let nextDefs = null;
-        const nodeDef = await nodeInstance.getNodeDef(context);
-        const processDef = await nodeDef.getProcessDef(context);
+        const nodeDef = await nodeInstance.getNodeDef(internalContext);
+        const processDef = await nodeDef.getProcessDef(internalContext);
         let flowsOut = null;
         if (nodeInstance.follow) {
             if (nodeInstance.follow.length > 0) {
@@ -155,7 +158,7 @@ class NodeInstanceEntityTypeService {
                         { attribute: 'processDef', operator: '=', value: processDef.id }
                     ]
                 };
-                flowsOut = await flowDefEntityType.query(context, { query: queryObjectFollow });
+                flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectFollow });
             }
         }
         else {
@@ -166,7 +169,7 @@ class NodeInstanceEntityTypeService {
                     { attribute: 'processDef', operator: '=', value: processDef.id }
                 ]
             };
-            flowsOut = await flowDefEntityType.query(context, { query: queryObjectAll });
+            flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
         }
         if (flowsOut && flowsOut.length > 0) {
             const ids = [];
@@ -182,23 +185,23 @@ class NodeInstanceEntityTypeService {
                     { attribute: 'processDef', operator: '=', value: processDef.id }
                 ]
             };
-            nextDefs = await nodeDefEntityType.query(context, { query: queryObjectIn });
+            nextDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectIn });
             if (nextDefs && nextDefs.length > 0) {
-                const processToken = await nodeInstance.getProcessToken(context);
+                const processToken = await nodeInstance.getProcessToken(internalContext);
                 for (let i = 0; i < nextDefs.data.length; i++) {
                     const nextDef = nextDefs.data[i];
                     let currentToken;
                     if (splitToken && i > 0) {
-                        currentToken = await processTokenEntityType.createEntity(context);
+                        currentToken = await processTokenEntityType.createEntity(internalContext);
                         currentToken.process = processToken.process;
                         currentToken.data = processToken.data;
-                        await currentToken.save(context);
+                        await currentToken.save(internalContext);
                     }
                     else {
                         currentToken = processToken;
                     }
-                    const lane = await nextDef.getLane(context);
-                    const processDef = await nextDef.getProcessDef(context);
+                    const lane = await nextDef.getLane(internalContext);
+                    const processDef = await nextDef.getProcessDef(internalContext);
                     const nodeFeatures = nextDef.features;
                     const laneFeatures = lane.features;
                     const processFeatures = processDef.features;
@@ -208,39 +211,48 @@ class NodeInstanceEntityTypeService {
                     }
                     else {
                         const appInstances = this.featureService.getApplicationIdsByFeatures(features);
-                        if (appInstances.length > 0) {
-                            const appInstanceId = appInstances[0];
-                            const options = {
-                                action: 'POST',
-                                typeName: 'ProcessDef',
-                                method: 'continueFromRemote'
-                            };
-                            const data = {
-                                source: nodeInstance.getEntityReference(),
-                                nextDef: nextDef.getEntityReference(),
-                                token: currentToken.getEntityReference()
-                            };
-                            const message = this.messagebusService.createDatastoreMessage(options, context, data);
-                            await this.routingService.send(appInstanceId, message);
-                            return;
+                        if (appInstances.length === 0) {
+                            throw new Error('can not route, no matching instance found');
                         }
-                        throw new Error('can not route, no matching instance found');
+                        const appInstanceId = appInstances[0];
+                        const options = {
+                            action: 'POST',
+                            typeName: 'NodeInstance',
+                            method: 'continueFromRemote'
+                        };
+                        const data = {
+                            source: nodeInstance.getEntityReference().toPojo(),
+                            nextDef: nextDef.getEntityReference().toPojo(),
+                            token: currentToken.getEntityReference().toPojo()
+                        };
+                        const message = this.messagebusService.createDatastoreMessage(options, context, data);
+                        await this.routingService.send(appInstanceId, message);
                     }
                 }
             }
         }
     }
     async continueFromRemote(context, params, options) {
+        let source = undefined;
+        let token = undefined;
+        let nextDef = undefined;
         const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-        const sourceRef = params.source;
+        const sourceRef = new data_model_contracts_1.EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
         const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
-        const source = await sourceEntityType.getById(sourceRef.id, context);
-        const tokenRef = params.token;
-        const token = await processTokenEntityType.getById(tokenRef.id, context);
-        const nextDefRef = params.nextDef;
-        const nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
-        await this.createNextNode(context, source, nextDef, token);
+        if (sourceEntityType && sourceRef.id) {
+            source = await sourceEntityType.getById(sourceRef.id, context);
+        }
+        const tokenRef = new data_model_contracts_1.EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
+        token = await processTokenEntityType.getById(tokenRef.id, context);
+        const nextDefRef = new data_model_contracts_1.EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
+        nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
+        if (source && token && nextDef) {
+            await this.createNextNode(context, source, nextDef, token);
+        }
+        else {
+            throw new Error('param is missing');
+        }
     }
 }
 exports.NodeInstanceEntityTypeService = NodeInstanceEntityTypeService;

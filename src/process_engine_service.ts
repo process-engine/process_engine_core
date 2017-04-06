@@ -113,7 +113,12 @@ export class ProcessEngineService implements IProcessEngineService {
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
-    const source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+    let source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+    
+    // fallback to old origin
+    if (!source) {
+      source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
+    }
     const isSubProcess: boolean = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
 
     const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};

@@ -275,10 +275,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     await processToken.save(internalContext);
 
     if (!isEndEvent && !cancelFlow) {
-      await this.nodeInstanceEntityTypeService.continueExecution(internalContext, nodeInstance);
+      await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
     } else {
       const process = await this.getProcess(internalContext);
-      await process.end(internalContext, processToken);
+      await process.end(context, processToken);
     }
   }
 }
