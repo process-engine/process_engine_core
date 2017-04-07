@@ -62,6 +62,6 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
     await processToken.save(internalContext);
 
-    await this.changeState(context, 'end', this);
+    this.changeState(context, 'end', this);
   }
 }

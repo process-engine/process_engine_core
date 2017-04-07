@@ -97,7 +97,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
     }
     if (continueEnd) {
-      await this.changeState(context, 'end', this);
+      this.changeState(context, 'end', this);
     }
   }
 }

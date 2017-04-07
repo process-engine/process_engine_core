@@ -6,8 +6,9 @@ const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 const uuid = uuidModule;
 class ProcessEngineService {
-    constructor(messageBusService, processDefEntityTypeService, featureService, iamService) {
+    constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService) {
         this._messageBusService = undefined;
+        this._eventAggregator = undefined;
         this._processDefEntityTypeService = undefined;
         this._featureService = undefined;
         this._iamService = undefined;
@@ -15,12 +16,16 @@ class ProcessEngineService {
         this._id = undefined;
         this.config = undefined;
         this._messageBusService = messageBusService;
+        this._eventAggregator = eventAggregator;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._featureService = featureService;
         this._iamService = iamService;
     }
     get messageBusService() {
         return this._messageBusService;
+    }
+    get eventAggregator() {
+        return this._eventAggregator;
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
@@ -42,7 +47,7 @@ class ProcessEngineService {
         this.featureService.initialize();
         try {
             if (this.messageBusService.isMaster) {
-                await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);
             }
         }

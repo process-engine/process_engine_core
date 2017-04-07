@@ -103,13 +103,20 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             startEvent.processToken = processToken;
             startEvent.participant = participant;
             await startEvent.save(internalContext);
-            await startEvent.changeState(laneContext, 'start', this);
+            startEvent.changeState(laneContext, 'start', this);
         }
     }
     async end(context, processToken) {
         if (this.isSubProcess) {
             const callerId = this.callerId;
         }
+    }
+    async error(context, error) {
+        const processToken = null;
+        if (this.isSubProcess) {
+            const callerId = this.callerId;
+        }
+        await this.end(context, processToken);
     }
 }
 __decorate([

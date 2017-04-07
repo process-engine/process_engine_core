@@ -43,7 +43,7 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
         tokenData.current = newData;
         processToken.data = tokenData;
         await processToken.save(internalContext);
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 };
 UserTaskEntity = __decorate([

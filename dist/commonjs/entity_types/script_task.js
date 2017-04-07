@@ -53,7 +53,7 @@ class ScriptTaskEntity extends node_instance_1.NodeInstanceEntity {
             processToken.data = tokenData;
             await processToken.save(context);
         }
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 }
 __decorate([

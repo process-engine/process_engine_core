@@ -141,7 +141,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
       await startEvent.save(internalContext);
 
-      await startEvent.changeState(laneContext, 'start', this);
+      startEvent.changeState(laneContext, 'start', this);
     }
   }
 
@@ -152,5 +152,16 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       // send proceed message
 
     }
+  }
+
+  public async error(context: ExecutionContext, error): Promise<void> {
+    const processToken = null;
+    if (this.isSubProcess) {
+      const callerId = this.callerId;
+
+      // send error message
+
+    }
+    await this.end(context, processToken);
   }
 }
