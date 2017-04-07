@@ -27,16 +27,17 @@ const ProcessRepository = require('./dist/commonjs/index').ProcessRepository;
 
 const fs = require('fs');
 const path = require('path');
-// const testDiagram = require('./bpmn/reservation.bpmn');
-const testDiagram = fs.readFileSync(path.join(__dirname, 'bpmn/reservation.bpmn'), 'utf8');
+
+const createProcessDefFile = 'createProcessDef.bpmn';
+const createProcessDef = fs.readFileSync(path.join(__dirname, 'bpmn/' + createProcessDefFile), 'utf8');
 
 function registerInContainer(container) {
 
-  container.registerObject('InternalSomethingDiagram', testDiagram)
+  container.registerObject(createProcessDefFile, createProcessDef)
     .setAttribute('bpmn_process', 'internal') // category: internal
     .setAttribute('module', 'process_engine') // the source module
-    .setAttribute('path', 'bpmn/test.bpmn')   // the file path
-    .tags('readonly');
+    .setAttribute('path', 'bpmn/' + createProcessDefFile);   // the file path
+    //.tags('readonly');
 
   container.register('ProcessRepository', ProcessRepository)
     .dependencies('container')
