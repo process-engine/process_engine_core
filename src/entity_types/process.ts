@@ -153,4 +153,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     }
   }
+
+  public async error(context: ExecutionContext, error): Promise<void> {
+    const processToken = null;
+    if (this.isSubProcess) {
+      const callerId = this.callerId;
+
+      // send error message
+
+    }
+    await this.end(context, processToken);
+  }
 }

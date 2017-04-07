@@ -111,6 +111,13 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             const callerId = this.callerId;
         }
     }
+    async error(context, error) {
+        const processToken = null;
+        if (this.isSubProcess) {
+            const callerId = this.callerId;
+        }
+        await this.end(context, processToken);
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

@@ -1,5 +1,5 @@
 import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, 
-  IParamStart, IProcessEntity, IParamsContinueFromRemote } from '@process-engine-js/process_engine_contracts';
+  IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService, IEntityType, EntityReference } from '@process-engine-js/data_model_contracts';
@@ -7,6 +7,10 @@ import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessa
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+
+import * as debug from 'debug';
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 
 interface Binding {
   eventAggregator: IEventAggregator;
@@ -233,6 +237,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
       await node.save(internalContext);
 
+      debugInfo(`node created key '${node.key}'`);
+
       node.changeState(context, 'start', source);
     }
   }
@@ -325,14 +331,19 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
 
           if (features.length === 0 || this.featureService.hasFeatures(features)) {
+            debugInfo(`continue in same thread with next node key ${nextDef.key}, features: ${JSON.stringify(features)}`);
             await this.createNextNode(context, nodeInstance, nextDef, currentToken);
           } else {
             const appInstances = this.featureService.getApplicationIdsByFeatures(features);
+
             if (appInstances.length === 0) {
+              debugErr(`can not route to next node key '${nextDef.key }', features: ${JSON.stringify(features)}, no matching instance found`);
               throw new Error('can not route, no matching instance found');
             }
 
             const appInstanceId = appInstances[0];
+
+            debugInfo(`continue on application '${appInstanceId}' with next node key '${nextDef.key}', features: ${JSON.stringify(features)}`);
 
             // Todo: set correct message format
             const options: IDatastoreMessageOptions = {
@@ -346,7 +357,30 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               token: currentToken.getEntityReference().toPojo()
             };
             const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
-            await this.routingService.send(appInstanceId, message);
+            try {
+              const result = await this.routingService.request(appInstanceId, message);
+            } catch (err) {
+              debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
+
+              // look for boundary error event
+              if (nextDef && nextDef.events && nextDef.events.error) {
+
+                const boundaryDefKey = nextDef.events.error;
+
+                const queryObject = {
+                  attribute: 'key', operator: '=', value: boundaryDefKey
+                };
+                const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+                const boundary = <INodeDefEntity>await nodeDefEntityType.findOne(internalContext, { query: queryObject });
+
+                // continue with boundary
+                await this.createNextNode(context, nodeInstance, boundary, currentToken);
+
+              } else {
+                // bubble error 
+                throw err;
+              }
+            }
           }
 
         }

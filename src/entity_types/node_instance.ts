@@ -305,7 +305,13 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     nodeInstance.messagebusSubscription.cancel();
 
     if (!isEndEvent && !cancelFlow) {
+      try {
       await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+      } catch (err) {
+        // we can't continue, handle error in process
+        const process = await this.getProcess(internalContext);
+        await process.error(context, err);
+      }
     } else {
       const process = await this.getProcess(internalContext);
       await process.end(context, processToken);

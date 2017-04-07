@@ -201,7 +201,13 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         nodeInstance.eventAggregatorSubscription.dispose();
         nodeInstance.messagebusSubscription.cancel();
         if (!isEndEvent && !cancelFlow) {
-            await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+            try {
+                await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+            }
+            catch (err) {
+                const process = await this.getProcess(internalContext);
+                await process.error(context, err);
+            }
         }
         else {
             const process = await this.getProcess(internalContext);
