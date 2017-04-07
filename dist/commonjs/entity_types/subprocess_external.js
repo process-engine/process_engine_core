@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
@@ -38,7 +39,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         tokenData.current = newData;
         processToken.data = tokenData;
         await processToken.save(internalContext);
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 }
 exports.SubprocessExternalEntity = SubprocessExternalEntity;

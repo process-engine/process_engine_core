@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const bluebirdPromise = require("bluebird");
 const path = require("path");
 const fs = require("fs");

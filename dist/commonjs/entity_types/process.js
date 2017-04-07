@@ -5,6 +5,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
@@ -102,13 +103,20 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             startEvent.processToken = processToken;
             startEvent.participant = participant;
             await startEvent.save(internalContext);
-            await startEvent.changeState(laneContext, 'start', this);
+            startEvent.changeState(laneContext, 'start', this);
         }
     }
     async end(context, processToken) {
         if (this.isSubProcess) {
             const callerId = this.callerId;
         }
+    }
+    async error(context, error) {
+        const processToken = null;
+        if (this.isSubProcess) {
+            const callerId = this.callerId;
+        }
+        await this.end(context, processToken);
     }
 }
 __decorate([

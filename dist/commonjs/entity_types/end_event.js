@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
 class EndEventEntity extends event_1.EventEntity {
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
@@ -26,7 +27,7 @@ class EndEventEntity extends event_1.EventEntity {
             const role = await this.getLaneRole(internalContext);
             await this.messageBusService.publish('/role/' + role, msg);
         }
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 }
 exports.EndEventEntity = EndEventEntity;

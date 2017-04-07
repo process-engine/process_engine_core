@@ -2,6 +2,7 @@ import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions, IIamService } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 
 import * as debug from 'debug';
 import * as uuidModule from 'uuid';
@@ -14,6 +15,7 @@ const uuid: any = uuidModule;
 export class ProcessEngineService implements IProcessEngineService {
 
   private _messageBusService: IMessageBusService = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _featureService: IFeatureService = undefined;
   private _iamService: IIamService = undefined;
@@ -23,8 +25,9 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository) {
     this._messageBusService = messageBusService;
+    this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._featureService = featureService;
     this._iamService = iamService;
@@ -33,6 +36,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get messageBusService(): IMessageBusService {
     return this._messageBusService;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -71,7 +78,7 @@ export class ProcessEngineService implements IProcessEngineService {
     debugInfo('we got a message: ', msg);
 
     await this.messageBusService.verifyMessage(msg);
-
+    
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;

@@ -3,15 +3,22 @@ import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+
+import * as debug from 'debug';
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 
 export class NodeInstanceEntityDependencyHelper {
   
   public messageBusService: IMessageBusService = undefined;
+  public eventAggregator: IEventAggregator = undefined;
   public iamService: IIamService = undefined;
   public nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
-  constructor(messageBusService: IMessageBusService, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
     this.messageBusService = messageBusService;
+    this.eventAggregator = eventAggregator;
     this.iamService = iamService;
     this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
   }
@@ -26,6 +33,8 @@ export class NodeInstanceEntityDependencyHelper {
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   private _nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper = undefined;
+  public messagebusSubscription = undefined;
+  public eventAggregatorSubscription = undefined;
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               entityDependencyHelper: EntityDependencyHelper, 
@@ -42,6 +51,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   protected get messageBusService(): IMessageBusService {
     return this._nodeInstanceEntityDependencyHelper.messageBusService;
+  }
+
+  protected get eventAggregator(): IEventAggregator {
+    return this._nodeInstanceEntityDependencyHelper.eventAggregator;
   }
 
   protected get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
@@ -147,6 +160,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
 
   public async start(context: ExecutionContext, source: IEntity): Promise<void> {
+
+    debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
+
     // check if context matches to lane
     let role = await this.getLaneRole(context);
     if (role !== null) {
@@ -165,23 +181,28 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     await this.save(internalContext);
 
-    await this.changeState(context, 'execute', this);
+    this.changeState(context, 'execute', this);
   }
 
 
-  public async changeState(context: ExecutionContext, newState: string, source: IEntity) {
+  public changeState(context: ExecutionContext, newState: string, source: IEntity) {
+
+    debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
 
     const data = {
       action: 'changeState',
       data: newState
     };
 
-    const msg = this.messageBusService.createEntityMessage(data, source, context);
-    await this.messageBusService.publish('/processengine/node/' + this.id, msg);
+    const event = this.eventAggregator.createEntityEvent(data, source, context);
+    this.eventAggregator.publish('/processengine/node/' + this.id, event);
   }
 
-  public async error(context: ExecutionContext, error: any): Promise<void> {
-    const nodeDef = await this.getNodeDef(context);
+  public error(context: ExecutionContext, error: any): void {
+
+    debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
+
+    const nodeDef = this.nodeDef;
     if (nodeDef && nodeDef.events && nodeDef.events.error) {
 
       const data = {
@@ -190,19 +211,20 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         data: error
       };
 
-      const msg = this.messageBusService.createEntityMessage(data, this, context);
-      await this.messageBusService.publish('/processengine/node/' + this.id, msg);
+      const event = this.eventAggregator.createEntityEvent(data, this, context);
+      this.eventAggregator.publish('/processengine/node/' + this.id, event);
     }
   }
 
 
   public async execute(context: ExecutionContext): Promise<void> {
+    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'progress';
     await this.save(internalContext);
 
-    await this.changeState(context, 'end', this);
+    this.changeState(context, 'end', this);
   }
 
 
@@ -213,11 +235,13 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async event(context: ExecutionContext, event: string, data: any) {
 
+    debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
+
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // check if definition exists
-    const nodeDef = await this.getNodeDef(internalContext);
+    const nodeDef = this.nodeDef;
     if (nodeDef && nodeDef.events && nodeDef.events[event]) {
       const boundaryDefKey = nodeDef.events[event];
 
@@ -237,7 +261,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
 
   public async cancel(context: ExecutionContext): Promise<void> {
-    const nodeDef = await this.getNodeDef(context);
+
+    debugInfo(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
+
+    const nodeDef = this.nodeDef;
     if (nodeDef && nodeDef.events && nodeDef.events.cancel) {
 
       const data = {
@@ -246,13 +273,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         data: null
       };
 
-      const msg = this.messageBusService.createEntityMessage(data, this, context);
-      await this.messageBusService.publish('/processengine/node/' + this.id, msg);
+      const msg = this.eventAggregator.createEntityEvent(data, this, context);
+      this.eventAggregator.publish('/processengine/node/' + this.id, msg);
     }
   }
 
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
+
+    debugInfo(`end node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -271,11 +300,21 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     await processToken.save(internalContext);
 
+    // cancel subscriptions
+    nodeInstance.eventAggregatorSubscription.dispose();
+    nodeInstance.messagebusSubscription.cancel();
+
     if (!isEndEvent && !cancelFlow) {
-      await this.nodeInstanceEntityTypeService.continueExecution(internalContext, nodeInstance);
+      try {
+      await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+      } catch (err) {
+        // we can't continue, handle error in process
+        const process = await this.getProcess(internalContext);
+        await process.error(context, err);
+      }
     } else {
       const process = await this.getProcess(internalContext);
-      await process.end(internalContext, processToken);
+      await process.end(context, processToken);
     }
   }
 }

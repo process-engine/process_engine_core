@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -70,7 +70,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         
         try {
 
-          const argumentsToPassThrough = (new Function('context', 'tokenData', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
+          const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
 
           result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
 
@@ -80,7 +80,15 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
           await this.error(context, err);
         }
 
-        tokenData.current = result;
+        let finalResult = result;
+        const toPojoOptions: IToPojoOptions = { skipCalculation: true };
+        if (result && typeof result.toPojos === 'function') {
+          finalResult = await result.toPojos(context, toPojoOptions);
+        } else if (result && typeof result.toPojo === 'function') {
+          finalResult = await result.toPojo(context, toPojoOptions);
+        }
+
+        tokenData.current = finalResult;
         processToken.data = tokenData;
 
         await processToken.save(internalContext);
@@ -89,7 +97,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
     }
     if (continueEnd) {
-      await this.changeState(context, 'end', this);
+      this.changeState(context, 'end', this);
     }
   }
 }

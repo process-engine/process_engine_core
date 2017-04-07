@@ -16,4 +16,5 @@ export declare class ProcessEntity extends Entity implements IProcessEntity {
     callerId: string;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void>;
     end(context: ExecutionContext, processToken: any): Promise<void>;
+    error(context: ExecutionContext, error: any): Promise<void>;
 }
