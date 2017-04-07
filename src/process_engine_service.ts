@@ -137,15 +137,22 @@ export class ProcessEngineService implements IProcessEngineService {
 
     this.processRepository.initialize();
 
-    const bpmns = this.processRepository.getProcessesByCategory('internal');
+    const processes = this.processRepository.getProcessesByCategory('internal');
 
-    for (let i = 0; i < bpmns.length; i++) {
+    for (let i = 0; i < processes.length; i++) {
 
-      const params: IParamImportFromXml = {
-        xml: bpmns[i]
-      };
+        const process = processes[i];
 
-      await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
+        const params: IParamImportFromXml = {
+          xml: process.bpmnXml,
+          internalName: process.name,
+          category: process.category,
+          module: process.module,
+          path: process.path,
+          readonly: process.readonly
+        };
+
+        await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
     }
   }
 }

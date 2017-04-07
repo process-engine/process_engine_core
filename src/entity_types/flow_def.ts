@@ -85,4 +85,13 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     this.setProperty(this, 'condition', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get counter(): number {
+    return this.getProperty(this, 'counter');
+  }
+
+  public set counter(value: number) {
+    this.setProperty(this, 'counter', value);
+  }
+
 }

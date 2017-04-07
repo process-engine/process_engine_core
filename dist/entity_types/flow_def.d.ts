@@ -13,4 +13,5 @@ export declare class FlowDefEntity extends Entity implements IFlowDefEntity {
     target: INodeDefEntity;
     getTarget(context: ExecutionContext): Promise<INodeDefEntity>;
     condition: string;
+    counter: number;
 }

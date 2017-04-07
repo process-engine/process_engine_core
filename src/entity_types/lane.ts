@@ -56,6 +56,15 @@ export class LaneEntity extends Entity implements ILaneEntity {
   public getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity> {
     return this.getPropertyLazy(this, 'processDef', context);
   }
+
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get counter(): number {
+    return this.getProperty(this, 'counter');
+  }
+
+  public set counter(value: number) {
+    this.setProperty(this, 'counter', value);
+  }
   
   public get features(): Array<IFeature> {
     return this._extractFeatures();

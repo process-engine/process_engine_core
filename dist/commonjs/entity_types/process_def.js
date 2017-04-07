@@ -53,6 +53,48 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     set extensions(value) {
         this.setProperty(this, 'extensions', value);
     }
+    get internalName() {
+        return this.getProperty(this, 'internalName');
+    }
+    set internalName(value) {
+        this.setProperty(this, 'internalName', value);
+    }
+    get path() {
+        return this.getProperty(this, 'path');
+    }
+    set path(value) {
+        this.setProperty(this, 'path', value);
+    }
+    get category() {
+        return this.getProperty(this, 'category');
+    }
+    set category(value) {
+        this.setProperty(this, 'category', value);
+    }
+    get module() {
+        return this.getProperty(this, 'module');
+    }
+    set module(value) {
+        this.setProperty(this, 'module', value);
+    }
+    get readonly() {
+        return this.getProperty(this, 'readonly');
+    }
+    set readonly(value) {
+        this.setProperty(this, 'readonly', value);
+    }
+    get version() {
+        return this.getProperty(this, 'version');
+    }
+    set version(value) {
+        this.setProperty(this, 'version', value);
+    }
+    get counter() {
+        return this.getProperty(this, 'counter');
+    }
+    set counter(value) {
+        this.setProperty(this, 'counter', value);
+    }
     get nodeDefCollection() {
         return this.getProperty(this, 'nodeDefCollection');
     }
@@ -77,6 +119,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const xml = params && params.xml ? params.xml : null;
         if (xml) {
             this.xml = xml;
+            this.counter = this.counter + 1;
             await this.updateDefinitions(context);
             return { result: true };
         }
@@ -85,6 +128,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
         const xml = this.xml;
         const key = this.key;
+        const counter = this.counter;
         if (!bpmnDiagram) {
             bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
         }
@@ -94,16 +138,53 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
             this.extensions = extensions;
         }
+        this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
         await this.save(context);
         const lanes = bpmnDiagram.getLanes(key);
-        const laneCache = await this._updateLanes(lanes, context);
+        const laneCache = await this._updateLanes(lanes, context, counter);
         const nodes = bpmnDiagram.getNodes(key);
-        const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context);
+        const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
         await this._createBoundaries(nodes, nodeCache, context);
         const flows = bpmnDiagram.getFlows(key);
-        await this._updateFlows(flows, nodeCache, context);
+        await this._updateFlows(flows, nodeCache, context, counter);
+        const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+        const queryObjectFlows = {
+            operator: 'and',
+            queries: [
+                { attribute: 'counter', operator: '<', value: counter },
+                { attribute: 'processDef', operator: '=', value: this.id }
+            ]
+        };
+        const flowColl = await flowDefEntityType.query(context, { query: queryObjectFlows });
+        await flowColl.each(context, async (flowEnt) => {
+            await flowEnt.remove(context);
+        });
+        const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+        const queryObjectNodes = {
+            operator: 'and',
+            queries: [
+                { attribute: 'counter', operator: '<', value: counter },
+                { attribute: 'processDef', operator: '=', value: this.id }
+            ]
+        };
+        const nodeColl = await nodeDefEntityType.query(context, { query: queryObjectNodes });
+        await nodeColl.each(context, async (nodeEnt) => {
+            await nodeEnt.remove(context);
+        });
+        const laneEntityType = await this.datastoreService.getEntityType('Lane');
+        const queryObjectLanes = {
+            operator: 'and',
+            queries: [
+                { attribute: 'counter', operator: '<', value: counter },
+                { attribute: 'processDef', operator: '=', value: this.id }
+            ]
+        };
+        const laneColl = await laneEntityType.query(context, { query: queryObjectLanes });
+        await laneColl.each(context, async (laneEnt) => {
+            await laneEnt.remove(context);
+        });
     }
-    async _updateLanes(lanes, context) {
+    async _updateLanes(lanes, context, counter) {
         const laneCache = {};
         const Lane = await this.datastoreService.getEntityType('Lane');
         const lanePromiseArray = lanes.map(async (lane) => {
@@ -124,6 +205,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             laneEntity.key = lane.id;
             laneEntity.name = lane.name;
             laneEntity.processDef = this;
+            laneEntity.counter = counter;
             if (lane.extensionElements) {
                 const extensions = this._updateExtensionElements(lane.extensionElements.values);
                 laneEntity.extensions = extensions;
@@ -134,7 +216,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await Promise.all(lanePromiseArray);
         return laneCache;
     }
-    async _updateNodes(nodes, laneCache, bpmnDiagram, context) {
+    async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter) {
         const nodeCache = {};
         const NodeDef = await this.datastoreService.getEntityType('NodeDef');
         const nodePromiseArray = nodes.map(async (node) => {
@@ -182,6 +264,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             nodeDefEntity.name = node.name;
             nodeDefEntity.type = node.$type;
             nodeDefEntity.processDef = this;
+            nodeDefEntity.counter = counter;
             const laneId = bpmnDiagram.getLaneOfElement(node.id);
             if (laneId) {
                 nodeDefEntity.lane = laneCache[laneId];
@@ -192,7 +275,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await Promise.all(nodePromiseArray);
         return nodeCache;
     }
-    async _updateFlows(flows, nodeCache, context) {
+    async _updateFlows(flows, nodeCache, context, counter) {
         const FlowDef = await this.datastoreService.getEntityType('FlowDef');
         const flowPromiseArray = flows.map(async (flow) => {
             const queryObject = {
@@ -211,6 +294,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             }
             flowDefEntity.name = flow.name;
             flowDefEntity.processDef = this;
+            flowDefEntity.counter = counter;
             if (flow.sourceRef && flow.sourceRef.id) {
                 const sourceId = flow.sourceRef.id;
                 flowDefEntity.source = nodeCache[sourceId];
@@ -349,6 +433,27 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
 ], ProcessDefEntity.prototype, "extensions", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "internalName", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "path", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "category", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "module", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.boolean })
+], ProcessDefEntity.prototype, "readonly", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessDefEntity.prototype, "version", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], ProcessDefEntity.prototype, "counter", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
 ], ProcessDefEntity.prototype, "nodeDefCollection", null);

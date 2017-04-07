@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.6.0">
   <bpmn:collaboration id="Collaboration_1o0zlqs">
     <bpmn:extensionElements>
       <camunda:properties>
@@ -8,7 +8,7 @@
     </bpmn:extensionElements>
     <bpmn:participant id="Participant_0us40cv" name="Prozess erstellen" processRef="CreateProcessDef" />
   </bpmn:collaboration>
-  <bpmn:process id="CreateProcessDef" name="CreateProcessDef" isExecutable="false">
+  <bpmn:process id="CreateProcessDef" name="CreateProcessDef" isExecutable="false" camunda:versionTag="1.0.0">
     <bpmn:laneSet>
       <bpmn:lane id="Lane_1g91j0d" name="Agent">
         <bpmn:extensionElements>

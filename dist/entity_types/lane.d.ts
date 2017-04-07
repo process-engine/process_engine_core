@@ -10,6 +10,7 @@ export declare class LaneEntity extends Entity implements ILaneEntity {
     extensions: any;
     processDef: any;
     getProcessDef(context: ExecutionContext): Promise<IProcessDefEntity>;
+    counter: number;
     readonly features: Array<IFeature>;
     private _extractFeatures();
 }

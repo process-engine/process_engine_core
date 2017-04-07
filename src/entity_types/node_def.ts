@@ -153,6 +153,16 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     return this.getPropertyLazy(this, 'subProcessDef', context);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get counter(): number {
+    return this.getProperty(this, 'counter');
+  }
+
+  public set counter(value: number) {
+    this.setProperty(this, 'counter', value);
+  }
+  
+
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }

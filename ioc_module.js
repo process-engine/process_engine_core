@@ -29,14 +29,15 @@ const fs = require('fs');
 const path = require('path');
 
 const createProcessDefFile = 'createProcessDef.bpmn';
-const createProcessDef = fs.readFileSync(path.join(__dirname, 'bpmn/' + createProcessDefFile), 'utf8');
+const createProcessDefPath = path.join(__dirname, 'bpmn/' + createProcessDefFile);
+const createProcessDef = fs.readFileSync(createProcessDefPath, 'utf8');
 
 function registerInContainer(container) {
 
   container.registerObject(createProcessDefFile, createProcessDef)
     .setAttribute('bpmn_process', 'internal') // category: internal
     .setAttribute('module', 'process_engine') // the source module
-    .setAttribute('path', 'bpmn/' + createProcessDefFile);   // the file path
+    .setAttribute('path', createProcessDefPath);   // the file path
     //.tags('readonly');
 
   container.register('ProcessRepository', ProcessRepository)

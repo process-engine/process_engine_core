@@ -1,22 +1,14 @@
 import {DependencyInjectionContainer} from 'addict-ioc';
-import {IProcessRepository} from '@process-engine-js/process_engine_contracts';
+import { IProcessRepository, IProcessEntry} from '@process-engine-js/process_engine_contracts';
 
 import * as bluebirdPromise from 'bluebird';
 import * as path from 'path';
 import * as fs from 'fs';
 
 interface IProcessCache {
-  [name: string]: IProcessCacheEntry;
+  [name: string]: IProcessEntry;
 }
 
-interface IProcessCacheEntry {
-  name: string;
-  process: string;
-  category: string;
-  module: string;
-  path: string;
-  readonly: boolean;
-}
 
 export class ProcessRepository implements IProcessRepository {
   
@@ -44,16 +36,12 @@ export class ProcessRepository implements IProcessRepository {
     this._loadStaticProcesses();
   }
 
-  public getProcess(processName: string): string {
-    const entry = this._getEntry(processName);
-    return entry.process;
+  public getProcess(processName: string): IProcessEntry {
+    return this._getEntry(processName);
   }
 
-  public getProcessesByCategory(category: string): Array<string> {
-    const entries = this._getEntriesByCategory(category);
-    return entries.map((entry) => {
-      return entry.process;
-    });
+  public getProcessesByCategory(category: string): Array<IProcessEntry> {
+    return this._getEntriesByCategory(category);
   }
 
   public saveProcess(processName: string, processXml?: string): Promise<void> {
@@ -70,9 +58,7 @@ export class ProcessRepository implements IProcessRepository {
         throw new Error(`process ${processName} is readonly and mustn't be saved`);
       }
 
-      const processPath = path.join(process.cwd(), entry.module, entry.path);
-
-      fs.writeFile(processPath, entry.process, (error) => {
+      fs.writeFile(entry.path, entry.bpmnXml, (error) => {
 
         if (error) {
           reject(error);
@@ -85,7 +71,7 @@ export class ProcessRepository implements IProcessRepository {
 
   private _updateProcess(processName: string, processXml: string): void {
     const entry = this._getEntry(processName);
-    entry.process = processXml;
+    entry.bpmnXml = processXml;
   }
 
   private _loadStaticProcesses(): void {
@@ -97,26 +83,27 @@ export class ProcessRepository implements IProcessRepository {
     });
   }
 
-  private _cacheEntry(entry: IProcessCacheEntry): void {
+  private _cacheEntry(entry: IProcessEntry): void {
     this._processCache[entry.name] = entry;
   }
 
-  private _getEntry(processName: string): IProcessCacheEntry {
+  private _getEntry(processName: string): IProcessEntry {
     return this._processCache[processName];
   }
 
   private _getEntriesByCategory(category: string): Array<any> {
 
-    const processNames = this.container.getKeysByAttributes({
+    const container = <any>this.container;
+    const processNames = container.getKeysByAttributes({
       bpmn_process: category
     });
 
     return processNames.map((processName) => {
-      const registration = this.container._getRegistration(processName);
+      const registration = container._getRegistration(processName);
 
       const entry = {
         name: processName,
-        process: registration.settings.type,
+        bpmnXml: registration.settings.type,
         category: registration.settings.tags['bpmn_process'],
         module: registration.settings.tags['module'],
         path: registration.settings.tags['path'],

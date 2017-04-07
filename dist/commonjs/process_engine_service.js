@@ -99,10 +99,16 @@ class ProcessEngineService {
             overwriteExisting: false
         };
         this.processRepository.initialize();
-        const bpmns = this.processRepository.getProcessesByCategory('internal');
-        for (let i = 0; i < bpmns.length; i++) {
+        const processes = this.processRepository.getProcessesByCategory('internal');
+        for (let i = 0; i < processes.length; i++) {
+            const process = processes[i];
             const params = {
-                xml: bpmns[i]
+                xml: process.bpmnXml,
+                internalName: process.name,
+                category: process.category,
+                module: process.module,
+                path: process.path,
+                readonly: process.readonly
             };
             await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
         }
