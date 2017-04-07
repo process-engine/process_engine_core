@@ -3,9 +3,12 @@ import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-
 import {TimerDefinitionType, IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {IFeature} from '@process-engine-js/feature_contracts';
-import {ITimingService} from '@process-engine-js/timing_contracts';
+import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
+import {IMessageBusService} from '@process-engine-js/messagebus_contracts';
+import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
 
 import * as uuid from 'uuid';
+import * as moment from 'moment';
 
 interface ICache<T> {
   [key: string]: T;
@@ -13,16 +16,22 @@ interface ICache<T> {
 
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
+  private _messageBusService: IMessageBusService = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
   private _timingService: ITimingService = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
 
-  constructor(timingService: ITimingService,
+  constructor(messageBusService: IMessageBusService,
+              eventAggregator: IEventAggregator,
+              timingService: ITimingService,
               processDefEntityTypeService: IProcessDefEntityTypeService,
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
 
+    this._messageBusService = messageBusService;
+    this._eventAggregator = eventAggregator;
     this._timingService = timingService;
     this._processDefEntityTypeService = processDefEntityTypeService;
   }
@@ -30,6 +39,14 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
+  }
+
+  private get messageBusService(): IMessageBusService {
+    return this._messageBusService;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   private get timingService(): ITimingService {
@@ -143,22 +160,37 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return undefined;
   }
 
-  private _parseTimerDefinition(eventDefinition: any): string {
+  private _parseTimerDefinition(eventDefinition: any): moment.Moment | ITimingRule {
     if (eventDefinition.timeDuration) {
-      return eventDefinition.timeDuration.body;
+      const input = eventDefinition.timeDuration.body;
+      const duration = moment.duration(input);
+      const date = moment().add(duration);
+      return date;
     }
     if (eventDefinition.timeCycle) {
-      return eventDefinition.timeCycle.body;
+      const input = eventDefinition.timeCycle.body;    
+      const duration = moment.duration(input);
+      const timingRule = {
+        year: duration.years(),
+        month: duration.months(),
+        date: duration.days(),
+        hour: duration.hours(),
+        minute: duration.minutes(),
+        second: duration.seconds()
+      }
+      return timingRule;
     }
     if (eventDefinition.timeDate) {
-      return eventDefinition.timeDate.body;
+      const input = eventDefinition.timeDate.body;
+      const date = moment(input);
+      return date;
     }
     return undefined;
   }
 
-  private async startTimers(processes: Array<any>): Promise<void> {
+  private async startTimers(processes: Array<any>, context: ExecutionContext): Promise<void> {
 
-    processes.forEach((process) => {
+    const processPromises = processes.map(async (process) => {
       
       const startEvents = process.flowElements.filter((element) => {
         return element.$type === 'bpmn:StartEvent';
@@ -168,8 +200,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         return;
       }
 
-      startEvents.forEach((startEvent) => {
-        startEvent.eventDefinitions.forEach((eventDefinition) => {
+      const eventPromises = startEvents.map(async (startEvent) => {
+        
+        const definitionPromises = startEvent.eventDefinitions.map(async (eventDefinition) => {
 
           if (eventDefinition.$type !== 'bpmn:TimerEventDefinition') {
             return;
@@ -182,13 +215,45 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
             return;
           }
 
+          await this._startTimer(timerDefinitionType, timerDefinition, async () => {
 
+            const data = {
+              action: 'start',
+              key: this.key,
+              token: undefined
+            }
+            
+            const message = this.messageBusService.createEntityMessage(data, this, context);
+            await this.messageBusService.publish('/processengine', message);
 
+          }, context);
 
         });
+        await Promise.all(definitionPromises);
       });
-
+      await Promise.all(eventPromises);
     });
+    await Promise.all(processPromises);
+  }
+
+  private async _startTimer(timerDefinitionType: TimerDefinitionType, timerDefinition: moment.Moment | ITimingRule, callback: Function, context: ExecutionContext): Promise<void> {
+    
+    const channelName = `events/timer/${this.id}`;
+    
+    switch (timerDefinitionType) {
+      case TimerDefinitionType.cycle: 
+        await this.timingService.periodic(<ITimingRule>timerDefinition, channelName, context);
+        break;
+      case TimerDefinitionType.date: 
+        await this.timingService.once(<moment.Moment>timerDefinition, channelName, context);
+        break;
+      case TimerDefinitionType.duration: 
+        await this.timingService.once(<moment.Moment>timerDefinition, channelName, context);
+        break;
+      default: return;
+    }
+
+    await this.eventAggregator.subscribeOnce(channelName, callback);
   }
 
   public async updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void> {
@@ -211,7 +276,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     }
     await this.save(context);
 
-    await this.startTimers(processes);
+    await this.startTimers(processes, context);
 
     const lanes = bpmnDiagram.getLanes(key);
 

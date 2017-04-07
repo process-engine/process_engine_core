@@ -9,18 +9,29 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
+const moment = require("moment");
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(timingService, processDefEntityTypeService, entityDependencyHelper, context, schema) {
+    constructor(messageBusService, eventAggregator, timingService, processDefEntityTypeService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
+        this._messageBusService = undefined;
+        this._eventAggregator = undefined;
         this._timingService = undefined;
         this._processDefEntityTypeService = undefined;
+        this._messageBusService = messageBusService;
+        this._eventAggregator = eventAggregator;
         this._timingService = timingService;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
         await super.initialize(actualInstance);
+    }
+    get messageBusService() {
+        return this._messageBusService;
+    }
+    get eventAggregator() {
+        return this._eventAggregator;
     }
     get timingService() {
         return this._timingService;
@@ -100,26 +111,41 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     _parseTimerDefinition(eventDefinition) {
         if (eventDefinition.timeDuration) {
-            return eventDefinition.timeDuration.body;
+            const input = eventDefinition.timeDuration.body;
+            const duration = moment.duration(input);
+            const date = moment().add(duration);
+            return date;
         }
         if (eventDefinition.timeCycle) {
-            return eventDefinition.timeCycle.body;
+            const input = eventDefinition.timeCycle.body;
+            const duration = moment.duration(input);
+            const timingRule = {
+                year: duration.years(),
+                month: duration.months(),
+                date: duration.days(),
+                hour: duration.hours(),
+                minute: duration.minutes(),
+                second: duration.seconds()
+            };
+            return timingRule;
         }
         if (eventDefinition.timeDate) {
-            return eventDefinition.timeDate.body;
+            const input = eventDefinition.timeDate.body;
+            const date = moment(input);
+            return date;
         }
         return undefined;
     }
-    async startTimers(processes) {
-        processes.forEach((process) => {
+    async startTimers(processes, context) {
+        const processPromises = processes.map(async (process) => {
             const startEvents = process.flowElements.filter((element) => {
                 return element.$type === 'bpmn:StartEvent';
             });
             if (startEvents.length === 0) {
                 return;
             }
-            startEvents.forEach((startEvent) => {
-                startEvent.eventDefinitions.forEach((eventDefinition) => {
+            const eventPromises = startEvents.map(async (startEvent) => {
+                const definitionPromises = startEvent.eventDefinitions.map(async (eventDefinition) => {
                     if (eventDefinition.$type !== 'bpmn:TimerEventDefinition') {
                         return;
                     }
@@ -128,9 +154,37 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     if (timerDefinitionType === undefined || timerDefinition === undefined) {
                         return;
                     }
+                    await this._startTimer(timerDefinitionType, timerDefinition, async () => {
+                        const data = {
+                            action: 'start',
+                            key: this.key,
+                            token: undefined
+                        };
+                        const message = this.messageBusService.createEntityMessage(data, this, context);
+                        await this.messageBusService.publish('/processengine', message);
+                    }, context);
                 });
+                await Promise.all(definitionPromises);
             });
+            await Promise.all(eventPromises);
         });
+        await Promise.all(processPromises);
+    }
+    async _startTimer(timerDefinitionType, timerDefinition, callback, context) {
+        const channelName = `events/timer/${this.id}`;
+        switch (timerDefinitionType) {
+            case process_engine_contracts_1.TimerDefinitionType.cycle:
+                await this.timingService.periodic(timerDefinition, channelName, context);
+                break;
+            case process_engine_contracts_1.TimerDefinitionType.date:
+                await this.timingService.once(timerDefinition, channelName, context);
+                break;
+            case process_engine_contracts_1.TimerDefinitionType.duration:
+                await this.timingService.once(timerDefinition, channelName, context);
+                break;
+            default: return;
+        }
+        await this.eventAggregator.subscribeOnce(channelName, callback);
     }
     async updateDefinitions(context, params) {
         let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
@@ -146,7 +200,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             this.extensions = extensions;
         }
         await this.save(context);
-        await this.startTimers(processes);
+        await this.startTimers(processes, context);
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context);
         const nodes = bpmnDiagram.getNodes(key);

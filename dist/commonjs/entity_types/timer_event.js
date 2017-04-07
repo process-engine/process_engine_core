@@ -75,13 +75,13 @@ class TimerEventEntity extends event_1.EventEntity {
     }
     async _startDurationTimer(timerDefinition, context) {
         const duration = moment.duration(timerDefinition);
-        const date = moment().add(duration).toDate();
+        const date = moment().add(duration);
         const channelName = `events/timer/${this.id}`;
         await this._prepareStartTimer(channelName, context);
         await this.timingService.once(date, channelName, context);
     }
     async _startDateTimer(timerDefinition, context) {
-        const date = moment(timerDefinition).toDate();
+        const date = moment(timerDefinition);
         const channelName = `events/timer/${this.id}`;
         await this._prepareStartTimer(channelName, context);
         await this.timingService.once(date, channelName, context);

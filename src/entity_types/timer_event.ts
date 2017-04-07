@@ -100,7 +100,7 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
   private async _startDurationTimer(timerDefinition: string, context: ExecutionContext): Promise<void> {
 
     const duration = moment.duration(timerDefinition);
-    const date = moment().add(duration).toDate();
+    const date = moment().add(duration);
 
     const channelName = `events/timer/${this.id}`;
     await this._prepareStartTimer(channelName, context);
@@ -110,7 +110,7 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
 
   private async _startDateTimer(timerDefinition: string, context: ExecutionContext): Promise<void> {
 
-    const date = moment(timerDefinition).toDate();
+    const date = moment(timerDefinition);
 
     const channelName = `events/timer/${this.id}`;
     await this._prepareStartTimer(channelName, context);

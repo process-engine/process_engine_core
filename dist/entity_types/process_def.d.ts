@@ -3,11 +3,17 @@ import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engin
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 import { IFeature } from '@process-engine-js/feature_contracts';
 import { ITimingService } from '@process-engine-js/timing_contracts';
+import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
+    private _messageBusService;
+    private _eventAggregator;
     private _timingService;
     private _processDefEntityTypeService;
-    constructor(timingService: ITimingService, processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
+    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, timingService: ITimingService, processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
+    private readonly messageBusService;
+    private readonly eventAggregator;
     private readonly timingService;
     private readonly processDefEntityTypeService;
     name: string;
@@ -22,7 +28,8 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
     private _parseTimerDefinitionType(eventDefinition);
     private _parseTimerDefinition(eventDefinition);
-    private startTimers(processes);
+    private startTimers(processes, context);
+    private _startTimer(timerDefinitionType, timerDefinition, callback, context);
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context);
     private _updateNodes(nodes, laneCache, bpmnDiagram, context);
