@@ -62,6 +62,12 @@ class FlowDefEntity extends data_model_contracts_1.Entity {
     set condition(value) {
         this.setProperty(this, 'condition', value);
     }
+    get counter() {
+        return this.getProperty(this, 'counter');
+    }
+    set counter(value) {
+        this.setProperty(this, 'counter', value);
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
@@ -81,6 +87,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], FlowDefEntity.prototype, "condition", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], FlowDefEntity.prototype, "counter", null);
 exports.FlowDefEntity = FlowDefEntity;
 
 //# sourceMappingURL=flow_def.js.map

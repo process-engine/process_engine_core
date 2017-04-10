@@ -44,6 +44,12 @@ class LaneEntity extends data_model_contracts_1.Entity {
     getProcessDef(context) {
         return this.getPropertyLazy(this, 'processDef', context);
     }
+    get counter() {
+        return this.getProperty(this, 'counter');
+    }
+    set counter(value) {
+        this.setProperty(this, 'counter', value);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -73,6 +79,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessDef' })
 ], LaneEntity.prototype, "processDef", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], LaneEntity.prototype, "counter", null);
 exports.LaneEntity = LaneEntity;
 
 //# sourceMappingURL=lane.js.map

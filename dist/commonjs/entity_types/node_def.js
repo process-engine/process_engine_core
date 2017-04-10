@@ -107,6 +107,12 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     getSubProcessDef(context) {
         return this.getPropertyLazy(this, 'subProcessDef', context);
     }
+    get counter() {
+        return this.getProperty(this, 'counter');
+    }
+    set counter(value) {
+        this.setProperty(this, 'counter', value);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -188,6 +194,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef' })
 ], NodeDefEntity.prototype, "subProcessDef", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], NodeDefEntity.prototype, "counter", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

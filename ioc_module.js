@@ -23,11 +23,29 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
+const ProcessRepository = require('./dist/commonjs/index').ProcessRepository;
+
+const fs = require('fs');
+const path = require('path');
+
+const createProcessDefFile = 'createProcessDef.bpmn';
+const createProcessDefPath = path.join(__dirname, 'bpmn/' + createProcessDefFile);
+const createProcessDef = fs.readFileSync(createProcessDefPath, 'utf8');
 
 function registerInContainer(container) {
 
+  container.registerObject(createProcessDefFile, createProcessDef)
+    .setAttribute('bpmn_process', 'internal') // category: internal
+    .setAttribute('module', 'process_engine') // the source module
+    .setAttribute('path', createProcessDefPath);   // the file path
+    //.tags('readonly');
+
+  container.register('ProcessRepository', ProcessRepository)
+    .dependencies('container')
+    .singleton();
+
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository')
     .singleton()
     .configure('process_engine:process_engine_service');
 

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const fs = require("fs");
+const path = require("path");
 const BluebirdPromise = require("bluebird");
 const BpmnModdle = require("bpmn-moddle");
 class ProcessDefEntityTypeService {
@@ -22,11 +23,15 @@ class ProcessDefEntityTypeService {
         return this._invoker;
     }
     async importBpmnFromFile(context, params, options) {
-        const fileName = params && params.file ? params.file : null;
-        if (fileName) {
-            const path = process.cwd() + '/examples/bpmns/' + fileName;
-            const xmlString = await this._getFile(path);
-            await this.importBpmnFromXml(context, { xml: xmlString }, options);
+        const pathString = params && params.file ? params.file : null;
+        if (pathString) {
+            const xmlString = await this._getFile(pathString);
+            const name = path.basename(pathString);
+            await this.importBpmnFromXml(context, {
+                xml: xmlString,
+                path: pathString,
+                internalName: name
+            }, options);
             return { result: true };
         }
         throw new Error('file does not exist');
@@ -44,8 +49,13 @@ class ProcessDefEntityTypeService {
         });
     }
     async importBpmnFromXml(context, params, options) {
-        const overwrite = options && options.hasOwnProperty('overwrite') ? options.overwrite : true;
+        const overwriteExisting = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
         const xml = params && params.xml ? params.xml : null;
+        const internalName = params && params.internalName ? params.internalName : null;
+        const pathString = params && params.path ? params.path : null;
+        const category = params && params.category ? params.category : null;
+        const module = params && params.module ? params.module : null;
+        const readonly = params && params.readonly ? params.readonly : null;
         if (xml) {
             const bpmnDiagram = await this.parseBpmnXml(xml);
             const ProcessDef = await this.datastoreService.getEntityType('ProcessDef');
@@ -64,17 +74,24 @@ class ProcessDefEntityTypeService {
                 if (!processDefEntity) {
                     const processDefData = {
                         key: process.id,
-                        defId: bpmnDiagram.definitions.id
+                        defId: bpmnDiagram.definitions.id,
+                        counter: 0
                     };
                     processDefEntity = await ProcessDef.createEntity(context, processDefData);
                     canSave = true;
                 }
                 else {
-                    canSave = overwrite;
+                    canSave = overwriteExisting;
                 }
                 if (canSave) {
                     processDefEntity.name = process.name;
                     processDefEntity.xml = xml;
+                    processDefEntity.internalName = internalName;
+                    processDefEntity.path = pathString;
+                    processDefEntity.category = category;
+                    processDefEntity.module = module;
+                    processDefEntity.readonly = readonly;
+                    processDefEntity.counter = processDefEntity.counter + 1;
                     await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
                 }
             }
@@ -132,6 +149,7 @@ class ProcessDefEntityTypeService {
             name,
             key,
             defId,
+            counter: 0,
             xml: '<?xml version="1.0" encoding="UTF-8"?>' +
                 '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + defId + '" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +
                 '<bpmn:collaboration id="Collaboration_0ge6yss">' +

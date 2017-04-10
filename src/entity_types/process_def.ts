@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions, ICombinedQueryClause} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -80,6 +80,69 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this.setProperty(this, 'extensions', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get internalName(): string {
+    return this.getProperty(this, 'internalName');
+  }
+
+  public set internalName(value: string) {
+    this.setProperty(this, 'internalName', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get path(): string {
+    return this.getProperty(this, 'path');
+  }
+
+  public set path(value: string) {
+    this.setProperty(this, 'path', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get category(): string {
+    return this.getProperty(this, 'category');
+  }
+
+  public set category(value: string) {
+    this.setProperty(this, 'category', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get module(): string {
+    return this.getProperty(this, 'module');
+  }
+
+  public set module(value: string) {
+    this.setProperty(this, 'module', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.boolean })
+  public get readonly(): boolean {
+    return this.getProperty(this, 'readonly');
+  }
+
+  public set readonly(value: boolean) {
+    this.setProperty(this, 'readonly', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get version(): string {
+    return this.getProperty(this, 'version');
+  }
+
+  public set version(value: string) {
+    this.setProperty(this, 'version', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get counter(): number {
+    return this.getProperty(this, 'counter');
+  }
+
+  public set counter(value: number) {
+    this.setProperty(this, 'counter', value);
+  }
+
   @schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
   public get nodeDefCollection(): EntityCollection {
     return this.getProperty(this, 'nodeDefCollection');
@@ -92,7 +155,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }
-
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
 
@@ -117,7 +179,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const xml = params && params.xml ? params.xml : null;
     if (xml) {
       this.xml = xml;
-
+      this.counter = this.counter + 1;
       await this.updateDefinitions(context);
 
       return { result: true };
@@ -131,6 +193,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const xml = this.xml;
     const key = this.key;
+    const counter = this.counter;
 
     if (!bpmnDiagram) {
       bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
@@ -143,24 +206,71 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
       this.extensions = extensions;
     }
+
+    this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
+
     await this.save(context);
 
     const lanes = bpmnDiagram.getLanes(key);
 
-    const laneCache = await this._updateLanes(lanes, context);
+    const laneCache = await this._updateLanes(lanes, context, counter);
 
     const nodes = bpmnDiagram.getNodes(key);
 
-    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context);
+    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
 
     await this._createBoundaries(nodes, nodeCache, context);
 
     const flows = bpmnDiagram.getFlows(key);
     
-    await this._updateFlows(flows, nodeCache, context);
+    await this._updateFlows(flows, nodeCache, context, counter);
+
+
+    // remove orphaned flows
+    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+    const queryObjectFlows: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        { attribute: 'counter', operator: '<', value: counter },
+        { attribute: 'processDef', operator: '=', value: this.id }
+      ]
+    };
+    const flowColl = await flowDefEntityType.query(context, { query: queryObjectFlows });
+    await flowColl.each(context, async (flowEnt) => {
+      await flowEnt.remove(context);
+    });
+
+    // remove orphaned nodes
+    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const queryObjectNodes: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        { attribute: 'counter', operator: '<', value: counter },
+        { attribute: 'processDef', operator: '=', value: this.id }
+      ]
+    };
+    const nodeColl = await nodeDefEntityType.query(context, { query: queryObjectNodes });
+    await nodeColl.each(context, async (nodeEnt) => {
+      await nodeEnt.remove(context);
+    });
+
+    // remove orphaned lanes
+    const laneEntityType = await this.datastoreService.getEntityType('Lane');
+    const queryObjectLanes: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        { attribute: 'counter', operator: '<', value: counter },
+        { attribute: 'processDef', operator: '=', value: this.id }
+      ]
+    };
+    const laneColl = await laneEntityType.query(context, { query: queryObjectLanes });
+    await laneColl.each(context, async (laneEnt) => {
+      await laneEnt.remove(context);
+    });
+
   }
 
-  private async _updateLanes(lanes: Array<any>, context: ExecutionContext): Promise<ICache<any>> {
+  private async _updateLanes(lanes: Array<any>, context: ExecutionContext, counter: number): Promise<ICache<any>> {
 
     const laneCache = {};
 
@@ -188,6 +298,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       laneEntity.key = lane.id;
       laneEntity.name = lane.name;
       laneEntity.processDef = this;
+      laneEntity.counter = counter;
 
       if (lane.extensionElements) {
         const extensions = this._updateExtensionElements(lane.extensionElements.values);
@@ -204,7 +315,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return laneCache;
   }
 
-  private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext): Promise<ICache<any>> {
+  private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext, counter: number): Promise<ICache<any>> {
 
     const nodeCache = {};
 
@@ -273,6 +384,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       nodeDefEntity.name = node.name;
       nodeDefEntity.type = node.$type;
       nodeDefEntity.processDef = this;
+      nodeDefEntity.counter = counter;
 
       const laneId = bpmnDiagram.getLaneOfElement(node.id);
 
@@ -290,7 +402,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return nodeCache;
   }
 
-  private async _updateFlows(flows: Array<any>, nodeCache: ICache<any>, context: ExecutionContext): Promise<void> {
+  private async _updateFlows(flows: Array<any>, nodeCache: ICache<any>, context: ExecutionContext, counter: number): Promise<void> {
 
     const FlowDef = await this.datastoreService.getEntityType('FlowDef');
 
@@ -316,6 +428,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
       flowDefEntity.name = flow.name;
       flowDefEntity.processDef = this;
+      flowDefEntity.counter = counter;
 
       if (flow.sourceRef && flow.sourceRef.id) {
         const sourceId = flow.sourceRef.id;
