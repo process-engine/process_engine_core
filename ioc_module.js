@@ -96,11 +96,11 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessEntity', ProcessEntity)
-    .dependencies('IamService', 'NodeInstanceEntityTypeService')
+    .dependencies('IamService', 'NodeInstanceEntityTypeService', 'MessageBusService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntity', ProcessDefEntity)
-      .dependencies('ProcessDefEntityTypeService', 'ProcessRepository')
+    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)
@@ -123,7 +123,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper', 'ProcessDefEntityTypeService')
     .tags(entityDiscoveryTag);
 
   container.register('UserTaskEntity', UserTaskEntity)

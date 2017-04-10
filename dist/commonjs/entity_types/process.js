@@ -10,18 +10,23 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class ProcessEntity extends data_model_contracts_1.Entity {
-    constructor(iamService, nodeInstanceEntityTypeService, entityDependencyHelper, context, schema) {
+    constructor(iamService, nodeInstanceEntityTypeService, messageBusService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._iamService = undefined;
         this._nodeInstanceEntityTypeService = undefined;
+        this._messageBusService = undefined;
         this._iamService = iamService;
         this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+        this._messageBusService = messageBusService;
     }
     get iamService() {
         return this._iamService;
     }
     get nodeInstanceEntityTypeService() {
         return this._nodeInstanceEntityTypeService;
+    }
+    get messageBusService() {
+        return this._messageBusService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -109,12 +114,29 @@ class ProcessEntity extends data_model_contracts_1.Entity {
     async end(context, processToken) {
         if (this.isSubProcess) {
             const callerId = this.callerId;
+            const source = this;
+            const data = {
+                action: 'proceed',
+                token: processToken.data
+            };
+            const msg = this.messageBusService.createEntityMessage(data, source, context);
+            const channel = '/processengine/node/' + callerId;
+            await this.messageBusService.publish(channel, msg);
         }
     }
     async error(context, error) {
         const processToken = null;
         if (this.isSubProcess) {
             const callerId = this.callerId;
+            const source = this.getEntityReference().toPojo();
+            const data = {
+                action: 'event',
+                event: 'error',
+                data: error
+            };
+            const msg = this.messageBusService.createEntityMessage(data, source, context);
+            const channel = '/processengine/node/' + callerId;
+            await this.messageBusService.publish(channel, msg);
         }
         await this.end(context, processToken);
     }

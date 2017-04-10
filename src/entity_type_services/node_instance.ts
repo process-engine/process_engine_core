@@ -123,8 +123,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const sourceRef = (msg && msg.source) ? msg.source : null;
     let source = null;
     if (sourceRef) {
-    const entityType = await binding.datastoreService.getEntityType(sourceRef.type);
-    source = await entityType.getById(context, sourceRef.id);
+    const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+    source = await entityType.getById(sourceRef.id, context);
     }
     
     const data: any = (msg && msg.data) ? msg.data : null;
@@ -170,8 +170,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     map.set('bpmn:EndEvent', 'EndEvent');
     map.set('bpmn:ScriptTask', 'ScriptTask');
     map.set('bpmn:BoundaryEvent', 'BoundaryEvent');
-    map.set('bpmn:CallActivity', 'SubProcessExternal');
-    map.set('bpmn:SubProcess', 'SubProcessInternal');
+    map.set('bpmn:CallActivity', 'SubprocessExternal');
+    map.set('bpmn:SubProcess', 'SubprocessInternal');
 
     const className = map.get(nextDef.type);
     const entityType = await this.datastoreService.getEntityType(className);

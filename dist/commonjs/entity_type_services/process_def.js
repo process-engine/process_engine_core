@@ -135,8 +135,8 @@ class ProcessDefEntityTypeService {
             const queryParams = { query: queryObject };
             const processDefEntity = await ProcessDef.findOne(context, queryParams);
             if (processDefEntity) {
-                const processEntity = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
-                return processEntity;
+                const processEntityRef = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+                return processEntityRef;
             }
         }
         return null;

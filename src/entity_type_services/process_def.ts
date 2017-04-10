@@ -2,7 +2,7 @@ import {
   IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile,
   IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions
 } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 
@@ -171,7 +171,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   }
 
 
-  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const key: string = params ? params.key : undefined;
 
@@ -185,8 +185,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const processDefEntity = await ProcessDef.findOne(context, queryParams);
 
       if (processDefEntity) {
-        const processEntity: IProcessEntity = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
-        return processEntity;
+        const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+        return processEntityRef;
       }
     }
     return null;

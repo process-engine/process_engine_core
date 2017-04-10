@@ -1,6 +1,6 @@
 import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity, IImportFromFileOptions, IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 
@@ -69,7 +69,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
-    const processEntity: IProcessEntity = await this.processDefEntityTypeService.start(context, params, options);
+    const processEntity: IEntityReference = await this.processDefEntityTypeService.start(context, params, options);
     this.runningProcesses[processEntity.id] = processEntity;
     return processEntity.id;
   }
