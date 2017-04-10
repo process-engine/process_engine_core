@@ -1,12 +1,14 @@
 import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
-import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity } from '@process-engine-js/process_engine_contracts';
+import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity, IProcessRepository } from '@process-engine-js/process_engine_contracts';
 import { IFeature } from '@process-engine-js/feature_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
     private _processDefEntityTypeService;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
+    private _processRepository;
+    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, processRepository: IProcessRepository, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     private readonly processDefEntityTypeService;
+    private readonly processRepository;
     name: string;
     key: string;
     defId: string;

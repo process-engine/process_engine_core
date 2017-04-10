@@ -1,6 +1,6 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions, ICombinedQueryClause} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity} from '@process-engine-js/process_engine_contracts';
+import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity, IProcessRepository} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IFeature } from '@process-engine-js/feature_contracts';
 
@@ -13,15 +13,17 @@ interface ICache<T> {
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
-
+  private _processRepository: IProcessRepository = undefined;
 
   constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
-              entityDependencyHelper: EntityDependencyHelper, 
+              processRepository: IProcessRepository,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
+    this._processRepository = processRepository;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -31,6 +33,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
     return this._processDefEntityTypeService;
+  }
+
+  private get processRepository(): IProcessRepository {
+    return this._processRepository;
   }
 
   @schemaAttribute({
@@ -182,6 +188,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       this.counter = this.counter + 1;
       await this.updateDefinitions(context);
 
+      if (!this.readonly) {
+        await this.processRepository.saveProcess(this.internalName, this.xml);
+      }
       return { result: true };
     }
   }

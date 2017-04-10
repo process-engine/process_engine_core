@@ -11,10 +11,12 @@ const data_model_contracts_1 = require("@process-engine-js/data_model_contracts"
 const metadata_1 = require("@process-engine-js/metadata");
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, entityDependencyHelper, context, schema) {
+    constructor(processDefEntityTypeService, processRepository, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._processDefEntityTypeService = undefined;
+        this._processRepository = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
+        this._processRepository = processRepository;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -22,6 +24,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
+    }
+    get processRepository() {
+        return this._processRepository;
     }
     get name() {
         return this.getProperty(this, 'name');
@@ -121,6 +126,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             this.xml = xml;
             this.counter = this.counter + 1;
             await this.updateDefinitions(context);
+            if (!this.readonly) {
+                await this.processRepository.saveProcess(this.internalName, this.xml);
+            }
             return { result: true };
         }
     }
