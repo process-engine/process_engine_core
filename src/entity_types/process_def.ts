@@ -188,7 +188,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       this.counter = this.counter + 1;
       await this.updateDefinitions(context);
 
-      if (!this.readonly) {
+      if (this.internalName && this.path && !this.readonly) {
         await this.processRepository.saveProcess(this.internalName, this.xml);
       }
       return { result: true };
