@@ -1,10 +1,16 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions, ICombinedQueryClause} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, IPublicGetOptions, ICombinedQueryClause, IEntityReference} from '@process-engine-js/core_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
 import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity, IProcessRepository} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
-import { IFeature } from '@process-engine-js/feature_contracts';
+import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
+import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService, IDataMessage } from '@process-engine-js/messagebus_contracts';
+import { IRoutingService } from '@process-engine-js/routing_contracts';
 
 import * as uuid from 'uuid';
+import * as debug from 'debug';
+
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 
 interface ICache<T> {
   [key: string]: T;
@@ -14,9 +20,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _processRepository: IProcessRepository = undefined;
-
+  private _featureService: IFeatureService = undefined;
+  private _messageBusService: IMessageBusService = undefined;
+  private _routingService: IRoutingService = undefined
+  ;
   constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
               processRepository: IProcessRepository,
+              featureService: IFeatureService,
+              messageBusService: IMessageBusService,
+              routingService: IRoutingService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
@@ -24,6 +36,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._processRepository = processRepository;
+    this._messageBusService = messageBusService;
+    this._routingService = routingService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -37,6 +51,18 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private get processRepository(): IProcessRepository {
     return this._processRepository;
+  }
+
+  private get featureService(): IFeatureService {
+    return this._featureService;
+  }
+
+  private get messageBusService(): IMessageBusService {
+    return this._messageBusService;
+  }
+
+  private get routingService(): IRoutingService {
+    return this._routingService;
   }
 
   @schemaAttribute({
@@ -162,22 +188,55 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this._extractFeatures();
   }
 
-  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const processData = {
       key: this.key,
       processDef: this
     };
 
-    const processEntityType = await this.datastoreService.getEntityType('Process');
+    const features = this.features;
 
-    const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
+    if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
+      debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
+      
+      const processEntityType = await this.datastoreService.getEntityType('Process');
+      const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
+      await processEntity.save(context);
 
-    await processEntity.save(context);
+      await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
+      const ref = processEntity.getEntityReference();
+      return ref;
 
-    await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
+    } else {
+      const appInstances = this.featureService.getApplicationIdsByFeatures(features);
 
-    return processEntity;
+      if (appInstances.length === 0) {
+        debugErr(`can not start process key '${this.key}', features: ${JSON.stringify(features)}, no matching instance found`);
+        throw new Error('can not start, no matching instance found');
+      }
+
+      const appInstanceId = appInstances[0];
+
+      debugInfo(`start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)})`);
+
+      // Todo: set correct message format
+      const options: IDatastoreMessageOptions = {
+        action: 'POST',
+        typeName: 'ProcessDef',
+        method: 'start'
+      };
+      
+      const message: IDatastoreMessage = this.messageBusService.createDatastoreMessage(options, context, params);
+      try {
+        const response: IDataMessage = <IDataMessage>(await this.routingService.request(appInstanceId, message));
+        const ref = new EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
+        return ref;
+      } catch (err) {
+        debugErr(`can not start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)}), error: ${err.message}`);
+      }
+    }
+
   }
 
 

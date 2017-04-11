@@ -2,15 +2,17 @@ import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInhe
 import { Entity, EntityDependencyHelper, IDatastoreService} from '@process-engine-js/data_model_contracts';
 import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity, INodeInstanceEntityTypeService} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 
 export class ProcessEntity extends Entity implements IProcessEntity {
 
   private _iamService: IIamService = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
-
+  private _messageBusService: IMessageBusService = undefined;
 
   constructor(iamService: IIamService,
               nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, 
+              messageBusService: IMessageBusService,
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
               schema: IInheritedSchema) {
@@ -18,6 +20,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     this._iamService = iamService;
     this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+    this._messageBusService = messageBusService;
   }
 
   private get iamService(): IIamService {
@@ -27,6 +30,10 @@ export class ProcessEntity extends Entity implements IProcessEntity {
   private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
     return this._nodeInstanceEntityTypeService;
   }
+
+  private get messageBusService(): IMessageBusService {
+    return this._messageBusService;
+  } 
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
@@ -149,7 +156,14 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     if (this.isSubProcess) {
       const callerId = this.callerId;
 
-      // send proceed message
+      const source = this;
+      const data = {
+        action: 'proceed',
+        token: processToken.data
+      };
+      const msg = this.messageBusService.createEntityMessage(data, source, context);
+      const channel = '/processengine/node/' + callerId;
+      await this.messageBusService.publish(channel, msg);
 
     }
   }
@@ -159,7 +173,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     if (this.isSubProcess) {
       const callerId = this.callerId;
 
-      // send error message
+      const source = this.getEntityReference().toPojo();
+      const data = {
+        action: 'event',
+        event: 'error',
+        data: error
+      };
+      const msg = this.messageBusService.createEntityMessage(data, source, context);
+      const channel = '/processengine/node/' + callerId;
+      await this.messageBusService.publish(channel, msg);
 
     }
     await this.end(context, processToken);

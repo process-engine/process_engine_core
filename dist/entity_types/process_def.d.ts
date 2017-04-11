@@ -1,14 +1,22 @@
-import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions, IEntityReference } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
-import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity, IProcessRepository } from '@process-engine-js/process_engine_contracts';
-import { IFeature } from '@process-engine-js/feature_contracts';
+import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessRepository } from '@process-engine-js/process_engine_contracts';
+import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
+import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IRoutingService } from '@process-engine-js/routing_contracts';
 export declare class ProcessDefEntity extends Entity implements IProcessDefEntity {
     private _processDefEntityTypeService;
     private _processRepository;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, processRepository: IProcessRepository, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
+    private _featureService;
+    private _messageBusService;
+    private _routingService;
+    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, processRepository: IProcessRepository, featureService: IFeatureService, messageBusService: IMessageBusService, routingService: IRoutingService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     private readonly processDefEntityTypeService;
     private readonly processRepository;
+    private readonly featureService;
+    private readonly messageBusService;
+    private readonly routingService;
     name: string;
     key: string;
     defId: string;
@@ -24,7 +32,7 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     readonly nodeDefCollection: EntityCollection;
     getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection>;
     readonly features: Array<IFeature>;
-    start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity>;
+    start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference>;
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context, counter);

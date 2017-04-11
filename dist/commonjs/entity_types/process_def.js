@@ -9,14 +9,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
+const debug = require("debug");
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, processRepository, entityDependencyHelper, context, schema) {
+    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._processDefEntityTypeService = undefined;
         this._processRepository = undefined;
+        this._featureService = undefined;
+        this._messageBusService = undefined;
+        this._routingService = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._processRepository = processRepository;
+        this._messageBusService = messageBusService;
+        this._routingService = routingService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -27,6 +35,15 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     get processRepository() {
         return this._processRepository;
+    }
+    get featureService() {
+        return this._featureService;
+    }
+    get messageBusService() {
+        return this._messageBusService;
+    }
+    get routingService() {
+        return this._routingService;
     }
     get name() {
         return this.getProperty(this, 'name');
@@ -114,11 +131,39 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             key: this.key,
             processDef: this
         };
-        const processEntityType = await this.datastoreService.getEntityType('Process');
-        const processEntity = (await processEntityType.createEntity(context, processData));
-        await processEntity.save(context);
-        await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
-        return processEntity;
+        const features = this.features;
+        if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
+            debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
+            const processEntityType = await this.datastoreService.getEntityType('Process');
+            const processEntity = (await processEntityType.createEntity(context, processData));
+            await processEntity.save(context);
+            await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
+            const ref = processEntity.getEntityReference();
+            return ref;
+        }
+        else {
+            const appInstances = this.featureService.getApplicationIdsByFeatures(features);
+            if (appInstances.length === 0) {
+                debugErr(`can not start process key '${this.key}', features: ${JSON.stringify(features)}, no matching instance found`);
+                throw new Error('can not start, no matching instance found');
+            }
+            const appInstanceId = appInstances[0];
+            debugInfo(`start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)})`);
+            const options = {
+                action: 'POST',
+                typeName: 'ProcessDef',
+                method: 'start'
+            };
+            const message = this.messageBusService.createDatastoreMessage(options, context, params);
+            try {
+                const response = (await this.routingService.request(appInstanceId, message));
+                const ref = new data_model_contracts_1.EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
+                return ref;
+            }
+            catch (err) {
+                debugErr(`can not start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)}), error: ${err.message}`);
+            }
+        }
     }
     async updateBpmn(context, params) {
         const xml = params && params.xml ? params.xml : null;
