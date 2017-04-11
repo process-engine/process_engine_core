@@ -288,10 +288,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
     if (flowsOut && flowsOut.length > 0) {
       const ids: Array<string> = [];
+      const mappers: Array<any> = [];
+
       for (let i = 0; i < flowsOut.data.length; i++) {
         const flow = flowsOut.data[i];
         const target = await flow.target;
         ids.push(target.id);
+        mappers.push(flow.mapper);
       }
 
       const queryObjectIn: ICombinedQueryClause = {
@@ -312,6 +315,20 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           const nextDef = nextDefs.data[i];
 
           let currentToken;
+
+          const index = ids.indexOf(nextDef.id);
+          const mapper = (index !== -1) ? mappers[index] : undefined;
+
+          if (mapper !== undefined) {
+            const tokenData = processToken.data || {};
+
+            const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+            tokenData.current = newCurrent;
+            processToken.data = tokenData;
+
+            await processToken.save(internalContext);
+          }
+
           if (splitToken && i > 0) {
             currentToken = await processTokenEntityType.createEntity(internalContext);
             currentToken.process = processToken.process;

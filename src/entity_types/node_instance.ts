@@ -1,6 +1,6 @@
 import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
-import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
+import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
@@ -15,19 +15,20 @@ export class NodeInstanceEntityDependencyHelper {
   public eventAggregator: IEventAggregator = undefined;
   public iamService: IIamService = undefined;
   public nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
+  public processEngineService: IProcessEngineService = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService) {
     this.messageBusService = messageBusService;
     this.eventAggregator = eventAggregator;
     this.iamService = iamService;
     this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+    this.processEngineService = processEngineService;
   }
 }
 
 @schemaClass({
   expandEntity: [
-    { attribute: 'nodeDef'},
-    { attribute: 'processToken'}
+    { attribute: 'nodeDef'}
   ]
 })
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
@@ -59,6 +60,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   protected get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
     return this._nodeInstanceEntityDependencyHelper.nodeInstanceEntityTypeService;
+  }
+
+  protected get processEngineService(): IProcessEngineService {
+    return this._nodeInstanceEntityDependencyHelper.processEngineService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -293,7 +298,17 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const isEndEvent = (nodeInstance.type === 'bpmn:EndEvent');
 
     const processToken = await this.getProcessToken(internalContext);
+
     const tokenData = processToken.data || {};
+
+    const nodeDef = this.nodeDef;
+    const mapper = nodeDef.mapper;
+
+    if (mapper !== undefined) {
+      const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+      tokenData.current = newCurrent;
+    }
+
     tokenData.history = tokenData.history || {};
     tokenData.history[this.key] = tokenData.current;
     processToken.data = tokenData;
@@ -317,4 +332,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       await process.end(context, processToken);
     }
   }
+
+
 }

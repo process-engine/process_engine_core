@@ -215,4 +215,23 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     }
     return features;
   }
+
+  public get mapper(): any {
+    return this._extractMapper();
+  }
+
+  private _extractMapper(): any {
+    let mapper = undefined;
+    const extensions = this.extensions || undefined;
+    const props = (extensions !== undefined && extensions.properties) ? extensions.properties : undefined;
+
+    if (props !== undefined) {
+      props.forEach((prop) => {
+        if (prop.name === 'mapper') {
+          mapper = prop.value;
+        }
+      });
+    }
+    return mapper;
+  }
 }

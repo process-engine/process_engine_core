@@ -13,5 +13,8 @@ export declare class FlowDefEntity extends Entity implements IFlowDefEntity {
     target: INodeDefEntity;
     getTarget(context: ExecutionContext): Promise<INodeDefEntity>;
     condition: string;
+    extensions: any;
     counter: number;
+    readonly mapper: any;
+    private _extractMapper();
 }

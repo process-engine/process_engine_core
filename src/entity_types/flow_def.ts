@@ -85,6 +85,15 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     this.setProperty(this, 'condition', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.object })
+  public get extensions(): any {
+    return this.getProperty(this, 'extensions');
+  }
+
+  public set extensions(value: any) {
+    this.setProperty(this, 'extensions', value);
+  }
+
   @schemaAttribute({ type: SchemaAttributeType.number })
   public get counter(): number {
     return this.getProperty(this, 'counter');
@@ -94,4 +103,23 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     this.setProperty(this, 'counter', value);
   }
 
+
+  public get mapper(): any {
+    return this._extractMapper();
+  }
+
+  private _extractMapper(): any {
+    let mapper = undefined;
+    const extensions = this.extensions || undefined;
+    const props = (extensions !== undefined && extensions.properties) ? extensions.properties : undefined;
+
+    if (props !== undefined) {
+      props.forEach((prop) => {
+        if (prop.name === 'mapper') {
+          mapper = prop.value;
+        }
+      });
+    }
+    return mapper;
+  }
 }

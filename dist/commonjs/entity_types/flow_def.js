@@ -62,11 +62,33 @@ class FlowDefEntity extends data_model_contracts_1.Entity {
     set condition(value) {
         this.setProperty(this, 'condition', value);
     }
+    get extensions() {
+        return this.getProperty(this, 'extensions');
+    }
+    set extensions(value) {
+        this.setProperty(this, 'extensions', value);
+    }
     get counter() {
         return this.getProperty(this, 'counter');
     }
     set counter(value) {
         this.setProperty(this, 'counter', value);
+    }
+    get mapper() {
+        return this._extractMapper();
+    }
+    _extractMapper() {
+        let mapper = undefined;
+        const extensions = this.extensions || undefined;
+        const props = (extensions !== undefined && extensions.properties) ? extensions.properties : undefined;
+        if (props !== undefined) {
+            props.forEach((prop) => {
+                if (prop.name === 'mapper') {
+                    mapper = prop.value;
+                }
+            });
+        }
+        return mapper;
     }
 }
 __decorate([
@@ -87,6 +109,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], FlowDefEntity.prototype, "condition", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
+], FlowDefEntity.prototype, "extensions", null);
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
 ], FlowDefEntity.prototype, "counter", null);

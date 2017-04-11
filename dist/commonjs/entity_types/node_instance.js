@@ -13,15 +13,17 @@ const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 class NodeInstanceEntityDependencyHelper {
-    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService) {
+    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService, processEngineService) {
         this.messageBusService = undefined;
         this.eventAggregator = undefined;
         this.iamService = undefined;
         this.nodeInstanceEntityTypeService = undefined;
+        this.processEngineService = undefined;
         this.messageBusService = messageBusService;
         this.eventAggregator = eventAggregator;
         this.iamService = iamService;
         this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+        this.processEngineService = processEngineService;
     }
 }
 exports.NodeInstanceEntityDependencyHelper = NodeInstanceEntityDependencyHelper;
@@ -44,6 +46,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     get nodeInstanceEntityTypeService() {
         return this._nodeInstanceEntityDependencyHelper.nodeInstanceEntityTypeService;
+    }
+    get processEngineService() {
+        return this._nodeInstanceEntityDependencyHelper.processEngineService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -194,6 +199,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         const isEndEvent = (nodeInstance.type === 'bpmn:EndEvent');
         const processToken = await this.getProcessToken(internalContext);
         const tokenData = processToken.data || {};
+        const nodeDef = this.nodeDef;
+        const mapper = nodeDef.mapper;
+        if (mapper !== undefined) {
+            const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+            tokenData.current = newCurrent;
+        }
         tokenData.history = tokenData.history || {};
         tokenData.history[this.key] = tokenData.current;
         processToken.data = tokenData;
@@ -242,8 +253,7 @@ __decorate([
 NodeInstanceEntity = __decorate([
     metadata_1.schemaClass({
         expandEntity: [
-            { attribute: 'nodeDef' },
-            { attribute: 'processToken' }
+            { attribute: 'nodeDef' }
         ]
     })
 ], NodeInstanceEntity);
