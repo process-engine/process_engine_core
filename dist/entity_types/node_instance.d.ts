@@ -1,6 +1,6 @@
 import { ExecutionContext, IInheritedSchema, IEntity, IIamService } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
-import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity } from '@process-engine-js/process_engine_contracts';
+import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 export declare class NodeInstanceEntityDependencyHelper {
@@ -8,7 +8,8 @@ export declare class NodeInstanceEntityDependencyHelper {
     eventAggregator: IEventAggregator;
     iamService: IIamService;
     nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
-    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService);
+    processEngineService: IProcessEngineService;
+    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService);
 }
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     private _nodeInstanceEntityDependencyHelper;
@@ -19,6 +20,7 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     protected readonly messageBusService: IMessageBusService;
     protected readonly eventAggregator: IEventAggregator;
     protected readonly nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
+    protected readonly processEngineService: IProcessEngineService;
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;

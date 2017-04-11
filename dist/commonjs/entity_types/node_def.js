@@ -154,6 +154,22 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
         }
         return features;
     }
+    get mapper() {
+        return this._extractMapper();
+    }
+    _extractMapper() {
+        let mapper = undefined;
+        const extensions = this.extensions || undefined;
+        const props = (extensions !== undefined && extensions.properties) ? extensions.properties : undefined;
+        if (props !== undefined) {
+            props.forEach((prop) => {
+                if (prop.name === 'mapper') {
+                    mapper = prop.value;
+                }
+            });
+        }
+        return mapper;
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

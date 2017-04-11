@@ -14,6 +14,7 @@ class ProcessEngineService {
         this._iamService = undefined;
         this._processRepository = undefined;
         this._runningProcesses = {};
+        this._processTokenCache = {};
         this.config = undefined;
         this._messageBusService = messageBusService;
         this._eventAggregator = eventAggregator;
@@ -42,6 +43,9 @@ class ProcessEngineService {
     }
     get runningProcesses() {
         return this._runningProcesses;
+    }
+    get processTokenCache() {
+        return this._processTokenCache;
     }
     async initialize() {
         this.featureService.initialize();

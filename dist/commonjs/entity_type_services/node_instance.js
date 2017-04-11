@@ -195,10 +195,12 @@ class NodeInstanceEntityTypeService {
         }
         if (flowsOut && flowsOut.length > 0) {
             const ids = [];
+            const mappers = [];
             for (let i = 0; i < flowsOut.data.length; i++) {
                 const flow = flowsOut.data[i];
                 const target = await flow.target;
                 ids.push(target.id);
+                mappers.push(flow.mapper);
             }
             const queryObjectIn = {
                 operator: 'and',
@@ -213,6 +215,15 @@ class NodeInstanceEntityTypeService {
                 for (let i = 0; i < nextDefs.data.length; i++) {
                     const nextDef = nextDefs.data[i];
                     let currentToken;
+                    const index = ids.indexOf(nextDef.id);
+                    const mapper = (index !== -1) ? mappers[index] : undefined;
+                    if (mapper !== undefined) {
+                        const tokenData = processToken.data || {};
+                        const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+                        tokenData.current = newCurrent;
+                        processToken.data = tokenData;
+                        await processToken.save(internalContext);
+                    }
                     if (splitToken && i > 0) {
                         currentToken = await processTokenEntityType.createEntity(internalContext);
                         currentToken.process = processToken.process;
