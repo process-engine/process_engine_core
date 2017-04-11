@@ -1,12 +1,14 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
 const uuidModule = require("uuid");
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 const uuid = uuidModule;
 class ProcessEngineService {
-    constructor(messageBusService, processDefEntityTypeService, featureService, iamService, processRepository) {
+    constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService, processRepository) {
         this._messageBusService = undefined;
+        this._eventAggregator = undefined;
         this._processDefEntityTypeService = undefined;
         this._featureService = undefined;
         this._iamService = undefined;
@@ -14,6 +16,7 @@ class ProcessEngineService {
         this._runningProcesses = {};
         this.config = undefined;
         this._messageBusService = messageBusService;
+        this._eventAggregator = eventAggregator;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._featureService = featureService;
         this._iamService = iamService;
@@ -21,6 +24,9 @@ class ProcessEngineService {
     }
     get messageBusService() {
         return this._messageBusService;
+    }
+    get eventAggregator() {
+        return this._eventAggregator;
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
@@ -93,10 +99,16 @@ class ProcessEngineService {
             overwriteExisting: false
         };
         this.processRepository.initialize();
-        const bpmns = this.processRepository.getProcessesByCategory('internal');
-        for (let i = 0; i < bpmns.length; i++) {
+        const processes = this.processRepository.getProcessesByCategory('internal');
+        for (let i = 0; i < processes.length; i++) {
+            const process = processes[i];
             const params = {
-                xml: bpmns[i]
+                xml: process.bpmnXml,
+                internalName: process.name,
+                category: process.category,
+                module: process.module,
+                path: process.path,
+                readonly: process.readonly
             };
             await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
         }

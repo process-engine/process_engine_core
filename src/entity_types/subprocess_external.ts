@@ -1,16 +1,30 @@
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IEntityReference} from '@process-engine-js/core_contracts';
-import {ISubprocessExternalEntity} from '@process-engine-js/process_engine_contracts';
+import {ISubprocessExternalEntity, IProcessDefEntityTypeService, IParamStart} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+
+import * as debug from 'debug';
+
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
+  private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
+
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              processDefEntityTypeService: IProcessDefEntityTypeService,
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+
+    this._processDefEntityTypeService = processDefEntityTypeService;
+  }
+
+  private get processDefEntityTypeService(): IProcessDefEntityTypeService {
+    return this._processDefEntityTypeService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -31,21 +45,15 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const subProcessKey = nodeDef.subProcessKey || null;
     if (subProcessKey) {
 
-      const source = this.getEntityReference();
-
-      const data = {
-        action: 'start',
-        data: {
-          key: subProcessKey,
-          token: tokenData,
-          source: source,
-          isSubProcess: true
-        }
+      const params: IParamStart = {
+        key: subProcessKey,
+        source: this,
+        isSubProcess: true,
+        initialToken: tokenData
       };
-
-      const msg = this.messageBusService.createEntityMessage(data, this, context);
-      await this.messageBusService.publish('/processengine', msg);
-
+      await this.processDefEntityTypeService.start(internalContext, params);
+    } else {
+      debugInfo(`No key is provided for call activity key '${this.key}'`);
     }
     
   }
@@ -62,6 +70,6 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
     await processToken.save(internalContext);
 
-    await this.changeState(context, 'end', this);
+    this.changeState(context, 'end', this);
   }
 }

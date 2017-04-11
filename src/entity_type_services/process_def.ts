@@ -2,11 +2,12 @@ import {
   IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile,
   IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions
 } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 
 import * as fs from 'fs';
+import * as path from 'path';
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
@@ -34,13 +35,17 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
 
-    const fileName = params && params.file ? params.file : null;
-    if (fileName) {
-      const path = process.cwd() + '/examples/bpmns/' + fileName;
+    const pathString = params && params.file ? params.file : null;
+    if (pathString) {
 
-      const xmlString = await this._getFile(path);
+      const xmlString = await this._getFile(pathString);
+      const name = path.basename(pathString);
 
-      await this.importBpmnFromXml(context, { xml: xmlString }, options);
+      await this.importBpmnFromXml(context, {
+        xml: xmlString,
+        path: pathString,
+        internalName: name
+      }, options);
       return { result: true };
 
     }
@@ -67,6 +72,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
     const xml = params && params.xml ? params.xml : null;
+    const internalName = params && params.internalName ? params.internalName : null;
+    const pathString = params && params.path ? params.path : null;
+    const category = params && params.category ? params.category : null;
+    const module = params && params.module ? params.module : null;
+    const readonly = params && params.readonly ? params.readonly : null;
+
 
     if (xml) {
       const bpmnDiagram = await this.parseBpmnXml(xml);
@@ -77,8 +88,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
       for (let i = 0; i < processes.length; i++) {
         const process = processes[i];
-
-        const processVersion = process.$attrs ? process.$attrs['camunda:versionTag'] : '';
 
         // query with key
         const queryObject: IQueryClause = {
@@ -97,7 +106,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           const processDefData = {
             key: process.id,
             defId: bpmnDiagram.definitions.id,
-            // version: processVersion
+            counter: 0
           };
 
           processDefEntity = await ProcessDef.createEntity<IProcessDefEntity>(context, processDefData);
@@ -112,6 +121,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         if (canSave) {
           processDefEntity.name = process.name;
           processDefEntity.xml = xml;
+          processDefEntity.internalName = internalName;
+          processDefEntity.path = pathString;
+          processDefEntity.category = category;
+          processDefEntity.module = module;
+          processDefEntity.readonly = readonly;
+          processDefEntity.counter = processDefEntity.counter + 1;
 
           await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
         }
@@ -156,7 +171,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   }
 
 
-  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity> {
+  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const key: string = params ? params.key : undefined;
 
@@ -170,8 +185,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const processDefEntity = await ProcessDef.findOne(context, queryParams);
 
       if (processDefEntity) {
-        const processEntity: IProcessEntity = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
-        return processEntity;
+        const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+        return processEntityRef;
       }
     }
     return null;
@@ -181,11 +196,11 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const name = token.history.ut_SetData.formData.name;
     const key = token.history.ut_SetData.formData.key.trim().replace(/\s/g, '_');
     const defId = 'Definition_1';
-
     const data = {
       name,
       key,
       defId,
+      counter: 0,
       xml:
       '<?xml version="1.0" encoding="UTF-8"?>' +
       '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + defId + '" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +

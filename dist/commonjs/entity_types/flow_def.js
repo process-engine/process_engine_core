@@ -5,6 +5,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
@@ -61,6 +62,12 @@ class FlowDefEntity extends data_model_contracts_1.Entity {
     set condition(value) {
         this.setProperty(this, 'condition', value);
     }
+    get counter() {
+        return this.getProperty(this, 'counter');
+    }
+    set counter(value) {
+        this.setProperty(this, 'counter', value);
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
@@ -80,6 +87,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], FlowDefEntity.prototype, "condition", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], FlowDefEntity.prototype, "counter", null);
 exports.FlowDefEntity = FlowDefEntity;
 
 //# sourceMappingURL=flow_def.js.map

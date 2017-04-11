@@ -1,5 +1,5 @@
-import { IProcessDefEntityTypeService, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IFactory } from '@process-engine-js/core_contracts';
+import { IProcessDefEntityTypeService, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, IParamStart, IImportFromFileOptions } from '@process-engine-js/process_engine_contracts';
+import { ExecutionContext, IPublicGetOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 export declare class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
@@ -14,6 +14,6 @@ export declare class ProcessDefEntityTypeService implements IProcessDefEntityTyp
     importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromFileOptions): Promise<void>;
     parseBpmnXml(xml: string): Promise<BpmnDiagram>;
     parseBpmnFile(path: string): Promise<BpmnDiagram>;
-    start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IProcessEntity>;
+    start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference>;
     createProcess(context: any, token: any): Promise<any>;
 }

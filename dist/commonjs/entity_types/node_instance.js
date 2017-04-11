@@ -5,15 +5,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
+const debug = require("debug");
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 class NodeInstanceEntityDependencyHelper {
-    constructor(messageBusService, iamService, nodeInstanceEntityTypeService) {
+    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService) {
         this.messageBusService = undefined;
+        this.eventAggregator = undefined;
         this.iamService = undefined;
         this.nodeInstanceEntityTypeService = undefined;
         this.messageBusService = messageBusService;
+        this.eventAggregator = eventAggregator;
         this.iamService = iamService;
         this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
     }
@@ -23,6 +29,8 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._nodeInstanceEntityDependencyHelper = undefined;
+        this.messagebusSubscription = undefined;
+        this.eventAggregatorSubscription = undefined;
         this._nodeInstanceEntityDependencyHelper = nodeInstanceEntityDependencyHelper;
     }
     get iamService() {
@@ -30,6 +38,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     get messageBusService() {
         return this._nodeInstanceEntityDependencyHelper.messageBusService;
+    }
+    get eventAggregator() {
+        return this._nodeInstanceEntityDependencyHelper.eventAggregator;
     }
     get nodeInstanceEntityTypeService() {
         return this._nodeInstanceEntityDependencyHelper.nodeInstanceEntityTypeService;
@@ -101,6 +112,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         return role;
     }
     async start(context, source) {
+        debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
         let role = await this.getLaneRole(context);
         if (role !== null) {
         }
@@ -109,40 +121,44 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         await this.save(internalContext);
-        await this.changeState(context, 'execute', this);
+        this.changeState(context, 'execute', this);
     }
-    async changeState(context, newState, source) {
+    changeState(context, newState, source) {
+        debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
         const data = {
             action: 'changeState',
             data: newState
         };
-        const msg = this.messageBusService.createEntityMessage(data, source, context);
-        await this.messageBusService.publish('/processengine/node/' + this.id, msg);
+        const event = this.eventAggregator.createEntityEvent(data, source, context);
+        this.eventAggregator.publish('/processengine/node/' + this.id, event);
     }
-    async error(context, error) {
-        const nodeDef = await this.getNodeDef(context);
+    error(context, error) {
+        debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
+        const nodeDef = this.nodeDef;
         if (nodeDef && nodeDef.events && nodeDef.events.error) {
             const data = {
                 action: 'event',
                 event: 'error',
                 data: error
             };
-            const msg = this.messageBusService.createEntityMessage(data, this, context);
-            await this.messageBusService.publish('/processengine/node/' + this.id, msg);
+            const event = this.eventAggregator.createEntityEvent(data, this, context);
+            this.eventAggregator.publish('/processengine/node/' + this.id, event);
         }
     }
     async execute(context) {
+        debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
         await this.save(internalContext);
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
     async proceed(context, data, source, applicationId) {
     }
     async event(context, event, data) {
+        debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const nodeDef = await this.getNodeDef(internalContext);
+        const nodeDef = this.nodeDef;
         if (nodeDef && nodeDef.events && nodeDef.events[event]) {
             const boundaryDefKey = nodeDef.events[event];
             const queryObject = {
@@ -157,18 +173,20 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
     }
     async cancel(context) {
-        const nodeDef = await this.getNodeDef(context);
+        debugInfo(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
+        const nodeDef = this.nodeDef;
         if (nodeDef && nodeDef.events && nodeDef.events.cancel) {
             const data = {
                 action: 'event',
                 event: 'cancel',
                 data: null
             };
-            const msg = this.messageBusService.createEntityMessage(data, this, context);
-            await this.messageBusService.publish('/processengine/node/' + this.id, msg);
+            const msg = this.eventAggregator.createEntityEvent(data, this, context);
+            this.eventAggregator.publish('/processengine/node/' + this.id, msg);
         }
     }
     async end(context, cancelFlow = false) {
+        debugInfo(`end node, id ${this.id}, key ${this.key}, type ${this.type}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'end';
         await this.save(internalContext);
@@ -180,12 +198,20 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         tokenData.history[this.key] = tokenData.current;
         processToken.data = tokenData;
         await processToken.save(internalContext);
+        nodeInstance.eventAggregatorSubscription.dispose();
+        nodeInstance.messagebusSubscription.cancel();
         if (!isEndEvent && !cancelFlow) {
-            await this.nodeInstanceEntityTypeService.continueExecution(internalContext, nodeInstance);
+            try {
+                await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+            }
+            catch (err) {
+                const process = await this.getProcess(internalContext);
+                await process.error(context, err);
+            }
         }
         else {
             const process = await this.getProcess(internalContext);
-            await process.end(internalContext, processToken);
+            await process.end(context, processToken);
         }
     }
 };

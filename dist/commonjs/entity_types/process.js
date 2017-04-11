@@ -5,22 +5,28 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class ProcessEntity extends data_model_contracts_1.Entity {
-    constructor(iamService, nodeInstanceEntityTypeService, entityDependencyHelper, context, schema) {
+    constructor(iamService, nodeInstanceEntityTypeService, messageBusService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._iamService = undefined;
         this._nodeInstanceEntityTypeService = undefined;
+        this._messageBusService = undefined;
         this._iamService = iamService;
         this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+        this._messageBusService = messageBusService;
     }
     get iamService() {
         return this._iamService;
     }
     get nodeInstanceEntityTypeService() {
         return this._nodeInstanceEntityTypeService;
+    }
+    get messageBusService() {
+        return this._messageBusService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -102,13 +108,37 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             startEvent.processToken = processToken;
             startEvent.participant = participant;
             await startEvent.save(internalContext);
-            await startEvent.changeState(laneContext, 'start', this);
+            startEvent.changeState(laneContext, 'start', this);
         }
     }
     async end(context, processToken) {
         if (this.isSubProcess) {
             const callerId = this.callerId;
+            const source = this;
+            const data = {
+                action: 'proceed',
+                token: processToken.data
+            };
+            const msg = this.messageBusService.createEntityMessage(data, source, context);
+            const channel = '/processengine/node/' + callerId;
+            await this.messageBusService.publish(channel, msg);
         }
+    }
+    async error(context, error) {
+        const processToken = null;
+        if (this.isSubProcess) {
+            const callerId = this.callerId;
+            const source = this.getEntityReference().toPojo();
+            const data = {
+                action: 'event',
+                event: 'error',
+                data: error
+            };
+            const msg = this.messageBusService.createEntityMessage(data, source, context);
+            const channel = '/processengine/node/' + callerId;
+            await this.messageBusService.publish(channel, msg);
+        }
+        await this.end(context, processToken);
     }
 }
 __decorate([

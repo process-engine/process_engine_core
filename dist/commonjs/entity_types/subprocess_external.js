@@ -1,8 +1,17 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
+const debug = require("debug");
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
+    constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+        this._processDefEntityTypeService = undefined;
+        this._processDefEntityTypeService = processDefEntityTypeService;
+    }
+    get processDefEntityTypeService() {
+        return this._processDefEntityTypeService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -17,18 +26,16 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         const nodeDef = await this.getNodeDef(internalContext);
         const subProcessKey = nodeDef.subProcessKey || null;
         if (subProcessKey) {
-            const source = this.getEntityReference();
-            const data = {
-                action: 'start',
-                data: {
-                    key: subProcessKey,
-                    token: tokenData,
-                    source: source,
-                    isSubProcess: true
-                }
+            const params = {
+                key: subProcessKey,
+                source: this,
+                isSubProcess: true,
+                initialToken: tokenData
             };
-            const msg = this.messageBusService.createEntityMessage(data, this, context);
-            await this.messageBusService.publish('/processengine', msg);
+            await this.processDefEntityTypeService.start(internalContext, params);
+        }
+        else {
+            debugInfo(`No key is provided for call activity key '${this.key}'`);
         }
     }
     async proceed(context, newData, source, applicationId) {
@@ -38,7 +45,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         tokenData.current = newData;
         processToken.data = tokenData;
         await processToken.save(internalContext);
-        await this.changeState(context, 'end', this);
+        this.changeState(context, 'end', this);
     }
 }
 exports.SubprocessExternalEntity = SubprocessExternalEntity;

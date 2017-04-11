@@ -1,6 +1,6 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const bluebirdPromise = require("bluebird");
-const path = require("path");
 const fs = require("fs");
 class ProcessRepository {
     constructor(container) {
@@ -21,14 +21,10 @@ class ProcessRepository {
         this._loadStaticProcesses();
     }
     getProcess(processName) {
-        const entry = this._getEntry(processName);
-        return entry.process;
+        return this._getEntry(processName);
     }
     getProcessesByCategory(category) {
-        const entries = this._getEntriesByCategory(category);
-        return entries.map((entry) => {
-            return entry.process;
-        });
+        return this._getEntriesByCategory(category);
     }
     saveProcess(processName, processXml) {
         return new bluebirdPromise((resolve, reject) => {
@@ -39,8 +35,7 @@ class ProcessRepository {
             if (entry.readonly) {
                 throw new Error(`process ${processName} is readonly and mustn't be saved`);
             }
-            const processPath = path.join(process.cwd(), entry.module, entry.path);
-            fs.writeFile(processPath, entry.process, (error) => {
+            fs.writeFile(entry.path, entry.bpmnXml, (error) => {
                 if (error) {
                     reject(error);
                 }
@@ -52,7 +47,7 @@ class ProcessRepository {
     }
     _updateProcess(processName, processXml) {
         const entry = this._getEntry(processName);
-        entry.process = processXml;
+        entry.bpmnXml = processXml;
     }
     _loadStaticProcesses() {
         const entries = this._getEntriesByCategory('internal');
@@ -67,14 +62,15 @@ class ProcessRepository {
         return this._processCache[processName];
     }
     _getEntriesByCategory(category) {
-        const processNames = this.container.getKeysByAttributes({
+        const container = this.container;
+        const processNames = container.getKeysByAttributes({
             bpmn_process: category
         });
         return processNames.map((processName) => {
-            const registration = this.container._getRegistration(processName);
+            const registration = container._getRegistration(processName);
             const entry = {
                 name: processName,
-                process: registration.settings.type,
+                bpmnXml: registration.settings.type,
                 category: registration.settings.tags['bpmn_process'],
                 module: registration.settings.tags['module'],
                 path: registration.settings.tags['path'],

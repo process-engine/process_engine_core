@@ -22,6 +22,7 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     subProcessKey: string;
     subProcessDef: INodeDefEntity;
     getSubProcessDef(context: ExecutionContext): Promise<INodeDefEntity>;
+    counter: number;
     readonly features: Array<IFeature>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection>;

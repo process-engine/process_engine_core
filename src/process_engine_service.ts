@@ -1,7 +1,8 @@
 import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity, IImportFromFileOptions, IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 
 import * as debug from 'debug';
 import * as uuidModule from 'uuid';
@@ -14,6 +15,7 @@ const uuid: any = uuidModule;
 export class ProcessEngineService implements IProcessEngineService {
 
   private _messageBusService: IMessageBusService = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _featureService: IFeatureService = undefined;
   private _iamService: IIamService = undefined;
@@ -23,8 +25,9 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository) {
     this._messageBusService = messageBusService;
+    this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._featureService = featureService;
     this._iamService = iamService;
@@ -33,6 +36,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get messageBusService(): IMessageBusService {
     return this._messageBusService;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -62,7 +69,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
-    const processEntity: IProcessEntity = await this.processDefEntityTypeService.start(context, params, options);
+    const processEntity: IEntityReference = await this.processDefEntityTypeService.start(context, params, options);
     this.runningProcesses[processEntity.id] = processEntity;
     return processEntity.id;
   }
@@ -71,7 +78,7 @@ export class ProcessEngineService implements IProcessEngineService {
     debugInfo('we got a message: ', msg);
 
     await this.messageBusService.verifyMessage(msg);
-
+    
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
@@ -130,15 +137,22 @@ export class ProcessEngineService implements IProcessEngineService {
 
     this.processRepository.initialize();
 
-    const bpmns = this.processRepository.getProcessesByCategory('internal');
+    const processes = this.processRepository.getProcessesByCategory('internal');
 
-    for (let i = 0; i < bpmns.length; i++) {
+    for (let i = 0; i < processes.length; i++) {
 
-      const params: IParamImportFromXml = {
-        xml: bpmns[i]
-      };
+        const process = processes[i];
 
-      await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
+        const params: IParamImportFromXml = {
+          xml: process.bpmnXml,
+          internalName: process.name,
+          category: process.category,
+          module: process.module,
+          path: process.path,
+          readonly: process.readonly
+        };
+
+        await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
     }
   }
 }

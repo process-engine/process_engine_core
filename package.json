@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "1.0.24",
+  "version": "1.0.28",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -17,6 +17,7 @@
     "@process-engine-js/core_contracts": "^1.0.34",
     "@process-engine-js/data_model": "^1.0.41",
     "@process-engine-js/data_model_contracts": "^1.0.44",
+    "@process-engine-js/event_aggregator_contracts": "^1.0.2",
     "@process-engine-js/feature_contracts": "^1.0.0",
     "@process-engine-js/invocation_contracts": "^1.0.1",
     "@process-engine-js/messagebus_contracts": "^1.0.2",

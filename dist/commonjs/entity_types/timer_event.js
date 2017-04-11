@@ -5,24 +5,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 const moment = require("moment");
 class TimerEventEntity extends event_1.EventEntity {
-    constructor(timingService, eventAggregator, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
+    constructor(timingService, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
         this._timingService = undefined;
-        this._eventAggregator = undefined;
         this._timingService = timingService;
-        this._eventAggregator = eventAggregator;
     }
     get timingService() {
         return this._timingService;
-    }
-    get eventAggregator() {
-        return this._eventAggregator;
     }
     get timerDefinitionType() {
         return this.getProperty(this, 'timerDefinitionType');

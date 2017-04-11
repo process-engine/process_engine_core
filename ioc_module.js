@@ -27,28 +27,30 @@ const ProcessRepository = require('./dist/commonjs/index').ProcessRepository;
 
 const fs = require('fs');
 const path = require('path');
-// const testDiagram = require('./bpmn/reservation.bpmn');
-const testDiagram = fs.readFileSync(path.join(__dirname, 'bpmn/timer_1.bpmn'), 'utf8');
+
+const createProcessDefFile = 'createProcessDef.bpmn';
+const createProcessDefPath = path.join(__dirname, 'bpmn/' + createProcessDefFile);
+const createProcessDef = fs.readFileSync(createProcessDefPath, 'utf8');
 
 function registerInContainer(container) {
 
-  container.registerObject('InternalSomethingDiagram', testDiagram)
+  container.registerObject(createProcessDefFile, createProcessDef)
     .setAttribute('bpmn_process', 'internal') // category: internal
     .setAttribute('module', 'process_engine') // the source module
-    .setAttribute('path', 'bpmn/test.bpmn')   // the file path
-    .tags('readonly');
+    .setAttribute('path', createProcessDefPath);   // the file path
+    //.tags('readonly');
 
   container.register('ProcessRepository', ProcessRepository)
     .dependencies('container')
     .singleton();
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository')
     .singleton()
     .configure('process_engine:process_engine_service');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'FeatureService', 'RoutingService')
+    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService')
     .injectLazy('DatastoreService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
@@ -57,7 +59,7 @@ function registerInContainer(container) {
 
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
-    .dependencies('MessageBusService', 'IamService', 'NodeInstanceEntityTypeService')
+    .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService')
     .singleton();
 
   container.register('BoundaryEventEntity', BoundaryEventEntity)
@@ -94,11 +96,11 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessEntity', ProcessEntity)
-    .dependencies('IamService', 'NodeInstanceEntityTypeService')
+    .dependencies('IamService', 'NodeInstanceEntityTypeService', 'MessageBusService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('MessageBusService', 'EventAggregator', 'TimingService', 'ProcessDefEntityTypeService')
+    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService', 'EventAggregator', 'TimingService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)
@@ -121,7 +123,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper', 'ProcessDefEntityTypeService')
     .tags(entityDiscoveryTag);
 
   container.register('UserTaskEntity', UserTaskEntity)

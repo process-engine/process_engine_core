@@ -2,8 +2,7 @@ import {EventEntity} from './event';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IEntityReference} from '@process-engine-js/core_contracts';
 import {ITimerEventEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
-import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
-import {ITimingService} from '@process-engine-js/timing_contracts'
+import {ITimingService} from '@process-engine-js/timing_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
@@ -12,10 +11,8 @@ import * as moment from 'moment';
 export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
 
   private _timingService: ITimingService = undefined;
-  private _eventAggregator: IEventAggregator = undefined;
 
   constructor(timingService: ITimingService,
-              eventAggregator: IEventAggregator,
               nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
@@ -23,15 +20,10 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
 
     this._timingService = timingService;
-    this._eventAggregator = eventAggregator;
   }
 
   private get timingService(): ITimingService {
     return this._timingService;
-  }
-
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
   }
 
   @schemaAttribute({ type: SchemaAttributeType.number })

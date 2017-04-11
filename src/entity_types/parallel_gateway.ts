@@ -64,7 +64,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       this.state = 'progress';
       await this.save(internalContext);
 
-      await this.changeState(context, 'end', this);
+      this.changeState(context, 'end', this);
     }
 
     if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
@@ -155,7 +155,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
         });
         if (allthere) {
           // end
-          await this.changeState(context, 'end', this);
+          this.changeState(context, 'end', this);
         }
       }
 
