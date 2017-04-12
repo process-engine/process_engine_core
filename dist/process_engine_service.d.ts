@@ -11,6 +11,7 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private _iamService;
     private _processRepository;
     private _runningProcesses;
+    private _processTokenCache;
     config: any;
     constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository);
     private readonly messageBusService;
@@ -20,6 +21,7 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private readonly iamService;
     private readonly processRepository;
     private readonly runningProcesses;
+    private readonly processTokenCache;
     initialize(): Promise<void>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string>;
     private _messageHandler(msg);

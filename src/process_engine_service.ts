@@ -22,6 +22,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _processRepository: IProcessRepository = undefined;
 
   private _runningProcesses: any = {};
+  private _processTokenCache: any = {};
 
   public config: any = undefined;
 
@@ -60,6 +61,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get runningProcesses(): any {
     return this._runningProcesses;
+  }
+
+  private get processTokenCache(): any {
+    return this._processTokenCache;
   }
 
   public async initialize(): Promise<void> {

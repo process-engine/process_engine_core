@@ -1,4 +1,4 @@
-import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions, IEntityReference } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions, IEntityReference, IPrivateSaveOptions } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessRepository } from '@process-engine-js/process_engine_contracts';
 import { ITimingService } from '@process-engine-js/timing_contracts';
@@ -51,4 +51,5 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     private _createBoundaries(nodes, nodeCache, context);
     private _updateExtensionElements(extensionElements);
     private _extractFeatures();
+    save(context: ExecutionContext, options?: IPrivateSaveOptions): Promise<IEntity>;
 }

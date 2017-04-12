@@ -27,4 +27,6 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     getLaneRole(context: ExecutionContext): Promise<string>;
     getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection>;
     private _extractFeatures();
+    readonly mapper: any;
+    private _extractMapper();
 }

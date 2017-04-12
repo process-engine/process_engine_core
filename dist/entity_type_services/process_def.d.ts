@@ -15,5 +15,4 @@ export declare class ProcessDefEntityTypeService implements IProcessDefEntityTyp
     parseBpmnXml(xml: string): Promise<BpmnDiagram>;
     parseBpmnFile(path: string): Promise<BpmnDiagram>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference>;
-    createProcess(context: any, token: any): Promise<any>;
 }
