@@ -1,18 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
-const uuidModule = require("uuid");
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
-const uuid = uuidModule;
 class ProcessEngineService {
-    constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService, processRepository) {
+    constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService, processRepository, datastoreServiceFactory) {
         this._messageBusService = undefined;
         this._eventAggregator = undefined;
         this._processDefEntityTypeService = undefined;
         this._featureService = undefined;
         this._iamService = undefined;
         this._processRepository = undefined;
+        this._datastoreService = undefined;
+        this._datastoreServiceFactory = undefined;
         this._runningProcesses = {};
         this._processTokenCache = {};
         this.config = undefined;
@@ -22,6 +22,7 @@ class ProcessEngineService {
         this._featureService = featureService;
         this._iamService = iamService;
         this._processRepository = processRepository;
+        this._datastoreServiceFactory = datastoreServiceFactory;
     }
     get messageBusService() {
         return this._messageBusService;
@@ -41,6 +42,12 @@ class ProcessEngineService {
     get processRepository() {
         return this._processRepository;
     }
+    get datastoreService() {
+        if (!this._datastoreService) {
+            this._datastoreService = this._datastoreServiceFactory();
+        }
+        return this._datastoreService;
+    }
     get runningProcesses() {
         return this._runningProcesses;
     }
@@ -51,6 +58,7 @@ class ProcessEngineService {
         this.featureService.initialize();
         await this._initializeMessageBus();
         await this._initializeProcesses();
+        await this._startTimers();
     }
     async start(context, params, options) {
         const processEntity = await this.processDefEntityTypeService.start(context, params, options);
@@ -116,6 +124,22 @@ class ProcessEngineService {
             };
             await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
         }
+    }
+    async _startTimers() {
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+        const queryObject = {
+            operator: 'and',
+            queries: [
+                { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+                { attribute: 'eventType', operator: '=', value: 'bpmn:TimerEventDefinition' }
+            ]
+        };
+        const startEventColl = await nodeDefEntityType.query(internalContext, { query: queryObject });
+        startEventColl.each(internalContext, async (nodeDef) => {
+            const processDef = await nodeDef.getProcessDef(internalContext);
+            await processDef.startTimer(internalContext);
+        });
     }
 }
 exports.ProcessEngineService = ProcessEngineService;

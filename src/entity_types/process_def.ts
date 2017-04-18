@@ -302,7 +302,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         hour: duration.hours(),
         minute: duration.minutes(),
         second: duration.seconds()
-      }
+      };
       return timingRule;
     }
     if (eventDefinition.timeDate) {
@@ -313,73 +313,53 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return undefined;
   }
 
-  private async startTimers(processes: Array<any>, context: ExecutionContext): Promise<void> {
+  
 
-    const processPromises = processes.map(async (process) => {
-      
-      const startEvents = process.flowElements.filter((element) => {
-        return element.$type === 'bpmn:StartEvent';
-      });
+  public async startTimer(context: ExecutionContext): Promise<void> {
 
-      if (startEvents.length === 0) {
-        return;
+    const features = this.features;
+
+    // only start timer if features of process match
+    if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
+
+      // get start event
+      const queryObject = {
+        operator: 'and',
+        queries: [
+          { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+          { attribute: 'processDef', operator: '=', value: this.id }
+        ]
+      };
+      const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+      const startEventDef: any = await nodeDefEntityType.findOne(context, { query: queryObject });
+
+      if (startEventDef) {
+
+        const channelName = `events/timer/${this.id}`;
+
+        const callback = async () => {
+          await this.start(context, undefined);
+        };
+
+        switch (startEventDef.timerDefinitionType) {
+          case TimerDefinitionType.cycle:
+            await this.timingService.periodic(<ITimingRule>startEventDef.timerDefinition, channelName, context);
+            this.eventAggregator.subscribe(channelName, callback.bind(this));
+            break;
+          case TimerDefinitionType.date:
+            await this.timingService.once(<moment.Moment>startEventDef.timerDefinition, channelName, context);
+            this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+            break;
+          case TimerDefinitionType.duration:
+            await this.timingService.once(<moment.Moment>startEventDef.timerDefinition, channelName, context);
+            this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+            break;
+          default: return;
+        }
       }
-
-      const eventPromises = startEvents.map(async (startEvent) => {
-        
-        const definitionPromises = startEvent.eventDefinitions.map(async (eventDefinition) => {
-
-          if (eventDefinition.$type !== 'bpmn:TimerEventDefinition') {
-            return;
-          }
-
-          const timerDefinitionType = this._parseTimerDefinitionType(eventDefinition);
-          const timerDefinition = this._parseTimerDefinition(eventDefinition);
-          
-          if (timerDefinitionType === undefined || timerDefinition === undefined) {
-            return;
-          }
-
-          await this._startTimer(timerDefinitionType, timerDefinition, async () => {
-
-            const data = {
-              action: 'start',
-              key: this.key,
-              token: undefined
-            }
-            
-            const message = this.messageBusService.createEntityMessage(data, this, context);
-            await this.messageBusService.publish('/processengine', message);
-
-          }, context);
-
-        });
-        await Promise.all(definitionPromises);
-      });
-      await Promise.all(eventPromises);
-    });
-    await Promise.all(processPromises);
-  }
-
-  private async _startTimer(timerDefinitionType: TimerDefinitionType, timerDefinition: moment.Moment | ITimingRule, callback: Function, context: ExecutionContext): Promise<void> {
-    
-    const channelName = `events/timer/${this.id}`;
-    
-    switch (timerDefinitionType) {
-      case TimerDefinitionType.cycle: 
-        await this.timingService.periodic(<ITimingRule>timerDefinition, channelName, context);
-        break;
-      case TimerDefinitionType.date: 
-        await this.timingService.once(<moment.Moment>timerDefinition, channelName, context);
-        break;
-      case TimerDefinitionType.duration: 
-        await this.timingService.once(<moment.Moment>timerDefinition, channelName, context);
-        break;
-      default: return;
     }
-
-    await this.eventAggregator.subscribeOnce(channelName, callback);
   }
+
 
   public async updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void> {
 
@@ -388,6 +368,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const xml = this.xml;
     const key = this.key;
     const counter = this.counter;
+
+    const helperObject = {
+      hasTimerStartEvent: false
+    };
 
     if (!bpmnDiagram) {
       bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
@@ -405,7 +389,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     await this.save(context);
 
-    await this.startTimers(processes, context);
+    // await this.startTimers(processes, context);
 
     const lanes = bpmnDiagram.getLanes(key);
 
@@ -413,7 +397,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodes = bpmnDiagram.getNodes(key);
 
-    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
+    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
 
     await this._createBoundaries(nodes, nodeCache, context);
 
@@ -464,6 +448,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       await laneEnt.remove(context);
     });
 
+    if (helperObject.hasTimerStartEvent) {
+      await this.startTimer(context);
+    }
   }
 
   private async _updateLanes(lanes: Array<any>, context: ExecutionContext, counter: number): Promise<ICache<any>> {
@@ -511,7 +498,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return laneCache;
   }
 
-  private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext, counter: number): Promise<ICache<any>> {
+  private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext, counter: number, helperObject: any): Promise<ICache<any>> {
 
     const nodeCache = {};
 
@@ -542,14 +529,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           nodeDefEntity.script = node.script || null;
           break;
 
-        case 'bpmn:BoundaryEvent':
-          const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
-          if (eventType) {
-            nodeDefEntity.eventType = eventType;
-            nodeDefEntity.cancelActivity = node.cancelActivity || true;
-          }
-          break;
-
         case 'bpmn:CallActivity':
           if (node.calledElement) {
             nodeDefEntity.subProcessKey = node.calledElement;
@@ -569,6 +548,23 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
         default:
       }
+
+
+      const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
+      if (eventType) {
+        nodeDefEntity.eventType = eventType;
+        nodeDefEntity.cancelActivity = node.cancelActivity || true;
+
+        if (eventType === 'bpmn:TimerEventDefinition') {
+          nodeDefEntity.timerDefinitionType = this._parseTimerDefinitionType(node.eventDefinitions[0]);
+          nodeDefEntity.timerDefinition = this._parseTimerDefinition(node.eventDefinitions[0]);
+
+          if (node.$type === 'bpmn:StartEvent') {
+            helperObject.hasTimerStartEvent = true;
+          }
+        }
+      }
+
 
       if (node.extensionElements) {
 
@@ -670,6 +666,22 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           switch (boundary.eventType) {
             case 'bpmn:ErrorEventDefinition':
               events.error = boundary.key;
+              break;
+
+            case 'bpmn:TimerEventDefinition':
+              events.timer = boundary.key;
+              break;
+
+            case 'bpmn:SignalEventDefinition':
+              events.signal = boundary.key;
+              break;
+
+            case 'bpmn:MessageEventDefinition':
+              events.message = boundary.key;
+              break;
+
+            case 'bpmn:CancelEventDefinition':
+              events.cancel = boundary.key;
               break;
 
             default:

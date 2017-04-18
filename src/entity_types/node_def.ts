@@ -161,6 +161,24 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public set counter(value: number) {
     this.setProperty(this, 'counter', value);
   }
+
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get timerDefinitionType(): number {
+    return this.getProperty(this, 'timerDefinitionType');
+  }
+
+  public set timerDefinitionType(value: number) {
+    this.setProperty(this, 'timerDefinitionType', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.object })
+  public get timerDefinition(): object {
+    return this.getProperty(this, 'timerDefinition');
+  }
+
+  public set timerDefinition(value: object) {
+    this.setProperty(this, 'timerDefinition', value);
+  }
   
 
   public get features(): Array<IFeature> {

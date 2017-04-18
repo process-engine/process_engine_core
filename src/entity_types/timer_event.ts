@@ -1,14 +1,17 @@
-import {EventEntity} from './event';
+// TimerEvent is deprecated, timers are event definitions and no node instances. They are part of catch or boundary events.
+
+
+/*
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IEntityReference} from '@process-engine-js/core_contracts';
-import {ITimerEventEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import {TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
 import {ITimingService} from '@process-engine-js/timing_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 import * as moment from 'moment';
 
-export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
+export class TimerEventEntity {
 
   private _timingService: ITimingService = undefined;
 
@@ -17,7 +20,6 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
               schema: IInheritedSchema) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
 
     this._timingService = timingService;
   }
@@ -50,7 +52,21 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
-    await this._startTimer(this.timerDefinitionType, this.timerDefinition, context);
+    
+    switch (this.timerDefinitionType) {
+      case TimerDefinitionType.cycle:
+        await this._startCycleTimer(this.timerDefinition, context);
+        break;
+      case TimerDefinitionType.date:
+        await this._startDateTimer(this.timerDefinition, context);
+        break;
+      case TimerDefinitionType.duration:
+        await this._startDurationTimer(this.timerDefinition, context);
+        break;
+      default:
+    }
+
+    await this.changeState(context, 'wait', this);
   }
 
   public async proceed(context: ExecutionContext, data: any, source: IEntityReference, applicationId: string): Promise<void> {
@@ -61,14 +77,6 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
     }
   }
 
-  private async _startTimer(timerDefinitionType: TimerDefinitionType, timerDefinition: string, context: ExecutionContext): Promise<void> {
-    switch (timerDefinitionType) {
-      case TimerDefinitionType.cycle: await this._startCycleTimer(timerDefinition, context);
-      case TimerDefinitionType.date: await this._startDateTimer(timerDefinition, context);
-      case TimerDefinitionType.duration: await this._startDurationTimer(timerDefinition, context);
-      default: return;
-    }
-  }
 
   private async _startCycleTimer(timerDefinition: string, context: ExecutionContext): Promise<void> {
 
@@ -81,10 +89,12 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
       hour: duration.hours(),
       minute: duration.minutes(),
       second: duration.seconds()
-    }
+    };
 
     const channelName = `events/timer/${this.id}`;
-    await this._prepareStartTimer(channelName, context);
+    this.eventAggregator.subscribe(channelName, async () => {
+      await this._timerElapsed(context);
+    });
 
     await this.timingService.periodic(timingRule, channelName, context);
   }
@@ -95,7 +105,9 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
     const date = moment().add(duration);
 
     const channelName = `events/timer/${this.id}`;
-    await this._prepareStartTimer(channelName, context);
+    this.eventAggregator.subscribeOnce(channelName, async () => {
+      await this._timerElapsed(context);
+    });
 
     await this.timingService.once(date, channelName, context);
   }
@@ -105,19 +117,13 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
     const date = moment(timerDefinition);
 
     const channelName = `events/timer/${this.id}`;
-    await this._prepareStartTimer(channelName, context);
-
-    await this.timingService.once(date, channelName, context);
-  }
-
-  private async _prepareStartTimer(channelName: string, context: ExecutionContext): Promise<void> {
-
     this.eventAggregator.subscribeOnce(channelName, async () => {
       await this._timerElapsed(context);
     });
 
-    await this.changeState(context, 'wait', this);
+    await this.timingService.once(date, channelName, context);
   }
+
 
   private async _timerElapsed(context: ExecutionContext): Promise<void> {
 
@@ -125,8 +131,8 @@ export class TimerEventEntity extends EventEntity implements ITimerEventEntity {
       action: 'proceed'
     };
 
-    const message = this.messageBusService.createEntityMessage(data, this, context);
-
-    await this.messageBusService.publish(`/processengine/node/${this.id}`, message);
+    const event = this.eventAggregator.createEntityEvent(data, this, context);
+    this.eventAggregator.publish('/processengine/node/' + this.id, event);
   }
 }
+*/

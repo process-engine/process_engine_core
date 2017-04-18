@@ -229,61 +229,49 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         }
         return undefined;
     }
-    async startTimers(processes, context) {
-        const processPromises = processes.map(async (process) => {
-            const startEvents = process.flowElements.filter((element) => {
-                return element.$type === 'bpmn:StartEvent';
-            });
-            if (startEvents.length === 0) {
-                return;
+    async startTimer(context) {
+        const features = this.features;
+        if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
+            const queryObject = {
+                operator: 'and',
+                queries: [
+                    { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+                    { attribute: 'processDef', operator: '=', value: this.id }
+                ]
+            };
+            const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+            const startEventDef = await nodeDefEntityType.findOne(context, { query: queryObject });
+            if (startEventDef) {
+                const channelName = `events/timer/${this.id}`;
+                const callback = async () => {
+                    await this.start(context, undefined);
+                };
+                switch (startEventDef.timerDefinitionType) {
+                    case process_engine_contracts_1.TimerDefinitionType.cycle:
+                        await this.timingService.periodic(startEventDef.timerDefinition, channelName, context);
+                        this.eventAggregator.subscribe(channelName, callback.bind(this));
+                        break;
+                    case process_engine_contracts_1.TimerDefinitionType.date:
+                        await this.timingService.once(startEventDef.timerDefinition, channelName, context);
+                        this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+                        break;
+                    case process_engine_contracts_1.TimerDefinitionType.duration:
+                        await this.timingService.once(startEventDef.timerDefinition, channelName, context);
+                        this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+                        break;
+                    default: return;
+                }
             }
-            const eventPromises = startEvents.map(async (startEvent) => {
-                const definitionPromises = startEvent.eventDefinitions.map(async (eventDefinition) => {
-                    if (eventDefinition.$type !== 'bpmn:TimerEventDefinition') {
-                        return;
-                    }
-                    const timerDefinitionType = this._parseTimerDefinitionType(eventDefinition);
-                    const timerDefinition = this._parseTimerDefinition(eventDefinition);
-                    if (timerDefinitionType === undefined || timerDefinition === undefined) {
-                        return;
-                    }
-                    await this._startTimer(timerDefinitionType, timerDefinition, async () => {
-                        const data = {
-                            action: 'start',
-                            key: this.key,
-                            token: undefined
-                        };
-                        const message = this.messageBusService.createEntityMessage(data, this, context);
-                        await this.messageBusService.publish('/processengine', message);
-                    }, context);
-                });
-                await Promise.all(definitionPromises);
-            });
-            await Promise.all(eventPromises);
-        });
-        await Promise.all(processPromises);
-    }
-    async _startTimer(timerDefinitionType, timerDefinition, callback, context) {
-        const channelName = `events/timer/${this.id}`;
-        switch (timerDefinitionType) {
-            case process_engine_contracts_1.TimerDefinitionType.cycle:
-                await this.timingService.periodic(timerDefinition, channelName, context);
-                break;
-            case process_engine_contracts_1.TimerDefinitionType.date:
-                await this.timingService.once(timerDefinition, channelName, context);
-                break;
-            case process_engine_contracts_1.TimerDefinitionType.duration:
-                await this.timingService.once(timerDefinition, channelName, context);
-                break;
-            default: return;
         }
-        await this.eventAggregator.subscribeOnce(channelName, callback);
     }
     async updateDefinitions(context, params) {
         let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
         const xml = this.xml;
         const key = this.key;
         const counter = this.counter;
+        const helperObject = {
+            hasTimerStartEvent: false
+        };
         if (!bpmnDiagram) {
             bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
         }
@@ -295,11 +283,10 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         }
         this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
         await this.save(context);
-        await this.startTimers(processes, context);
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context, counter);
         const nodes = bpmnDiagram.getNodes(key);
-        const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
+        const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
         await this._createBoundaries(nodes, nodeCache, context);
         const flows = bpmnDiagram.getFlows(key);
         await this._updateFlows(flows, nodeCache, context, counter);
@@ -339,6 +326,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await laneColl.each(context, async (laneEnt) => {
             await laneEnt.remove(context);
         });
+        if (helperObject.hasTimerStartEvent) {
+            await this.startTimer(context);
+        }
     }
     async _updateLanes(lanes, context, counter) {
         const laneCache = {};
@@ -372,7 +362,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await Promise.all(lanePromiseArray);
         return laneCache;
     }
-    async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter) {
+    async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject) {
         const nodeCache = {};
         const NodeDef = await this.datastoreService.getEntityType('NodeDef');
         const nodePromiseArray = nodes.map(async (node) => {
@@ -394,13 +384,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 case 'bpmn:ScriptTask':
                     nodeDefEntity.script = node.script || null;
                     break;
-                case 'bpmn:BoundaryEvent':
-                    const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
-                    if (eventType) {
-                        nodeDefEntity.eventType = eventType;
-                        nodeDefEntity.cancelActivity = node.cancelActivity || true;
-                    }
-                    break;
                 case 'bpmn:CallActivity':
                     if (node.calledElement) {
                         nodeDefEntity.subProcessKey = node.calledElement;
@@ -412,6 +395,18 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const subFlows = subElements.filter((element) => element.$type === 'bpmn:SequenceFlow');
                     break;
                 default:
+            }
+            const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
+            if (eventType) {
+                nodeDefEntity.eventType = eventType;
+                nodeDefEntity.cancelActivity = node.cancelActivity || true;
+                if (eventType === 'bpmn:TimerEventDefinition') {
+                    nodeDefEntity.timerDefinitionType = this._parseTimerDefinitionType(node.eventDefinitions[0]);
+                    nodeDefEntity.timerDefinition = this._parseTimerDefinition(node.eventDefinitions[0]);
+                    if (node.$type === 'bpmn:StartEvent') {
+                        helperObject.hasTimerStartEvent = true;
+                    }
+                }
             }
             if (node.extensionElements) {
                 const extensions = this._updateExtensionElements(node.extensionElements.values);
@@ -483,6 +478,18 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     switch (boundary.eventType) {
                         case 'bpmn:ErrorEventDefinition':
                             events.error = boundary.key;
+                            break;
+                        case 'bpmn:TimerEventDefinition':
+                            events.timer = boundary.key;
+                            break;
+                        case 'bpmn:SignalEventDefinition':
+                            events.signal = boundary.key;
+                            break;
+                        case 'bpmn:MessageEventDefinition':
+                            events.message = boundary.key;
+                            break;
+                        case 'bpmn:CancelEventDefinition':
+                            events.cancel = boundary.key;
                             break;
                         default:
                     }

@@ -113,6 +113,18 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     set counter(value) {
         this.setProperty(this, 'counter', value);
     }
+    get timerDefinitionType() {
+        return this.getProperty(this, 'timerDefinitionType');
+    }
+    set timerDefinitionType(value) {
+        this.setProperty(this, 'timerDefinitionType', value);
+    }
+    get timerDefinition() {
+        return this.getProperty(this, 'timerDefinition');
+    }
+    set timerDefinition(value) {
+        this.setProperty(this, 'timerDefinition', value);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -213,6 +225,12 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
 ], NodeDefEntity.prototype, "counter", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], NodeDefEntity.prototype, "timerDefinitionType", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
+], NodeDefEntity.prototype, "timerDefinition", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

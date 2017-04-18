@@ -168,7 +168,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     map.set('bpmn:ServiceTask', 'ServiceTask');
     map.set('bpmn:StartEvent', 'StartEvent');
     map.set('bpmn:EndEvent', 'EndEvent');
-    map.set('bpmn:TimerEvent', 'TimerEvent');
+    map.set('bpmn:IntermediateCatchEvent', 'CatchEvent');
+    map.set('bpmn:IntermediateThrowEvent', 'ThrowEvent');
     map.set('bpmn:ScriptTask', 'ScriptTask');
     map.set('bpmn:BoundaryEvent', 'BoundaryEvent');
     map.set('bpmn:CallActivity', 'SubprocessExternal');

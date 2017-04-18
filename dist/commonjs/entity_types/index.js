@@ -21,6 +21,7 @@ __export(require("./process_token"));
 __export(require("./boundary_event"));
 __export(require("./subprocess_external"));
 __export(require("./subprocess_internal"));
-__export(require("./timer_event"));
+__export(require("./throw_event"));
+__export(require("./catch_event"));
 
 //# sourceMappingURL=index.js.map

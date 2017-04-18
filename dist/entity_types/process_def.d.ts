@@ -42,11 +42,10 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
     private _parseTimerDefinitionType(eventDefinition);
     private _parseTimerDefinition(eventDefinition);
-    private startTimers(processes, context);
-    private _startTimer(timerDefinitionType, timerDefinition, callback, context);
+    startTimer(context: ExecutionContext): Promise<void>;
     updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void>;
     private _updateLanes(lanes, context, counter);
-    private _updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
+    private _updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
     private _updateFlows(flows, nodeCache, context, counter);
     private _createBoundaries(nodes, nodeCache, context);
     private _updateExtensionElements(extensionElements);
