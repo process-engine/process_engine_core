@@ -48,7 +48,7 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     private _updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
     private _updateFlows(flows, nodeCache, context, counter);
     private _createBoundaries(nodes, nodeCache, context);
-    private _updateExtensionElements(extensionElements);
+    private _updateExtensionElements(extensionElements, entity);
     private _extractFeatures();
     save(context: ExecutionContext, options?: IPrivateSaveOptions): Promise<IEntity>;
 }

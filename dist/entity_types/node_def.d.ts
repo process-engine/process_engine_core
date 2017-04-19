@@ -25,6 +25,9 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     counter: number;
     timerDefinitionType: number;
     timerDefinition: object;
+    startContext: string;
+    startContextEntityType: string;
+    signal: string;
     readonly features: Array<IFeature>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection>;

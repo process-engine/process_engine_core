@@ -278,7 +278,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const processes = bpmnDiagram.getProcesses();
         const currentProcess = processes.find((item) => item.id === key);
         if (currentProcess.extensionElements) {
-            const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
+            const extensions = this._updateExtensionElements(currentProcess.extensionElements.values, this);
             this.extensions = extensions;
         }
         this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
@@ -353,7 +353,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             laneEntity.processDef = this;
             laneEntity.counter = counter;
             if (lane.extensionElements) {
-                const extensions = this._updateExtensionElements(lane.extensionElements.values);
+                const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
                 laneEntity.extensions = extensions;
             }
             await laneEntity.save(context);
@@ -407,9 +407,14 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                         helperObject.hasTimerStartEvent = true;
                     }
                 }
+                if (eventType === 'bpmn:SignalEventDefinition') {
+                    const signalId = node.eventDefinitions[0].signalRef ? node.eventDefinitions[0].signalRef.id : undefined;
+                    const signal = bpmnDiagram.getSignalById(signalId);
+                    nodeDefEntity.signal = signal.name;
+                }
             }
             if (node.extensionElements) {
-                const extensions = this._updateExtensionElements(node.extensionElements.values);
+                const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);
                 nodeDefEntity.extensions = extensions;
             }
             nodeDefEntity.name = node.name;
@@ -458,7 +463,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 flowDefEntity.condition = flow.conditionExpression.body;
             }
             if (flow.extensionElements) {
-                const extensions = this._updateExtensionElements(flow.extensionElements.values);
+                const extensions = this._updateExtensionElements(flow.extensionElements.values, flowDefEntity);
                 flowDefEntity.extensions = extensions;
             }
             await flowDefEntity.save(context);
@@ -500,7 +505,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         });
         await Promise.all(nodePromiseArray);
     }
-    _updateExtensionElements(extensionElements) {
+    _updateExtensionElements(extensionElements, entity) {
         const ext = {};
         extensionElements.forEach((extensionElement) => {
             if (extensionElement.$type === 'camunda:formData') {
@@ -561,6 +566,15 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                             name: child.name,
                             value: child.value
                         };
+                        switch (child.name) {
+                            case 'startContext':
+                                entity.startContext = child.value;
+                                break;
+                            case 'startContextEntityType':
+                                entity.startContextEntityType = child.value;
+                                break;
+                            default:
+                        }
                         properties.push(newChild);
                     });
                 }

@@ -17,4 +17,27 @@ export class CatchEventEntity extends EventEntity implements ICatchEventEntity {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
   }
+
+  public async execute(context: ExecutionContext) {
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    this.state = 'wait';
+    await this.save(internalContext);
+
+    const nodeDef = this.nodeDef;
+
+    switch (nodeDef.eventType) {
+      case 'bpmn:SignalEventDefinition':
+          const signal = nodeDef.signal;
+          await this._signalSubscribe(signal);
+        break;
+
+      default:
+    }
+
+
+  }
+
+  public async proceed(context: ExecutionContext, newData: any): Promise<void> {
+    this.changeState(context, 'end', this);
+  }
 }

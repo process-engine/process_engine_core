@@ -18,4 +18,19 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
   }
+
+  async _signalSubscribe(signal: string): Promise<void> {
+    const binding = {
+      entity: this,
+      eventAggregator: this.eventAggregator,
+      messagebusService: this.messageBusService,
+      datastoreService: this.datastoreService
+    };
+    this.messagebusSubscription = this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
+
+  }
+
+  private async _signalHandler(msg: any) {
+
+  }
 }

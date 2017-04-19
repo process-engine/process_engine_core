@@ -381,7 +381,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const currentProcess = processes.find((item) => item.id === key);
 
     if (currentProcess.extensionElements) {
-      const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
+      const extensions = this._updateExtensionElements(currentProcess.extensionElements.values, this);
       this.extensions = extensions;
     }
 
@@ -484,7 +484,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       laneEntity.counter = counter;
 
       if (lane.extensionElements) {
-        const extensions = this._updateExtensionElements(lane.extensionElements.values);
+        const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
         laneEntity.extensions = extensions;
       }
 
@@ -560,15 +560,23 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           nodeDefEntity.timerDefinition = this._parseTimerDefinition(node.eventDefinitions[0]);
 
           if (node.$type === 'bpmn:StartEvent') {
+
             helperObject.hasTimerStartEvent = true;
           }
         }
+
+        if (eventType === 'bpmn:SignalEventDefinition') {
+          const signalId = node.eventDefinitions[0].signalRef ? node.eventDefinitions[0].signalRef.id : undefined;
+          const signal = bpmnDiagram.getSignalById(signalId);
+          nodeDefEntity.signal = signal.name;
+        }
+
       }
 
 
       if (node.extensionElements) {
 
-        const extensions = this._updateExtensionElements(node.extensionElements.values);
+        const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);
 
         nodeDefEntity.extensions = extensions;
       }
@@ -638,7 +646,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
       if (flow.extensionElements) {
 
-        const extensions = this._updateExtensionElements(flow.extensionElements.values);
+        const extensions = this._updateExtensionElements(flow.extensionElements.values, flowDefEntity);
 
         flowDefEntity.extensions = extensions;
       }
@@ -696,7 +704,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
 
-  private _updateExtensionElements(extensionElements: Array<any>): any {
+  private _updateExtensionElements(extensionElements: Array<any>, entity: any): any {
     
     const ext: any = {};
 
@@ -776,6 +784,19 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               name: child.name,
               value: child.value
             };
+
+            switch (child.name) {
+              case 'startContext':
+                entity.startContext = child.value;
+                break;
+
+              case 'startContextEntityType':
+                entity.startContextEntityType = child.value;
+                break;
+
+              default:
+
+            }
 
             properties.push(newChild);
           });

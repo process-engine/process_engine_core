@@ -125,6 +125,24 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     set timerDefinition(value) {
         this.setProperty(this, 'timerDefinition', value);
     }
+    get startContext() {
+        return this.getProperty(this, 'startContext');
+    }
+    set startContext(value) {
+        this.setProperty(this, 'startContext', value);
+    }
+    get startContextEntityType() {
+        return this.getProperty(this, 'startContextEntityType');
+    }
+    set startContextEntityType(value) {
+        this.setProperty(this, 'startContextEntityType', value);
+    }
+    get signal() {
+        return this.getProperty(this, 'signal');
+    }
+    set signal(value) {
+        this.setProperty(this, 'signal', value);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -231,6 +249,15 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
 ], NodeDefEntity.prototype, "timerDefinition", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "startContext", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "startContextEntityType", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "signal", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

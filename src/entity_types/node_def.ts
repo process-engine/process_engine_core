@@ -180,6 +180,33 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'timerDefinition', value);
   }
   
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get startContext(): string {
+    return this.getProperty(this, 'startContext');
+  }
+
+  public set startContext(value: string) {
+    this.setProperty(this, 'startContext', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get startContextEntityType(): string {
+    return this.getProperty(this, 'startContextEntityType');
+  }
+
+  public set startContextEntityType(value: string) {
+    this.setProperty(this, 'startContextEntityType', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get signal(): string {
+    return this.getProperty(this, 'signal');
+  }
+
+  public set signal(value: string) {
+    this.setProperty(this, 'signal', value);
+  }  
+
 
   public get features(): Array<IFeature> {
     return this._extractFeatures();
