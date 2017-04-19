@@ -18,27 +18,17 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 
-  protected get timerDefinitionType(): TimerDefinitionType {
-    return this.nodeDef.timerDefinitionType;
-  }
-
-  protected get timerDefinition(): any {
-    return this.nodeDef.timerDefinition;
-  }
-
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
-    await this.initializeTimer();
   }
 
-  private async initializeTimer(): Promise<void> {
+
+  protected async initializeTimer(): Promise<void> {
 
     const context = await this.iamService.createInternalContext(this.config.systemUser);
-    
-    await this.getNodeDef(context);
         
-    switch (this.timerDefinitionType) {
+    switch (this.nodeDef.timerDefinitionType) {
       case TimerDefinitionType.cycle:
         await this._startCycleTimer(this.nodeDef.timerDefinition, context);
         break;
@@ -50,17 +40,8 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
         break;
       default:
     }
-
-    await this.changeState(context, 'wait', this);
   }
 
-  public async proceed(context: ExecutionContext, data: any, source: IEntityReference, applicationId: string): Promise<void> {
-    if (this.timerDefinitionType === TimerDefinitionType.cycle) {
-      await this.event(context, 'timer', {});
-    } else {
-      await this.changeState(context, 'end', this);
-    }
-  }
 
   private async _startCycleTimer(timerDefinition: string, context: ExecutionContext): Promise<void> {
 
@@ -76,8 +57,8 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     };
 
     const channelName = `events/timer/${this.id}`;
-    this.eventAggregator.subscribe(channelName, async () => {
-      await this.handleTimerElapsed(context);
+    this.eventAggregator.subscribe(channelName, () => {
+      this._handleTimerElapsed(context);
     });
 
     await this.timingService.periodic(timingRule, channelName, context);
@@ -89,8 +70,8 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     const date = moment().add(duration);
 
     const channelName = `events/timer/${this.id}`;
-    this.eventAggregator.subscribeOnce(channelName, async () => {
-      await this.handleTimerElapsed(context);
+    this.eventAggregator.subscribeOnce(channelName, () => {
+      this._handleTimerElapsed(context);
     });
 
     await this.timingService.once(date, channelName, context);
@@ -101,24 +82,28 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     const date = moment(timerDefinition);
 
     const channelName = `events/timer/${this.id}`;
-    this.eventAggregator.subscribeOnce(channelName, async () => {
-      await this.handleTimerElapsed(context);
+    this.eventAggregator.subscribeOnce(channelName, () => {
+      this._handleTimerElapsed(context);
     });
 
     await this.timingService.once(date, channelName, context);
   }
 
-  protected handleTimerElapsed(context: ExecutionContext): void {
+  private _handleTimerElapsed(context: ExecutionContext): void {
+    this._sendProceed(context, null, this);
+  }
 
-    const data = {
-      action: 'proceed'
-    };
 
-    const event = this.eventAggregator.createEntityEvent(data, this, context);
+  private _sendProceed(context: ExecutionContext, data: any, source: IEntity): void {
+    data = data || {};
+    data.action = 'proceed';
+
+    const event = this.eventAggregator.createEntityEvent(data, source, context);
     this.eventAggregator.publish('/processengine/node/' + this.id, event);
   }
 
-  async _signalSubscribe(signal: string): Promise<void> {
+  protected async initializeSignal(): Promise<void> {
+    const signal = this.nodeDef.signal;
     const binding = {
       entity: this,
       eventAggregator: this.eventAggregator,
@@ -130,6 +115,53 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
   }
 
   private async _signalHandler(msg: any) {
+    const binding = <any>this;
+
+    await binding.messagebusService.verifyMessage(msg);
+
+    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+
+    const sourceRef = (msg && msg.source) ? msg.source : null;
+    let source = null;
+    if (sourceRef) {
+      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+      source = await entityType.getById(sourceRef.id, context);
+    }
+
+    const data: any = (msg && msg.data) ? msg.data : null;
+
+    this._sendProceed(context, data, source);
+  }
+
+  protected async initializeMessage(): Promise<void> {
+    const message = this.nodeDef.message;
+    const binding = {
+      entity: this,
+      eventAggregator: this.eventAggregator,
+      messagebusService: this.messageBusService,
+      datastoreService: this.datastoreService
+    };
+    this.messagebusSubscription = this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
 
   }
+
+  private async _messageHandler(msg: any) {
+    const binding = <any>this;
+
+    await binding.messagebusService.verifyMessage(msg);
+
+    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+
+    const sourceRef = (msg && msg.source) ? msg.source : null;
+    let source = null;
+    if (sourceRef) {
+      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+      source = await entityType.getById(sourceRef.id, context);
+    }
+
+    const data: any = (msg && msg.data) ? msg.data : null;
+
+    this._sendProceed(context, data, source);
+  }
+
 }

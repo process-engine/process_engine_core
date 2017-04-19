@@ -18,8 +18,7 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
     }
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        this.state = 'wait';
-        await this.save(internalContext);
+        this.changeState(context, 'wait', this);
         const pojo = await this.toPojo(internalContext);
         const data = {
             action: 'userTask',

@@ -69,7 +69,7 @@ class NodeInstanceEntityTypeService {
         if (action === 'event') {
             const nodeEvent = (event && event.data && event.data.event) ? event.data.event : null;
             const data = (event && event.data && event.data.data) ? event.data.data : null;
-            await binding.entity.event(context, nodeEvent, data);
+            await binding.entity.event(context, nodeEvent, data, source, applicationId);
         }
     }
     async _nodeHandlerMessagebus(msg) {

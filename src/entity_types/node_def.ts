@@ -205,7 +205,16 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
 
   public set signal(value: string) {
     this.setProperty(this, 'signal', value);
-  }  
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get message(): string {
+    return this.getProperty(this, 'message');
+  }
+
+  public set message(value: string) {
+    this.setProperty(this, 'message', value);
+  }
 
 
   public get features(): Array<IFeature> {

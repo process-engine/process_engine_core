@@ -143,6 +143,12 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     set signal(value) {
         this.setProperty(this, 'signal', value);
     }
+    get message() {
+        return this.getProperty(this, 'message');
+    }
+    set message(value) {
+        this.setProperty(this, 'message', value);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -258,6 +264,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeDefEntity.prototype, "signal", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "message", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

@@ -193,6 +193,16 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     await this.save(internalContext);
 
+    const boundaries = await this.nodeDef.getBoundaryEvents(internalContext);
+    const processToken = await this.getProcessToken(context);
+
+    if (boundaries.length > 0) {
+      boundaries.each(internalContext, async (boundary) => {
+        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+      });
+    
+    }
+
     this.changeState(context, 'execute', this);
   }
 
@@ -228,6 +238,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     }
   }
 
+  public async wait(context: ExecutionContext): Promise<void> {
+    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    this.state = 'wait';
+    await this.save(internalContext);
+  }
+
 
   public async execute(context: ExecutionContext): Promise<void> {
     debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
@@ -240,12 +258,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async proceed(context: ExecutionContext, data: any, source: IEntityReference, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
     // by default do nothing, implementation should be overwritten by child class
   }
 
 
-  public async event(context: ExecutionContext, event: string, data: any): Promise<void> {
+  public async event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string): Promise<void> {
 
     debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
 

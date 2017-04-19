@@ -412,6 +412,11 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const signal = bpmnDiagram.getSignalById(signalId);
                     nodeDefEntity.signal = signal.name;
                 }
+                if (eventType === 'bpmn:MessageEventDefinition') {
+                    const messageId = node.eventDefinitions[0].messageRef ? node.eventDefinitions[0].messageRef.id : undefined;
+                    const message = bpmnDiagram.getSignalById(messageId);
+                    nodeDefEntity.message = message.name;
+                }
             }
             if (node.extensionElements) {
                 const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);

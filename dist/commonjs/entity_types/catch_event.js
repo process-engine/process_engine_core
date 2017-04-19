@@ -10,19 +10,23 @@ class CatchEventEntity extends event_1.EventEntity {
         await super.initialize(actualInstance);
     }
     async execute(context) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        this.state = 'wait';
-        await this.save(internalContext);
+        this.changeState(context, 'wait', this);
         const nodeDef = this.nodeDef;
         switch (nodeDef.eventType) {
             case 'bpmn:SignalEventDefinition':
-                const signal = nodeDef.signal;
-                await this._signalSubscribe(signal);
+                await this.initializeSignal();
+                break;
+            case 'bpmn:MessageEventDefinition':
+                await this.initializeMessage();
+                break;
+            case 'bpmn:TimerEventDefinition':
+                await this.initializeTimer();
                 break;
             default:
+                this.changeState(context, 'end', this);
         }
     }
-    async proceed(context, newData) {
+    async proceed(context, newData, source, applicationId) {
         this.changeState(context, 'end', this);
     }
 }

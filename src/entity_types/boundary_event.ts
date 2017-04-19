@@ -20,25 +20,32 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
   }
 
   public async execute(context: ExecutionContext) {
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-    this.state = 'wait';
-    await this.save(internalContext);
+
+    this.changeState(context, 'wait', this);
 
     const nodeDef = this.nodeDef;
 
     switch (nodeDef.eventType) {
       case 'bpmn:SignalEventDefinition':
-        const signal = nodeDef.signal;
-        await this._signalSubscribe(signal);
+        await this.initializeSignal();
+        break;
+
+      case 'bpmn:MessageEventDefinition':
+        await this.initializeMessage();
+        break;
+
+      case 'bpmn:TimerEventDefinition':
+        await this.initializeTimer();
         break;
 
       default:
+
     }
 
 
   }
-  
-  public async proceed(context: ExecutionContext, data: any, source: IEntityReference, applicationId: string): Promise<void> {
+
+  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
 
     await this.nodeDef.getAttachedToNode(context);
 
@@ -46,7 +53,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
     let event;
 
-    if (this.timerDefinitionType !== TimerDefinitionType.cycle || this.nodeDef.cancelActivity) {
+    if (this.nodeDef.timerDefinitionType !== TimerDefinitionType.cycle || this.nodeDef.cancelActivity) {
       
       event = {
         action: 'changeState',

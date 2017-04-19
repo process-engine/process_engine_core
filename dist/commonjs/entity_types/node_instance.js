@@ -131,6 +131,13 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         await this.save(internalContext);
+        const boundaries = await this.nodeDef.getBoundaryEvents(internalContext);
+        const processToken = await this.getProcessToken(context);
+        if (boundaries.length > 0) {
+            boundaries.each(internalContext, async (boundary) => {
+                await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+            });
+        }
         this.changeState(context, 'execute', this);
     }
     changeState(context, newState, source) {
@@ -155,6 +162,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             this.eventAggregator.publish('/processengine/node/' + this.id, event);
         }
     }
+    async wait(context) {
+        debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        this.state = 'wait';
+        await this.save(internalContext);
+    }
     async execute(context) {
         debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -164,7 +177,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async proceed(context, data, source, applicationId) {
     }
-    async event(context, event, data) {
+    async event(context, event, data, source, applicationId) {
         debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
