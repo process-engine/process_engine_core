@@ -3,13 +3,15 @@ import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_co
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { ITimingService } from '@process-engine-js/timing_contracts';
 export declare class NodeInstanceEntityDependencyHelper {
     messageBusService: IMessageBusService;
     eventAggregator: IEventAggregator;
     iamService: IIamService;
     nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
     processEngineService: IProcessEngineService;
-    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService);
+    timingService: ITimingService;
+    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService, timingService: ITimingService);
 }
 export declare class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     private _nodeInstanceEntityDependencyHelper;
@@ -21,6 +23,7 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     protected readonly eventAggregator: IEventAggregator;
     protected readonly nodeInstanceEntityTypeService: INodeInstanceEntityTypeService;
     protected readonly processEngineService: IProcessEngineService;
+    protected readonly timingService: ITimingService;
     initialize(derivedClassInstance: IEntity): Promise<void>;
     name: string;
     key: string;

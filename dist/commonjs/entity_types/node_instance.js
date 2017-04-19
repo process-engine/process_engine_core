@@ -13,17 +13,19 @@ const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 class NodeInstanceEntityDependencyHelper {
-    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService, processEngineService) {
+    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService, processEngineService, timingService) {
         this.messageBusService = undefined;
         this.eventAggregator = undefined;
         this.iamService = undefined;
         this.nodeInstanceEntityTypeService = undefined;
         this.processEngineService = undefined;
+        this.timingService = undefined;
         this.messageBusService = messageBusService;
         this.eventAggregator = eventAggregator;
         this.iamService = iamService;
         this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
         this.processEngineService = processEngineService;
+        this.timingService = timingService;
     }
 }
 exports.NodeInstanceEntityDependencyHelper = NodeInstanceEntityDependencyHelper;
@@ -49,6 +51,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     get processEngineService() {
         return this._nodeInstanceEntityDependencyHelper.processEngineService;
+    }
+    get timingService() {
+        return this._nodeInstanceEntityDependencyHelper.timingService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;

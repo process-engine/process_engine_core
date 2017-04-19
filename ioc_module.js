@@ -62,7 +62,7 @@ function registerInContainer(container) {
 
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
-    .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService')
+    .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')
     .singleton();
 
   container.register('BoundaryEventEntity', BoundaryEventEntity)

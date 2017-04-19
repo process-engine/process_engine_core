@@ -1,6 +1,6 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryClause} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
-import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
+import {TimerDefinitionType, INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IFeature } from '@process-engine-js/feature_contracts';
 
@@ -163,20 +163,20 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   @schemaAttribute({ type: SchemaAttributeType.number })
-  public get timerDefinitionType(): number {
+  public get timerDefinitionType(): TimerDefinitionType {
     return this.getProperty(this, 'timerDefinitionType');
   }
 
-  public set timerDefinitionType(value: number) {
+  public set timerDefinitionType(value: TimerDefinitionType) {
     this.setProperty(this, 'timerDefinitionType', value);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.object })
-  public get timerDefinition(): object {
+  public get timerDefinition(): any {
     return this.getProperty(this, 'timerDefinition');
   }
 
-  public set timerDefinition(value: object) {
+  public set timerDefinition(value: any) {
     this.setProperty(this, 'timerDefinition', value);
   }
   

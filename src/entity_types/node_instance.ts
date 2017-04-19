@@ -4,6 +4,7 @@ import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IP
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { ITimingService } from '@process-engine-js/timing_contracts';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
@@ -16,13 +17,15 @@ export class NodeInstanceEntityDependencyHelper {
   public iamService: IIamService = undefined;
   public nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   public processEngineService: IProcessEngineService = undefined;
+  public timingService: ITimingService = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService, timingService: ITimingService) {
     this.messageBusService = messageBusService;
     this.eventAggregator = eventAggregator;
     this.iamService = iamService;
     this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
     this.processEngineService = processEngineService;
+    this.timingService = timingService;
   }
 }
 
@@ -64,6 +67,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   protected get processEngineService(): IProcessEngineService {
     return this._nodeInstanceEntityDependencyHelper.processEngineService;
+  }
+
+  protected get timingService(): ITimingService {
+    return this._nodeInstanceEntityDependencyHelper.timingService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {

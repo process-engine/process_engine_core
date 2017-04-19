@@ -1,6 +1,6 @@
 import { ExecutionContext, IEntity, IInheritedSchema } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
-import { INodeDefEntity, IProcessDefEntity, ILaneEntity } from '@process-engine-js/process_engine_contracts';
+import { TimerDefinitionType, INodeDefEntity, IProcessDefEntity, ILaneEntity } from '@process-engine-js/process_engine_contracts';
 import { IFeature } from '@process-engine-js/feature_contracts';
 export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     constructor(entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
@@ -23,8 +23,8 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     subProcessDef: INodeDefEntity;
     getSubProcessDef(context: ExecutionContext): Promise<INodeDefEntity>;
     counter: number;
-    timerDefinitionType: number;
-    timerDefinition: object;
+    timerDefinitionType: TimerDefinitionType;
+    timerDefinition: any;
     startContext: string;
     startContextEntityType: string;
     signal: string;
