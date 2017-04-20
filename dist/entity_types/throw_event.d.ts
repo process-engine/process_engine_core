@@ -6,4 +6,5 @@ import { NodeInstanceEntityDependencyHelper } from './node_instance';
 export declare class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
     constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
+    execute(context: ExecutionContext): Promise<void>;
 }
