@@ -26,17 +26,17 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
   protected async initializeTimer(): Promise<void> {
 
-    const context = await this.iamService.createInternalContext(this.config.systemUser);
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
         
     switch (this.nodeDef.timerDefinitionType) {
       case TimerDefinitionType.cycle:
-        await this._startCycleTimer(this.nodeDef.timerDefinition, context);
+        await this._startCycleTimer(this.nodeDef.timerDefinition, internalContext);
         break;
       case TimerDefinitionType.date:
-        await this._startDateTimer(this.nodeDef.timerDefinition, context);
+        await this._startDateTimer(this.nodeDef.timerDefinition, internalContext);
         break;
       case TimerDefinitionType.duration:
-        await this._startDurationTimer(this.nodeDef.timerDefinition, context);
+        await this._startDurationTimer(this.nodeDef.timerDefinition, internalContext);
         break;
       default:
     }

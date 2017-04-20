@@ -216,6 +216,15 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'message', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get condition(): string {
+    return this.getProperty(this, 'condition');
+  }
+
+  public set condition(value: string) {
+    this.setProperty(this, 'condition', value);
+  }
+
 
   public get features(): Array<IFeature> {
     return this._extractFeatures();

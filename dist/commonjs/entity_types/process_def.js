@@ -417,6 +417,10 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const message = bpmnDiagram.getSignalById(messageId);
                     nodeDefEntity.message = message.name;
                 }
+                if (eventType === 'bpmn:ConditionalEventDefinition') {
+                    const condition = node.eventDefinitions[0].condition ? node.eventDefinitions[0].condition.body : null;
+                    nodeDefEntity.condition = condition;
+                }
             }
             if (node.extensionElements) {
                 const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);
@@ -424,6 +428,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             }
             nodeDefEntity.name = node.name;
             nodeDefEntity.type = node.$type;
+            nodeDefEntity.events = null;
             nodeDefEntity.processDef = this;
             nodeDefEntity.counter = counter;
             const laneId = bpmnDiagram.getLaneOfElement(node.id);
@@ -484,22 +489,46 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const boundary = nodeCache[node.id];
                     boundary.attachedToNode = sourceEnt;
                     await boundary.save(context);
-                    const events = sourceEnt.events || {};
+                    let events = sourceEnt.events || [];
+                    if (!Array.isArray(events)) {
+                        events = [];
+                    }
                     switch (boundary.eventType) {
                         case 'bpmn:ErrorEventDefinition':
-                            events.error = boundary.key;
+                            events.push({
+                                type: 'error',
+                                boundary: boundary.id
+                            });
                             break;
                         case 'bpmn:TimerEventDefinition':
-                            events.timer = boundary.key;
+                            events.push({
+                                type: 'timer',
+                                boundary: boundary.id
+                            });
                             break;
                         case 'bpmn:SignalEventDefinition':
-                            events.signal = boundary.key;
+                            events.push({
+                                type: 'signal',
+                                boundary: boundary.id
+                            });
                             break;
                         case 'bpmn:MessageEventDefinition':
-                            events.message = boundary.key;
+                            events.push({
+                                type: 'message',
+                                boundary: boundary.id
+                            });
                             break;
                         case 'bpmn:CancelEventDefinition':
-                            events.cancel = boundary.key;
+                            events.push({
+                                type: 'cancel',
+                                boundary: boundary.id
+                            });
+                            break;
+                        case 'bpmn:ConditionalEventDefinition':
+                            events.push({
+                                type: 'condition',
+                                boundary: boundary.id
+                            });
                             break;
                         default:
                     }

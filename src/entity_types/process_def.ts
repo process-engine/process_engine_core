@@ -577,6 +577,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           nodeDefEntity.message = message.name;
         }
 
+        if (eventType === 'bpmn:ConditionalEventDefinition') {
+          const condition = node.eventDefinitions[0].condition ? node.eventDefinitions[0].condition.body : null;
+          nodeDefEntity.condition = condition;
+        }
+
       }
 
 
@@ -589,6 +594,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
       nodeDefEntity.name = node.name;
       nodeDefEntity.type = node.$type;
+      nodeDefEntity.events = null;
       nodeDefEntity.processDef = this;
       nodeDefEntity.counter = counter;
 
@@ -676,26 +682,52 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           boundary.attachedToNode = sourceEnt;
           await boundary.save(context);
 
-          const events = sourceEnt.events || {};
+          let events = sourceEnt.events || [];
+          if (!Array.isArray(events)) {
+            events = [];
+          }
+
           switch (boundary.eventType) {
             case 'bpmn:ErrorEventDefinition':
-              events.error = boundary.key;
+              events.push({
+                type: 'error',
+                boundary: boundary.id
+              });
               break;
 
             case 'bpmn:TimerEventDefinition':
-              events.timer = boundary.key;
+              events.push({
+                type: 'timer',
+                boundary: boundary.id
+              });
               break;
 
             case 'bpmn:SignalEventDefinition':
-              events.signal = boundary.key;
+              events.push({
+                type: 'signal',
+                boundary: boundary.id
+              });
               break;
 
             case 'bpmn:MessageEventDefinition':
-              events.message = boundary.key;
+              events.push({
+                type: 'message',
+                boundary: boundary.id
+              });
               break;
 
             case 'bpmn:CancelEventDefinition':
-              events.cancel = boundary.key;
+              events.push({
+                type: 'cancel',
+                boundary: boundary.id
+              });
+              break;
+
+            case 'bpmn:ConditionalEventDefinition':
+              events.push({
+                type: 'condition',
+                boundary: boundary.id
+              });
               break;
 
             default:

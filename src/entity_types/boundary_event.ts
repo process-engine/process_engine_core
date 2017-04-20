@@ -21,27 +21,27 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
   public async execute(context: ExecutionContext) {
 
-    this.changeState(context, 'wait', this);
-
     const nodeDef = this.nodeDef;
 
     switch (nodeDef.eventType) {
       case 'bpmn:SignalEventDefinition':
+        this.changeState(context, 'wait', this);
         await this.initializeSignal();
         break;
 
       case 'bpmn:MessageEventDefinition':
+        this.changeState(context, 'wait', this);
         await this.initializeMessage();
         break;
 
       case 'bpmn:TimerEventDefinition':
+        this.changeState(context, 'wait', this);
         await this.initializeTimer();
         break;
 
       default:
-
+        this.changeState(context, 'end', this);
     }
-
 
   }
 

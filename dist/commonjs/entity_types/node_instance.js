@@ -135,7 +135,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         const processToken = await this.getProcessToken(context);
         if (boundaries.length > 0) {
             boundaries.each(internalContext, async (boundary) => {
-                await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+                if (boundary.eventType === 'bpmn:TimerEventDefinition' || boundary.eventType === 'bpmn:MessageEventDefinition' || boundary.eventType === 'bpmn:SignalEventDefinition') {
+                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+                }
             });
         }
         this.changeState(context, 'execute', this);
@@ -179,20 +181,64 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async event(context, event, data, source, applicationId) {
         debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
+        const boundaryEventEntityType = await this.datastoreService.getEntityType('BoundaryEvent');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const nodeDef = this.nodeDef;
-        if (nodeDef && nodeDef.events && nodeDef.events[event]) {
-            const boundaryDefKey = nodeDef.events[event];
-            const queryObject = {
-                attribute: 'key', operator: '=', value: boundaryDefKey
-            };
-            const boundary = await nodeDefEntityType.findOne(internalContext, { query: queryObject });
-            const token = await this.getProcessToken(internalContext);
-            if (boundary && boundary.cancelActivity) {
-                await this.end(context, true);
+        if (nodeDef && nodeDef.events) {
+            const events = nodeDef.events.filter((el) => {
+                return el.type === event;
+            });
+            const processToken = await this.getProcessToken(internalContext);
+            const tokenData = processToken.data || {};
+            const process = await this.getProcess(internalContext);
+            for (let i = 0; i < events.length; i++) {
+                const boundaryId = events[i].boundary;
+                const boundaryDef = await nodeDefEntityType.getById(boundaryId, internalContext);
+                const queryObj = {
+                    operator: 'and',
+                    queries: [
+                        { attribute: 'key', operator: '=', value: boundaryDef.key },
+                        { attribute: 'process', operator: '=', value: process.id }
+                    ]
+                };
+                const boundary = await boundaryEventEntityType.findOne(internalContext, { query: queryObj });
+                if (boundaryDef) {
+                    switch (event) {
+                        case 'error':
+                            await this.end(context, true);
+                            break;
+                        case 'timer':
+                            break;
+                        case 'signal':
+                            break;
+                        case 'message':
+                            break;
+                        case 'cancel':
+                            break;
+                        case 'condition':
+                            if (boundaryDef.condition) {
+                                const functionString = 'return ' + boundaryDef.condition;
+                                const evaluateFunction = new Function('token', functionString);
+                                let result;
+                                try {
+                                    result = evaluateFunction.call(tokenData, tokenData);
+                                }
+                                catch (err) {
+                                    debugErr(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
+                                }
+                                if (result) {
+                                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundaryDef, processToken);
+                                    if (boundaryDef.cancelActivity) {
+                                        await this.end(internalContext, true);
+                                    }
+                                }
+                            }
+                            break;
+                        default:
+                    }
+                }
             }
-            await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
         }
     }
     async cancel(context) {

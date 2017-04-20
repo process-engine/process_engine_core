@@ -72,7 +72,31 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
           const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
 
+          const self = this;
+
+          const cb = function(data) {
+            const eventData = {
+              action: 'event',
+              event: 'condition',
+              data: data
+            };
+
+            const event = self.eventAggregator.createEntityEvent(eventData, self, context);
+            self.eventAggregator.publish('/processengine/node/' + self.id, event);
+          };
+
+          const orig = process.stdout.write;
+          process.stdout.write = (function (write) {
+            return function (data: string): boolean {
+              cb(data);
+              write.apply(process.stdout, arguments);
+              return true;
+            };
+          })(process.stdout.write);
+
           result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
+
+          process.stdout.write = orig;
 
         } catch (err) {
           result = err;

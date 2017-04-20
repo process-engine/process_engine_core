@@ -54,8 +54,8 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
                     let result = false;
                     try {
                         const functionString = 'return ' + flow.condition;
-                        const evaluateFunction = new Function(functionString);
-                        result = evaluateFunction.call(tokenData);
+                        const evaluateFunction = new Function('token', functionString);
+                        result = evaluateFunction.call(tokenData, tokenData);
                     }
                     catch (err) {
                     }

@@ -118,11 +118,11 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ThrowEventEntity', ThrowEventEntity)
-    .dependencies('container', 'NodeInstanceEntityDependencyHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('CatchEventEntity', CatchEventEntity)
-    .dependencies('container', 'NodeInstanceEntityDependencyHelper')
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('StartEventEntity', StartEventEntity)
