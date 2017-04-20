@@ -287,10 +287,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private _parseTimerDefinition(eventDefinition: any): moment.Moment | ITimingRule {
     if (eventDefinition.timeDuration) {
-      const input = eventDefinition.timeDuration.body;
-      const duration = moment.duration(input);
-      const date = moment().add(duration);
-      return date;
+      return eventDefinition.timeDuration.body;
+      // const duration = moment.duration(input);
+      // const date = moment().add(duration);
+      // return date;
     }
     if (eventDefinition.timeCycle) {
       const input = eventDefinition.timeCycle.body;    

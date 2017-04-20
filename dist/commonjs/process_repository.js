@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const bluebirdPromise = require("bluebird");
 const fs = require("fs");
 class ProcessRepository {

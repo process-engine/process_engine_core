@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
