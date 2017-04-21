@@ -6,6 +6,8 @@ import {IEventEntity, TimerDefinitionType} from '@process-engine-js/process_engi
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 import * as moment from 'moment';
+import * as debug from 'debug';
+const debugInfo = debug('processengine:info');
 
 export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
@@ -130,7 +132,8 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
     const data: any = (msg && msg.data) ? msg.data : null;
 
-    this._sendProceed(context, data, source);
+    debugInfo(`signal '${binding.entity.nodeDef.signal}' received for node key '${binding.entity.key}'`);
+    binding.entity._sendProceed(context, data, source);
   }
 
   protected async initializeMessage(): Promise<void> {
@@ -161,7 +164,9 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
     const data: any = (msg && msg.data) ? msg.data : null;
 
-    this._sendProceed(context, data, source);
+    debugInfo(`message '${binding.entity.nodeDef.message}' received for node key '${binding.entity.key}'`);
+
+    binding.entity._sendProceed(context, data, source);
   }
 
 }

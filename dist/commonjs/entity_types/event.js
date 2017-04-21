@@ -1,7 +1,10 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const moment = require("moment");
+const debug = require("debug");
+const debugInfo = debug('processengine:info');
 class EventEntity extends node_instance_1.NodeInstanceEntity {
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -89,7 +92,8 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             source = await entityType.getById(sourceRef.id, context);
         }
         const data = (msg && msg.data) ? msg.data : null;
-        this._sendProceed(context, data, source);
+        debugInfo(`signal '${binding.entity.nodeDef.signal}' received for node key '${binding.entity.key}'`);
+        binding.entity._sendProceed(context, data, source);
     }
     async initializeMessage() {
         const message = this.nodeDef.message;
@@ -112,7 +116,8 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             source = await entityType.getById(sourceRef.id, context);
         }
         const data = (msg && msg.data) ? msg.data : null;
-        this._sendProceed(context, data, source);
+        debugInfo(`message '${binding.entity.nodeDef.message}' received for node key '${binding.entity.key}'`);
+        binding.entity._sendProceed(context, data, source);
     }
 }
 exports.EventEntity = EventEntity;
