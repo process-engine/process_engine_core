@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const moment = require("moment");
