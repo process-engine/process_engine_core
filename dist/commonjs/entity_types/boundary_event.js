@@ -30,17 +30,28 @@ class BoundaryEventEntity extends event_1.EventEntity {
         }
     }
     async proceed(context, data, source, applicationId) {
-        await this.nodeDef.getAttachedToNode(context);
-        const targetId = this.nodeDef.attachedToNode.id;
-        let event;
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const nodeInstanceEntityType = await this.datastoreService.getEntityType('NodeInstance');
+        const attachedToNode = await this.nodeDef.getAttachedToNode(context);
+        const targetKey = attachedToNode.key;
+        const process = this.process;
+        const queryObj = {
+            operator: 'and',
+            queries: [
+                { attribute: 'key', operator: '=', value: targetKey },
+                { attribute: 'process', operator: '=', value: process.id }
+            ]
+        };
+        const target = await nodeInstanceEntityType.findOne(internalContext, { query: queryObj });
+        let payload;
         if (this.nodeDef.timerDefinitionType !== process_engine_contracts_1.TimerDefinitionType.cycle || this.nodeDef.cancelActivity) {
-            event = {
+            payload = {
                 action: 'changeState',
                 data: 'end'
             };
         }
         else {
-            event = {
+            payload = {
                 action: 'event',
                 data: {
                     event: 'timer',
@@ -48,7 +59,8 @@ class BoundaryEventEntity extends event_1.EventEntity {
                 }
             };
         }
-        this.eventAggregator.publish('/processengine/node/' + targetId, event);
+        const event = this.eventAggregator.createEntityEvent(payload, source, context);
+        this.eventAggregator.publish('/processengine/node/' + target.id, event);
     }
 }
 exports.BoundaryEventEntity = BoundaryEventEntity;
