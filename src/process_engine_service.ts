@@ -1,16 +1,15 @@
-import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IProcessEntity, IImportFromFileOptions, IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
+import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions, IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IFactory } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 
 import * as debug from 'debug';
-import * as uuidModule from 'uuid';
 
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
 
-const uuid: any = uuidModule;
 
 export class ProcessEngineService implements IProcessEngineService {
 
@@ -20,19 +19,22 @@ export class ProcessEngineService implements IProcessEngineService {
   private _featureService: IFeatureService = undefined;
   private _iamService: IIamService = undefined;
   private _processRepository: IProcessRepository = undefined;
+  private _datastoreService: IDatastoreService = undefined;
+  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
 
   private _runningProcesses: any = {};
   private _processTokenCache: any = {};
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._featureService = featureService;
     this._iamService = iamService;
     this._processRepository = processRepository;
+    this._datastoreServiceFactory = datastoreServiceFactory;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -59,6 +61,13 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._processRepository;
   }
 
+  private get datastoreService(): IDatastoreService {
+    if (!this._datastoreService) {
+      this._datastoreService = this._datastoreServiceFactory();
+    }
+    return this._datastoreService;
+  }
+
   private get runningProcesses(): any {
     return this._runningProcesses;
   }
@@ -71,6 +80,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this.featureService.initialize();
     await this._initializeMessageBus();
     await this._initializeProcesses();
+    await this._startTimers();
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -160,4 +170,27 @@ export class ProcessEngineService implements IProcessEngineService {
         await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
     }
   }
+
+
+  private async _startTimers(): Promise<void> {
+
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const queryObject = {
+          operator: 'and',
+          queries: [
+            { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+            { attribute: 'eventType', operator: '=', value: 'bpmn:TimerEventDefinition' }
+          ]
+        };
+    const startEventColl: any = await nodeDefEntityType.query(internalContext, { query: queryObject });
+
+    startEventColl.each(internalContext, async (nodeDef) => {
+      const processDef = await nodeDef.getProcessDef(internalContext);
+      await processDef.startTimer(internalContext);
+    });
+    
+  }
+
 }

@@ -109,7 +109,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     if (action === 'event') {
       const nodeEvent = (event && event.data && event.data.event) ? event.data.event : null;
       const data = (event && event.data && event.data.data) ? event.data.data : null;
-      await binding.entity.event(context, nodeEvent, data);
+      await binding.entity.event(context, nodeEvent, data, source, applicationId);
     }
   }
 
@@ -123,8 +123,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const sourceRef = (msg && msg.source) ? msg.source : null;
     let source = null;
     if (sourceRef) {
-    const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-    source = await entityType.getById(sourceRef.id, context);
+      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+      source = await entityType.getById(sourceRef.id, context);
     }
     
     const data: any = (msg && msg.data) ? msg.data : null;
@@ -168,6 +168,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     map.set('bpmn:ServiceTask', 'ServiceTask');
     map.set('bpmn:StartEvent', 'StartEvent');
     map.set('bpmn:EndEvent', 'EndEvent');
+    map.set('bpmn:IntermediateCatchEvent', 'CatchEvent');
+    map.set('bpmn:IntermediateThrowEvent', 'ThrowEvent');
     map.set('bpmn:ScriptTask', 'ScriptTask');
     map.set('bpmn:BoundaryEvent', 'BoundaryEvent');
     map.set('bpmn:CallActivity', 'SubprocessExternal');

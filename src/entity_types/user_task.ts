@@ -27,8 +27,8 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
   public async execute(context: ExecutionContext) {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
-    this.state = 'wait';
-    await this.save(internalContext);
+
+    this.changeState(context, 'wait', this);
 
     const pojo = await this.toPojo(internalContext);
     const data = {
@@ -47,7 +47,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
     
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 

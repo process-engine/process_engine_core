@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
@@ -69,7 +68,7 @@ class NodeInstanceEntityTypeService {
         if (action === 'event') {
             const nodeEvent = (event && event.data && event.data.event) ? event.data.event : null;
             const data = (event && event.data && event.data.data) ? event.data.data : null;
-            await binding.entity.event(context, nodeEvent, data);
+            await binding.entity.event(context, nodeEvent, data, source, applicationId);
         }
     }
     async _nodeHandlerMessagebus(msg) {
@@ -112,6 +111,8 @@ class NodeInstanceEntityTypeService {
         map.set('bpmn:ServiceTask', 'ServiceTask');
         map.set('bpmn:StartEvent', 'StartEvent');
         map.set('bpmn:EndEvent', 'EndEvent');
+        map.set('bpmn:IntermediateCatchEvent', 'CatchEvent');
+        map.set('bpmn:IntermediateThrowEvent', 'ThrowEvent');
         map.set('bpmn:ScriptTask', 'ScriptTask');
         map.set('bpmn:BoundaryEvent', 'BoundaryEvent');
         map.set('bpmn:CallActivity', 'SubprocessExternal');

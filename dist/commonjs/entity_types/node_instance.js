@@ -5,7 +5,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
@@ -13,17 +12,19 @@ const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 class NodeInstanceEntityDependencyHelper {
-    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService, processEngineService) {
+    constructor(messageBusService, eventAggregator, iamService, nodeInstanceEntityTypeService, processEngineService, timingService) {
         this.messageBusService = undefined;
         this.eventAggregator = undefined;
         this.iamService = undefined;
         this.nodeInstanceEntityTypeService = undefined;
         this.processEngineService = undefined;
+        this.timingService = undefined;
         this.messageBusService = messageBusService;
         this.eventAggregator = eventAggregator;
         this.iamService = iamService;
         this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
         this.processEngineService = processEngineService;
+        this.timingService = timingService;
     }
 }
 exports.NodeInstanceEntityDependencyHelper = NodeInstanceEntityDependencyHelper;
@@ -49,6 +50,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     get processEngineService() {
         return this._nodeInstanceEntityDependencyHelper.processEngineService;
+    }
+    get timingService() {
+        return this._nodeInstanceEntityDependencyHelper.timingService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -126,6 +130,15 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         await this.save(internalContext);
+        const boundaries = await this.nodeDef.getBoundaryEvents(internalContext);
+        const processToken = await this.getProcessToken(context);
+        if (boundaries.length > 0) {
+            boundaries.each(internalContext, async (boundary) => {
+                if (boundary.eventType === 'bpmn:TimerEventDefinition' || boundary.eventType === 'bpmn:MessageEventDefinition' || boundary.eventType === 'bpmn:SignalEventDefinition') {
+                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+                }
+            });
+        }
         this.changeState(context, 'execute', this);
     }
     changeState(context, newState, source) {
@@ -150,6 +163,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             this.eventAggregator.publish('/processengine/node/' + this.id, event);
         }
     }
+    async wait(context) {
+        debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        this.state = 'wait';
+        await this.save(internalContext);
+    }
     async execute(context) {
         debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -159,22 +178,66 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async proceed(context, data, source, applicationId) {
     }
-    async event(context, event, data) {
+    async event(context, event, data, source, applicationId) {
         debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
+        const boundaryEventEntityType = await this.datastoreService.getEntityType('BoundaryEvent');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const nodeDef = this.nodeDef;
-        if (nodeDef && nodeDef.events && nodeDef.events[event]) {
-            const boundaryDefKey = nodeDef.events[event];
-            const queryObject = {
-                attribute: 'key', operator: '=', value: boundaryDefKey
-            };
-            const boundary = await nodeDefEntityType.findOne(internalContext, { query: queryObject });
-            const token = await this.getProcessToken(internalContext);
-            if (boundary && boundary.cancelActivity) {
-                await this.end(context, true);
+        if (nodeDef && nodeDef.events) {
+            const events = nodeDef.events.filter((el) => {
+                return el.type === event;
+            });
+            const processToken = await this.getProcessToken(internalContext);
+            const tokenData = processToken.data || {};
+            const process = await this.getProcess(internalContext);
+            for (let i = 0; i < events.length; i++) {
+                const boundaryId = events[i].boundary;
+                const boundaryDef = await nodeDefEntityType.getById(boundaryId, internalContext);
+                const queryObj = {
+                    operator: 'and',
+                    queries: [
+                        { attribute: 'key', operator: '=', value: boundaryDef.key },
+                        { attribute: 'process', operator: '=', value: process.id }
+                    ]
+                };
+                const boundary = await boundaryEventEntityType.findOne(internalContext, { query: queryObj });
+                if (boundaryDef) {
+                    switch (event) {
+                        case 'error':
+                            await this.end(context, true);
+                            break;
+                        case 'timer':
+                            break;
+                        case 'signal':
+                            break;
+                        case 'message':
+                            break;
+                        case 'cancel':
+                            break;
+                        case 'condition':
+                            if (boundaryDef.condition) {
+                                const functionString = 'return ' + boundaryDef.condition;
+                                const evaluateFunction = new Function('token', functionString);
+                                let result;
+                                try {
+                                    result = evaluateFunction.call(tokenData, tokenData);
+                                }
+                                catch (err) {
+                                    debugErr(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
+                                }
+                                if (result) {
+                                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundaryDef, processToken);
+                                    if (boundaryDef.cancelActivity) {
+                                        await this.end(internalContext, true);
+                                    }
+                                }
+                            }
+                            break;
+                        default:
+                    }
+                }
             }
-            await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
         }
     }
     async cancel(context) {

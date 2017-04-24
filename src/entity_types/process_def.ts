@@ -1,13 +1,15 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions, 
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
-import {IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity, IProcessRepository} from '@process-engine-js/process_engine_contracts';
+import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity, IProcessRepository, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
+import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
 import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService, IDataMessage } from '@process-engine-js/messagebus_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
 
-import * as uuid from 'uuid';
+import * as moment from 'moment';
 import * as debug from 'debug';
 
 const debugInfo = debug('processengine:info');
@@ -19,10 +21,12 @@ interface ICache<T> {
 
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
+  private _messageBusService: IMessageBusService = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
+  private _timingService: ITimingService = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _featureService: IFeatureService = undefined;
-  private _messageBusService: IMessageBusService = undefined;
   private _routingService: IRoutingService = undefined
   ;
   constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
@@ -30,6 +34,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               featureService: IFeatureService,
               messageBusService: IMessageBusService,
               routingService: IRoutingService,
+              eventAggregator: IEventAggregator,
+              timingService: ITimingService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
@@ -37,13 +43,24 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._processRepository = processRepository;
+    this._featureService = featureService;
     this._messageBusService = messageBusService;
     this._routingService = routingService;
+    this._eventAggregator = eventAggregator;
+    this._timingService = timingService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
+  }
+
+  private get timingService(): ITimingService {
+    return this._timingService;
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -255,6 +272,76 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     }
   }
 
+  private _parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
+    if (eventDefinition.timeDuration) {
+      return TimerDefinitionType.duration;
+    }
+    if (eventDefinition.timeCycle) {
+      return TimerDefinitionType.cycle;
+    }
+    if (eventDefinition.timeDate) {
+      return TimerDefinitionType.date;
+    }
+    return undefined;
+  }
+
+  private _parseTimerDefinition(eventDefinition: any): string {
+    if (eventDefinition.timeDuration) {
+      return eventDefinition.timeDuration.body
+    }
+    if (eventDefinition.timeCycle) {
+      return eventDefinition.timeCycle.body;    
+    }
+    if (eventDefinition.timeDate) {
+      return eventDefinition.timeDate.body;
+    }
+    return undefined;
+  }
+
+  public async startTimer(context: ExecutionContext): Promise<void> {
+
+    const features = this.features;
+
+    // only start timer if features of process match
+    if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
+
+      // get start event
+      const queryObject = {
+        operator: 'and',
+        queries: [
+          { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+          { attribute: 'processDef', operator: '=', value: this.id }
+        ]
+      };
+      const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+      const startEventDef: any = await nodeDefEntityType.findOne(context, { query: queryObject });
+
+      if (startEventDef) {
+
+        const channelName = `events/timer/${this.id}`;
+
+        const callback = async () => {
+          await this.start(context, undefined);
+        };
+
+        switch (startEventDef.timerDefinitionType) {
+          case TimerDefinitionType.cycle:
+            await this.timingService.periodic(<ITimingRule>startEventDef.timerDefinition, channelName, context);
+            this.eventAggregator.subscribe(channelName, callback.bind(this));
+            break;
+          case TimerDefinitionType.date:
+            await this.timingService.once(<moment.Moment>startEventDef.timerDefinition, channelName, context);
+            this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+            break;
+          case TimerDefinitionType.duration:
+            await this.timingService.once(<moment.Moment>startEventDef.timerDefinition, channelName, context);
+            this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+            break;
+          default: return;
+        }
+      }
+    }
+  }
 
   public async updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void> {
 
@@ -264,6 +351,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const key = this.key;
     const counter = this.counter;
 
+    const helperObject = {
+      hasTimerStartEvent: false
+    };
+
     if (!bpmnDiagram) {
       bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     }
@@ -272,7 +363,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const currentProcess = processes.find((item) => item.id === key);
 
     if (currentProcess.extensionElements) {
-      const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
+      const extensions = this._updateExtensionElements(currentProcess.extensionElements.values, this);
       this.extensions = extensions;
     }
 
@@ -280,13 +371,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     await this.save(context);
 
+    // await this.startTimers(processes, context);
+
     const lanes = bpmnDiagram.getLanes(key);
 
     const laneCache = await this._updateLanes(lanes, context, counter);
 
     const nodes = bpmnDiagram.getNodes(key);
 
-    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
+    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
 
     await this._createBoundaries(nodes, nodeCache, context);
 
@@ -337,6 +430,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       await laneEnt.remove(context);
     });
 
+    if (helperObject.hasTimerStartEvent) {
+      await this.startTimer(context);
+    }
   }
 
   private async _updateLanes(lanes: Array<any>, context: ExecutionContext, counter: number): Promise<ICache<any>> {
@@ -370,7 +466,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       laneEntity.counter = counter;
 
       if (lane.extensionElements) {
-        const extensions = this._updateExtensionElements(lane.extensionElements.values);
+        const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
         laneEntity.extensions = extensions;
       }
 
@@ -384,7 +480,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return laneCache;
   }
 
-  private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext, counter: number): Promise<ICache<any>> {
+  private async _updateNodes(nodes: Array<any>, laneCache: ICache<any>, bpmnDiagram: BpmnDiagram, context: ExecutionContext, counter: number, helperObject: any): Promise<ICache<any>> {
 
     const nodeCache = {};
 
@@ -415,14 +511,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           nodeDefEntity.script = node.script || null;
           break;
 
-        case 'bpmn:BoundaryEvent':
-          const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
-          if (eventType) {
-            nodeDefEntity.eventType = eventType;
-            nodeDefEntity.cancelActivity = node.cancelActivity || true;
-          }
-          break;
-
         case 'bpmn:CallActivity':
           if (node.calledElement) {
             nodeDefEntity.subProcessKey = node.calledElement;
@@ -443,15 +531,52 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         default:
       }
 
+
+      const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
+      if (eventType) {
+        nodeDefEntity.eventType = eventType;
+        nodeDefEntity.cancelActivity = node.cancelActivity || true;
+
+        if (eventType === 'bpmn:TimerEventDefinition') {
+          nodeDefEntity.timerDefinitionType = this._parseTimerDefinitionType(node.eventDefinitions[0]);
+          nodeDefEntity.timerDefinition = this._parseTimerDefinition(node.eventDefinitions[0]);
+
+          if (node.$type === 'bpmn:StartEvent') {
+
+            helperObject.hasTimerStartEvent = true;
+          }
+        }
+
+        if (eventType === 'bpmn:SignalEventDefinition') {
+          const signalId = node.eventDefinitions[0].signalRef ? node.eventDefinitions[0].signalRef.id : undefined;
+          const signal = bpmnDiagram.getSignalById(signalId);
+          nodeDefEntity.signal = signal.name;
+        }
+
+        if (eventType === 'bpmn:MessageEventDefinition') {
+          const messageId = node.eventDefinitions[0].messageRef ? node.eventDefinitions[0].messageRef.id : undefined;
+          const message = bpmnDiagram.getSignalById(messageId);
+          nodeDefEntity.message = message.name;
+        }
+
+        if (eventType === 'bpmn:ConditionalEventDefinition') {
+          const condition = node.eventDefinitions[0].condition ? node.eventDefinitions[0].condition.body : null;
+          nodeDefEntity.condition = condition;
+        }
+
+      }
+
+
       if (node.extensionElements) {
 
-        const extensions = this._updateExtensionElements(node.extensionElements.values);
+        const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);
 
         nodeDefEntity.extensions = extensions;
       }
 
       nodeDefEntity.name = node.name;
       nodeDefEntity.type = node.$type;
+      nodeDefEntity.events = null;
       nodeDefEntity.processDef = this;
       nodeDefEntity.counter = counter;
 
@@ -515,7 +640,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
       if (flow.extensionElements) {
 
-        const extensions = this._updateExtensionElements(flow.extensionElements.values);
+        const extensions = this._updateExtensionElements(flow.extensionElements.values, flowDefEntity);
 
         flowDefEntity.extensions = extensions;
       }
@@ -539,10 +664,52 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           boundary.attachedToNode = sourceEnt;
           await boundary.save(context);
 
-          const events = sourceEnt.events || {};
+          let events = sourceEnt.events || [];
+          if (!Array.isArray(events)) {
+            events = [];
+          }
+
           switch (boundary.eventType) {
             case 'bpmn:ErrorEventDefinition':
-              events.error = boundary.key;
+              events.push({
+                type: 'error',
+                boundary: boundary.id
+              });
+              break;
+
+            case 'bpmn:TimerEventDefinition':
+              events.push({
+                type: 'timer',
+                boundary: boundary.id
+              });
+              break;
+
+            case 'bpmn:SignalEventDefinition':
+              events.push({
+                type: 'signal',
+                boundary: boundary.id
+              });
+              break;
+
+            case 'bpmn:MessageEventDefinition':
+              events.push({
+                type: 'message',
+                boundary: boundary.id
+              });
+              break;
+
+            case 'bpmn:CancelEventDefinition':
+              events.push({
+                type: 'cancel',
+                boundary: boundary.id
+              });
+              break;
+
+            case 'bpmn:ConditionalEventDefinition':
+              events.push({
+                type: 'condition',
+                boundary: boundary.id
+              });
               break;
 
             default:
@@ -557,7 +724,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
 
-  private _updateExtensionElements(extensionElements: Array<any>): any {
+  private _updateExtensionElements(extensionElements: Array<any>, entity: any): any {
     
     const ext: any = {};
 
@@ -637,6 +804,19 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               name: child.name,
               value: child.value
             };
+
+            switch (child.name) {
+              case 'startContext':
+                entity.startContext = child.value;
+                break;
+
+              case 'startContextEntityType':
+                entity.startContextEntityType = child.value;
+                break;
+
+              default:
+
+            }
 
             properties.push(newChild);
           });
