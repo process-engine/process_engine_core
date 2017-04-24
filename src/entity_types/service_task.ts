@@ -86,13 +86,13 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
           };
 
           const orig = process.stdout.write;
-          /*process.stdout.write = (function (write) {
+          process.stdout.write = (function (write) {
             return function (data: string): boolean {
               cb(data);
               write.apply(process.stdout, arguments);
               return true;
             };
-          })(process.stdout.write);*/
+          })(process.stdout.write);
 
           result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
 
