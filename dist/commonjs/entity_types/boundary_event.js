@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 class BoundaryEventEntity extends event_1.EventEntity {

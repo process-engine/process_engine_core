@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
 const debugInfo = debug('process_engine:info');
 const debugErr = debug('process_engine:error');
