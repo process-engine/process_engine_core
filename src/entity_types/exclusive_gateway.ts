@@ -73,9 +73,9 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
           let result = false;
           try {
             const functionString = 'return ' + flow.condition;
-            const evaluateFunction = new Function(functionString);
+            const evaluateFunction = new Function('token', functionString);
 
-            result = evaluateFunction.call(tokenData);
+            result = evaluateFunction.call(tokenData, tokenData);
             
           } catch (err) {
             // do nothing

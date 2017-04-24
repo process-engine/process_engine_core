@@ -5,7 +5,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
@@ -113,6 +112,48 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     set counter(value) {
         this.setProperty(this, 'counter', value);
     }
+    get timerDefinitionType() {
+        return this.getProperty(this, 'timerDefinitionType');
+    }
+    set timerDefinitionType(value) {
+        this.setProperty(this, 'timerDefinitionType', value);
+    }
+    get timerDefinition() {
+        return this.getProperty(this, 'timerDefinition');
+    }
+    set timerDefinition(value) {
+        this.setProperty(this, 'timerDefinition', value);
+    }
+    get startContext() {
+        return this.getProperty(this, 'startContext');
+    }
+    set startContext(value) {
+        this.setProperty(this, 'startContext', value);
+    }
+    get startContextEntityType() {
+        return this.getProperty(this, 'startContextEntityType');
+    }
+    set startContextEntityType(value) {
+        this.setProperty(this, 'startContextEntityType', value);
+    }
+    get signal() {
+        return this.getProperty(this, 'signal');
+    }
+    set signal(value) {
+        this.setProperty(this, 'signal', value);
+    }
+    get message() {
+        return this.getProperty(this, 'message');
+    }
+    set message(value) {
+        this.setProperty(this, 'message', value);
+    }
+    get condition() {
+        return this.getProperty(this, 'condition');
+    }
+    set condition(value) {
+        this.setProperty(this, 'condition', value);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -213,6 +254,27 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
 ], NodeDefEntity.prototype, "counter", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], NodeDefEntity.prototype, "timerDefinitionType", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "timerDefinition", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "startContext", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "startContextEntityType", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "signal", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "message", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeDefEntity.prototype, "condition", null);
 exports.NodeDefEntity = NodeDefEntity;
 
 //# sourceMappingURL=node_def.js.map

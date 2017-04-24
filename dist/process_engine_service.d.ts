@@ -1,8 +1,9 @@
 import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IFactory } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 export declare class ProcessEngineService implements IProcessEngineService {
     private _messageBusService;
     private _eventAggregator;
@@ -10,16 +11,19 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private _featureService;
     private _iamService;
     private _processRepository;
+    private _datastoreService;
+    private _datastoreServiceFactory;
     private _runningProcesses;
     private _processTokenCache;
     config: any;
-    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository);
+    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>);
     private readonly messageBusService;
     private readonly eventAggregator;
     private readonly processDefEntityTypeService;
     private readonly featureService;
     private readonly iamService;
     private readonly processRepository;
+    private readonly datastoreService;
     private readonly runningProcesses;
     private readonly processTokenCache;
     initialize(): Promise<void>;
@@ -27,4 +31,5 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private _messageHandler(msg);
     private _initializeMessageBus();
     private _initializeProcesses();
+    private _startTimers();
 }

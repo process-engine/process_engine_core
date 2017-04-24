@@ -1,9 +1,10 @@
-import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService } from '@process-engine-js/core_contracts';
+import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService, IEntityReference, IQueryObject } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { ITimingService } from '@process-engine-js/timing_contracts';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
@@ -16,13 +17,15 @@ export class NodeInstanceEntityDependencyHelper {
   public iamService: IIamService = undefined;
   public nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   public processEngineService: IProcessEngineService = undefined;
+  public timingService: ITimingService = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService, timingService: ITimingService) {
     this.messageBusService = messageBusService;
     this.eventAggregator = eventAggregator;
     this.iamService = iamService;
     this.nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
     this.processEngineService = processEngineService;
+    this.timingService = timingService;
   }
 }
 
@@ -64,6 +67,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   protected get processEngineService(): IProcessEngineService {
     return this._nodeInstanceEntityDependencyHelper.processEngineService;
+  }
+
+  protected get timingService(): ITimingService {
+    return this._nodeInstanceEntityDependencyHelper.timingService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -186,6 +193,18 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     await this.save(internalContext);
 
+    const boundaries = await this.nodeDef.getBoundaryEvents(internalContext);
+    const processToken = await this.getProcessToken(context);
+
+    if (boundaries.length > 0) {
+      boundaries.each(internalContext, async (boundary) => {
+        if (boundary.eventType === 'bpmn:TimerEventDefinition' || boundary.eventType === 'bpmn:MessageEventDefinition' || boundary.eventType === 'bpmn:SignalEventDefinition') {
+          await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+        }
+      });
+    
+    }
+
     this.changeState(context, 'execute', this);
   }
 
@@ -221,6 +240,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     }
   }
 
+  public async wait(context: ExecutionContext): Promise<void> {
+    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    this.state = 'wait';
+    await this.save(internalContext);
+  }
+
 
   public async execute(context: ExecutionContext): Promise<void> {
     debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
@@ -233,34 +260,98 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async proceed(context: ExecutionContext, data: any, source: EntityReference, applicationId: string) {
+  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
     // by default do nothing, implementation should be overwritten by child class
   }
 
 
-  public async event(context: ExecutionContext, event: string, data: any) {
+  public async event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string): Promise<void> {
 
     debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
 
+    const boundaryEventEntityType = await this.datastoreService.getEntityType('BoundaryEvent');
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // check if definition exists
     const nodeDef = this.nodeDef;
-    if (nodeDef && nodeDef.events && nodeDef.events[event]) {
-      const boundaryDefKey = nodeDef.events[event];
+    if (nodeDef && nodeDef.events) {
 
-      const queryObject = {
-        attribute: 'key', operator: '=', value: boundaryDefKey
-      };
-      const boundary = <INodeDefEntity>await nodeDefEntityType.findOne(internalContext, { query: queryObject });
+      const events = nodeDef.events.filter((el) => {
+        return el.type === event;
+      });
 
-      const token = await this.getProcessToken(internalContext);
+      const processToken = await this.getProcessToken(internalContext);
+      const tokenData = processToken.data || {};
 
-      if (boundary && boundary.cancelActivity) {
-        await this.end(context, true);
+      const process = await this.getProcess(internalContext);
+
+      for (let i = 0; i < events.length; i++) {
+        const boundaryId = events[i].boundary;
+
+        const boundaryDef = <INodeDefEntity>await nodeDefEntityType.getById(boundaryId, internalContext);
+
+        const queryObj: IQueryObject = {
+          operator: 'and',
+          queries: [
+            { attribute: 'key', operator: '=', value: boundaryDef.key },
+            { attribute: 'process', operator: '=', value: process.id }
+        ]};
+
+        const boundary = await boundaryEventEntityType.findOne(internalContext, { query: queryObj });
+
+        if (boundaryDef) {
+          switch (event) {
+            case 'error':
+              await this.end(context, true);
+              break;
+
+            case 'timer':
+
+              break;
+
+            case 'signal':
+
+              break;
+
+            case 'message':
+
+              break;
+
+            case 'cancel':
+
+              break;
+
+            case 'condition':
+              if (boundaryDef.condition) {
+                const functionString = 'return ' + boundaryDef.condition;
+                const evaluateFunction = new Function('token', functionString);
+                let result;
+                try {
+                  result = evaluateFunction.call(tokenData, tokenData);
+                } catch (err) {
+                  debugErr(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
+                }
+                if (result) {
+                  await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundaryDef, processToken);
+                  if (boundaryDef.cancelActivity) {
+                    await this.end(internalContext, true);
+                  }
+                }
+              }
+              break;
+
+            default:
+              
+          }
+
+          // await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
+        }
+
+        
       }
-      await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
+
     }
   }
 

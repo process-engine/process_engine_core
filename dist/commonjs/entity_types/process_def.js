@@ -5,30 +5,41 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
+const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, entityDependencyHelper, context, schema) {
+    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
+        this._messageBusService = undefined;
+        this._eventAggregator = undefined;
+        this._timingService = undefined;
         this._processDefEntityTypeService = undefined;
         this._processRepository = undefined;
         this._featureService = undefined;
-        this._messageBusService = undefined;
         this._routingService = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._processRepository = processRepository;
+        this._featureService = featureService;
         this._messageBusService = messageBusService;
         this._routingService = routingService;
+        this._eventAggregator = eventAggregator;
+        this._timingService = timingService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
         await super.initialize(actualInstance);
+    }
+    get eventAggregator() {
+        return this._eventAggregator;
+    }
+    get timingService() {
+        return this._timingService;
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
@@ -177,18 +188,80 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             return { result: true };
         }
     }
+    _parseTimerDefinitionType(eventDefinition) {
+        if (eventDefinition.timeDuration) {
+            return process_engine_contracts_1.TimerDefinitionType.duration;
+        }
+        if (eventDefinition.timeCycle) {
+            return process_engine_contracts_1.TimerDefinitionType.cycle;
+        }
+        if (eventDefinition.timeDate) {
+            return process_engine_contracts_1.TimerDefinitionType.date;
+        }
+        return undefined;
+    }
+    _parseTimerDefinition(eventDefinition) {
+        if (eventDefinition.timeDuration) {
+            return eventDefinition.timeDuration.body;
+        }
+        if (eventDefinition.timeCycle) {
+            return eventDefinition.timeCycle.body;
+        }
+        if (eventDefinition.timeDate) {
+            return eventDefinition.timeDate.body;
+        }
+        return undefined;
+    }
+    async startTimer(context) {
+        const features = this.features;
+        if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
+            const queryObject = {
+                operator: 'and',
+                queries: [
+                    { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
+                    { attribute: 'processDef', operator: '=', value: this.id }
+                ]
+            };
+            const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+            const startEventDef = await nodeDefEntityType.findOne(context, { query: queryObject });
+            if (startEventDef) {
+                const channelName = `events/timer/${this.id}`;
+                const callback = async () => {
+                    await this.start(context, undefined);
+                };
+                switch (startEventDef.timerDefinitionType) {
+                    case process_engine_contracts_1.TimerDefinitionType.cycle:
+                        await this.timingService.periodic(startEventDef.timerDefinition, channelName, context);
+                        this.eventAggregator.subscribe(channelName, callback.bind(this));
+                        break;
+                    case process_engine_contracts_1.TimerDefinitionType.date:
+                        await this.timingService.once(startEventDef.timerDefinition, channelName, context);
+                        this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+                        break;
+                    case process_engine_contracts_1.TimerDefinitionType.duration:
+                        await this.timingService.once(startEventDef.timerDefinition, channelName, context);
+                        this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
+                        break;
+                    default: return;
+                }
+            }
+        }
+    }
     async updateDefinitions(context, params) {
         let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
         const xml = this.xml;
         const key = this.key;
         const counter = this.counter;
+        const helperObject = {
+            hasTimerStartEvent: false
+        };
         if (!bpmnDiagram) {
             bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
         }
         const processes = bpmnDiagram.getProcesses();
         const currentProcess = processes.find((item) => item.id === key);
         if (currentProcess.extensionElements) {
-            const extensions = this._updateExtensionElements(currentProcess.extensionElements.values);
+            const extensions = this._updateExtensionElements(currentProcess.extensionElements.values, this);
             this.extensions = extensions;
         }
         this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
@@ -196,7 +269,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context, counter);
         const nodes = bpmnDiagram.getNodes(key);
-        const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter);
+        const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
         await this._createBoundaries(nodes, nodeCache, context);
         const flows = bpmnDiagram.getFlows(key);
         await this._updateFlows(flows, nodeCache, context, counter);
@@ -236,6 +309,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await laneColl.each(context, async (laneEnt) => {
             await laneEnt.remove(context);
         });
+        if (helperObject.hasTimerStartEvent) {
+            await this.startTimer(context);
+        }
     }
     async _updateLanes(lanes, context, counter) {
         const laneCache = {};
@@ -260,7 +336,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             laneEntity.processDef = this;
             laneEntity.counter = counter;
             if (lane.extensionElements) {
-                const extensions = this._updateExtensionElements(lane.extensionElements.values);
+                const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
                 laneEntity.extensions = extensions;
             }
             await laneEntity.save(context);
@@ -269,7 +345,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await Promise.all(lanePromiseArray);
         return laneCache;
     }
-    async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter) {
+    async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject) {
         const nodeCache = {};
         const NodeDef = await this.datastoreService.getEntityType('NodeDef');
         const nodePromiseArray = nodes.map(async (node) => {
@@ -291,13 +367,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 case 'bpmn:ScriptTask':
                     nodeDefEntity.script = node.script || null;
                     break;
-                case 'bpmn:BoundaryEvent':
-                    const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
-                    if (eventType) {
-                        nodeDefEntity.eventType = eventType;
-                        nodeDefEntity.cancelActivity = node.cancelActivity || true;
-                    }
-                    break;
                 case 'bpmn:CallActivity':
                     if (node.calledElement) {
                         nodeDefEntity.subProcessKey = node.calledElement;
@@ -310,12 +379,39 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     break;
                 default:
             }
+            const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
+            if (eventType) {
+                nodeDefEntity.eventType = eventType;
+                nodeDefEntity.cancelActivity = node.cancelActivity || true;
+                if (eventType === 'bpmn:TimerEventDefinition') {
+                    nodeDefEntity.timerDefinitionType = this._parseTimerDefinitionType(node.eventDefinitions[0]);
+                    nodeDefEntity.timerDefinition = this._parseTimerDefinition(node.eventDefinitions[0]);
+                    if (node.$type === 'bpmn:StartEvent') {
+                        helperObject.hasTimerStartEvent = true;
+                    }
+                }
+                if (eventType === 'bpmn:SignalEventDefinition') {
+                    const signalId = node.eventDefinitions[0].signalRef ? node.eventDefinitions[0].signalRef.id : undefined;
+                    const signal = bpmnDiagram.getSignalById(signalId);
+                    nodeDefEntity.signal = signal.name;
+                }
+                if (eventType === 'bpmn:MessageEventDefinition') {
+                    const messageId = node.eventDefinitions[0].messageRef ? node.eventDefinitions[0].messageRef.id : undefined;
+                    const message = bpmnDiagram.getSignalById(messageId);
+                    nodeDefEntity.message = message.name;
+                }
+                if (eventType === 'bpmn:ConditionalEventDefinition') {
+                    const condition = node.eventDefinitions[0].condition ? node.eventDefinitions[0].condition.body : null;
+                    nodeDefEntity.condition = condition;
+                }
+            }
             if (node.extensionElements) {
-                const extensions = this._updateExtensionElements(node.extensionElements.values);
+                const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);
                 nodeDefEntity.extensions = extensions;
             }
             nodeDefEntity.name = node.name;
             nodeDefEntity.type = node.$type;
+            nodeDefEntity.events = null;
             nodeDefEntity.processDef = this;
             nodeDefEntity.counter = counter;
             const laneId = bpmnDiagram.getLaneOfElement(node.id);
@@ -360,7 +456,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 flowDefEntity.condition = flow.conditionExpression.body;
             }
             if (flow.extensionElements) {
-                const extensions = this._updateExtensionElements(flow.extensionElements.values);
+                const extensions = this._updateExtensionElements(flow.extensionElements.values, flowDefEntity);
                 flowDefEntity.extensions = extensions;
             }
             await flowDefEntity.save(context);
@@ -376,10 +472,46 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const boundary = nodeCache[node.id];
                     boundary.attachedToNode = sourceEnt;
                     await boundary.save(context);
-                    const events = sourceEnt.events || {};
+                    let events = sourceEnt.events || [];
+                    if (!Array.isArray(events)) {
+                        events = [];
+                    }
                     switch (boundary.eventType) {
                         case 'bpmn:ErrorEventDefinition':
-                            events.error = boundary.key;
+                            events.push({
+                                type: 'error',
+                                boundary: boundary.id
+                            });
+                            break;
+                        case 'bpmn:TimerEventDefinition':
+                            events.push({
+                                type: 'timer',
+                                boundary: boundary.id
+                            });
+                            break;
+                        case 'bpmn:SignalEventDefinition':
+                            events.push({
+                                type: 'signal',
+                                boundary: boundary.id
+                            });
+                            break;
+                        case 'bpmn:MessageEventDefinition':
+                            events.push({
+                                type: 'message',
+                                boundary: boundary.id
+                            });
+                            break;
+                        case 'bpmn:CancelEventDefinition':
+                            events.push({
+                                type: 'cancel',
+                                boundary: boundary.id
+                            });
+                            break;
+                        case 'bpmn:ConditionalEventDefinition':
+                            events.push({
+                                type: 'condition',
+                                boundary: boundary.id
+                            });
                             break;
                         default:
                     }
@@ -390,7 +522,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         });
         await Promise.all(nodePromiseArray);
     }
-    _updateExtensionElements(extensionElements) {
+    _updateExtensionElements(extensionElements, entity) {
         const ext = {};
         extensionElements.forEach((extensionElement) => {
             if (extensionElement.$type === 'camunda:formData') {
@@ -451,6 +583,15 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                             name: child.name,
                             value: child.value
                         };
+                        switch (child.name) {
+                            case 'startContext':
+                                entity.startContext = child.value;
+                                break;
+                            case 'startContextEntityType':
+                                entity.startContextEntityType = child.value;
+                                break;
+                            default:
+                        }
                         properties.push(newChild);
                     });
                 }

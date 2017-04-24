@@ -18,6 +18,8 @@ const ProcessTokenEntity = require('./dist/commonjs/index').ProcessTokenEntity;
 const ScriptTaskEntity = require('./dist/commonjs/index').ScriptTaskEntity;
 const ServiceTaskEntity = require('./dist/commonjs/index').ServiceTaskEntity;
 const StartEventEntity = require('./dist/commonjs/index').StartEventEntity;
+const ThrowEventEntity = require('./dist/commonjs/index').ThrowEventEntity;
+const CatchEventEntity = require('./dist/commonjs/index').CatchEventEntity;
 const UserTaskEntity = require('./dist/commonjs/index').UserTaskEntity;
 const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefEntityTypeService;
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
@@ -45,7 +47,8 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService')
+    .injectLazy('DatastoreService')
     .singleton()
     .configure('process_engine:process_engine_service');
 
@@ -59,7 +62,7 @@ function registerInContainer(container) {
 
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
-    .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService')
+    .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')
     .singleton();
 
   container.register('BoundaryEventEntity', BoundaryEventEntity)
@@ -100,7 +103,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService')
+    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService', 'EventAggregator', 'TimingService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)
@@ -112,6 +115,14 @@ function registerInContainer(container) {
 
   container.register('ServiceTaskEntity', ServiceTaskEntity)
     .dependencies('container', 'NodeInstanceEntityDependencyHelper')
+    .tags(entityDiscoveryTag);
+
+  container.register('ThrowEventEntity', ThrowEventEntity)
+    .dependencies('NodeInstanceEntityDependencyHelper')
+    .tags(entityDiscoveryTag);
+
+  container.register('CatchEventEntity', CatchEventEntity)
+    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('StartEventEntity', StartEventEntity)

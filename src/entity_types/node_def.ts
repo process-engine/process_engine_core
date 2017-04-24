@@ -1,6 +1,6 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryClause} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
-import {INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
+import {TimerDefinitionType, INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IFeature } from '@process-engine-js/feature_contracts';
 
@@ -161,7 +161,70 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public set counter(value: number) {
     this.setProperty(this, 'counter', value);
   }
+
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get timerDefinitionType(): TimerDefinitionType {
+    return this.getProperty(this, 'timerDefinitionType');
+  }
+
+  public set timerDefinitionType(value: TimerDefinitionType) {
+    this.setProperty(this, 'timerDefinitionType', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get timerDefinition(): string {
+    return this.getProperty(this, 'timerDefinition');
+  }
+
+  public set timerDefinition(value: string) {
+    this.setProperty(this, 'timerDefinition', value);
+  }
   
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get startContext(): string {
+    return this.getProperty(this, 'startContext');
+  }
+
+  public set startContext(value: string) {
+    this.setProperty(this, 'startContext', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get startContextEntityType(): string {
+    return this.getProperty(this, 'startContextEntityType');
+  }
+
+  public set startContextEntityType(value: string) {
+    this.setProperty(this, 'startContextEntityType', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get signal(): string {
+    return this.getProperty(this, 'signal');
+  }
+
+  public set signal(value: string) {
+    this.setProperty(this, 'signal', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get message(): string {
+    return this.getProperty(this, 'message');
+  }
+
+  public set message(value: string) {
+    this.setProperty(this, 'message', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get condition(): string {
+    return this.getProperty(this, 'condition');
+  }
+
+  public set condition(value: string) {
+    this.setProperty(this, 'condition', value);
+  }
+
 
   public get features(): Array<IFeature> {
     return this._extractFeatures();

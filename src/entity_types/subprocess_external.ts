@@ -58,7 +58,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntityReference, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
