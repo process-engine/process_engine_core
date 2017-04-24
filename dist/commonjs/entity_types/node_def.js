@@ -258,7 +258,7 @@ __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
 ], NodeDefEntity.prototype, "timerDefinitionType", null);
 __decorate([
-    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.object })
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeDefEntity.prototype, "timerDefinition", null);
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

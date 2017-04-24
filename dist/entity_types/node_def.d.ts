@@ -24,7 +24,7 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     getSubProcessDef(context: ExecutionContext): Promise<INodeDefEntity>;
     counter: number;
     timerDefinitionType: TimerDefinitionType;
-    timerDefinition: any;
+    timerDefinition: string;
     startContext: string;
     startContextEntityType: string;
     signal: string;

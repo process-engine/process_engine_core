@@ -9,7 +9,6 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
-const moment = require("moment");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -206,22 +205,10 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             return eventDefinition.timeDuration.body;
         }
         if (eventDefinition.timeCycle) {
-            const input = eventDefinition.timeCycle.body;
-            const duration = moment.duration(input);
-            const timingRule = {
-                year: duration.years(),
-                month: duration.months(),
-                date: duration.days(),
-                hour: duration.hours(),
-                minute: duration.minutes(),
-                second: duration.seconds()
-            };
-            return timingRule;
+            return eventDefinition.timeCycle.body;
         }
         if (eventDefinition.timeDate) {
-            const input = eventDefinition.timeDate.body;
-            const date = moment(input);
-            return date;
+            return eventDefinition.timeDate.body;
         }
         return undefined;
     }

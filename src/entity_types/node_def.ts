@@ -171,12 +171,12 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'timerDefinitionType', value);
   }
 
-  @schemaAttribute({ type: SchemaAttributeType.object })
-  public get timerDefinition(): any {
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get timerDefinition(): string {
     return this.getProperty(this, 'timerDefinition');
   }
 
-  public set timerDefinition(value: any) {
+  public set timerDefinition(value: string) {
     this.setProperty(this, 'timerDefinition', value);
   }
   

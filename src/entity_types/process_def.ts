@@ -285,35 +285,18 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return undefined;
   }
 
-  private _parseTimerDefinition(eventDefinition: any): moment.Moment | ITimingRule {
+  private _parseTimerDefinition(eventDefinition: any): string {
     if (eventDefinition.timeDuration) {
-      return eventDefinition.timeDuration.body;
-      // const duration = moment.duration(input);
-      // const date = moment().add(duration);
-      // return date;
+      return eventDefinition.timeDuration.body
     }
     if (eventDefinition.timeCycle) {
-      const input = eventDefinition.timeCycle.body;    
-      const duration = moment.duration(input);
-      const timingRule = {
-        year: duration.years(),
-        month: duration.months(),
-        date: duration.days(),
-        hour: duration.hours(),
-        minute: duration.minutes(),
-        second: duration.seconds()
-      };
-      return timingRule;
+      return eventDefinition.timeCycle.body;    
     }
     if (eventDefinition.timeDate) {
-      const input = eventDefinition.timeDate.body;
-      const date = moment(input);
-      return date;
+      return eventDefinition.timeDate.body;
     }
     return undefined;
   }
-
-  
 
   public async startTimer(context: ExecutionContext): Promise<void> {
 
@@ -359,7 +342,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       }
     }
   }
-
 
   public async updateDefinitions(context: ExecutionContext, params?: IParamUpdateDefs): Promise<void> {
 
