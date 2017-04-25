@@ -85,7 +85,6 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
     const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-    const sourceEntityType = await this.datastoreService.getEntityType((<any>source)._meta.type);
 
     let prevDefs = null;
     const nodeDef = await this.getNodeDef(internalContext);
@@ -129,9 +128,8 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       });
 
       if (source) {
-        const sourceEntity = <INodeInstanceEntity>await sourceEntityType.getById(source.id, internalContext);
 
-        const token = await sourceEntity.getProcessToken(internalContext);
+        const token = await (<INodeInstanceEntity>source).getProcessToken(internalContext);
 
         let allthere = true;
 

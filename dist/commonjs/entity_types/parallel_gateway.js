@@ -60,7 +60,6 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-        const sourceEntityType = await this.datastoreService.getEntityType(source._meta.type);
         let prevDefs = null;
         const nodeDef = await this.getNodeDef(internalContext);
         const processDef = await nodeDef.getProcessDef(internalContext);
@@ -93,8 +92,7 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                 keys.push(prefDev.key);
             });
             if (source) {
-                const sourceEntity = await sourceEntityType.getById(source.id, internalContext);
-                const token = await sourceEntity.getProcessToken(internalContext);
+                const token = await source.getProcessToken(internalContext);
                 let allthere = true;
                 const processToken = await this.getProcessToken(internalContext);
                 const tokenData = processToken.data || {};
