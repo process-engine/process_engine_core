@@ -59,13 +59,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                         self.eventAggregator.publish('/processengine/node/' + self.id, event);
                     };
                     const orig = process.stdout.write;
-                    process.stdout.write = (function (write) {
-                        return function (data) {
-                            cb(data);
-                            write.apply(process.stdout, arguments);
-                            return true;
-                        };
-                    })(process.stdout.write);
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
                     process.stdout.write = orig;
                 }
