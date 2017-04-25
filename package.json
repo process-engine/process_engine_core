@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "1.0.32",
+  "version": "1.0.33",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
