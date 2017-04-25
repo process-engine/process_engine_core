@@ -327,6 +327,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
               if (boundaryDef.condition) {
                 const functionString = 'return ' + boundaryDef.condition;
                 const evaluateFunction = new Function('token', functionString);
+                tokenData.current = data;
                 let result;
                 try {
                   result = evaluateFunction.call(tokenData, tokenData);

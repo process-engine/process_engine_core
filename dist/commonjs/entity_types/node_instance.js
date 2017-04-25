@@ -220,6 +220,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                             if (boundaryDef.condition) {
                                 const functionString = 'return ' + boundaryDef.condition;
                                 const evaluateFunction = new Function('token', functionString);
+                                tokenData.current = data;
                                 let result;
                                 try {
                                     result = evaluateFunction.call(tokenData, tokenData);
