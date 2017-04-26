@@ -108,7 +108,7 @@ class ProcessEngineService {
     async _initializeProcesses() {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const options = {
-            overwriteExisting: true
+            overwriteExisting: false
         };
         this.processRepository.initialize();
         const processes = this.processRepository.getProcessesByCategory('internal');
