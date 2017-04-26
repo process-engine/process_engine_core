@@ -209,6 +209,10 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                             await this.end(context, true);
                             break;
                         case 'timer':
+                            boundary.changeState(context, 'end', this);
+                            if (boundaryDef.cancelActivity) {
+                                await this.end(internalContext, true);
+                            }
                             break;
                         case 'signal':
                             break;

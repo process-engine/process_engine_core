@@ -308,7 +308,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
               break;
 
             case 'timer':
-
+              (<INodeInstanceEntity>boundary).changeState(context, 'end', this);
+              
+              if (boundaryDef.cancelActivity) {
+                await this.end(internalContext, true);
+              }
               break;
 
             case 'signal':

@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
-const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 class BoundaryEventEntity extends event_1.EventEntity {
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -43,22 +42,11 @@ class BoundaryEventEntity extends event_1.EventEntity {
             ]
         };
         const target = await nodeInstanceEntityType.findOne(internalContext, { query: queryObj });
-        let payload;
-        if (this.nodeDef.timerDefinitionType !== process_engine_contracts_1.TimerDefinitionType.cycle || this.nodeDef.cancelActivity) {
-            payload = {
-                action: 'changeState',
-                data: 'end'
-            };
-        }
-        else {
-            payload = {
-                action: 'event',
-                data: {
-                    event: 'timer',
-                    data: {}
-                }
-            };
-        }
+        const payload = {
+            action: 'event',
+            event: 'timer',
+            data: {}
+        };
         const event = this.eventAggregator.createEntityEvent(payload, source, context);
         this.eventAggregator.publish('/processengine/node/' + target.id, event);
     }

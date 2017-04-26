@@ -65,26 +65,12 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
     const target = await nodeInstanceEntityType.findOne(internalContext, { query: queryObj });
 
-    let payload;
-
-    if (this.nodeDef.timerDefinitionType !== TimerDefinitionType.cycle || this.nodeDef.cancelActivity) {
-      
-      payload = {
-        action: 'changeState',
-        data: 'end'
-      };
-      
-    } else {
-
-      payload = {
-        action: 'event',
-        data: {
-          event: 'timer',
-          data: {}
-        }
-      };
-    }
-
+    const payload = {
+      action: 'event',
+      event: 'timer',
+      data: {}
+    };
+  
     const event = this.eventAggregator.createEntityEvent(payload, source, context);
     this.eventAggregator.publish('/processengine/node/' + target.id, event);
   }
