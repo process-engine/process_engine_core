@@ -38,6 +38,10 @@ const deleteProcessDefFile = 'deleteProcessDef.bpmn';
 const deleteProcessDefPath = path.join(__dirname, 'bpmn/' + deleteProcessDefFile);
 const deleteProcessDef = fs.readFileSync(deleteProcessDefPath, 'utf8');
 
+const testMultiFile = 'test_multiInstance.bpmn';
+const testMultiPath = path.join(__dirname, 'bpmn/' + testMultiFile);
+const testMulti = fs.readFileSync(testMultiPath, 'utf8');
+
 function registerInContainer(container) {
 
   container.registerObject(createProcessDefFile, createProcessDef)
@@ -50,6 +54,12 @@ function registerInContainer(container) {
     .setAttribute('bpmn_process', 'internal') // category: internal
     .setAttribute('module', 'process_engine') // the source module
     .setAttribute('path', deleteProcessDefPath);   // the file path
+  //.tags('readonly');
+
+  container.registerObject(testMultiFile, testMulti)
+    .setAttribute('bpmn_process', 'internal') // category: internal
+    .setAttribute('module', 'process_engine') // the source module
+    .setAttribute('path', testMultiPath);   // the file path
   //.tags('readonly');
 
   container.register('ProcessRepository', ProcessRepository)

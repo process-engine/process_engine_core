@@ -36,6 +36,7 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     participant: string;
     processToken: IProcessTokenEntity;
     getProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity>;
+    instanceCounter: number;
     getLaneRole(context: ExecutionContext): Promise<string>;
     start(context: ExecutionContext, source: IEntity): Promise<void>;
     changeState(context: ExecutionContext, newState: string, source: IEntity): void;

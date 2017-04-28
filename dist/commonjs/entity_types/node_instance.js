@@ -116,6 +116,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     getProcessToken(context) {
         return this.getPropertyLazy(this, 'processToken', context);
     }
+    get instanceCounter() {
+        return this.getProperty(this, 'instanceCounter');
+    }
+    set instanceCounter(value) {
+        this.setProperty(this, 'instanceCounter', value);
+    }
     async getLaneRole(context) {
         const nodeDef = await this.getNodeDef(context);
         const role = await nodeDef.getLaneRole(context);
@@ -275,7 +281,20 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             tokenData.current = newCurrent;
         }
         tokenData.history = tokenData.history || {};
-        tokenData.history[this.key] = tokenData.current;
+        if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
+            if (this.instanceCounter === 1) {
+                const arr = [];
+                arr.push(tokenData.history[this.key]);
+                arr.push(tokenData.current);
+                tokenData.history[this.key] = arr;
+            }
+            else {
+                tokenData.history[this.key].push(tokenData.current);
+            }
+        }
+        else {
+            tokenData.history[this.key] = tokenData.current;
+        }
         processToken.data = tokenData;
         await processToken.save(internalContext);
         nodeInstance.eventAggregatorSubscription.dispose();
@@ -319,6 +338,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessToken' })
 ], NodeInstanceEntity.prototype, "processToken", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], NodeInstanceEntity.prototype, "instanceCounter", null);
 NodeInstanceEntity = __decorate([
     metadata_1.schemaClass({
         expandEntity: [
