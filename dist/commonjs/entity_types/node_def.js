@@ -160,18 +160,7 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
     }
     async getLaneRole(context) {
         const lane = await this.getLane(context);
-        const extensions = lane.extensions;
-        const properties = (extensions && extensions.properties) ? extensions.properties : null;
-        let found = null;
-        if (properties) {
-            properties.some((property) => {
-                if (property.name === 'role') {
-                    found = property.value;
-                    return true;
-                }
-            });
-        }
-        return found;
+        return lane.role;
     }
     async getBoundaryEvents(context) {
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');

@@ -31,14 +31,13 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
   public async execute(context: ExecutionContext): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
-    await this.save(internalContext);
 
-    const processToken = await this.getProcessToken(internalContext);
+    const processToken = this.processToken;
     const tokenData = processToken.data || {};
     let continueEnd = true;
 
     // call service
-    const nodeDef = await this.getNodeDef(internalContext);
+    const nodeDef = this.nodeDef;
     const extensions = nodeDef.extensions || null;
     const props = (extensions && extensions.properties) ? extensions.properties : null;
     if (props) {
@@ -70,11 +69,9 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         
         try {
 
-          const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
-
           const self = this;
 
-          const cb = function(data) {
+          const cb = function (data) {
             const eventData = {
               action: 'event',
               event: 'condition',
@@ -85,7 +82,13 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
             self.eventAggregator.publish('/processengine/node/' + self.id, event);
           };
 
-          const orig = process.stdout.write;
+          const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
+
+          
+
+          
+
+          // const orig = process.stdout.write;
           /*process.stdout.write = (function (write) {
             return function (data: string): boolean {
               cb(data);
@@ -96,7 +99,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
           result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
 
-          process.stdout.write = orig;
+          // process.stdout.write = orig;
 
         } catch (err) {
           result = err;
@@ -115,7 +118,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         tokenData.current = finalResult;
         processToken.data = tokenData;
 
-        await processToken.save(internalContext);
+        // await processToken.save(internalContext);
       }
 
 

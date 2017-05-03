@@ -37,6 +37,10 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     counter: number;
     readonly nodeDefCollection: EntityCollection;
     getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection>;
+    readonly flowDefCollection: EntityCollection;
+    getFlowDefCollection(context: ExecutionContext): Promise<EntityCollection>;
+    readonly laneCollection: EntityCollection;
+    getLaneCollection(context: ExecutionContext): Promise<EntityCollection>;
     readonly features: Array<IFeature>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference>;
     updateBpmn(context: ExecutionContext, params?: any): Promise<any>;

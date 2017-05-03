@@ -6,11 +6,13 @@ export declare class ProcessEntity extends Entity implements IProcessEntity {
     private _iamService;
     private _nodeInstanceEntityTypeService;
     private _messageBusService;
+    private _activeInstances;
     constructor(iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, messageBusService: IMessageBusService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     private readonly iamService;
     private readonly nodeInstanceEntityTypeService;
     private readonly messageBusService;
     initialize(derivedClassInstance: IEntity): Promise<void>;
+    readonly activeInstances: any;
     name: string;
     key: string;
     processDef: IProcessDefEntity;
@@ -20,4 +22,6 @@ export declare class ProcessEntity extends Entity implements IProcessEntity {
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void>;
     end(context: ExecutionContext, processToken: any): Promise<void>;
     error(context: ExecutionContext, error: any): Promise<void>;
+    addActiveInstance(entity: IEntity): void;
+    removeActiveInstance(entity: IEntity): void;
 }

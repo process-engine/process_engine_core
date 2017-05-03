@@ -24,32 +24,28 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
         this.setProperty(this, 'follow', value);
     }
     async execute(context) {
-        const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const nodeDef = await this.getNodeDef(internalContext);
-        const processDef = await nodeDef.getProcessDef(internalContext);
-        const queryObjectOut = {
-            operator: 'and',
-            queries: [
-                { attribute: 'source', operator: '=', value: nodeDef.id },
-                { attribute: 'processDef', operator: '=', value: processDef.id }
-            ]
-        };
-        const flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectOut });
-        const queryObjectIn = {
-            operator: 'and',
-            queries: [
-                { attribute: 'target', operator: '=', value: nodeDef.id },
-                { attribute: 'processDef', operator: '=', value: processDef.id }
-            ]
-        };
-        const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
+        const nodeDef = this.nodeDef;
+        const processDef = this.process.processDef;
+        let flowsOut = [];
+        for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+            const flowDef = processDef.flowDefCollection.data[i];
+            if (flowDef.source.id === nodeDef.id) {
+                flowsOut.push(flowDef);
+            }
+        }
+        let flowsIn = [];
+        for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+            const flowDef = processDef.flowDefCollection.data[i];
+            if (flowDef.target.id === nodeDef.id) {
+                flowsIn.push(flowDef);
+            }
+        }
         if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
             const follow = [];
-            for (let i = 0; i < flowsOut.data.length; i++) {
-                const flow = flowsOut.data[i];
+            for (let i = 0; i < flowsOut.length; i++) {
+                const flow = flowsOut[i];
                 if (flow.condition) {
-                    const processToken = await this.getProcessToken(internalContext);
+                    const processToken = this.processToken;
                     const tokenData = processToken.data || {};
                     let result = false;
                     try {
@@ -72,7 +68,6 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
         }
         this.state = 'progress';
-        await this.save(internalContext);
         this.changeState(context, 'end', this);
     }
 }

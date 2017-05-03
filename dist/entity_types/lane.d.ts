@@ -13,4 +13,5 @@ export declare class LaneEntity extends Entity implements ILaneEntity {
     counter: number;
     readonly features: Array<IFeature>;
     private _extractFeatures();
+    readonly role: string;
 }

@@ -135,6 +135,18 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     getNodeDefCollection(context) {
         return this.getPropertyLazy(this, 'nodeDefCollection', context);
     }
+    get flowDefCollection() {
+        return this.getProperty(this, 'flowDefCollection');
+    }
+    getFlowDefCollection(context) {
+        return this.getPropertyLazy(this, 'flowDefCollection', context);
+    }
+    get laneCollection() {
+        return this.getProperty(this, 'laneCollection');
+    }
+    getLaneCollection(context) {
+        return this.getPropertyLazy(this, 'laneCollection', context);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -698,6 +710,12 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
 ], ProcessDefEntity.prototype, "nodeDefCollection", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'FlowDef', isList: true, relatedAttribute: 'processDef' })
+], ProcessDefEntity.prototype, "flowDefCollection", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'Lane', isList: true, relatedAttribute: 'processDef' })
+], ProcessDefEntity.prototype, "laneCollection", null);
 exports.ProcessDefEntity = ProcessDefEntity;
 
 //# sourceMappingURL=process_def.js.map

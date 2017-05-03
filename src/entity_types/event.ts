@@ -127,7 +127,12 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     let source = null;
     if (sourceRef) {
       const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-      source = await entityType.getById(sourceRef.id, context);
+      try {
+        source = await entityType.getById(sourceRef.id, context);
+      } catch (err) {
+        // source could not be found
+        // Todo: try to resolve source with unsafed node instance entities
+      } 
     }
 
     const data: any = (msg && msg.data) ? msg.data : null;
@@ -159,7 +164,12 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     let source = null;
     if (sourceRef) {
       const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-      source = await entityType.getById(sourceRef.id, context);
+      try {
+        source = await entityType.getById(sourceRef.id, context);
+      } catch (err) {
+        // source could not be found
+        // Todo: try to resolve source with unsafed node instance entities
+      }
     }
 
     const data: any = (msg && msg.data) ? msg.data : null;

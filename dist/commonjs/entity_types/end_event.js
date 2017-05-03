@@ -12,8 +12,7 @@ class EndEventEntity extends event_1.EventEntity {
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
-        await this.save(internalContext);
-        const processToken = await this.getProcessToken(internalContext);
+        const processToken = this.processToken;
         const currentToken = processToken.data.current;
         const data = {
             action: 'endEvent',
@@ -24,7 +23,7 @@ class EndEventEntity extends event_1.EventEntity {
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }
         else {
-            const role = await this.getLaneRole(internalContext);
+            const role = this.nodeDef.lane.role;
             await this.messageBusService.publish('/role/' + role, msg);
         }
         this.changeState(context, 'end', this);

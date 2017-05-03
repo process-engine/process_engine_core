@@ -24,13 +24,11 @@ class ScriptTaskEntity extends node_instance_1.NodeInstanceEntity {
         this.setProperty(this, 'script', value);
     }
     async execute(context) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
-        await this.save(internalContext);
-        const processToken = await this.getProcessToken(internalContext);
+        const processToken = this.processToken;
         const tokenData = processToken.data || {};
         let result;
-        const nodeDef = await this.getNodeDef(internalContext);
+        const nodeDef = this.nodeDef;
         const script = nodeDef.script;
         if (script) {
             try {
@@ -51,7 +49,6 @@ class ScriptTaskEntity extends node_instance_1.NodeInstanceEntity {
             }
             tokenData.current = finalResult;
             processToken.data = tokenData;
-            await processToken.save(context);
         }
         this.changeState(context, 'end', this);
     }

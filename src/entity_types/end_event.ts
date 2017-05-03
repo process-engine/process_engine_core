@@ -24,9 +24,10 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
-    await this.save(internalContext);
+    // await this.save(internalContext);
 
-    const processToken = await this.getProcessToken(internalContext);
+    // const processToken = await this.getProcessToken(internalContext);
+    const processToken = this.processToken;
     const currentToken = processToken.data.current;
     const data = {
       action: 'endEvent',
@@ -39,7 +40,7 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
       await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
       // send message to users of lane role
-      const role = await this.getLaneRole(internalContext);
+      const role = this.nodeDef.lane.role;
       await this.messageBusService.publish('/role/' + role, msg);
     }
 

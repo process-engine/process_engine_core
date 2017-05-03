@@ -4,6 +4,7 @@ const event_1 = require("./event");
 class BoundaryEventEntity extends event_1.EventEntity {
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+        this.attachedToInstance = undefined;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -29,19 +30,7 @@ class BoundaryEventEntity extends event_1.EventEntity {
         }
     }
     async proceed(context, data, source, applicationId) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const nodeInstanceEntityType = await this.datastoreService.getEntityType('NodeInstance');
-        const attachedToNode = await this.nodeDef.getAttachedToNode(context);
-        const targetKey = attachedToNode.key;
-        const process = this.process;
-        const queryObj = {
-            operator: 'and',
-            queries: [
-                { attribute: 'key', operator: '=', value: targetKey },
-                { attribute: 'process', operator: '=', value: process.id }
-            ]
-        };
-        const target = await nodeInstanceEntityType.findOne(internalContext, { query: queryObj });
+        const target = this.attachedToInstance;
         const payload = {
             action: 'event',
             event: 'timer',

@@ -102,9 +102,8 @@ class NodeInstanceEntityTypeService {
     }
     async createNextNode(context, source, nextDef, token) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const process = await source.getProcess(internalContext);
+        const process = source.process;
         let participant = source.participant;
-        const forceCreateNode = (nextDef.type === 'bpmn:BoundaryEvent') ? true : false;
         const map = new Map();
         map.set('bpmn:UserTask', 'UserTask');
         map.set('bpmn:ExclusiveGateway', 'ExclusiveGateway');
@@ -120,35 +119,44 @@ class NodeInstanceEntityTypeService {
         map.set('bpmn:SubProcess', 'SubprocessInternal');
         const className = map.get(nextDef.type);
         const entityType = await this.datastoreService.getEntityType(className);
-        const currentDef = await source.getNodeDef(internalContext);
-        const currentLane = await currentDef.getLane(internalContext);
-        const nextLane = await nextDef.getLane(internalContext);
+        const currentDef = source.nodeDef;
+        const currentLane = currentDef.lane;
+        const nextLane = nextDef.lane;
         if (currentLane && nextLane && currentLane.id !== nextLane.id) {
-            const role = await nextDef.getLaneRole(internalContext);
+            const role = await nextDef.lane.role;
             if (role) {
                 participant = null;
             }
         }
         let node = null;
-        if (!forceCreateNode) {
-            const queryObj = {
-                operator: 'and',
-                queries: [
-                    { attribute: 'process', operator: '=', value: process.id },
-                    { attribute: 'key', operator: '=', value: nextDef.key }
-                ]
-            };
-            node = await entityType.findOne(internalContext, { query: queryObj });
+        let createNode = true;
+        Object.keys(process.activeInstances).forEach((instanceId) => {
+            const instance = process.activeInstances[instanceId];
+            if (instance.key === nextDef.key) {
+                node = instance;
+            }
+        });
+        let count = 0;
+        if (token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
+            if (Array.isArray(token.data.history[nextDef.key])) {
+                count = token.data.history[nextDef.key].length;
+            }
+            else {
+                count = 1;
+            }
         }
-        if (node) {
-            const data = {
-                action: 'proceed',
-                token: null
-            };
-            const msg = this.messagebusService.createEntityMessage(data, source, context);
-            await this.messagebusService.publish('/processengine/node/' + node.id, msg);
+        if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'progress') {
+            if (node) {
+                const data = {
+                    action: 'proceed',
+                    token: null
+                };
+                const event = this.eventAggregator.createEntityEvent(data, source, context);
+                this.eventAggregator.publish('/processengine/node/' + node.id, event);
+                createNode = false;
+            }
         }
-        else {
+        if (createNode) {
             node = await this.createNode(context, entityType);
             node.name = nextDef.name;
             node.key = nextDef.key;
@@ -157,65 +165,59 @@ class NodeInstanceEntityTypeService {
             node.type = nextDef.type;
             node.processToken = token;
             node.participant = participant;
-            await node.save(internalContext);
+            node.instanceCounter = count;
+            if (nextDef.type === 'bpmn:BoundaryEvent') {
+                node.attachedToInstance = source;
+            }
             debugInfo(`node created key '${node.key}'`);
             node.changeState(context, 'start', source);
         }
     }
     async continueExecution(context, source) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-        const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
         const nodeInstance = source;
         const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
-        let nextDefs = null;
-        const nodeDef = await nodeInstance.getNodeDef(internalContext);
-        const processDef = await nodeDef.getProcessDef(internalContext);
-        let flowsOut = null;
+        let nextDefs = [];
+        const nodeDef = nodeInstance.nodeDef;
+        const processDef = source.process.processDef;
+        let flowsOut = [];
         if (nodeInstance.follow) {
             if (nodeInstance.follow.length > 0) {
-                const queryObjectFollow = {
-                    operator: 'and',
-                    queries: [
-                        { attribute: 'id', operator: 'in', value: nodeInstance.follow },
-                        { attribute: 'processDef', operator: '=', value: processDef.id }
-                    ]
-                };
-                flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectFollow });
+                for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+                    const flowDef = processDef.flowDefCollection.data[i];
+                    if (nodeInstance.follow.indexOf(flowDef.id) !== -1) {
+                        flowsOut.push(flowDef);
+                    }
+                }
             }
         }
         else {
-            const queryObjectAll = {
-                operator: 'and',
-                queries: [
-                    { attribute: 'source', operator: '=', value: nodeDef.id },
-                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                ]
-            };
-            flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
+            for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+                const flowDef = processDef.flowDefCollection.data[i];
+                if (flowDef.source.id === nodeDef.id) {
+                    flowsOut.push(flowDef);
+                }
+            }
         }
         if (flowsOut && flowsOut.length > 0) {
             const ids = [];
             const mappers = [];
-            for (let i = 0; i < flowsOut.data.length; i++) {
-                const flow = flowsOut.data[i];
-                const target = await flow.target;
+            for (let i = 0; i < flowsOut.length; i++) {
+                const flow = flowsOut[i];
+                const target = flow.target;
                 ids.push(target.id);
                 mappers.push(flow.mapper);
             }
-            const queryObjectIn = {
-                operator: 'and',
-                queries: [
-                    { attribute: 'id', operator: 'in', value: ids },
-                    { attribute: 'processDef', operator: '=', value: processDef.id }
-                ]
-            };
-            nextDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectIn });
-            if (nextDefs && nextDefs.length > 0) {
-                const processToken = await nodeInstance.getProcessToken(internalContext);
-                for (let i = 0; i < nextDefs.data.length; i++) {
-                    const nextDef = nextDefs.data[i];
+            await source.process.processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+                if (ids.indexOf(nodeDef.id) !== -1 && nodeDef.processDef.id === processDef.id) {
+                    nextDefs.push(nodeDef);
+                }
+            });
+            if (nextDefs.length > 0) {
+                const processToken = nodeInstance.processToken;
+                for (let i = 0; i < nextDefs.length; i++) {
+                    const nextDef = nextDefs[i];
                     let currentToken;
                     const index = ids.indexOf(nextDef.id);
                     const mapper = (index !== -1) ? mappers[index] : undefined;
@@ -224,21 +226,25 @@ class NodeInstanceEntityTypeService {
                         const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
                         tokenData.current = newCurrent;
                         processToken.data = tokenData;
-                        await processToken.save(internalContext);
                     }
                     if (splitToken && i > 0) {
                         currentToken = await processTokenEntityType.createEntity(internalContext);
                         currentToken.process = processToken.process;
                         currentToken.data = processToken.data;
-                        await currentToken.save(internalContext);
                     }
                     else {
                         currentToken = processToken;
                     }
-                    const lane = await nextDef.getLane(internalContext);
-                    const processDef = await nextDef.getProcessDef(internalContext);
+                    const laneRef = await nextDef.lane;
+                    const laneId = laneRef ? laneRef.id : undefined;
+                    let laneFeatures = undefined;
+                    for (let j = 0; j < processDef.laneCollection.data.length; j++) {
+                        const lane = processDef.laneCollection.data[j];
+                        if (lane.id === laneId) {
+                            laneFeatures = lane.features;
+                        }
+                    }
                     const nodeFeatures = nextDef.features;
-                    const laneFeatures = lane.features;
                     const processFeatures = processDef.features;
                     const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
                     if (features.length === 0 || this.featureService.hasFeatures(features)) {

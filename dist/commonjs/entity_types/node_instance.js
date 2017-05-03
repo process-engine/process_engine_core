@@ -116,29 +116,34 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     getProcessToken(context) {
         return this.getPropertyLazy(this, 'processToken', context);
     }
+    get instanceCounter() {
+        return this.getProperty(this, 'instanceCounter');
+    }
+    set instanceCounter(value) {
+        this.setProperty(this, 'instanceCounter', value);
+    }
     async getLaneRole(context) {
-        const nodeDef = await this.getNodeDef(context);
+        const nodeDef = this.nodeDef;
         const role = await nodeDef.getLaneRole(context);
         return role;
     }
     async start(context, source) {
         debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
-        let role = await this.getLaneRole(context);
+        let role = await this.nodeDef.lane.role;
         if (role !== null) {
         }
         if (!this.state) {
             this.state = 'start';
         }
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        await this.save(internalContext);
-        const boundaries = await this.nodeDef.getBoundaryEvents(internalContext);
-        const processToken = await this.getProcessToken(context);
-        if (boundaries.length > 0) {
-            boundaries.each(internalContext, async (boundary) => {
+        this.process.addActiveInstance(this);
+        const processToken = this.processToken;
+        for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
+            const boundary = this.process.processDef.nodeDefCollection.data[i];
+            if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
                 if (boundary.eventType === 'bpmn:TimerEventDefinition' || boundary.eventType === 'bpmn:MessageEventDefinition' || boundary.eventType === 'bpmn:SignalEventDefinition') {
                     await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
                 }
-            });
+            }
         }
         this.changeState(context, 'execute', this);
     }
@@ -172,9 +177,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async execute(context) {
         debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
-        await this.save(internalContext);
         this.changeState(context, 'end', this);
     }
     async proceed(context, data, source, applicationId) {
@@ -263,10 +266,10 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         debugInfo(`end node, id ${this.id}, key ${this.key}, type ${this.type}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'end';
-        await this.save(internalContext);
+        this.process.removeActiveInstance(this);
         const nodeInstance = this;
         const isEndEvent = (nodeInstance.type === 'bpmn:EndEvent');
-        const processToken = await this.getProcessToken(internalContext);
+        const processToken = this.processToken;
         const tokenData = processToken.data || {};
         const nodeDef = this.nodeDef;
         const mapper = nodeDef.mapper;
@@ -275,9 +278,21 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             tokenData.current = newCurrent;
         }
         tokenData.history = tokenData.history || {};
-        tokenData.history[this.key] = tokenData.current;
+        if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
+            if (this.instanceCounter === 1) {
+                const arr = [];
+                arr.push(tokenData.history[this.key]);
+                arr.push(tokenData.current);
+                tokenData.history[this.key] = arr;
+            }
+            else {
+                tokenData.history[this.key].push(tokenData.current);
+            }
+        }
+        else {
+            tokenData.history[this.key] = tokenData.current;
+        }
         processToken.data = tokenData;
-        await processToken.save(internalContext);
         nodeInstance.eventAggregatorSubscription.dispose();
         nodeInstance.messagebusSubscription.cancel();
         if (!isEndEvent && !cancelFlow) {
@@ -319,6 +334,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessToken' })
 ], NodeInstanceEntity.prototype, "processToken", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
+], NodeInstanceEntity.prototype, "instanceCounter", null);
 NodeInstanceEntity = __decorate([
     metadata_1.schemaClass({
         expandEntity: [

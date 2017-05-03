@@ -164,8 +164,17 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'processToken', context);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get instanceCounter(): number {
+    return this.getProperty(this, 'instanceCounter');
+  }
+
+  public set instanceCounter(value: number) {
+    this.setProperty(this, 'instanceCounter', value);
+  }
+
   public async getLaneRole(context: ExecutionContext): Promise<string> {
-    const nodeDef = await this.getNodeDef(context);
+    const nodeDef = this.nodeDef;
     const role = await nodeDef.getLaneRole(context);
     return role;
   }
@@ -176,7 +185,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     // check if context matches to lane
-    let role = await this.getLaneRole(context);
+    let role = await this.nodeDef.lane.role;
     if (role !== null) {
       // Todo: refactor check if user has lane role
 
@@ -190,20 +199,22 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       this.state = 'start';
     }
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-    await this.save(internalContext);
+    this.process.addActiveInstance(this);
 
-    const boundaries = await this.nodeDef.getBoundaryEvents(internalContext);
-    const processToken = await this.getProcessToken(context);
+    // await this.save(internalContext);
 
-    if (boundaries.length > 0) {
-      boundaries.each(internalContext, async (boundary) => {
+    // const processToken = await this.getProcessToken(context);
+    const processToken = this.processToken;
+
+    for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
+      const boundary = <INodeDefEntity>this.process.processDef.nodeDefCollection.data[i];
+      if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
         if (boundary.eventType === 'bpmn:TimerEventDefinition' || boundary.eventType === 'bpmn:MessageEventDefinition' || boundary.eventType === 'bpmn:SignalEventDefinition') {
           await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
         }
-      });
-    
+      }
     }
+
 
     this.changeState(context, 'execute', this);
   }
@@ -251,10 +262,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async execute(context: ExecutionContext): Promise<void> {
     debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    // const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'progress';
-    await this.save(internalContext);
+    // await this.save(internalContext);
 
     this.changeState(context, 'end', this);
   }
@@ -309,7 +320,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
             case 'timer':
               (<INodeInstanceEntity>boundary).changeState(context, 'end', this);
-              
+
               if (boundaryDef.cancelActivity) {
                 await this.end(internalContext, true);
               }
@@ -388,12 +399,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     this.state = 'end';
 
-    await this.save(internalContext);
+    this.process.removeActiveInstance(this);
+
+    // await this.save(internalContext);
 
     const nodeInstance = this as any;
     const isEndEvent = (nodeInstance.type === 'bpmn:EndEvent');
 
-    const processToken = await this.getProcessToken(internalContext);
+    // const processToken = await this.getProcessToken(internalContext);
+    const processToken = this.processToken;
 
     const tokenData = processToken.data || {};
 
@@ -406,10 +420,24 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     }
 
     tokenData.history = tokenData.history || {};
-    tokenData.history[this.key] = tokenData.current;
+
+    if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
+      if (this.instanceCounter === 1) {
+        const arr = [];
+        arr.push(tokenData.history[this.key]);
+        arr.push(tokenData.current);
+        tokenData.history[this.key] = arr;
+      } else {
+        tokenData.history[this.key].push(tokenData.current);
+      }
+
+    } else {
+      tokenData.history[this.key] = tokenData.current;
+    }
+
     processToken.data = tokenData;
 
-    await processToken.save(internalContext);
+    // await processToken.save(internalContext);
 
     // cancel subscriptions
     nodeInstance.eventAggregatorSubscription.dispose();

@@ -30,32 +30,29 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
 
   public async execute(context: ExecutionContext) {
 
-    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+    // const nodeDef = await this.getNodeDef(internalContext);
+    const nodeDef = this.nodeDef;
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    // const processDef = await nodeDef.getProcessDef(internalContext);
+    const processDef = this.process.processDef;
 
-    const nodeDef = await this.getNodeDef(internalContext);
-    const processDef = await nodeDef.getProcessDef(internalContext);
+    let flowsOut = [];
 
-    const queryObjectOut: ICombinedQueryClause = {
-      operator: 'and',
-      queries: [
-        { attribute: 'source', operator: '=', value: nodeDef.id },
-        { attribute: 'processDef', operator: '=', value: processDef.id }
-      ]
-    };
+    for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      if (flowDef.source.id === nodeDef.id) {
+        flowsOut.push(flowDef);
+      }
+    }
 
-    const flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectOut });
+    let flowsIn = [];
 
-    const queryObjectIn: ICombinedQueryClause = {
-      operator: 'and',
-      queries: [
-        { attribute: 'target', operator: '=', value: nodeDef.id },
-        { attribute: 'processDef', operator: '=', value: processDef.id }
-      ]
-    };
-
-    const flowsIn = await flowDefEntityType.query(internalContext, { query: queryObjectIn });
+    for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      if (flowDef.target.id === nodeDef.id) {
+        flowsIn.push(flowDef);
+      }
+    }
 
     if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
       // split
@@ -63,11 +60,13 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
 
       const follow: Array<string> = [];
 
-      for (let i = 0; i < flowsOut.data.length; i++) {
-        const flow = <IFlowDefEntity>flowsOut.data[i];
+      for (let i = 0; i < flowsOut.length; i++) {
+        const flow = <IFlowDefEntity>flowsOut[i];
         if (flow.condition) {
 
-          const processToken = await this.getProcessToken(internalContext);
+          // const processToken = await this.getProcessToken(internalContext);
+          const processToken = this.processToken;
+
           const tokenData = processToken.data || {};
 
           let result = false;
@@ -97,7 +96,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
     }
 
     this.state = 'progress';
-    await this.save(internalContext);
+    // await this.save(internalContext);
 
     this.changeState(context, 'end', this);
 

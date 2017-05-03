@@ -1,11 +1,13 @@
 import {EventEntity} from './event';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IEntityReference, IQueryObject} from '@process-engine-js/core_contracts';
-import {IBoundaryEventEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import {IBoundaryEventEntity, TimerDefinitionType, INodeDefEntity, INodeInstanceEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEntity {
+
+  public attachedToInstance: INodeInstanceEntity = undefined;
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
               entityDependencyHelper: EntityDependencyHelper, 
@@ -47,24 +49,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
   public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-
-    const nodeInstanceEntityType = await this.datastoreService.getEntityType('NodeInstance');
-
-    const attachedToNode = await this.nodeDef.getAttachedToNode(context); 
-    const targetKey = attachedToNode.key;
-    const process = this.process;
-
-    const queryObj: IQueryObject = {
-      operator: 'and',
-      queries: [
-        { attribute: 'key', operator: '=', value: targetKey },
-        { attribute: 'process', operator: '=', value: process.id }
-      ]
-    };
-
-    const target = await nodeInstanceEntityType.findOne(internalContext, { query: queryObj });
-
+    const target = this.attachedToInstance;
     const payload = {
       action: 'event',
       event: 'timer',

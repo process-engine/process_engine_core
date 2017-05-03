@@ -89,7 +89,11 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
         let source = null;
         if (sourceRef) {
             const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-            source = await entityType.getById(sourceRef.id, context);
+            try {
+                source = await entityType.getById(sourceRef.id, context);
+            }
+            catch (err) {
+            }
         }
         const data = (msg && msg.data) ? msg.data : null;
         debugInfo(`signal '${binding.entity.nodeDef.signal}' received for node key '${binding.entity.key}'`);
@@ -113,7 +117,11 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
         let source = null;
         if (sourceRef) {
             const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-            source = await entityType.getById(sourceRef.id, context);
+            try {
+                source = await entityType.getById(sourceRef.id, context);
+            }
+            catch (err) {
+            }
         }
         const data = (msg && msg.data) ? msg.data : null;
         debugInfo(`message '${binding.entity.nodeDef.message}' received for node key '${binding.entity.key}'`);

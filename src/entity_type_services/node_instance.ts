@@ -1,5 +1,5 @@
 import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, 
-  IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity } from '@process-engine-js/process_engine_contracts';
+  IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity, IFlowDefEntity, ILaneEntity } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService, IEntityType, EntityReference } from '@process-engine-js/data_model_contracts';
@@ -156,10 +156,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
-    const process = await source.getProcess(internalContext);
-    let participant = source.participant;
+    // const process = await source.getProcess(internalContext);
+    const process = source.process;
 
-    const forceCreateNode = (nextDef.type === 'bpmn:BoundaryEvent') ? true : false;
+    let participant = source.participant;
 
     const map = new Map();
     map.set('bpmn:UserTask', 'UserTask');
@@ -178,15 +178,17 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const className = map.get(nextDef.type);
     const entityType = await this.datastoreService.getEntityType(className);
 
-    const currentDef = await source.getNodeDef(internalContext);
-    const currentLane = await currentDef.getLane(internalContext);
+    // const currentDef = await source.getNodeDef(internalContext);
+    const currentDef = source.nodeDef;
 
-    const nextLane = await nextDef.getLane(internalContext);
+    const currentLane = currentDef.lane;
+
+    const nextLane = nextDef.lane;
     // check for lane change
     if (currentLane && nextLane && currentLane.id !== nextLane.id) {
       // if we have a new lane, create a temporary context with lane role
 
-      const role = await nextDef.getLaneRole(internalContext);
+      const role = await nextDef.lane.role;
       if (role) {
         // Todo: refactor lane change
         /*const identityContext = await context.createNewContext('identity');
@@ -204,30 +206,41 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
 
     let node = null;
+    let createNode = true;
 
-    if (!forceCreateNode) {
+    Object.keys(process.activeInstances).forEach((instanceId) => {
+      const instance = process.activeInstances[instanceId];
+      if (instance.key === nextDef.key) {
+        node = instance;
+      }
+    });
 
-      
-      const queryObj: IQueryObject = {
-        operator: 'and',
-        queries: [
-        { attribute: 'process', operator: '=', value: process.id },
-        { attribute: 'key', operator: '=', value: nextDef.key }
-      ]};
 
-      node = await entityType.findOne(internalContext, { query: queryObj });
+    let count = 0;
+    if (token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
+      if (Array.isArray(token.data.history[nextDef.key])) {
+        count = token.data.history[nextDef.key].length;
+      } else {
+        count = 1;
+      }
+    }
+    
+    if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'progress') {
+
+      if (node) {
+        const data = {
+          action: 'proceed',
+          token: null
+        };
+
+        const event = this.eventAggregator.createEntityEvent(data, source, context);
+        this.eventAggregator.publish('/processengine/node/' + node.id, event);
+
+        createNode = false;
+      }
     }
 
-    if (node) {
-
-      const data = {
-        action: 'proceed',
-        token: null
-      };
-
-      const msg = this.messagebusService.createEntityMessage(data, source, context);
-      await this.messagebusService.publish('/processengine/node/' + node.id, msg);
-    } else {
+    if (createNode) {
       node = await this.createNode(context, entityType);
       node.name = nextDef.name;
       node.key = nextDef.key;
@@ -236,8 +249,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       node.type = nextDef.type;
       node.processToken = token;
       node.participant = participant;
+      node.instanceCounter = count;
 
-      await node.save(internalContext);
+      if (nextDef.type === 'bpmn:BoundaryEvent') {
+        node.attachedToInstance = source;
+      }
+
+      // await node.save(internalContext);
 
       debugInfo(`node created key '${node.key}'`);
 
@@ -249,72 +267,67 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
-    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    // const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+    // const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
     const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
 
     const nodeInstance = <any>source;
     const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
 
-    let nextDefs = null;
-    const nodeDef = await nodeInstance.getNodeDef(internalContext);
-    const processDef = await nodeDef.getProcessDef(internalContext);
+    let nextDefs = [];
 
-    let flowsOut = null;
+    // const nodeDef = await nodeInstance.getNodeDef(internalContext);
+    const nodeDef = nodeInstance.nodeDef;
+
+    // const processDef = await nodeDef.getProcessDef(internalContext);
+    const processDef = (<INodeInstanceEntity>source).process.processDef;
+
+    let flowsOut = [];
 
     if (nodeInstance.follow) {
       // we have already a list of flows to follow
       if (nodeInstance.follow.length > 0) {
 
-        const queryObjectFollow: ICombinedQueryClause = {
-          operator: 'and',
-          queries: [
-            { attribute: 'id', operator: 'in', value: nodeInstance.follow },
-            { attribute: 'processDef', operator: '=', value: processDef.id }
-          ]
-        };
-
-        flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectFollow });
+        for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+          const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+          if (nodeInstance.follow.indexOf(flowDef.id) !== -1) {
+            flowsOut.push(flowDef);
+          }
+        }
       }
     } else {
-      // query for all flows going out
-      const queryObjectAll: ICombinedQueryClause = {
-        operator: 'and',
-        queries: [
-          { attribute: 'source', operator: '=', value: nodeDef.id },
-          { attribute: 'processDef', operator: '=', value: processDef.id }
-        ]
-      };
 
-      flowsOut = await flowDefEntityType.query(internalContext, { query: queryObjectAll });
+      for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+        const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+        if (flowDef.source.id === nodeDef.id) {
+          flowsOut.push(flowDef);
+        }
+      }
     }
     if (flowsOut && flowsOut.length > 0) {
       const ids: Array<string> = [];
       const mappers: Array<any> = [];
 
-      for (let i = 0; i < flowsOut.data.length; i++) {
-        const flow = flowsOut.data[i];
-        const target = await flow.target;
+      for (let i = 0; i < flowsOut.length; i++) {
+        const flow = flowsOut[i];
+        const target = flow.target;
         ids.push(target.id);
         mappers.push(flow.mapper);
       }
 
-      const queryObjectIn: ICombinedQueryClause = {
-        operator: 'and',
-        queries: [
-          { attribute: 'id', operator: 'in', value: ids },
-          { attribute: 'processDef', operator: '=', value: processDef.id }
-        ]
-      };
+      await (<INodeInstanceEntity>source).process.processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+        if (ids.indexOf(nodeDef.id) !== -1 && nodeDef.processDef.id === processDef.id) {
+          nextDefs.push(nodeDef);
+        }
+      });
 
-      nextDefs = await nodeDefEntityType.query(internalContext, { query: queryObjectIn });
+      if (nextDefs.length > 0) {
 
-      if (nextDefs && nextDefs.length > 0) {
+        // const processToken = await nodeInstance.getProcessToken(internalContext);
+        const processToken = nodeInstance.processToken;
 
-        const processToken = await nodeInstance.getProcessToken(internalContext);
-
-        for (let i = 0; i < nextDefs.data.length; i++) {
-          const nextDef = nextDefs.data[i];
+        for (let i = 0; i < nextDefs.length; i++) {
+          const nextDef = nextDefs[i];
 
           let currentToken;
 
@@ -328,23 +341,29 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             tokenData.current = newCurrent;
             processToken.data = tokenData;
 
-            await processToken.save(internalContext);
+            // await processToken.save(internalContext);
           }
 
           if (splitToken && i > 0) {
             currentToken = await processTokenEntityType.createEntity(internalContext);
             currentToken.process = processToken.process;
             currentToken.data = processToken.data;
-            await currentToken.save(internalContext);
+            // await currentToken.save(internalContext);
           } else {
             currentToken = processToken;
           }
 
-          const lane = await nextDef.getLane(internalContext);
-          const processDef = await nextDef.getProcessDef(internalContext);
+          const laneRef = await nextDef.lane;
+          const laneId = laneRef ? laneRef.id : undefined;
+          let laneFeatures = undefined;
+          for (let j = 0; j < processDef.laneCollection.data.length; j++) {
+            const lane = <ILaneEntity>processDef.laneCollection.data[j];
+            if (lane.id === laneId) {
+              laneFeatures = lane.features;
+            }
+          }
 
           const nodeFeatures = nextDef.features;
-          const laneFeatures = lane.features;
           const processFeatures = processDef.features;
 
           const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);

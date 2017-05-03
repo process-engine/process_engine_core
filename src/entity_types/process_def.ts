@@ -202,6 +202,24 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this.getPropertyLazy(this, 'nodeDefCollection', context);
   }
 
+  @schemaAttribute({ type: 'FlowDef', isList: true, relatedAttribute: 'processDef' })
+  public get flowDefCollection(): EntityCollection {
+    return this.getProperty(this, 'flowDefCollection');
+  }
+
+  public getFlowDefCollection(context: ExecutionContext): Promise<EntityCollection> {
+    return this.getPropertyLazy(this, 'flowDefCollection', context);
+  }
+
+  @schemaAttribute({ type: 'Lane', isList: true, relatedAttribute: 'processDef' })
+  public get laneCollection(): EntityCollection {
+    return this.getProperty(this, 'laneCollection');
+  }
+
+  public getLaneCollection(context: ExecutionContext): Promise<EntityCollection> {
+    return this.getPropertyLazy(this, 'laneCollection', context);
+  }
+
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }
