@@ -2,8 +2,8 @@ import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, IComb
 import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IProcessEngineService, IBoundaryEventEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
-import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { IMessageBusService, IMessageSubscription } from '@process-engine-js/messagebus_contracts';
+import { IEventAggregator, ISubscription } from '@process-engine-js/event_aggregator_contracts';
 import { ITimingService } from '@process-engine-js/timing_contracts';
 
 import * as debug from 'debug';
@@ -37,8 +37,8 @@ export class NodeInstanceEntityDependencyHelper {
 export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   private _nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper = undefined;
-  public messagebusSubscription = undefined;
-  public eventAggregatorSubscription = undefined;
+  public messagebusSubscription: Promise<IMessageSubscription> = undefined;
+  public eventAggregatorSubscription: ISubscription = undefined;
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               entityDependencyHelper: EntityDependencyHelper, 
