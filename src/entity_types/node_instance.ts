@@ -164,6 +164,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'processToken', context);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.number })
+  public get instanceCounter(): number {
+    return this.getProperty(this, 'instanceCounter');
+  }
+
+  public set instanceCounter(value: number) {
+    this.setProperty(this, 'instanceCounter', value);
+  }
+
   public async getLaneRole(context: ExecutionContext): Promise<string> {
     const nodeDef = await this.getNodeDef(context);
     const role = await nodeDef.getLaneRole(context);
@@ -309,7 +318,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
             case 'timer':
               (<INodeInstanceEntity>boundary).changeState(context, 'end', this);
-              
+
               if (boundaryDef.cancelActivity) {
                 await this.end(internalContext, true);
               }
@@ -406,7 +415,21 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     }
 
     tokenData.history = tokenData.history || {};
-    tokenData.history[this.key] = tokenData.current;
+
+    if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
+      if (this.instanceCounter === 1) {
+        const arr = [];
+        arr.push(tokenData.history[this.key]);
+        arr.push(tokenData.current);
+        tokenData.history[this.key] = arr;
+      } else {
+        tokenData.history[this.key].push(tokenData.current);
+      }
+
+    } else {
+      tokenData.history[this.key] = tokenData.current;
+    }
+
     processToken.data = tokenData;
 
     await processToken.save(internalContext);

@@ -104,7 +104,6 @@ class NodeInstanceEntityTypeService {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const process = await source.getProcess(internalContext);
         let participant = source.participant;
-        const forceCreateNode = (nextDef.type === 'bpmn:BoundaryEvent') ? true : false;
         const map = new Map();
         map.set('bpmn:UserTask', 'UserTask');
         map.set('bpmn:ExclusiveGateway', 'ExclusiveGateway');
@@ -130,25 +129,28 @@ class NodeInstanceEntityTypeService {
             }
         }
         let node = null;
-        if (!forceCreateNode) {
-            const queryObj = {
-                operator: 'and',
-                queries: [
-                    { attribute: 'process', operator: '=', value: process.id },
-                    { attribute: 'key', operator: '=', value: nextDef.key }
-                ]
-            };
-            node = await entityType.findOne(internalContext, { query: queryObj });
+        let createNode = true;
+        const queryObj = {
+            operator: 'and',
+            queries: [
+                { attribute: 'process', operator: '=', value: process.id },
+                { attribute: 'key', operator: '=', value: nextDef.key }
+            ]
+        };
+        node = await entityType.findOne(internalContext, { query: queryObj });
+        const count = await entityType.count(internalContext, { query: queryObj });
+        if (nextDef.type === 'bpmn:ParallelGateway' && node.state === 'prgress') {
+            if (node) {
+                const data = {
+                    action: 'proceed',
+                    token: null
+                };
+                const msg = this.messagebusService.createEntityMessage(data, source, context);
+                await this.messagebusService.publish('/processengine/node/' + node.id, msg);
+                createNode = false;
+            }
         }
-        if (node) {
-            const data = {
-                action: 'proceed',
-                token: null
-            };
-            const msg = this.messagebusService.createEntityMessage(data, source, context);
-            await this.messagebusService.publish('/processengine/node/' + node.id, msg);
-        }
-        else {
+        if (createNode) {
             node = await this.createNode(context, entityType);
             node.name = nextDef.name;
             node.key = nextDef.key;
@@ -157,6 +159,7 @@ class NodeInstanceEntityTypeService {
             node.type = nextDef.type;
             node.processToken = token;
             node.participant = participant;
+            node.instanceCounter = count;
             await node.save(internalContext);
             debugInfo(`node created key '${node.key}'`);
             node.changeState(context, 'start', source);
