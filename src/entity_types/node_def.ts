@@ -283,4 +283,8 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     }
     return mapper;
   }
+
+  public get persist(): boolean {
+    return true;
+  }
 }

@@ -79,8 +79,19 @@ class NodeInstanceEntityTypeService {
         const sourceRef = (msg && msg.source) ? msg.source : null;
         let source = null;
         if (sourceRef) {
-            const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-            source = await entityType.getById(sourceRef.id, context);
+            if (sourceRef._meta.type === 'Process') {
+                if (binding.entity.processEngineService.activeInstances.hasOwnProperty(sourceRef.id)) {
+                    source = binding.entity.processEngineService.activeInstances[sourceRef.id];
+                }
+            }
+            if (!source) {
+                const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+                try {
+                    source = await entityType.getById(sourceRef.id, context);
+                }
+                catch (err) {
+                }
+            }
         }
         const data = (msg && msg.data) ? msg.data : null;
         const event = binding.eventAggregator.createEntityEvent(data, source, context);
@@ -145,7 +156,7 @@ class NodeInstanceEntityTypeService {
                 count = 1;
             }
         }
-        if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'progress') {
+        if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'wait') {
             if (node) {
                 const data = {
                     action: 'proceed',
@@ -226,11 +237,17 @@ class NodeInstanceEntityTypeService {
                         const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
                         tokenData.current = newCurrent;
                         processToken.data = tokenData;
+                        if (processDef.persist) {
+                            await processToken.save(internalContext, { reloadAfterSave: false });
+                        }
                     }
                     if (splitToken && i > 0) {
                         currentToken = await processTokenEntityType.createEntity(internalContext);
                         currentToken.process = processToken.process;
                         currentToken.data = processToken.data;
+                        if (processDef.persist) {
+                            await processToken.save(internalContext, { reloadAfterSave: false });
+                        }
                     }
                     else {
                         currentToken = processToken;
@@ -275,14 +292,17 @@ class NodeInstanceEntityTypeService {
                         }
                         catch (err) {
                             debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
-                            if (nextDef && nextDef.events && nextDef.events.error) {
-                                const boundaryDefKey = nextDef.events.error;
-                                const queryObject = {
-                                    attribute: 'key', operator: '=', value: boundaryDefKey
-                                };
-                                const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-                                const boundary = await nodeDefEntityType.findOne(internalContext, { query: queryObject });
-                                await this.createNextNode(context, nodeInstance, boundary, currentToken);
+                            if (nextDef && nextDef.events) {
+                                const event = nextDef.events.find((el) => {
+                                    return el.type === 'error';
+                                });
+                                if (event) {
+                                    const boundaryDefId = event.boundary;
+                                    const boundaryEntity = nodeInstance.process.processDef.nodeDefCollection.data.find((el) => {
+                                        return el.id === boundaryDefId;
+                                    });
+                                    await this.createNextNode(context, nodeInstance, boundaryEntity, currentToken);
+                                }
                             }
                             else {
                                 throw err;

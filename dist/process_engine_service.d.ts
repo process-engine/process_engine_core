@@ -1,6 +1,6 @@
 import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService, IFactory } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IFactory, IEntity } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
@@ -13,8 +13,7 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private _processRepository;
     private _datastoreService;
     private _datastoreServiceFactory;
-    private _runningProcesses;
-    private _processTokenCache;
+    private _activeInstances;
     config: any;
     constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>);
     private readonly messageBusService;
@@ -24,12 +23,13 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private readonly iamService;
     private readonly processRepository;
     private readonly datastoreService;
-    private readonly runningProcesses;
-    private readonly processTokenCache;
+    readonly activeInstances: any;
     initialize(): Promise<void>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string>;
     private _messageHandler(msg);
     private _initializeMessageBus();
     private _initializeProcesses();
     private _startTimers();
+    addActiveInstance(entity: IEntity): void;
+    removeActiveInstance(entity: IEntity): void;
 }

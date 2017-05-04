@@ -35,13 +35,16 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
   public async execute(context: ExecutionContext): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'wait';
-    await this.save(internalContext);
 
-    const processToken = await this.getProcessToken(internalContext);
+    if (this.process.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
+
+    const processToken = this.processToken;
     const tokenData = processToken.data || {};
 
     // call sub process
-    const nodeDef = await this.getNodeDef(internalContext);
+    const nodeDef = this.nodeDef;
     const subProcessKey = nodeDef.subProcessKey || null;
     if (subProcessKey) {
 
@@ -51,7 +54,9 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
         isSubProcess: true,
         initialToken: tokenData
       };
-      await this.processDefEntityTypeService.start(internalContext, params);
+      const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
+      this.process.boundProcesses[subProcessRef.id] = subProcessRef;
+      
     } else {
       debugInfo(`No key is provided for call activity key '${this.key}'`);
     }
@@ -60,15 +65,11 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-
     // save new data in token
-    const processToken = await this.getProcessToken(internalContext);
+    const processToken = this.processToken;
     const tokenData = processToken.data || {};
     tokenData.current = newData;
     processToken.data = tokenData;
-
-    await processToken.save(internalContext);
 
     this.changeState(context, 'end', this);
   }

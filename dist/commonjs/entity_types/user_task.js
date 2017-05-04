@@ -34,7 +34,6 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
         }
     }
     async proceed(context, newData, source, applicationId) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         if (this.participant !== applicationId) {
         }
         const processToken = this.processToken;

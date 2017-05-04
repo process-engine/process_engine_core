@@ -10,7 +10,6 @@ class EndEventEntity extends event_1.EventEntity {
         await super.initialize(actualInstance);
     }
     async execute(context) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
         const processToken = this.processToken;
         const currentToken = processToken.data.current;

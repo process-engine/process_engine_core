@@ -28,7 +28,10 @@ export class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
       case 'bpmn:SignalEventDefinition':
         
         const signal = this.nodeDef.signal;
-        data = {};
+        data = {
+          process: this.process.getEntityReference().toPojo(),
+          token: this.processToken.data.current
+        };
 
         msg = this.messageBusService.createEntityMessage(data, this, context);
         await this.messageBusService.publish('/processengine/signal/' + signal, msg);
@@ -38,7 +41,10 @@ export class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
       case 'bpmn:MessageEventDefinition':
         
         const message = this.nodeDef.message;
-        data = {};
+        data = {
+          process: this.process.getEntityReference().toPojo(),
+          token: this.processToken.data.current
+        };
 
         msg = this.messageBusService.createEntityMessage(data, this, context);
         await this.messageBusService.publish('/processengine/message/' + message, msg);

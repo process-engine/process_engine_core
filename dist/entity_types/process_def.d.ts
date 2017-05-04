@@ -55,4 +55,5 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     private _updateExtensionElements(extensionElements, entity);
     private _extractFeatures();
     save(context: ExecutionContext, options?: IPrivateSaveOptions): Promise<IEntity>;
+    readonly persist: boolean;
 }

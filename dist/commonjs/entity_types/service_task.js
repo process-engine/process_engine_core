@@ -46,7 +46,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 const serviceInstance = this.container.resolve(serviceModule);
                 let result;
                 try {
-                    const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
                     const self = this;
                     const cb = function (data) {
                         const eventData = {
@@ -57,7 +56,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                         const event = self.eventAggregator.createEntityEvent(eventData, self, context);
                         self.eventAggregator.publish('/processengine/node/' + self.id, event);
                     };
-                    const myConsole = {};
+                    const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
                 }
                 catch (err) {
@@ -75,7 +74,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 }
                 tokenData.current = finalResult;
                 processToken.data = tokenData;
-                await processToken.save(internalContext);
             }
         }
         if (continueEnd) {

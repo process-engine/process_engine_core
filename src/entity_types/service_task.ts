@@ -84,22 +84,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
           const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
 
-          
-
-          
-
-          // const orig = process.stdout.write;
-          /*process.stdout.write = (function (write) {
-            return function (data: string): boolean {
-              cb(data);
-              write.apply(process.stdout, arguments);
-              return true;
-            };
-          })(process.stdout.write);*/
-
           result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
-
-          // process.stdout.write = orig;
 
         } catch (err) {
           result = err;
@@ -117,10 +102,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
         tokenData.current = finalResult;
         processToken.data = tokenData;
-
-        // await processToken.save(internalContext);
       }
-
 
     }
     if (continueEnd) {

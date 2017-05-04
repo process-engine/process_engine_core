@@ -122,9 +122,24 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const sourceRef = (msg && msg.source) ? msg.source : null;
     let source = null;
+    
     if (sourceRef) {
-      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-      source = await entityType.getById(sourceRef.id, context);
+
+      // source is a ProcessEntityReference, if this is subprocess_external
+      if (sourceRef._meta.type === 'Process') {
+        if (binding.entity.processEngineService.activeInstances.hasOwnProperty(sourceRef.id)) {
+          source = binding.entity.processEngineService.activeInstances[sourceRef.id];
+        }
+      }
+
+      if (!source) {
+        const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+        try {
+          source = await entityType.getById(sourceRef.id, context);
+        } catch (err) {
+          // source could not be found, ignore atm
+        }
+      }
     }
     
     const data: any = (msg && msg.data) ? msg.data : null;
@@ -225,7 +240,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       }
     }
     
-    if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'progress') {
+    if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'wait') {
 
       if (node) {
         const data = {
@@ -255,8 +270,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         node.attachedToInstance = source;
       }
 
-      // await node.save(internalContext);
-
       debugInfo(`node created key '${node.key}'`);
 
       node.changeState(context, 'start', source);
@@ -267,8 +280,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
-    // const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
-    // const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
     const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
 
     const nodeInstance = <any>source;
@@ -276,10 +287,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     let nextDefs = [];
 
-    // const nodeDef = await nodeInstance.getNodeDef(internalContext);
     const nodeDef = nodeInstance.nodeDef;
 
-    // const processDef = await nodeDef.getProcessDef(internalContext);
     const processDef = (<INodeInstanceEntity>source).process.processDef;
 
     let flowsOut = [];
@@ -323,7 +332,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
       if (nextDefs.length > 0) {
 
-        // const processToken = await nodeInstance.getProcessToken(internalContext);
         const processToken = nodeInstance.processToken;
 
         for (let i = 0; i < nextDefs.length; i++) {
@@ -341,14 +349,21 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             tokenData.current = newCurrent;
             processToken.data = tokenData;
 
-            // await processToken.save(internalContext);
+            if (processDef.persist) {
+              await processToken.save(internalContext, { reloadAfterSave: false });
+            }
+            
           }
 
           if (splitToken && i > 0) {
             currentToken = await processTokenEntityType.createEntity(internalContext);
             currentToken.process = processToken.process;
             currentToken.data = processToken.data;
-            // await currentToken.save(internalContext);
+            
+            if (processDef.persist) {
+              await processToken.save(internalContext, { reloadAfterSave: false });
+            }
+
           } else {
             currentToken = processToken;
           }
@@ -401,19 +416,23 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
 
               // look for boundary error event
-              if (nextDef && nextDef.events && nextDef.events.error) {
+              
+              if (nextDef && nextDef.events) {
 
-                const boundaryDefKey = nextDef.events.error;
+                const event = nextDef.events.find((el) => {
+                  return el.type === 'error';
+                });
 
-                const queryObject = {
-                  attribute: 'key', operator: '=', value: boundaryDefKey
-                };
-                const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-                const boundary = <INodeDefEntity>await nodeDefEntityType.findOne(internalContext, { query: queryObject });
+                if (event) {
+                  const boundaryDefId = event.boundary;
 
-                // continue with boundary
-                await this.createNextNode(context, nodeInstance, boundary, currentToken);
+                  const boundaryEntity = nodeInstance.process.processDef.nodeDefCollection.data.find((el) => {
+                    return el.id === boundaryDefId;
+                  });
 
+                  // continue with boundary
+                  await this.createNextNode(context, nodeInstance, boundaryEntity, currentToken);
+                }
               } else {
                 // bubble error 
                 throw err;

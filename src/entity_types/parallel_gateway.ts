@@ -58,8 +58,6 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       // do nothing, just change to end
       this.state = 'progress';
 
-      // await this.save(internalContext);
-
       this.changeState(context, 'end', this);
     }
 
@@ -68,9 +66,12 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
       this.parallelType = 'join';
 
       // we have to wait for all incoming flows
-      this.state = 'progress';
+      this.state = 'wait';
 
-      // await this.save(internalContext);
+      if (this.process.processDef.persist) {
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        await this.save(internalContext, { reloadAfterSave: false });
+      }
     }
 
   }
@@ -113,7 +114,6 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
         tokenData.history = merged;
 
         processToken.data = tokenData;
-        // await processToken.save(internalContext);
 
         prevDefsKeys.forEach((key) => {
           if (!tokenData.history.hasOwnProperty(key)) {
@@ -123,6 +123,11 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
         if (allthere) {
           // end
           this.changeState(context, 'end', this);
+        } else {
+          if (this.process.processDef.persist) {
+            const internalContext = await this.iamService.createInternalContext('processengine_system');
+            await processToken.save(internalContext, { reloadAfterSave: false });
+          }
         }
       }
 

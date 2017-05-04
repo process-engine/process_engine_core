@@ -47,7 +47,11 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
         }
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
             this.parallelType = 'join';
-            this.state = 'progress';
+            this.state = 'wait';
+            if (this.process.processDef.persist) {
+                const internalContext = await this.iamService.createInternalContext('processengine_system');
+                await this.save(internalContext, { reloadAfterSave: false });
+            }
         }
     }
     async proceed(context, newData, source, applicationId) {
@@ -83,6 +87,12 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                 });
                 if (allthere) {
                     this.changeState(context, 'end', this);
+                }
+                else {
+                    if (this.process.processDef.persist) {
+                        const internalContext = await this.iamService.createInternalContext('processengine_system');
+                        await processToken.save(internalContext, { reloadAfterSave: false });
+                    }
                 }
             }
         }

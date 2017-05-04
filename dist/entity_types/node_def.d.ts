@@ -36,4 +36,5 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     private _extractFeatures();
     readonly mapper: any;
     private _extractMapper();
+    readonly persist: boolean;
 }

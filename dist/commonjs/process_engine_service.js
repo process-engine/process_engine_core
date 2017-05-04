@@ -13,8 +13,7 @@ class ProcessEngineService {
         this._processRepository = undefined;
         this._datastoreService = undefined;
         this._datastoreServiceFactory = undefined;
-        this._runningProcesses = {};
-        this._processTokenCache = {};
+        this._activeInstances = {};
         this.config = undefined;
         this._messageBusService = messageBusService;
         this._eventAggregator = eventAggregator;
@@ -48,11 +47,8 @@ class ProcessEngineService {
         }
         return this._datastoreService;
     }
-    get runningProcesses() {
-        return this._runningProcesses;
-    }
-    get processTokenCache() {
-        return this._processTokenCache;
+    get activeInstances() {
+        return this._activeInstances;
     }
     async initialize() {
         this.featureService.initialize();
@@ -62,7 +58,6 @@ class ProcessEngineService {
     }
     async start(context, params, options) {
         const processEntity = await this.processDefEntityTypeService.start(context, params, options);
-        this.runningProcesses[processEntity.id] = processEntity;
         return processEntity.id;
     }
     async _messageHandler(msg) {
@@ -140,6 +135,15 @@ class ProcessEngineService {
             const processDef = await nodeDef.getProcessDef(internalContext);
             await processDef.startTimer(internalContext);
         });
+    }
+    addActiveInstance(entity) {
+        this._activeInstances[entity.id] = entity;
+    }
+    removeActiveInstance(entity) {
+        if (this._activeInstances.hasOwnProperty(entity.id)) {
+            delete this._activeInstances[entity.id];
+        }
+        entity = null;
     }
 }
 exports.ProcessEngineService = ProcessEngineService;

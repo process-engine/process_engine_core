@@ -1,6 +1,6 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInheritedSchema, IIamService, IQueryObject } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, IDatastoreService, EntityCollection } from '@process-engine-js/data_model_contracts';
-import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
+import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity, ILaneEntity, IProcessEngineService} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 
@@ -9,11 +9,16 @@ export class ProcessEntity extends Entity implements IProcessEntity {
   private _iamService: IIamService = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _messageBusService: IMessageBusService = undefined;
+  private _processEngineService: IProcessEngineService = undefined;
+
   private _activeInstances: any = {};
+  private _allInstances: any = {};
+  public boundProcesses: any = {};
 
   constructor(iamService: IIamService,
               nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, 
               messageBusService: IMessageBusService,
+              processEngineService: IProcessEngineService,
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
               schema: IInheritedSchema) {
@@ -22,6 +27,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this._iamService = iamService;
     this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
     this._messageBusService = messageBusService;
+    this._processEngineService = processEngineService;
   }
 
   private get iamService(): IIamService {
@@ -36,6 +42,10 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     return this._messageBusService;
   } 
 
+  private get processEngineService(): IProcessEngineService {
+    return this._processEngineService;
+  }
+
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
     await super.initialize(actualInstance);
@@ -43,6 +53,10 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   public get activeInstances(): any {
     return this._activeInstances;
+  }
+
+  public get allInstances(): any {
+    return this._allInstances;
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
@@ -61,6 +75,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   public set key(value: string) {
     this.setProperty(this, 'key', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get status(): string {
+    return this.getProperty(this, 'status');
+  }
+
+  public set status(value: string) {
+    this.setProperty(this, 'status', value);
   }
 
 
@@ -112,7 +135,11 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     this.isSubProcess = isSubProcess;
     this.callerId = (isSubProcess && source) ? source.id : null;
-    await this.save(internalContext);
+    this.status = 'progress';
+
+    if (this.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
 
     if (!isSubProcess) {
       participant = source || null;
@@ -163,7 +190,12 @@ export class ProcessEntity extends Entity implements IProcessEntity {
           current: initialToken
         };
       }
-      // await processToken.save(internalContext);
+      
+      if (this.processDef.persist) {
+        await processToken.save(internalContext, { reloadAfterSave: false });
+      }
+
+      this.processEngineService.addActiveInstance(this);
 
       const startEvent: IStartEventEntity = <IStartEventEntity>await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
       startEvent.name = startEventDef.name;
@@ -174,15 +206,18 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       startEvent.processToken = processToken;
       startEvent.participant = participant;
 
-      // startEvent.timeStart = Date.now();
-
-      // await startEvent.save(internalContext);
-
       startEvent.changeState(laneContext, 'start', this);
     }
   }
 
   public async end(context: ExecutionContext, processToken: any): Promise<void> {
+
+    // Todo: end active node instances
+
+    if (this.processDef.persist) {
+      this.status = 'end';
+    }
+
     if (this.isSubProcess) {
       const callerId = this.callerId;
 
@@ -195,7 +230,14 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const channel = '/processengine/node/' + callerId;
       await this.messageBusService.publish(channel, msg);
 
+    } else {
+
+      Object.keys(this.boundProcesses).forEach((id) => {
+        this.processEngineService.removeActiveInstance(this.boundProcesses[id]);
+      });
+      this.processEngineService.removeActiveInstance(this);
     }
+
   }
 
   public async error(context: ExecutionContext, error): Promise<void> {
@@ -203,7 +245,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     if (this.isSubProcess) {
       const callerId = this.callerId;
 
-      const source = this.getEntityReference().toPojo();
+      const source = this;
       const data = {
         action: 'event',
         event: 'error',
@@ -219,6 +261,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   public addActiveInstance(entity: IEntity): void {
     this._activeInstances[entity.id] = entity;
+    this._allInstances[entity.id] = entity;
   }
 
   public removeActiveInstance(entity: IEntity): void {
@@ -226,4 +269,5 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       delete this._activeInstances[entity.id];
     }
   }
+
 }

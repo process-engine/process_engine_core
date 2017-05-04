@@ -238,7 +238,6 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       
       const processEntityType = await this.datastoreService.getEntityType('Process');
       const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
-      await processEntity.save(context);
 
       await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
       const ref = processEntity.getEntityReference();
@@ -387,7 +386,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
 
-    await this.save(context);
+    await this.save(context, { reloadAfterSave: false });
 
     // await this.startTimers(processes, context);
 
@@ -488,7 +487,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         laneEntity.extensions = extensions;
       }
 
-      await laneEntity.save(context);
+      await laneEntity.save(context, { reloadAfterSave: false });
       
       laneCache[lane.id] = laneEntity;
     });
@@ -604,7 +603,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         nodeDefEntity.lane = laneCache[laneId];
       }
 
-      await nodeDefEntity.save(context);
+      await nodeDefEntity.save(context, { reloadAfterSave: false });
 
       nodeCache[node.id] = nodeDefEntity;
     });
@@ -663,7 +662,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         flowDefEntity.extensions = extensions;
       }
 
-      await flowDefEntity.save(context);
+      await flowDefEntity.save(context, { reloadAfterSave: false });
     });
 
     await Promise.all(flowPromiseArray);
@@ -680,7 +679,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           const sourceEnt = nodeCache[attachedKey];
           const boundary = nodeCache[node.id];
           boundary.attachedToNode = sourceEnt;
-          await boundary.save(context);
+          await boundary.save(context, { reloadAfterSave: false });
 
           let events = sourceEnt.events || [];
           if (!Array.isArray(events)) {
@@ -733,7 +732,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
             default:
           }
           sourceEnt.events = events;
-          await sourceEnt.save(context);
+          await sourceEnt.save(context, { reloadAfterSave: false });
         }
       }
     });
@@ -906,4 +905,22 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return savedEntity;
   }
 
+  public get persist(): boolean {
+    const extensions = this.extensions;
+    const properties = (extensions && extensions.properties) ? extensions.properties : null;
+
+    // persisting processes is default
+    let found: boolean = true;
+
+    if (properties) {
+      properties.some((property) => {
+        if (property.name === 'persist') {
+          found = (property.value === 'true' || property.value === '1');
+          return true;
+        }
+      });
+    }
+
+    return found;
+  }
 }

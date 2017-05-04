@@ -59,8 +59,6 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
 
       tokenData.current = finalResult;
       processToken.data = tokenData;
-
-      // await processToken.save(context);
     }
 
     this.changeState(context, 'end', this);

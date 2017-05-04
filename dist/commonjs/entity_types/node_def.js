@@ -201,6 +201,9 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
         }
         return mapper;
     }
+    get persist() {
+        return true;
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

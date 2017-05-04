@@ -30,10 +30,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
 
   public async execute(context: ExecutionContext) {
 
-    // const nodeDef = await this.getNodeDef(internalContext);
     const nodeDef = this.nodeDef;
-
-    // const processDef = await nodeDef.getProcessDef(internalContext);
     const processDef = this.process.processDef;
 
     let flowsOut = [];
@@ -96,7 +93,6 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
     }
 
     this.state = 'progress';
-    // await this.save(internalContext);
 
     this.changeState(context, 'end', this);
 

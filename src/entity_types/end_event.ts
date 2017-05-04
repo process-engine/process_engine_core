@@ -21,12 +21,8 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
 
   public async execute(context: ExecutionContext) {
     
-
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
-    // await this.save(internalContext);
 
-    // const processToken = await this.getProcessToken(internalContext);
     const processToken = this.processToken;
     const currentToken = processToken.data.current;
     const data = {
@@ -34,7 +30,7 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
       data: currentToken
     };
 
-
+    // Todo: move to process.end
     const msg = this.messageBusService.createEntityMessage(data, this, context);
     if (this.participant) {
       await this.messageBusService.publish('/participant/' + this.participant, msg);
