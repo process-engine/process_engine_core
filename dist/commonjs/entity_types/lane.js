@@ -66,6 +66,20 @@ class LaneEntity extends data_model_contracts_1.Entity {
         }
         return features;
     }
+    get role() {
+        const extensions = this.extensions;
+        const properties = (extensions && extensions.properties) ? extensions.properties : null;
+        let found = null;
+        if (properties) {
+            properties.some((property) => {
+                if (property.name === 'role') {
+                    found = property.value;
+                    return true;
+                }
+            });
+        }
+        return found;
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

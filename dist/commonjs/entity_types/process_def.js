@@ -135,6 +135,18 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     getNodeDefCollection(context) {
         return this.getPropertyLazy(this, 'nodeDefCollection', context);
     }
+    get flowDefCollection() {
+        return this.getProperty(this, 'flowDefCollection');
+    }
+    getFlowDefCollection(context) {
+        return this.getPropertyLazy(this, 'flowDefCollection', context);
+    }
+    get laneCollection() {
+        return this.getProperty(this, 'laneCollection');
+    }
+    getLaneCollection(context) {
+        return this.getPropertyLazy(this, 'laneCollection', context);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -148,7 +160,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
             const processEntityType = await this.datastoreService.getEntityType('Process');
             const processEntity = (await processEntityType.createEntity(context, processData));
-            await processEntity.save(context);
             await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
             const ref = processEntity.getEntityReference();
             return ref;
@@ -266,7 +277,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             this.extensions = extensions;
         }
         this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
-        await this.save(context);
+        await this.save(context, { reloadAfterSave: false });
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context, counter);
         const nodes = bpmnDiagram.getNodes(key);
@@ -340,7 +351,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
                 laneEntity.extensions = extensions;
             }
-            await laneEntity.save(context);
+            await laneEntity.save(context, { reloadAfterSave: false });
             laneCache[lane.id] = laneEntity;
         });
         await Promise.all(lanePromiseArray);
@@ -419,7 +430,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             if (laneId) {
                 nodeDefEntity.lane = laneCache[laneId];
             }
-            await nodeDefEntity.save(context);
+            await nodeDefEntity.save(context, { reloadAfterSave: false });
             nodeCache[node.id] = nodeDefEntity;
         });
         await Promise.all(nodePromiseArray);
@@ -460,7 +471,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 const extensions = this._updateExtensionElements(flow.extensionElements.values, flowDefEntity);
                 flowDefEntity.extensions = extensions;
             }
-            await flowDefEntity.save(context);
+            await flowDefEntity.save(context, { reloadAfterSave: false });
         });
         await Promise.all(flowPromiseArray);
     }
@@ -472,7 +483,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const sourceEnt = nodeCache[attachedKey];
                     const boundary = nodeCache[node.id];
                     boundary.attachedToNode = sourceEnt;
-                    await boundary.save(context);
+                    await boundary.save(context, { reloadAfterSave: false });
                     let events = sourceEnt.events || [];
                     if (!Array.isArray(events)) {
                         events = [];
@@ -517,7 +528,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                         default:
                     }
                     sourceEnt.events = events;
-                    await sourceEnt.save(context);
+                    await sourceEnt.save(context, { reloadAfterSave: false });
                 }
             }
         });
@@ -656,6 +667,20 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const savedEntity = this.entityType.save(this, context, options);
         return savedEntity;
     }
+    get persist() {
+        const extensions = this.extensions;
+        const properties = (extensions && extensions.properties) ? extensions.properties : null;
+        let found = true;
+        if (properties) {
+            properties.some((property) => {
+                if (property.name === 'persist') {
+                    found = (property.value === 'true' || property.value === '1');
+                    return true;
+                }
+            });
+        }
+        return found;
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({
@@ -698,6 +723,12 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
 ], ProcessDefEntity.prototype, "nodeDefCollection", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'FlowDef', isList: true, relatedAttribute: 'processDef' })
+], ProcessDefEntity.prototype, "flowDefCollection", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'Lane', isList: true, relatedAttribute: 'processDef' })
+], ProcessDefEntity.prototype, "laneCollection", null);
 exports.ProcessDefEntity = ProcessDefEntity;
 
 //# sourceMappingURL=process_def.js.map

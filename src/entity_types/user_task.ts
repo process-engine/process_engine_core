@@ -30,7 +30,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
     this.changeState(context, 'wait', this);
 
-    const pojo = await this.toPojo(internalContext);
+    const pojo = await this.toPojo(internalContext, {maxDepth: 1});
     const data = {
       action: 'userTask',
       data: pojo
@@ -41,7 +41,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
       // send message to users of lane role
-      const role = await this.getLaneRole(internalContext);
+      const role = await this.nodeDef.lane.role;
       await this.messageBusService.publish('/role/' + role, msg);
     }
 
@@ -49,19 +49,16 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
     
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-
     // check if participant changed
     if (this.participant !== applicationId) {
 
     }
+
     // save new data in token
-    const processToken = await this.getProcessToken(internalContext);
+    const processToken = this.processToken;
     const tokenData = processToken.data || {};
     tokenData.current = newData;
     processToken.data = tokenData;
-
-    await processToken.save(internalContext);
 
     this.changeState(context, 'end', this);
   }

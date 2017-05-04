@@ -84,4 +84,22 @@ export class LaneEntity extends Entity implements ILaneEntity {
     }
     return features;
   }
+
+  public get role(): string {
+    const extensions = this.extensions;
+    const properties = (extensions && extensions.properties) ? extensions.properties : null;
+
+    let found: string = null;
+
+    if (properties) {
+      properties.some((property) => {
+        if (property.name === 'role') {
+          found = property.value;
+          return true;
+        }
+      });
+    }
+
+    return found;
+  }
 }

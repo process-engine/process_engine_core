@@ -28,16 +28,16 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
   }
 
   public async execute(context): Promise<void> {
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
-    await this.save(internalContext);
 
-    const processToken = await this.getProcessToken(internalContext);
+    const processToken = this.processToken;
+
     const tokenData = processToken.data || {};
     let result;
 
     // call service
-    const nodeDef = await this.getNodeDef(internalContext);
+    const nodeDef = this.nodeDef;
+
     const script = nodeDef.script;
 
     if (script) {
@@ -59,8 +59,6 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
 
       tokenData.current = finalResult;
       processToken.data = tokenData;
-
-      await processToken.save(context);
     }
 
     this.changeState(context, 'end', this);

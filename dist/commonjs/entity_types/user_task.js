@@ -19,7 +19,7 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.changeState(context, 'wait', this);
-        const pojo = await this.toPojo(internalContext);
+        const pojo = await this.toPojo(internalContext, { maxDepth: 1 });
         const data = {
             action: 'userTask',
             data: pojo
@@ -29,19 +29,17 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }
         else {
-            const role = await this.getLaneRole(internalContext);
+            const role = await this.nodeDef.lane.role;
             await this.messageBusService.publish('/role/' + role, msg);
         }
     }
     async proceed(context, newData, source, applicationId) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         if (this.participant !== applicationId) {
         }
-        const processToken = await this.getProcessToken(internalContext);
+        const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;
         processToken.data = tokenData;
-        await processToken.save(internalContext);
         this.changeState(context, 'end', this);
     }
 };

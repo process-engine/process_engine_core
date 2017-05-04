@@ -10,14 +10,19 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class ProcessEntity extends data_model_contracts_1.Entity {
-    constructor(iamService, nodeInstanceEntityTypeService, messageBusService, entityDependencyHelper, context, schema) {
+    constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._iamService = undefined;
         this._nodeInstanceEntityTypeService = undefined;
         this._messageBusService = undefined;
+        this._processEngineService = undefined;
+        this._activeInstances = {};
+        this._allInstances = {};
+        this.boundProcesses = {};
         this._iamService = iamService;
         this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
         this._messageBusService = messageBusService;
+        this._processEngineService = processEngineService;
     }
     get iamService() {
         return this._iamService;
@@ -28,9 +33,18 @@ class ProcessEntity extends data_model_contracts_1.Entity {
     get messageBusService() {
         return this._messageBusService;
     }
+    get processEngineService() {
+        return this._processEngineService;
+    }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
         await super.initialize(actualInstance);
+    }
+    get activeInstances() {
+        return this._activeInstances;
+    }
+    get allInstances() {
+        return this._allInstances;
     }
     get name() {
         return this.getProperty(this, 'name');
@@ -43,6 +57,12 @@ class ProcessEntity extends data_model_contracts_1.Entity {
     }
     set key(value) {
         this.setProperty(this, 'key', value);
+    }
+    get status() {
+        return this.getProperty(this, 'status');
+    }
+    set status(value) {
+        this.setProperty(this, 'status', value);
     }
     get processDef() {
         return this.getProperty(this, 'processDef');
@@ -70,26 +90,48 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         const isSubProcess = params ? params.isSubProcess : false;
         const initialToken = params ? params.initialToken : undefined;
         const ProcessToken = await this.datastoreService.getEntityType('ProcessToken');
-        const NodeDef = await this.datastoreService.getEntityType('NodeDef');
         const StartEvent = await this.datastoreService.getEntityType('StartEvent');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         let laneContext = context;
         let participant = null;
         this.isSubProcess = isSubProcess;
         this.callerId = (isSubProcess && source) ? source.id : null;
-        await this.save(internalContext);
+        this.status = 'progress';
+        if (this.processDef.persist) {
+            await this.save(internalContext, { reloadAfterSave: false });
+        }
         if (!isSubProcess) {
             participant = source || null;
         }
         const processDef = await this.getProcessDef(internalContext);
-        const queryObject = {
-            operator: 'and',
-            queries: [
-                { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
-                { attribute: 'processDef', operator: '=', value: processDef.id }
-            ]
-        };
-        const startEventDef = await NodeDef.findOne(internalContext, { query: queryObject });
+        await processDef.getNodeDefCollection(internalContext);
+        await processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+            nodeDef.processDef = processDef;
+        });
+        await processDef.getFlowDefCollection(internalContext);
+        await processDef.flowDefCollection.each(internalContext, async (flowDef) => {
+            flowDef.processDef = processDef;
+        });
+        await processDef.getLaneCollection(internalContext);
+        await processDef.laneCollection.each(internalContext, async (lane) => {
+            lane.processDef = processDef;
+        });
+        let startEventDef = undefined;
+        for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
+            const nodeDef = processDef.nodeDefCollection.data[i];
+            if (nodeDef.lane) {
+                const laneId = nodeDef.lane.id;
+                for (let j = 0; j < processDef.laneCollection.length; j++) {
+                    const lane = processDef.laneCollection.data[j];
+                    if (lane.id === laneId) {
+                        nodeDef.lane = lane;
+                    }
+                }
+            }
+            if (nodeDef.type === 'bpmn:StartEvent') {
+                startEventDef = nodeDef;
+            }
+        }
         if (startEventDef) {
             const processToken = await ProcessToken.createEntity(internalContext);
             processToken.process = this;
@@ -98,7 +140,10 @@ class ProcessEntity extends data_model_contracts_1.Entity {
                     current: initialToken
                 };
             }
-            await processToken.save(internalContext);
+            if (this.processDef.persist) {
+                await processToken.save(internalContext, { reloadAfterSave: false });
+            }
+            this.processEngineService.addActiveInstance(this);
             const startEvent = await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
             startEvent.name = startEventDef.name;
             startEvent.key = startEventDef.key;
@@ -107,11 +152,13 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             startEvent.type = startEventDef.type;
             startEvent.processToken = processToken;
             startEvent.participant = participant;
-            await startEvent.save(internalContext);
             startEvent.changeState(laneContext, 'start', this);
         }
     }
     async end(context, processToken) {
+        if (this.processDef.persist) {
+            this.status = 'end';
+        }
         if (this.isSubProcess) {
             const callerId = this.callerId;
             const source = this;
@@ -123,12 +170,18 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             const channel = '/processengine/node/' + callerId;
             await this.messageBusService.publish(channel, msg);
         }
+        else {
+            Object.keys(this.boundProcesses).forEach((id) => {
+                this.processEngineService.removeActiveInstance(this.boundProcesses[id]);
+            });
+            this.processEngineService.removeActiveInstance(this);
+        }
     }
     async error(context, error) {
         const processToken = null;
         if (this.isSubProcess) {
             const callerId = this.callerId;
-            const source = this.getEntityReference().toPojo();
+            const source = this;
             const data = {
                 action: 'event',
                 event: 'error',
@@ -140,6 +193,15 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         }
         await this.end(context, processToken);
     }
+    addActiveInstance(entity) {
+        this._activeInstances[entity.id] = entity;
+        this._allInstances[entity.id] = entity;
+    }
+    removeActiveInstance(entity) {
+        if (this._activeInstances.hasOwnProperty(entity.id)) {
+            delete this._activeInstances[entity.id];
+        }
+    }
 }
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
@@ -147,6 +209,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], ProcessEntity.prototype, "key", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], ProcessEntity.prototype, "status", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessDef' })
 ], ProcessEntity.prototype, "processDef", null);

@@ -20,10 +20,12 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'wait';
-        await this.save(internalContext);
-        const processToken = await this.getProcessToken(internalContext);
+        if (this.process.processDef.persist) {
+            await this.save(internalContext, { reloadAfterSave: false });
+        }
+        const processToken = this.processToken;
         const tokenData = processToken.data || {};
-        const nodeDef = await this.getNodeDef(internalContext);
+        const nodeDef = this.nodeDef;
         const subProcessKey = nodeDef.subProcessKey || null;
         if (subProcessKey) {
             const params = {
@@ -32,19 +34,18 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
                 isSubProcess: true,
                 initialToken: tokenData
             };
-            await this.processDefEntityTypeService.start(internalContext, params);
+            const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
+            this.process.boundProcesses[subProcessRef.id] = subProcessRef;
         }
         else {
             debugInfo(`No key is provided for call activity key '${this.key}'`);
         }
     }
     async proceed(context, newData, source, applicationId) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const processToken = await this.getProcessToken(internalContext);
+        const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;
         processToken.data = tokenData;
-        await processToken.save(internalContext);
         this.changeState(context, 'end', this);
     }
 }

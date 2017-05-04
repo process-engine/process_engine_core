@@ -1,6 +1,6 @@
-import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions, IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
+import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions, IParamImportFromXml, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IFactory } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IFactory, IEntity } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
@@ -22,8 +22,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _datastoreService: IDatastoreService = undefined;
   private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
 
-  private _runningProcesses: any = {};
-  private _processTokenCache: any = {};
+  private _activeInstances: any = {};
 
   public config: any = undefined;
 
@@ -68,13 +67,10 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._datastoreService;
   }
 
-  private get runningProcesses(): any {
-    return this._runningProcesses;
+  public get activeInstances(): any {
+    return this._activeInstances;
   }
 
-  private get processTokenCache(): any {
-    return this._processTokenCache;
-  }
 
   public async initialize(): Promise<void> {
     this.featureService.initialize();
@@ -85,7 +81,6 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
     const processEntity: IEntityReference = await this.processDefEntityTypeService.start(context, params, options);
-    this.runningProcesses[processEntity.id] = processEntity;
     return processEntity.id;
   }
 
@@ -191,6 +186,18 @@ export class ProcessEngineService implements IProcessEngineService {
       await processDef.startTimer(internalContext);
     });
     
+  }
+
+  public addActiveInstance(entity: IEntity): void {
+    this._activeInstances[entity.id] = entity;
+  }
+
+  public removeActiveInstance(entity: IEntity): void {
+    if (this._activeInstances.hasOwnProperty(entity.id)) {
+      delete this._activeInstances[entity.id];
+    }
+
+    entity = null;
   }
 
 }

@@ -233,21 +233,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public async getLaneRole(context: ExecutionContext): Promise<string> {
 
     const lane = await this.getLane(context);
-    const extensions = lane.extensions;
-    const properties = (extensions && extensions.properties) ? extensions.properties : null;
-
-    let found = null;
-
-    if (properties) {
-      properties.some((property) => {
-        if (property.name === 'role') {
-          found = property.value;
-          return true;
-        }
-      });
-    }
-
-    return found;
+    return lane.role;
   }
 
   public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
@@ -296,5 +282,9 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
       });
     }
     return mapper;
+  }
+
+  public get persist(): boolean {
+    return true;
   }
 }

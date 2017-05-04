@@ -17,11 +17,10 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
-        await this.save(internalContext);
-        const processToken = await this.getProcessToken(internalContext);
+        const processToken = this.processToken;
         const tokenData = processToken.data || {};
         let continueEnd = true;
-        const nodeDef = await this.getNodeDef(internalContext);
+        const nodeDef = this.nodeDef;
         const extensions = nodeDef.extensions || null;
         const props = (extensions && extensions.properties) ? extensions.properties : null;
         if (props) {
@@ -47,7 +46,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 const serviceInstance = this.container.resolve(serviceModule);
                 let result;
                 try {
-                    const argumentsToPassThrough = (new Function('context', 'token', 'return ' + paramString)).call(tokenData, context, tokenData) || [];
                     const self = this;
                     const cb = function (data) {
                         const eventData = {
@@ -58,9 +56,8 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                         const event = self.eventAggregator.createEntityEvent(eventData, self, context);
                         self.eventAggregator.publish('/processengine/node/' + self.id, event);
                     };
-                    const orig = process.stdout.write;
+                    const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
-                    process.stdout.write = orig;
                 }
                 catch (err) {
                     result = err;
@@ -77,7 +74,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 }
                 tokenData.current = finalResult;
                 processToken.data = tokenData;
-                await processToken.save(internalContext);
             }
         }
         if (continueEnd) {
