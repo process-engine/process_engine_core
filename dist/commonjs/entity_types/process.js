@@ -9,6 +9,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
+const debug = require("debug");
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 class ProcessEntity extends data_model_contracts_1.Entity {
     constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
@@ -144,6 +147,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
                 await processToken.save(internalContext, { reloadAfterSave: false });
             }
             this.processEngineService.addActiveInstance(this);
+            debugInfo(`process id ${this.id} started: `);
             const startEvent = await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
             startEvent.name = startEventDef.name;
             startEvent.key = startEventDef.key;

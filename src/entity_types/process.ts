@@ -4,6 +4,10 @@ import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IS
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 
+import * as debug from 'debug';
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
+
 export class ProcessEntity extends Entity implements IProcessEntity {
 
   private _iamService: IIamService = undefined;
@@ -196,6 +200,8 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       }
 
       this.processEngineService.addActiveInstance(this);
+
+      debugInfo(`process id ${this.id} started: `);
 
       const startEvent: IStartEventEntity = <IStartEventEntity>await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
       startEvent.name = startEventDef.name;

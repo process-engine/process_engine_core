@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const debug = require("debug");
-const debugInfo = debug('process_engine:info');
-const debugErr = debug('process_engine:error');
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 class ProcessEngineService {
     constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService, processRepository, datastoreServiceFactory) {
         this._messageBusService = undefined;
@@ -80,8 +80,7 @@ class ProcessEngineService {
                     source: source,
                     isSubProcess: isSubProcess
                 };
-                const processEntity = await this.processDefEntityTypeService.start(context, params);
-                debugInfo(`process id ${processEntity.id} started: `);
+                await this.processDefEntityTypeService.start(context, params);
                 break;
             default:
                 debugInfo('unhandled action: ', msg);

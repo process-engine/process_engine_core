@@ -7,8 +7,8 @@ import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 
 import * as debug from 'debug';
 
-const debugInfo = debug('process_engine:info');
-const debugErr = debug('process_engine:error');
+const debugInfo = debug('processengine:info');
+const debugErr = debug('processengine:error');
 
 
 export class ProcessEngineService implements IProcessEngineService {
@@ -112,8 +112,8 @@ export class ProcessEngineService implements IProcessEngineService {
           isSubProcess: isSubProcess
         };
 
-        const processEntity = await this.processDefEntityTypeService.start(context, params);
-        debugInfo(`process id ${processEntity.id} started: `);
+        await this.processDefEntityTypeService.start(context, params);
+        
         break;
       default:
         debugInfo('unhandled action: ', msg);
