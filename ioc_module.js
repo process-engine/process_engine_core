@@ -73,7 +73,7 @@ function registerInContainer(container) {
     .configure('process_engine:process_engine_service');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService')
+    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService')
     .injectLazy('DatastoreService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)

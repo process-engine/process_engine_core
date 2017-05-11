@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ILaneEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
 import {IFeature} from '@process-engine-js/feature_contracts';
@@ -65,6 +65,16 @@ export class LaneEntity extends Entity implements ILaneEntity {
   public set counter(value: number) {
     this.setProperty(this, 'counter', value);
   }
+
+  @schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'lane' })
+  public get nodeDefCollection(): EntityCollection {
+    return this.getProperty(this, 'nodeDefCollection');
+  }
+
+  public getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection> {
+    return this.getPropertyLazy(this, 'nodeDefCollection', context);
+  }
+
   
   public get features(): Array<IFeature> {
     return this._extractFeatures();

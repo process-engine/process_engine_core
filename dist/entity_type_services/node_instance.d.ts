@@ -1,4 +1,4 @@
-import { INodeInstanceEntityTypeService, IParamsContinueFromRemote } from '@process-engine-js/process_engine_contracts';
+import { INodeInstanceEntityTypeService, IParamsContinueFromRemote, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IEntity, IIamService, IFactory } from '@process-engine-js/core_contracts';
 import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
@@ -13,13 +13,15 @@ export declare class NodeInstanceEntityTypeService implements INodeInstanceEntit
     private _iamService;
     private _featureService;
     private _routingService;
-    constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService);
+    private _processEngineService;
+    constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService, processEngineService: IProcessEngineService);
     private readonly datastoreService;
     private readonly messagebusService;
     private readonly eventAggregator;
     private readonly iamService;
     private readonly featureService;
     private readonly routingService;
+    private readonly processEngineService;
     private _nodeHandler(event);
     private _nodeHandlerMessagebus(msg);
     createNode(context: ExecutionContext, entityType: IEntityType<IEntity>): Promise<IEntity>;

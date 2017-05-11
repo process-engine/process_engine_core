@@ -50,6 +50,12 @@ class LaneEntity extends data_model_contracts_1.Entity {
     set counter(value) {
         this.setProperty(this, 'counter', value);
     }
+    get nodeDefCollection() {
+        return this.getProperty(this, 'nodeDefCollection');
+    }
+    getNodeDefCollection(context) {
+        return this.getPropertyLazy(this, 'nodeDefCollection', context);
+    }
     get features() {
         return this._extractFeatures();
     }
@@ -96,6 +102,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.number })
 ], LaneEntity.prototype, "counter", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'lane' })
+], LaneEntity.prototype, "nodeDefCollection", null);
 exports.LaneEntity = LaneEntity;
 
 //# sourceMappingURL=lane.js.map

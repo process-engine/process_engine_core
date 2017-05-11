@@ -1,5 +1,5 @@
 import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, 
-  IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity, IFlowDefEntity, ILaneEntity } from '@process-engine-js/process_engine_contracts';
+  IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity, IFlowDefEntity, ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService, IEntityType, EntityReference } from '@process-engine-js/data_model_contracts';
@@ -33,14 +33,16 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   private _iamService: IIamService = undefined;
   private _featureService: IFeatureService = undefined;
   private _routingService: IRoutingService = undefined;
+  private _processEngineService: IProcessEngineService = undefined;
 
-  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService) {
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService, processEngineService: IProcessEngineService) {
     this._datastoreServiceFactory = datastoreServiceFactory;
     this._messagebusService = messagebusService;
     this._eventAggregator = eventAggregator;
     this._iamService = iamService;
     this._featureService = featureService;
     this._routingService = routingService;
+    this._processEngineService = processEngineService;
   }
 
   private get datastoreService(): IDatastoreService {
@@ -68,6 +70,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   private get routingService(): IRoutingService {
     return this._routingService;
+  }
+
+  private get processEngineService(): IProcessEngineService {
+    return this._processEngineService;
   }
 
   private async _nodeHandler(event: any): Promise<void> {
@@ -404,11 +410,22 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               typeName: 'NodeInstance',
               method: 'continueFromRemote'
             };
-            const data = {
-              source: nodeInstance.getEntityReference().toPojo(),
-              nextDef: nextDef.getEntityReference().toPojo(),
-              token: currentToken.getEntityReference().toPojo()
-            };
+
+            let data;
+            if (processDef.persist) {
+              data = {
+                source: nodeInstance.getEntityReference().toPojo(),
+                nextDef: nextDef.getEntityReference().toPojo(),
+                token: currentToken.getEntityReference().toPojo()
+              };
+            } else {
+              data = {
+                source: await nodeInstance.toPojo(internalContext, { maxDepth: 1 }),
+                nextDef: nextDef.getEntityReference().toPojo(),
+                token: await currentToken.toPojo(internalContext, { maxDepth: 1 })
+              };
+            }
+            
             const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
             try {
               const result = await this.routingService.request(appInstanceId, message);
@@ -453,26 +470,115 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     let token = undefined;
     let nextDef = undefined;
 
-    // Todo: restore entities from references respecting namespaces
-    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
-    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    try {
+      const internalContext = await this.iamService.createInternalContext('processengine_system');
 
-    const sourceRef = new EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
-    const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
-    if (sourceEntityType && sourceRef.id) {
-      source = await sourceEntityType.getById(sourceRef.id, context);
-    }
+      // Todo: restore entities from references respecting namespaces
+      const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+      const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
 
-    const tokenRef = new EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
-    token = await processTokenEntityType.getById(tokenRef.id, context);
+      const nextDefRef = new EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
+      nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
 
-    const nextDefRef = new EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
-    nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
+      const processDef = await nextDef.getProcessDef(internalContext);
 
-    if (source && token && nextDef) {
-      await this.createNextNode(context, source, nextDef, token);
-    } else {
-      throw new Error('param is missing');
+      if (params.source._meta.isRef) {
+        // source is a pojo of an entityRef
+        const sourceRef = new EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
+        const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
+        if (sourceEntityType && sourceRef.id) {
+          source = await sourceEntityType.getById(sourceRef.id, context);
+        }
+      } else {
+        // source is a pojo of an entity
+        const sourceEntityType = await this.datastoreService.getEntityType(params.source._meta.type);
+        if (sourceEntityType) {
+          source = await sourceEntityType.createEntity(context, params.source);
+
+        }
+      }
+
+      if (params.token._meta.isRef) {
+        // token is a pojo of an entityRef
+        const tokenRef = new EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
+        token = await processTokenEntityType.getById(tokenRef.id, context);
+      } else {
+        // token is a pojo of an entity
+        token = await processTokenEntityType.createEntity(context, params.token);
+      }
+
+
+      const sourceProcessRef = source && source.process ? source.process : undefined;
+      let processEntity: IProcessEntity;
+
+      if (sourceProcessRef) {
+        if (this.processEngineService.activeInstances.hasOwnProperty(sourceProcessRef.id)) {
+          processEntity = this.processEngineService.activeInstances[sourceProcessRef.id];
+        } else {
+          const processData = {
+            key: processDef.key,
+            processDef: processDef
+          };
+
+
+          const processEntityType = await this.datastoreService.getEntityType('Process');
+          processEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
+
+          processEntity.status = 'progress';
+
+          if (processDef.persist) {
+            await processEntity.save(internalContext, { reloadAfterSave: false });
+          }
+
+          await processDef.getNodeDefCollection(internalContext);
+          await processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+            nodeDef.processDef = processDef;
+          });
+          await processDef.getFlowDefCollection(internalContext);
+          await processDef.flowDefCollection.each(internalContext, async (flowDef) => {
+            flowDef.processDef = processDef;
+          });
+          await processDef.getLaneCollection(internalContext);
+          await processDef.laneCollection.each(internalContext, async (lane) => {
+            lane.processDef = processDef;
+          });
+
+
+          // set lane entities
+          for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
+            const nodeDef = <INodeDefEntity>processDef.nodeDefCollection.data[i];
+
+            if (nodeDef.lane) {
+              const laneId = nodeDef.lane.id;
+              for (let j = 0; j < processDef.laneCollection.length; j++) {
+                const lane = <ILaneEntity>processDef.laneCollection.data[j];
+                if (lane.id === laneId) {
+                  nodeDef.lane = lane;
+                }
+              }
+            }
+          }
+
+          this.processEngineService.addActiveInstance(processEntity);
+
+          processEntity.addActiveInstance(source);
+          processEntity.removeActiveInstance(source);
+        }
+
+        if (source && processEntity) {
+          source.process = processEntity;
+        }
+      }
+
+      if (source && token && nextDef) {
+        await this.createNextNode(context, source, nextDef, token);
+      } else {
+        throw new Error('param is missing');
+      }
+    
+    } catch (err) {
+      debugErr(err);
+      throw err;
     }
   }
 }
