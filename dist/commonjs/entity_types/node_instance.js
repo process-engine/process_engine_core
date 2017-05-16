@@ -159,9 +159,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     error(context, error) {
         debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
         const nodeDef = this.nodeDef;
-        const event = nodeDef.events.find((el) => {
-            return el.type === 'error';
-        });
+        let event = undefined;
+        if (nodeDef.events) {
+            event = nodeDef.events.find((el) => {
+                return el.type === 'error';
+            });
+        }
         if (event) {
             const data = {
                 action: 'event',

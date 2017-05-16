@@ -235,10 +235,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     const nodeDef = this.nodeDef;
 
-    const event = nodeDef.events.find((el) => {
-      return el.type === 'error';
-    });
-
+    let event = undefined;
+    if (nodeDef.events) {
+      event = nodeDef.events.find((el) => {
+        return el.type === 'error';
+      });
+    }
     if (event) {
 
       const data = {
