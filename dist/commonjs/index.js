@@ -6,6 +6,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./process_engine_service"));
 __export(require("./entity_types"));
 __export(require("./entity_type_services"));
-__export(require("./process_repository"));
 
 //# sourceMappingURL=index.js.map

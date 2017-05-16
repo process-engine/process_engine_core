@@ -332,86 +332,92 @@ class NodeInstanceEntityTypeService {
         let source = undefined;
         let token = undefined;
         let nextDef = undefined;
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
-        const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-        const nextDefRef = new data_model_contracts_1.EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
-        nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
-        const processDef = await nextDef.getProcessDef(internalContext);
-        if (params.source._meta.isRef) {
-            const sourceRef = new data_model_contracts_1.EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
-            const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
-            if (sourceEntityType && sourceRef.id) {
-                source = await sourceEntityType.getById(sourceRef.id, context);
-            }
-        }
-        else {
-            const sourceEntityType = await this.datastoreService.getEntityType(params.source._meta.type);
-            if (sourceEntityType) {
-                source = await sourceEntityType.createEntity(context, params.source);
-            }
-        }
-        if (params.token._meta.isRef) {
-            const tokenRef = new data_model_contracts_1.EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
-            token = await processTokenEntityType.getById(tokenRef.id, context);
-        }
-        else {
-            token = await processTokenEntityType.createEntity(context, params.token);
-        }
-        const sourceProcessRef = source && source.process ? source.process : undefined;
-        let processEntity;
-        if (sourceProcessRef) {
-            if (this.processEngineService.activeInstances.hasOwnProperty(sourceProcessRef.id)) {
-                processEntity = this.processEngineService.activeInstances[sourceProcessRef.id];
+        try {
+            const internalContext = await this.iamService.createInternalContext('processengine_system');
+            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+            const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+            const nextDefRef = new data_model_contracts_1.EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
+            nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
+            const processDef = await nextDef.getProcessDef(internalContext);
+            if (params.source._meta.isRef) {
+                const sourceRef = new data_model_contracts_1.EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
+                const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
+                if (sourceEntityType && sourceRef.id) {
+                    source = await sourceEntityType.getById(sourceRef.id, context);
+                }
             }
             else {
-                const processData = {
-                    key: processDef.key,
-                    processDef: processDef
-                };
-                const processEntityType = await this.datastoreService.getEntityType('Process');
-                processEntity = (await processEntityType.createEntity(context, processData));
-                processEntity.status = 'progress';
-                if (processDef.persist) {
-                    await processEntity.save(internalContext, { reloadAfterSave: false });
+                const sourceEntityType = await this.datastoreService.getEntityType(params.source._meta.type);
+                if (sourceEntityType) {
+                    source = await sourceEntityType.createEntity(context, params.source);
                 }
-                await processDef.getNodeDefCollection(internalContext);
-                await processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
-                    nodeDef.processDef = processDef;
-                });
-                await processDef.getFlowDefCollection(internalContext);
-                await processDef.flowDefCollection.each(internalContext, async (flowDef) => {
-                    flowDef.processDef = processDef;
-                });
-                await processDef.getLaneCollection(internalContext);
-                await processDef.laneCollection.each(internalContext, async (lane) => {
-                    lane.processDef = processDef;
-                });
-                for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
-                    const nodeDef = processDef.nodeDefCollection.data[i];
-                    if (nodeDef.lane) {
-                        const laneId = nodeDef.lane.id;
-                        for (let j = 0; j < processDef.laneCollection.length; j++) {
-                            const lane = processDef.laneCollection.data[j];
-                            if (lane.id === laneId) {
-                                nodeDef.lane = lane;
+            }
+            if (params.token._meta.isRef) {
+                const tokenRef = new data_model_contracts_1.EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
+                token = await processTokenEntityType.getById(tokenRef.id, context);
+            }
+            else {
+                token = await processTokenEntityType.createEntity(context, params.token);
+            }
+            const sourceProcessRef = source && source.process ? source.process : undefined;
+            let processEntity;
+            if (sourceProcessRef) {
+                if (this.processEngineService.activeInstances.hasOwnProperty(sourceProcessRef.id)) {
+                    processEntity = this.processEngineService.activeInstances[sourceProcessRef.id];
+                }
+                else {
+                    const processData = {
+                        key: processDef.key,
+                        processDef: processDef
+                    };
+                    const processEntityType = await this.datastoreService.getEntityType('Process');
+                    processEntity = (await processEntityType.createEntity(context, processData));
+                    processEntity.status = 'progress';
+                    if (processDef.persist) {
+                        await processEntity.save(internalContext, { reloadAfterSave: false });
+                    }
+                    await processDef.getNodeDefCollection(internalContext);
+                    await processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+                        nodeDef.processDef = processDef;
+                    });
+                    await processDef.getFlowDefCollection(internalContext);
+                    await processDef.flowDefCollection.each(internalContext, async (flowDef) => {
+                        flowDef.processDef = processDef;
+                    });
+                    await processDef.getLaneCollection(internalContext);
+                    await processDef.laneCollection.each(internalContext, async (lane) => {
+                        lane.processDef = processDef;
+                    });
+                    for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
+                        const nodeDef = processDef.nodeDefCollection.data[i];
+                        if (nodeDef.lane) {
+                            const laneId = nodeDef.lane.id;
+                            for (let j = 0; j < processDef.laneCollection.length; j++) {
+                                const lane = processDef.laneCollection.data[j];
+                                if (lane.id === laneId) {
+                                    nodeDef.lane = lane;
+                                }
                             }
                         }
                     }
+                    this.processEngineService.addActiveInstance(processEntity);
+                    processEntity.addActiveInstance(source);
+                    processEntity.removeActiveInstance(source);
                 }
-                this.processEngineService.addActiveInstance(processEntity);
-                processEntity.addActiveInstance(source);
-                processEntity.removeActiveInstance(source);
+                if (source && processEntity) {
+                    source.process = processEntity;
+                }
             }
-            if (source && processEntity) {
-                source.process = processEntity;
+            if (source && token && nextDef) {
+                await this.createNextNode(context, source, nextDef, token);
+            }
+            else {
+                throw new Error('param is missing');
             }
         }
-        if (source && token && nextDef) {
-            await this.createNextNode(context, source, nextDef, token);
-        }
-        else {
-            throw new Error('param is missing');
+        catch (err) {
+            debugErr(err);
+            throw err;
         }
     }
 }

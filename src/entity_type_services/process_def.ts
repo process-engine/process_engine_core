@@ -1,13 +1,12 @@
 import {
   IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile,
-  IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions
+  IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions,
+  IProcessRepository
 } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 
-import * as fs from 'fs';
-import * as path from 'path';
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
@@ -15,10 +14,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   private _datastoreService: IDatastoreService = undefined;
   private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
+  private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
 
-  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, invoker: IInvoker) {
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, processRepository: IProcessRepository, invoker: IInvoker) {
     this._datastoreServiceFactory = datastoreServiceFactory;
+    this._processRepository = processRepository;
     this._invoker = invoker;
   }
 
@@ -33,13 +34,17 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._invoker;
   }
 
+  private get processRepository(): IProcessRepository {
+    return this._processRepository;
+  }
+
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
 
     const pathString = params && params.file ? params.file : null;
     if (pathString) {
 
-      const xmlString = await this._getFile(pathString);
-      const name = path.basename(pathString);
+      const xmlString = await this.processRepository.getXmlFromFile(pathString);
+      const name = pathString.split('/').pop();
 
       await this.importBpmnFromXml(context, {
         xml: xmlString,
@@ -54,17 +59,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   }
 
 
-  private async _getFile(path: string): Promise<string> {
-    return new BluebirdPromise<any>((resolve, reject) => {
-      fs.readFile(path, 'utf8', (error, xmlString) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(xmlString);
-        }
-      });
-    });
-  }
+  
 
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromFileOptions): Promise<void> {
@@ -144,24 +139,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         if (error) {
           reject(error);
         } else {
-
-          const bpmnDiagram = new BpmnDiagram(definitions);
-          resolve(bpmnDiagram);
-        }
-      });
-    });
-  }
-
-  public parseBpmnFile(path: string): Promise<BpmnDiagram> {
-
-    return new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
-
-      fs.readFile(path, 'utf8', async (error, xmlString) => {
-        if (error) {
-          reject(error);
-        } else {
-
-          const definitions = await this.parseBpmnXml(xmlString);
 
           const bpmnDiagram = new BpmnDiagram(definitions);
           resolve(bpmnDiagram);

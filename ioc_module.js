@@ -25,7 +25,6 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
-const ProcessRepository = require('./dist/commonjs/index').ProcessRepository;
 
 const fs = require('fs');
 const path = require('path');
@@ -61,10 +60,7 @@ function registerInContainer(container) {
     .setAttribute('module', 'process_engine') // the source module
     .setAttribute('path', testMultiPath);   // the file path
   //.tags('readonly');
-
-  container.register('ProcessRepository', ProcessRepository)
-    .dependencies('container')
-    .singleton();
+  
 
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService')
@@ -77,7 +73,7 @@ function registerInContainer(container) {
     .injectLazy('DatastoreService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('DatastoreService', 'Invoker')
+    .dependencies('DatastoreService', 'ProcessRepository', 'Invoker')
     .injectLazy('DatastoreService');
 
 

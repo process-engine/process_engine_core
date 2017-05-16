@@ -1,16 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
-const fs = require("fs");
-const path = require("path");
 const BluebirdPromise = require("bluebird");
 const BpmnModdle = require("bpmn-moddle");
 class ProcessDefEntityTypeService {
-    constructor(datastoreServiceFactory, invoker) {
+    constructor(datastoreServiceFactory, processRepository, invoker) {
         this._datastoreService = undefined;
         this._datastoreServiceFactory = undefined;
+        this._processRepository = undefined;
         this._invoker = undefined;
         this._datastoreServiceFactory = datastoreServiceFactory;
+        this._processRepository = processRepository;
         this._invoker = invoker;
     }
     get datastoreService() {
@@ -22,11 +22,14 @@ class ProcessDefEntityTypeService {
     get invoker() {
         return this._invoker;
     }
+    get processRepository() {
+        return this._processRepository;
+    }
     async importBpmnFromFile(context, params, options) {
         const pathString = params && params.file ? params.file : null;
         if (pathString) {
-            const xmlString = await this._getFile(pathString);
-            const name = path.basename(pathString);
+            const xmlString = await this.processRepository.getXmlFromFile(pathString);
+            const name = pathString.split('/').pop();
             await this.importBpmnFromXml(context, {
                 xml: xmlString,
                 path: pathString,
@@ -35,18 +38,6 @@ class ProcessDefEntityTypeService {
             return { result: true };
         }
         throw new Error('file does not exist');
-    }
-    async _getFile(path) {
-        return new BluebirdPromise((resolve, reject) => {
-            fs.readFile(path, 'utf8', (error, xmlString) => {
-                if (error) {
-                    reject(error);
-                }
-                else {
-                    resolve(xmlString);
-                }
-            });
-        });
     }
     async importBpmnFromXml(context, params, options) {
         const overwriteExisting = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
@@ -105,20 +96,6 @@ class ProcessDefEntityTypeService {
                     reject(error);
                 }
                 else {
-                    const bpmnDiagram = new process_engine_contracts_1.BpmnDiagram(definitions);
-                    resolve(bpmnDiagram);
-                }
-            });
-        });
-    }
-    parseBpmnFile(path) {
-        return new BluebirdPromise((resolve, reject) => {
-            fs.readFile(path, 'utf8', async (error, xmlString) => {
-                if (error) {
-                    reject(error);
-                }
-                else {
-                    const definitions = await this.parseBpmnXml(xmlString);
                     const bpmnDiagram = new process_engine_contracts_1.BpmnDiagram(definitions);
                     resolve(bpmnDiagram);
                 }
