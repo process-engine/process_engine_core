@@ -88,6 +88,7 @@ class ProcessEngineService {
     }
     async _initializeMessageBus() {
         try {
+            await this.messageBusService.initialize();
             if (this.messageBusService.isMaster) {
                 await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);
