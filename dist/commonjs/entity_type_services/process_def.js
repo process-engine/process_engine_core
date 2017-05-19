@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
 const BluebirdPromise = require("bluebird");
 const BpmnModdle = require("bpmn-moddle");
