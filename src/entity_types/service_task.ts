@@ -3,13 +3,13 @@ import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_ins
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
-import { DependencyInjectionContainer } from 'addict-ioc';
+import { Container } from 'addict-ioc';
 
 export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTaskEntity {
 
-  private _container: DependencyInjectionContainer = undefined;
+  private _container: Container = undefined;
 
-  constructor(container: DependencyInjectionContainer,
+  constructor(container: Container,
               nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
               entityDependencyHelper: EntityDependencyHelper, 
               context: ExecutionContext,
@@ -19,7 +19,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
     this._container = container;
   }
 
-  private get container(): DependencyInjectionContainer {
+  private get container(): Container {
     return this._container;
   }
 

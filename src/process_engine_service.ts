@@ -125,6 +125,8 @@ export class ProcessEngineService implements IProcessEngineService {
     
     try {
 
+      await this.messageBusService.initialize();
+
       // Todo: we subscribe on the old channel to leave frontend intact
       // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
