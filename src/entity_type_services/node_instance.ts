@@ -2,7 +2,7 @@ import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamI
   IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity, IFlowDefEntity, ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
-import { IDatastoreService, IEntityType, EntityReference } from '@process-engine-js/data_model_contracts';
+import {IDatastoreService, IEntityType, EntityReference, Entity} from '@process-engine-js/data_model_contracts';
 import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
@@ -466,9 +466,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
 
-    let source = undefined;
+    let source: any = undefined;
     let token = undefined;
-    let nextDef = undefined;
+    let nextDef: INodeDefEntity = undefined;
 
     try {
       const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -478,7 +478,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
 
       const nextDefRef = new EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
-      nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
+      nextDef = <INodeDefEntity> await nodeDefEntityType.getById(nextDefRef.id, context);
 
       const processDef = await nextDef.getProcessDef(internalContext);
 

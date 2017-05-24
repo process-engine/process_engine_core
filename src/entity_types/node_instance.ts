@@ -296,7 +296,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       });
 
       const processToken = await this.processToken;
-      const tokenData = processToken.data || {};
+      const tokenData: any = processToken.data || {};
 
       for (let i = 0; i < events.length; i++) {
         const boundaryId = events[i].boundary;
@@ -447,7 +447,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     // cancel subscriptions
     nodeInstance.eventAggregatorSubscription.dispose();
-    nodeInstance.messagebusSubscription.cancel();
+    const messagebusSubscription = await nodeInstance.messagebusSubscription;
+    messagebusSubscription.cancel();
 
     if (!isEndEvent && !cancelFlow) {
       try {
