@@ -23,6 +23,7 @@ class CatchEventEntity extends event_1.EventEntity {
                 await this.initializeTimer();
                 break;
             default:
+                // no support of other event definition, simply end task
                 this.changeState(context, 'end', this);
         }
     }

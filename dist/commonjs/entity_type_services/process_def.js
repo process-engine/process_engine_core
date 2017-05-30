@@ -53,6 +53,7 @@ class ProcessDefEntityTypeService {
             const processes = bpmnDiagram.getProcesses();
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
+                // query with key
                 const queryObject = {
                     attribute: 'key',
                     operator: '=',
@@ -69,9 +70,11 @@ class ProcessDefEntityTypeService {
                         counter: 0
                     };
                     processDefEntity = await ProcessDef.createEntity(context, processDefData);
+                    // always create new processes
                     canSave = true;
                 }
                 else {
+                    // check if we can overwrite existing processes
                     canSave = overwriteExisting;
                 }
                 if (canSave) {

@@ -28,6 +28,7 @@ class ScriptTaskEntity extends node_instance_1.NodeInstanceEntity {
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         let result;
+        // call service
         const nodeDef = this.nodeDef;
         const script = nodeDef.script;
         if (script) {

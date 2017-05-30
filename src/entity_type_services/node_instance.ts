@@ -396,6 +396,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             const appInstances = this.featureService.getApplicationIdsByFeatures(features);
 
             if (appInstances.length === 0) {
+              // TODO
+              // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for first "registration" of compatible (feature-matching) application instance
               debugErr(`can not route to next node key '${nextDef.key }', features: ${JSON.stringify(features)}, no matching instance found`);
               throw new Error('can not route, no matching instance found');
             }
@@ -428,7 +430,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             
             const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
             try {
-              const result = await this.routingService.request(appInstanceId, message);
+              const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
+              const result = await this.routingService.request(appInstanceId, message, adapterKey);
             } catch (err) {
               debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
 
@@ -465,7 +468,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
-
     let source: any = undefined;
     let token = undefined;
     let nextDef: INodeDefEntity = undefined;

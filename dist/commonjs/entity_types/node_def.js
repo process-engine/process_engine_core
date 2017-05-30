@@ -183,6 +183,10 @@ class NodeDefEntity extends data_model_contracts_1.Entity {
                 }
             });
         }
+        if (this.type === 'bpmn:UserTask') {
+            features = features || [];
+            features.push({ name: 'UI', value: true });
+        }
         return features;
     }
     get mapper() {

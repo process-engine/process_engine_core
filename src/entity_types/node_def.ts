@@ -262,6 +262,12 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
         }
       });
     }
+
+    if (this.type === 'bpmn:UserTask') {
+      features = features || [];
+      features.push({ name: 'UI', value: true });
+    }
+
     return features;
   }
 

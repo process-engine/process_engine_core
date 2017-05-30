@@ -25,6 +25,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         }
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
+        // call sub process
         const nodeDef = this.nodeDef;
         const subProcessKey = nodeDef.subProcessKey || null;
         if (subProcessKey) {
@@ -42,6 +43,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         }
     }
     async proceed(context, newData, source, applicationId) {
+        // save new data in token
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;
