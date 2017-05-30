@@ -41,16 +41,12 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
             }
         }
         if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
-            // split
             this.parallelType = 'split';
-            // do nothing, just change to end
             this.state = 'progress';
             this.changeState(context, 'end', this);
         }
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
-            // join
             this.parallelType = 'join';
-            // we have to wait for all incoming flows
             this.state = 'wait';
             if (this.process.processDef.persist) {
                 const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -59,7 +55,6 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
         }
     }
     async proceed(context, newData, source, applicationId) {
-        // check if all tokens are there
         const nodeDef = this.nodeDef;
         const processDef = this.process.processDef;
         const prevDefsKeys = [];
@@ -82,7 +77,6 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                 const processToken = this.processToken;
                 const tokenData = processToken.data || {};
                 tokenData.history = tokenData.history || {};
-                // merge tokens
                 const merged = Object.assign({}, tokenData.history, token.data.history);
                 tokenData.history = merged;
                 processToken.data = tokenData;
@@ -92,7 +86,6 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
                     }
                 });
                 if (allthere) {
-                    // end
                     this.changeState(context, 'end', this);
                 }
                 else {

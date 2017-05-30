@@ -41,13 +41,10 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
             }
         }
         if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
-            // split
-            // evaluate conditions
             const follow = [];
             for (let i = 0; i < flowsOut.length; i++) {
                 const flow = flowsOut[i];
                 if (flow.condition) {
-                    // const processToken = await this.getProcessToken(internalContext);
                     const processToken = this.processToken;
                     const tokenData = processToken.data || {};
                     let result = false;
@@ -57,7 +54,6 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
                         result = evaluateFunction.call(tokenData, tokenData);
                     }
                     catch (err) {
-                        // do nothing
                     }
                     if (result) {
                         follow.push(flow.id);
@@ -70,7 +66,6 @@ class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
             this.follow = follow;
         }
         if (flowsIn && flowsIn.length > 1 && flowsOut && flowsOut.length === 1) {
-            // join
         }
         this.state = 'progress';
         this.changeState(context, 'end', this);

@@ -119,7 +119,6 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         await processDef.laneCollection.each(internalContext, async (lane) => {
             lane.processDef = processDef;
         });
-        // get start event, set lane entities
         let startEventDef = undefined;
         for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
             const nodeDef = processDef.nodeDefCollection.data[i];
@@ -137,7 +136,6 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             }
         }
         if (startEventDef) {
-            // create an empty process token
             const processToken = await ProcessToken.createEntity(internalContext);
             processToken.process = this;
             if (initialToken) {
@@ -162,7 +160,6 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         }
     }
     async end(context, processToken) {
-        // Todo: end active node instances
         if (this.processDef.persist) {
             this.status = 'end';
         }
