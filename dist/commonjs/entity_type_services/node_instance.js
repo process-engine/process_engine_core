@@ -117,7 +117,6 @@ class NodeInstanceEntityTypeService {
         return anyNode;
     }
     async createNextNode(context, source, nextDef, token) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         const process = source.process;
         let participant = source.participant;
         const map = new Map();
@@ -225,9 +224,9 @@ class NodeInstanceEntityTypeService {
                 ids.push(target.id);
                 mappers.push(flow.mapper);
             }
-            await source.process.processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
-                if (ids.indexOf(nodeDef.id) !== -1 && nodeDef.processDef.id === processDef.id) {
-                    nextDefs.push(nodeDef);
+            await source.process.processDef.nodeDefCollection.each(internalContext, async (nodeDefEntity) => {
+                if (ids.indexOf(nodeDefEntity.id) !== -1 && nodeDefEntity.processDef.id === processDef.id) {
+                    nextDefs.push(nodeDefEntity);
                 }
             });
             if (nextDefs.length > 0) {
@@ -304,7 +303,7 @@ class NodeInstanceEntityTypeService {
                         const message = this.messagebusService.createDatastoreMessage(options, context, data);
                         try {
                             const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
-                            const result = await this.routingService.request(appInstanceId, message, adapterKey);
+                            await this.routingService.request(appInstanceId, message, adapterKey);
                         }
                         catch (err) {
                             debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);

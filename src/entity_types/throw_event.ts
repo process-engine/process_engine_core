@@ -7,9 +7,9 @@ import { NodeInstanceEntityDependencyHelper } from './node_instance';
 export class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
-    entityDependencyHelper: EntityDependencyHelper,
-    context: ExecutionContext,
-    schema: IInheritedSchema) {
+              entityDependencyHelper: EntityDependencyHelper,
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 
@@ -26,7 +26,7 @@ export class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
 
     switch (nodeDef.eventType) {
       case 'bpmn:SignalEventDefinition':
-        
+
         const signal = this.nodeDef.signal;
         data = {
           process: this.process.getEntityReference().toPojo(),
@@ -39,7 +39,7 @@ export class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
         break;
 
       case 'bpmn:MessageEventDefinition':
-        
+
         const message = this.nodeDef.message;
         data = {
           process: this.process.getEntityReference().toPojo(),
@@ -56,7 +56,6 @@ export class ThrowEventEntity extends EventEntity implements IThrowEventEntity {
     }
 
     this.changeState(context, 'end', this);
-
 
   }
 }

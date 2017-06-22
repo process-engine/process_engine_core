@@ -15,7 +15,6 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
         await super.initialize(actualInstance);
     }
     async execute(context) {
-        const internalContext = await this.iamService.createInternalContext('processengine_system');
         this.state = 'progress';
         const processToken = this.processToken;
         const tokenData = processToken.data || {};

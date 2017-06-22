@@ -1,6 +1,6 @@
 import {
   IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile,
-  IParamImportFromXml, IParamStart, IProcessEntity, IImportFromFileOptions,
+  IParamImportFromXml, IParamStart, IImportFromFileOptions,
   IProcessRepository
 } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
@@ -46,21 +46,20 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const xmlString = await this.processRepository.getXmlFromFile(pathString);
       const name = pathString.split('/').pop();
 
-      await this.importBpmnFromXml(context, {
-        xml: xmlString,
-        path: pathString,
-        internalName: name
-      }, options);
+      await this.importBpmnFromXml(
+        context,
+        {
+          xml: xmlString,
+          path: pathString,
+          internalName: name
+        },
+        options);
       return { result: true };
 
     }
 
     throw new Error('file does not exist');
   }
-
-
-  
-
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromFileOptions): Promise<void> {
 
@@ -73,11 +72,10 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const module = params && params.module ? params.module : null;
     const readonly = params && params.readonly ? params.readonly : null;
 
-
     if (xml) {
       const bpmnDiagram = await this.parseBpmnXml(xml);
 
-      const ProcessDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+      const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
       const processes = bpmnDiagram.getProcesses();
 
@@ -90,8 +88,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           operator: '=',
           value: process.id
         };
-        const params: IPrivateQueryOptions = { query: queryObject };
-        const processDefColl = await ProcessDef.query(context, params);
+        const queryParams: IPrivateQueryOptions = { query: queryObject };
+        const processDefColl = await processDef.query(context, queryParams);
 
         let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity>processDefColl.data[0] : null;
 
@@ -104,7 +102,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
             counter: 0
           };
 
-          processDefEntity = await ProcessDef.createEntity<IProcessDefEntity>(context, processDefData);
+          processDefEntity = await processDef.createEntity<IProcessDefEntity>(context, processDefData);
 
           // always create new processes
           canSave = true;
@@ -147,19 +145,18 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     });
   }
 
-
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const key: string = params ? params.key : undefined;
 
     if (key) {
-      const ProcessDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+      const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
       const queryObject: IQueryClause = {
         attribute: 'key', operator: '=', value: key
       };
       const queryParams: IPrivateQueryOptions = { query: queryObject };
-      const processDefEntity = await ProcessDef.findOne(context, queryParams);
+      const processDefEntity = await processDef.findOne(context, queryParams);
 
       if (processDefEntity) {
         const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);

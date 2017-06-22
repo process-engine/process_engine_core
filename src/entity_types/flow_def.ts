@@ -5,7 +5,7 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class FlowDefEntity extends Entity implements IFlowDefEntity {
 
-  constructor(entityDependencyHelper: EntityDependencyHelper, 
+  constructor(entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
@@ -47,7 +47,6 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     return this.getPropertyLazy(this, 'processDef', context);
   }
 
-
   @schemaAttribute({ type: 'NodeDef' })
   public get source(): INodeDefEntity {
     return this.getProperty(this, 'source');
@@ -61,7 +60,6 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     return this.getPropertyLazy(this, 'source', context);
   }
 
-
   @schemaAttribute({ type: 'NodeDef' })
   public get target(): INodeDefEntity {
     return this.getProperty(this, 'target');
@@ -74,7 +72,6 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
   public getTarget(context: ExecutionContext): Promise<INodeDefEntity> {
     return this.getPropertyLazy(this, 'target', context);
   }
-
 
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get condition(): string {
@@ -102,7 +99,6 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
   public set counter(value: number) {
     this.setProperty(this, 'counter', value);
   }
-
 
   public get mapper(): any {
     return this._extractMapper();

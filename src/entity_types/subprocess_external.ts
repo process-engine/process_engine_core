@@ -1,13 +1,12 @@
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IEntityReference} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {ISubprocessExternalEntity, IProcessDefEntityTypeService, IParamStart} from '@process-engine-js/process_engine_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
 
 import * as debug from 'debug';
 
 const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+// const debugErr = debug('processengine:error');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
@@ -15,7 +14,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               processDefEntityTypeService: IProcessDefEntityTypeService,
-              entityDependencyHelper: EntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -56,11 +55,11 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
       };
       const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
       this.process.boundProcesses[subProcessRef.id] = subProcessRef;
-      
+
     } else {
       debugInfo(`No key is provided for call activity key '${this.key}'`);
     }
-    
+
   }
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {

@@ -49,7 +49,7 @@ class ProcessDefEntityTypeService {
         const readonly = params && params.readonly ? params.readonly : null;
         if (xml) {
             const bpmnDiagram = await this.parseBpmnXml(xml);
-            const ProcessDef = await this.datastoreService.getEntityType('ProcessDef');
+            const processDef = await this.datastoreService.getEntityType('ProcessDef');
             const processes = bpmnDiagram.getProcesses();
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
@@ -58,8 +58,8 @@ class ProcessDefEntityTypeService {
                     operator: '=',
                     value: process.id
                 };
-                const params = { query: queryObject };
-                const processDefColl = await ProcessDef.query(context, params);
+                const queryParams = { query: queryObject };
+                const processDefColl = await processDef.query(context, queryParams);
                 let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
                 let canSave = false;
                 if (!processDefEntity) {
@@ -68,7 +68,7 @@ class ProcessDefEntityTypeService {
                         defId: bpmnDiagram.definitions.id,
                         counter: 0
                     };
-                    processDefEntity = await ProcessDef.createEntity(context, processDefData);
+                    processDefEntity = await processDef.createEntity(context, processDefData);
                     canSave = true;
                 }
                 else {
@@ -105,12 +105,12 @@ class ProcessDefEntityTypeService {
     async start(context, params, options) {
         const key = params ? params.key : undefined;
         if (key) {
-            const ProcessDef = await this.datastoreService.getEntityType('ProcessDef');
+            const processDef = await this.datastoreService.getEntityType('ProcessDef');
             const queryObject = {
                 attribute: 'key', operator: '=', value: key
             };
             const queryParams = { query: queryObject };
-            const processDefEntity = await ProcessDef.findOne(context, queryParams);
+            const processDefEntity = await processDef.findOne(context, queryParams);
             if (processDefEntity) {
                 const processEntityRef = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
                 return processEntityRef;

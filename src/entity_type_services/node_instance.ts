@@ -1,9 +1,8 @@
-import { INodeInstanceEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile, IParamImportFromXml, 
-  IParamStart, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity, IFlowDefEntity, ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryObject, IPrivateQueryOptions, IEntity, IEntityReference, IIamService, ICombinedQueryClause, IFactory } from '@process-engine-js/core_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
-import {IDatastoreService, IEntityType, EntityReference, Entity} from '@process-engine-js/data_model_contracts';
-import { IMessageBusService, IMessage, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
+import { INodeInstanceEntityTypeService, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity,
+  IFlowDefEntity, ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
+import { ExecutionContext, IPublicGetOptions, IEntity, IIamService, IFactory } from '@process-engine-js/core_contracts';
+import {IDatastoreService, IEntityType, EntityReference} from '@process-engine-js/data_model_contracts';
+import { IMessageBusService, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
@@ -35,7 +34,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   private _routingService: IRoutingService = undefined;
   private _processEngineService: IProcessEngineService = undefined;
 
-  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService, eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService, processEngineService: IProcessEngineService) {
+  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService,
+              eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService,
+              processEngineService: IProcessEngineService) {
     this._datastoreServiceFactory = datastoreServiceFactory;
     this._messagebusService = messagebusService;
     this._eventAggregator = eventAggregator;
@@ -103,8 +104,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           default:
           // error ???
       }
-
-
     }
 
     if (action === 'proceed') {
@@ -128,7 +127,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const sourceRef = (msg && msg.source) ? msg.source : null;
     let source = null;
-    
+
     if (sourceRef) {
 
       // source is a ProcessEntityReference, if this is subprocess_external
@@ -147,7 +146,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         }
       }
     }
-    
+
     const data: any = (msg && msg.data) ? msg.data : null;
     const event = binding.eventAggregator.createEntityEvent(data, source, context);
     binding.eventAggregator.publish('/processengine/node/' + binding.entity.id, event);
@@ -172,10 +171,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   }
 
-
   public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<void> {
-
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     // const process = await source.getProcess(internalContext);
     const process = source.process;
@@ -236,7 +232,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       }
     });
 
-
     let count = 0;
     if (token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
       if (Array.isArray(token.data.history[nextDef.key])) {
@@ -245,7 +240,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         count = 1;
       }
     }
-    
+
     if (nextDef.type === 'bpmn:ParallelGateway' && node && node.state === 'wait') {
 
       if (node) {
@@ -281,7 +276,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       node.changeState(context, 'start', source);
     }
   }
-
 
   public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -330,9 +324,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         mappers.push(flow.mapper);
       }
 
-      await (<INodeInstanceEntity>source).process.processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
-        if (ids.indexOf(nodeDef.id) !== -1 && nodeDef.processDef.id === processDef.id) {
-          nextDefs.push(nodeDef);
+      await (<INodeInstanceEntity>source).process.processDef.nodeDefCollection.each(internalContext, async (nodeDefEntity) => {
+        if (ids.indexOf(nodeDefEntity.id) !== -1 && nodeDefEntity.processDef.id === processDef.id) {
+          nextDefs.push(nodeDefEntity);
         }
       });
 
@@ -358,14 +352,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             if (processDef.persist) {
               await processToken.save(internalContext, { reloadAfterSave: false });
             }
-            
           }
 
           if (splitToken && i > 0) {
             currentToken = await processTokenEntityType.createEntity(internalContext);
             currentToken.process = processToken.process;
             currentToken.data = processToken.data;
-            
+
             if (processDef.persist) {
               await processToken.save(internalContext, { reloadAfterSave: false });
             }
@@ -397,7 +390,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
             if (appInstances.length === 0) {
               // TODO
-              // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for first "registration" of compatible (feature-matching) application instance
+              // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for
+              // first "registration" of compatible (feature-matching) application instance
               debugErr(`can not route to next node key '${nextDef.key }', features: ${JSON.stringify(features)}, no matching instance found`);
               throw new Error('can not route, no matching instance found');
             }
@@ -427,16 +421,16 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
                 token: await currentToken.toPojo(internalContext, { maxDepth: 1 })
               };
             }
-            
+
             const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
             try {
               const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
-              const result = await this.routingService.request(appInstanceId, message, adapterKey);
+              await this.routingService.request(appInstanceId, message, adapterKey);
             } catch (err) {
               debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
 
               // look for boundary error event
-              
+
               if (nextDef && nextDef.events) {
 
                 const event = nextDef.events.find((el) => {
@@ -454,7 +448,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
                   await this.createNextNode(context, nodeInstance, boundaryEntity, currentToken);
                 }
               } else {
-                // bubble error 
+                // bubble error
                 throw err;
               }
             }
@@ -462,9 +456,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
         }
       }
-
     }
-  
   }
 
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
@@ -509,7 +501,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         token = await processTokenEntityType.createEntity(context, params.token);
       }
 
-
       const sourceProcessRef = source && source.process ? source.process : undefined;
       let processEntity: IProcessEntity;
 
@@ -521,7 +512,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             key: processDef.key,
             processDef: processDef
           };
-
 
           const processEntityType = await this.datastoreService.getEntityType('Process');
           processEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
@@ -544,7 +534,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           await processDef.laneCollection.each(internalContext, async (lane) => {
             lane.processDef = processDef;
           });
-
 
           // set lane entities
           for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
@@ -577,7 +566,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       } else {
         throw new Error('param is missing');
       }
-    
     } catch (err) {
       debugErr(err);
       throw err;

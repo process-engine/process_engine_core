@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
     constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);

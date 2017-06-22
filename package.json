@@ -33,6 +33,7 @@
     "moment": "^2.18.1"
   },
   "devDependencies": {
+    "@process-engine-js/gulptraum": "^1.2.5",
     "gulp": "^3.9.1",
     "tsconfig": "^6.0.0"
   }

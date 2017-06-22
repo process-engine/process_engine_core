@@ -7,9 +7,9 @@ import { NodeInstanceEntityDependencyHelper } from './node_instance';
 export class CatchEventEntity extends EventEntity implements ICatchEventEntity {
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
-    entityDependencyHelper: EntityDependencyHelper,
-    context: ExecutionContext,
-    schema: IInheritedSchema) {
+              entityDependencyHelper: EntityDependencyHelper,
+              context: ExecutionContext,
+              schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 

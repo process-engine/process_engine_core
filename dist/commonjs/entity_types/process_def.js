@@ -172,12 +172,12 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             }
             const appInstanceId = appInstances[0];
             debugInfo(`start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)})`);
-            const options = {
+            const messageOptions = {
                 action: 'POST',
                 typeName: 'ProcessDef',
                 method: 'start'
             };
-            const message = this.messageBusService.createDatastoreMessage(options, context, params);
+            const message = this.messageBusService.createDatastoreMessage(messageOptions, context, params);
             try {
                 const response = (await this.routingService.request(appInstanceId, message));
                 const ref = new data_model_contracts_1.EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
@@ -327,7 +327,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async _updateLanes(lanes, context, counter) {
         const laneCache = {};
-        const Lane = await this.datastoreService.getEntityType('Lane');
         const lanePromiseArray = lanes.map(async (lane) => {
             const queryObject = {
                 operator: 'and',
@@ -339,9 +338,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             const queryOptions = {
                 query: queryObject
             };
-            let laneEntity = await Lane.findOne(context, queryOptions);
+            let laneEntity = await lane.findOne(context, queryOptions);
             if (!laneEntity) {
-                laneEntity = await Lane.createEntity(context);
+                laneEntity = await lane.createEntity(context);
             }
             laneEntity.key = lane.id;
             laneEntity.name = lane.name;
@@ -359,7 +358,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject) {
         const nodeCache = {};
-        const NodeDef = await this.datastoreService.getEntityType('NodeDef');
+        const nodeDef = await this.datastoreService.getEntityType('NodeDef');
         const nodePromiseArray = nodes.map(async (node) => {
             const queryObject = {
                 operator: 'and',
@@ -368,12 +367,12 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     { attribute: 'processDef', operator: '=', value: this.id }
                 ]
             };
-            let nodeDefEntity = await NodeDef.findOne(context, { query: queryObject });
+            let nodeDefEntity = await nodeDef.findOne(context, { query: queryObject });
             if (!nodeDefEntity) {
                 const nodeDefData = {
                     key: node.id
                 };
-                nodeDefEntity = await NodeDef.createEntity(context, nodeDefData);
+                nodeDefEntity = await nodeDef.createEntity(context, nodeDefData);
             }
             switch (node.$type) {
                 case 'bpmn:ScriptTask':
@@ -385,9 +384,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     }
                     break;
                 case 'bpmn:SubProcess':
-                    const subElements = node.flowElements ? node.flowElements : [];
-                    const subNodes = subElements.filter((element) => element.$type !== 'bpmn:SequenceFlow');
-                    const subFlows = subElements.filter((element) => element.$type === 'bpmn:SequenceFlow');
                     break;
                 default:
             }
@@ -437,7 +433,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         return nodeCache;
     }
     async _updateFlows(flows, nodeCache, context, counter) {
-        const FlowDef = await this.datastoreService.getEntityType('FlowDef');
+        const flowDef = await this.datastoreService.getEntityType('FlowDef');
         const flowPromiseArray = flows.map(async (flow) => {
             const queryObject = {
                 operator: 'and',
@@ -446,12 +442,12 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     { attribute: 'processDef', operator: '=', value: this.id }
                 ]
             };
-            let flowDefEntity = await FlowDef.findOne(context, { query: queryObject });
+            let flowDefEntity = await flowDef.findOne(context, { query: queryObject });
             if (!flowDefEntity) {
                 const flowDefData = {
                     key: flow.id
                 };
-                flowDefEntity = await FlowDef.createEntity(context, flowDefData);
+                flowDefEntity = await flowDef.createEntity(context, flowDefData);
             }
             flowDefEntity.name = flow.name;
             flowDefEntity.processDef = this;
@@ -549,11 +545,11 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                                 switch (childType) {
                                     case 'camunda:properties':
                                         if (formValue.$children) {
-                                            formValue.$children.forEach((child) => {
+                                            formValue.$children.forEach((propChild) => {
                                                 const newChild = {
-                                                    $type: child.$type,
-                                                    name: child.id,
-                                                    value: child.value
+                                                    $type: propChild.$type,
+                                                    name: propChild.id,
+                                                    value: propChild.value
                                                 };
                                                 formProperties.push(newChild);
                                             });
@@ -633,7 +629,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             this.counter = 0;
             if (!this.xml) {
                 this.xml = '<?xml version="1.0" encoding="UTF-8"?>' +
-                    '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + this.defId + '" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +
+                    '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"' +
+                    'xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + this.defId + '"' +
+                    'targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +
                     '<bpmn:collaboration id="Collaboration_0ge6yss">' +
                     '<bpmn:participant id="Participant_03ad0kv" name="' + this.name + '" processRef="' + this.key + '" />' +
                     '</bpmn:collaboration>' +

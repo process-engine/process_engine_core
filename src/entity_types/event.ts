@@ -1,7 +1,6 @@
 import {NodeInstanceEntity} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
+import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {IEventEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
@@ -13,8 +12,8 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
   public config: any = undefined;
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -25,11 +24,10 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     await super.initialize(actualInstance);
   }
 
-
   protected async initializeTimer(): Promise<void> {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
-        
+
     switch (this.nodeDef.timerDefinitionType) {
       case TimerDefinitionType.cycle:
         await this._startCycleTimer(this.nodeDef.timerDefinition, internalContext);
@@ -43,7 +41,6 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
       default:
     }
   }
-
 
   private async _startCycleTimer(timerDefinition: string, context: ExecutionContext): Promise<void> {
 
@@ -95,7 +92,6 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     this._sendProceed(context, null, this);
   }
 
-
   private _sendProceed(context: ExecutionContext, data: any, source: IEntity): void {
     data = data || {};
     data.action = 'proceed';
@@ -135,7 +131,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
           source = sourceProcess.allInstances[sourceRef.id];
         }
       }
-      
+
       if (!source) {
         const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
         try {

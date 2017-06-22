@@ -1,6 +1,6 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {schemaAttribute, schemaClass} from '@process-engine-js/metadata';
+import {schemaClass} from '@process-engine-js/metadata';
 import {IUserTaskEntity} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
@@ -12,8 +12,8 @@ import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_ins
 })
 export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntity {
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -48,11 +48,9 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
   }
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
-    
-    // check if participant changed
-    if (this.participant !== applicationId) {
 
-    }
+    // check if participant changed
+    // if (this.participant !== applicationId) {}
 
     // save new data in token
     const processToken = this.processToken;

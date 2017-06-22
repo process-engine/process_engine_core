@@ -1,6 +1,7 @@
-import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, ICombinedQueryClause, IIamService, IEntityReference, IQueryObject } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, EntityReference } from '@process-engine-js/data_model_contracts';
-import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity, IProcessEngineService, IBoundaryEventEntity } from '@process-engine-js/process_engine_contracts';
+import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, IIamService} from '@process-engine-js/core_contracts';
+import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
+import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity,
+  IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService, IMessageSubscription } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator, ISubscription } from '@process-engine-js/event_aggregator_contracts';
@@ -11,7 +12,7 @@ const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 
 export class NodeInstanceEntityDependencyHelper {
-  
+
   public messageBusService: IMessageBusService = undefined;
   public eventAggregator: IEventAggregator = undefined;
   public iamService: IIamService = undefined;
@@ -19,7 +20,9 @@ export class NodeInstanceEntityDependencyHelper {
   public processEngineService: IProcessEngineService = undefined;
   public timingService: ITimingService = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService, timingService: ITimingService) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, iamService: IIamService,
+              nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, processEngineService: IProcessEngineService,
+              timingService: ITimingService) {
     this.messageBusService = messageBusService;
     this.eventAggregator = eventAggregator;
     this.iamService = iamService;
@@ -41,7 +44,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   public eventAggregatorSubscription: ISubscription = undefined;
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
-              entityDependencyHelper: EntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
@@ -109,7 +112,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this.getPropertyLazy(this, 'process', context);
   }
 
-
   @schemaAttribute({ type: 'NodeDef' })
   public get nodeDef(): INodeDefEntity {
     return this.getProperty(this, 'nodeDef');
@@ -150,7 +152,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'participant', value);
   }
 
-
   @schemaAttribute({ type: 'ProcessToken' })
   public get processToken(): IProcessTokenEntity {
     return this.getProperty(this, 'processToken');
@@ -178,7 +179,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const role = await nodeDef.getLaneRole(context);
     return role;
   }
-
 
   public async start(context: ExecutionContext, source: IEntity): Promise<void> {
 
@@ -215,7 +215,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.changeState(context, 'execute', this);
   }
 
-
   public changeState(context: ExecutionContext, newState: string, source: IEntity) {
 
     debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
@@ -249,8 +248,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         data: error
       };
 
-      const event = this.eventAggregator.createEntityEvent(data, this, context);
-      this.eventAggregator.publish('/processengine/node/' + this.id, event);
+      const entityEvent = this.eventAggregator.createEntityEvent(data, this, context);
+      this.eventAggregator.publish('/processengine/node/' + this.id, entityEvent);
     }
   }
 
@@ -266,7 +265,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   }
 
-
   public async execute(context: ExecutionContext): Promise<void> {
     debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
@@ -275,11 +273,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.changeState(context, 'end', this);
   }
 
-
   public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
     // by default do nothing, implementation should be overwritten by child class
   }
-
 
   public async event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string): Promise<void> {
 
@@ -313,7 +309,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             boundary = instance;
           }
         });
-
 
         if (boundaryDef) {
           switch (event) {
@@ -362,18 +357,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
               break;
 
             default:
-              
           }
 
           // await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
         }
-
-        
       }
 
     }
   }
-
 
   public async cancel(context: ExecutionContext): Promise<void> {
 
@@ -392,7 +383,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       this.eventAggregator.publish('/processengine/node/' + this.id, msg);
     }
   }
-
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
 
@@ -463,6 +453,4 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       await process.end(context, processToken);
     }
   }
-
-
 }

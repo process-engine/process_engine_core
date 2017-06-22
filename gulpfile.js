@@ -1,6 +1,6 @@
 'use strict';
 
-const gulptraum = require('gulptraum');
+const gulptraum = require('@process-engine-js/gulptraum');
 const tsconfig = require('tsconfig');
 
 const buildSystemConfig = {};

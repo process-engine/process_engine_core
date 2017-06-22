@@ -1,25 +1,24 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
 import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
-import { Container } from 'addict-ioc';
+import { Container, IInstanceWrapper } from 'addict-ioc';
 
 export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTaskEntity {
 
-  private _container: Container = undefined;
+  private _container: Container<IInstanceWrapper<any>> = undefined;
 
-  constructor(container: Container,
-              nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(container: Container<IInstanceWrapper<any>>,
+              nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
-    
+
     this._container = container;
   }
 
-  private get container(): Container {
+  private get container(): Container<IInstanceWrapper<any>> {
     return this._container;
   }
 
@@ -29,7 +28,6 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
 
     const processToken = this.processToken;
@@ -66,7 +64,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         const serviceInstance = this.container.resolve(serviceModule);
 
         let result;
-        
+
         try {
 
           const self = this;

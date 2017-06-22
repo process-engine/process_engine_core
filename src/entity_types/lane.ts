@@ -6,7 +6,7 @@ import {IFeature} from '@process-engine-js/feature_contracts';
 
 export class LaneEntity extends Entity implements ILaneEntity {
 
-  constructor(entityDependencyHelper: EntityDependencyHelper, 
+  constructor(entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
@@ -75,7 +75,6 @@ export class LaneEntity extends Entity implements ILaneEntity {
     return this.getPropertyLazy(this, 'nodeDefCollection', context);
   }
 
-  
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }

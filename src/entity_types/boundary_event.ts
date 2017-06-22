@@ -1,16 +1,15 @@
 import {EventEntity} from './event';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IEntityReference, IQueryObject} from '@process-engine-js/core_contracts';
-import {IBoundaryEventEntity, TimerDefinitionType, INodeDefEntity, INodeInstanceEntity} from '@process-engine-js/process_engine_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
+import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {IBoundaryEventEntity, INodeInstanceEntity} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEntity {
 
   public attachedToInstance: INodeInstanceEntity = undefined;
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -55,7 +54,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
       event: 'timer',
       data: {}
     };
-  
+
     const event = this.eventAggregator.createEntityEvent(payload, source, context);
     this.eventAggregator.publish('/processengine/node/' + target.id, event);
   }

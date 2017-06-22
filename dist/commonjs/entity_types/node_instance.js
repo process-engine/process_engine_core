@@ -171,8 +171,8 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 event: 'error',
                 data: error
             };
-            const event = this.eventAggregator.createEntityEvent(data, this, context);
-            this.eventAggregator.publish('/processengine/node/' + this.id, event);
+            const entityEvent = this.eventAggregator.createEntityEvent(data, this, context);
+            this.eventAggregator.publish('/processengine/node/' + this.id, entityEvent);
         }
     }
     async wait(context) {

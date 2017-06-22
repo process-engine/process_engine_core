@@ -6,7 +6,7 @@ import { IFeature } from '@process-engine-js/feature_contracts';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
-  constructor(entityDependencyHelper: EntityDependencyHelper, 
+  constructor(entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
@@ -61,7 +61,6 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     return this.getPropertyLazy(this, 'lane', context);
   }
 
-
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get type(): string {
     return this.getProperty(this, 'type');
@@ -92,7 +91,6 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public getAttachedToNode(context: ExecutionContext): Promise<INodeDefEntity> {
     return this.getPropertyLazy(this, 'attachedToNode', context);
   }
-
 
   @schemaAttribute({ type: SchemaAttributeType.object })
   public get events(): any {
@@ -139,7 +137,6 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'subProcessKey', value);
   }
 
-
   @schemaAttribute({ type: 'NodeDef' })
   public get subProcessDef(): INodeDefEntity {
     return this.getProperty(this, 'subProcessDef');
@@ -179,7 +176,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public set timerDefinition(value: string) {
     this.setProperty(this, 'timerDefinition', value);
   }
-  
+
   @schemaAttribute({ type: SchemaAttributeType.string })
   public get startContext(): string {
     return this.getProperty(this, 'startContext');
@@ -225,7 +222,6 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'condition', value);
   }
 
-
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }
@@ -239,7 +235,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
 
     const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-    
+
     const queryObject: IQueryClause = {
       attribute: 'attachedToNode',
       operator: '=',
@@ -265,7 +261,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
 
     if (this.type === 'bpmn:UserTask') {
       features = features || [];
-      features.push({ name: 'UI', value: true });
+      (features as Array<{}>).push({ name: 'UI', value: true });
     }
 
     return features;

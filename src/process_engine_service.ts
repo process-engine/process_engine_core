@@ -1,4 +1,5 @@
-import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions, IParamImportFromXml, IProcessEntity } from '@process-engine-js/process_engine_contracts';
+import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions,
+  IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IFactory, IEntity } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
@@ -9,7 +10,6 @@ import * as debug from 'debug';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
-
 
 export class ProcessEngineService implements IProcessEngineService {
 
@@ -26,7 +26,9 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>) {
+  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator,
+              processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService,
+              processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -71,7 +73,6 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._activeInstances;
   }
 
-
   public async initialize(): Promise<void> {
     this.featureService.initialize();
     await this._initializeMessageBus();
@@ -88,12 +89,12 @@ export class ProcessEngineService implements IProcessEngineService {
     debugInfo('we got a message: ', msg);
 
     await this.messageBusService.verifyMessage(msg);
-    
+
     const action: string = (msg && msg.data && msg.data.action) ? msg.data.action : null;
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
     let source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
-    
+
     // fallback to old origin
     if (!source) {
       source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
@@ -113,7 +114,7 @@ export class ProcessEngineService implements IProcessEngineService {
         };
 
         await this.processDefEntityTypeService.start(context, params);
-        
+
         break;
       default:
         debugInfo('unhandled action: ', msg);
@@ -122,7 +123,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _initializeMessageBus(): Promise<void> {
-    
+
     try {
 
       await this.messageBusService.initialize();
@@ -168,7 +169,6 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
-
   private async _startTimers(): Promise<void> {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -187,7 +187,6 @@ export class ProcessEngineService implements IProcessEngineService {
       const processDef = await nodeDef.getProcessDef(internalContext);
       await processDef.startTimer(internalContext);
     });
-    
   }
 
   public addActiveInstance(entity: IEntity): void {

@@ -1,4 +1,4 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IEntityReference, IInheritedSchema, ICombinedQueryClause} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -6,8 +6,8 @@ import {IParallelGatewayEntity, INodeInstanceEntity, IFlowDefEntity, INodeDefEnt
 
 export class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -26,7 +26,6 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
   public set parallelType(value: string) {
     this.setProperty(this, 'parallelType', value);
   }
-
 
   public async execute(context: ExecutionContext): Promise<void> {
 
@@ -50,7 +49,6 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
         flowsIn.push(flowDef);
       }
     }
-
 
     if (flowsOut && flowsOut.length > 1 && flowsIn && flowsIn.length === 1) {
       // split
@@ -78,7 +76,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
     // check if all tokens are there
-    
+
     const nodeDef = this.nodeDef;
     const processDef = this.process.processDef;
 

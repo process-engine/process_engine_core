@@ -11,7 +11,6 @@ const data_model_contracts_1 = require("@process-engine-js/data_model_contracts"
 const metadata_1 = require("@process-engine-js/metadata");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
 class ProcessEntity extends data_model_contracts_1.Entity {
     constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
@@ -92,8 +91,8 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         const source = params ? params.source : undefined;
         const isSubProcess = params ? params.isSubProcess : false;
         const initialToken = params ? params.initialToken : undefined;
-        const ProcessToken = await this.datastoreService.getEntityType('ProcessToken');
-        const StartEvent = await this.datastoreService.getEntityType('StartEvent');
+        const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
+        const startEventType = await this.datastoreService.getEntityType('StartEvent');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         let laneContext = context;
         let participant = null;
@@ -136,7 +135,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             }
         }
         if (startEventDef) {
-            const processToken = await ProcessToken.createEntity(internalContext);
+            const processToken = await processTokenType.createEntity(internalContext);
             processToken.process = this;
             if (initialToken) {
                 processToken.data = {
@@ -148,7 +147,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             }
             this.processEngineService.addActiveInstance(this);
             debugInfo(`process id ${this.id} started: `);
-            const startEvent = await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
+            const startEvent = await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
             startEvent.name = startEventDef.name;
             startEvent.key = startEventDef.key;
             startEvent.process = this;

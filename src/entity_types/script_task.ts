@@ -6,8 +6,8 @@ import {schemaAttribute} from '@process-engine-js/metadata';
 
 export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);

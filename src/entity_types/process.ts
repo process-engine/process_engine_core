@@ -1,12 +1,12 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInheritedSchema, IIamService, IQueryObject } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, IDatastoreService, EntityCollection } from '@process-engine-js/data_model_contracts';
-import { IProcessEntity, IProcessDefEntity, IParamStart, IProcessTokenEntity, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity, ILaneEntity, IProcessEngineService} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInheritedSchema, IIamService } from '@process-engine-js/core_contracts';
+import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
+import { IProcessEntity, IProcessDefEntity, IParamStart, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity,
+  ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
 
 export class ProcessEntity extends Entity implements IProcessEntity {
 
@@ -20,10 +20,10 @@ export class ProcessEntity extends Entity implements IProcessEntity {
   public boundProcesses: any = {};
 
   constructor(iamService: IIamService,
-              nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, 
+              nodeInstanceEntityTypeService: INodeInstanceEntityTypeService,
               messageBusService: IMessageBusService,
               processEngineService: IProcessEngineService,
-              entityDependencyHelper: EntityDependencyHelper, 
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(entityDependencyHelper, context, schema);
@@ -44,7 +44,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   private get messageBusService(): IMessageBusService {
     return this._messageBusService;
-  } 
+  }
 
   private get processEngineService(): IProcessEngineService {
     return this._processEngineService;
@@ -90,7 +90,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'status', value);
   }
 
-
   @schemaAttribute({ type: 'ProcessDef' })
   public get processDef(): IProcessDefEntity {
     return this.getProperty(this, 'processDef');
@@ -122,15 +121,14 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'callerId', value);
   }
 
-
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
-    
+
     const source = params ? params.source : undefined;
     const isSubProcess = params ? params.isSubProcess : false;
     const initialToken = params ? params.initialToken : undefined;
 
-    const ProcessToken = await this.datastoreService.getEntityType('ProcessToken');
-    const StartEvent = await this.datastoreService.getEntityType('StartEvent');
+    const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
+    const startEventType = await this.datastoreService.getEntityType('StartEvent');
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     let laneContext = context;
@@ -148,7 +146,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     if (!isSubProcess) {
       participant = source || null;
     }
-  
+
     const processDef = await this.getProcessDef(internalContext);
 
     await processDef.getNodeDefCollection(internalContext);
@@ -164,9 +162,8 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       lane.processDef = processDef;
     });
 
-
     // get start event, set lane entities
-    let startEventDef = undefined;
+    let startEventDef: INodeDefEntity = undefined;
     for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
       const nodeDef = <INodeDefEntity>processDef.nodeDefCollection.data[i];
 
@@ -184,17 +181,17 @@ export class ProcessEntity extends Entity implements IProcessEntity {
         startEventDef = nodeDef;
       }
     }
-    
+
     if (startEventDef) {
       // create an empty process token
-      const processToken: any = await ProcessToken.createEntity(internalContext);
+      const processToken: any = await processTokenType.createEntity(internalContext);
       processToken.process = this;
       if (initialToken) {
         processToken.data = {
           current: initialToken
         };
       }
-      
+
       if (this.processDef.persist) {
         await processToken.save(internalContext, { reloadAfterSave: false });
       }
@@ -203,7 +200,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
       debugInfo(`process id ${this.id} started: `);
 
-      const startEvent: IStartEventEntity = <IStartEventEntity>await this.nodeInstanceEntityTypeService.createNode(internalContext, StartEvent);
+      const startEvent: IStartEventEntity = <IStartEventEntity>await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
       startEvent.name = startEventDef.name;
       startEvent.key = startEventDef.key;
       startEvent.process = this;

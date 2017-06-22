@@ -1,14 +1,14 @@
 import {NodeInstanceEntity} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, ICombinedQueryClause} from '@process-engine-js/core_contracts';
+import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {IExclusiveGatewayEntity, IFlowDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclusiveGatewayEntity {
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, 
-              entityDependencyHelper: EntityDependencyHelper, 
+  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+              entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -72,7 +72,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
             const evaluateFunction = new Function('token', functionString);
 
             result = evaluateFunction.call(tokenData, tokenData);
-            
+
           } catch (err) {
             // do nothing
           }
