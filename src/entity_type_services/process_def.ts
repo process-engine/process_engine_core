@@ -1,7 +1,7 @@
 import {
   IProcessDefEntityTypeService, IProcessDefEntity, BpmnDiagram, IParamImportFromFile,
   IParamImportFromXml, IParamStart, IImportFromFileOptions,
-  IProcessRepository
+  IProcessRepository, IImportFromXmlOptions
 } from '@process-engine-js/process_engine_contracts';
 import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
@@ -61,7 +61,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     throw new Error('file does not exist');
   }
 
-  public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromFileOptions): Promise<void> {
+  public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
