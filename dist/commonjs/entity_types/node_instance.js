@@ -296,7 +296,6 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 tokenData.history[this.key] = arr;
             }
             else {
-                tokenData.history[this.key].push(tokenData.current);
             }
         }
         else {

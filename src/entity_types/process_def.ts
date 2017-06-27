@@ -455,14 +455,14 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const laneCache = {};
 
-    // const lane = await this.datastoreService.getEntityType('Lane');
+    const lane = await this.datastoreService.getEntityType('Lane');
 
-    const lanePromiseArray = lanes.map(async (lane) => {
+    const lanePromiseArray = lanes.map(async (laneObj) => {
 
       const queryObject: IQueryObject = {
         operator: 'and',
         queries: [
-        { attribute: 'key', operator: '=', value: lane.id },
+        { attribute: 'key', operator: '=', value: laneObj.id },
         { attribute: 'processDef', operator: '=', value: this.id }
       ]};
 
@@ -476,19 +476,19 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         laneEntity = await lane.createEntity(context);
       }
 
-      laneEntity.key = lane.id;
-      laneEntity.name = lane.name;
+      laneEntity.key = laneObj.id;
+      laneEntity.name = laneObj.name;
       laneEntity.processDef = this;
       laneEntity.counter = counter;
 
-      if (lane.extensionElements) {
-        const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
+      if (laneObj.extensionElements) {
+        const extensions = this._updateExtensionElements(laneObj.extensionElements.values, laneEntity);
         laneEntity.extensions = extensions;
       }
 
       await laneEntity.save(context, { reloadAfterSave: false });
 
-      laneCache[lane.id] = laneEntity;
+      laneCache[laneObj.id] = laneEntity;
     });
 
     await Promise.all(lanePromiseArray);

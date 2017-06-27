@@ -327,11 +327,12 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async _updateLanes(lanes, context, counter) {
         const laneCache = {};
-        const lanePromiseArray = lanes.map(async (lane) => {
+        const lane = await this.datastoreService.getEntityType('Lane');
+        const lanePromiseArray = lanes.map(async (laneObj) => {
             const queryObject = {
                 operator: 'and',
                 queries: [
-                    { attribute: 'key', operator: '=', value: lane.id },
+                    { attribute: 'key', operator: '=', value: laneObj.id },
                     { attribute: 'processDef', operator: '=', value: this.id }
                 ]
             };
@@ -342,16 +343,16 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             if (!laneEntity) {
                 laneEntity = await lane.createEntity(context);
             }
-            laneEntity.key = lane.id;
-            laneEntity.name = lane.name;
+            laneEntity.key = laneObj.id;
+            laneEntity.name = laneObj.name;
             laneEntity.processDef = this;
             laneEntity.counter = counter;
-            if (lane.extensionElements) {
-                const extensions = this._updateExtensionElements(lane.extensionElements.values, laneEntity);
+            if (laneObj.extensionElements) {
+                const extensions = this._updateExtensionElements(laneObj.extensionElements.values, laneEntity);
                 laneEntity.extensions = extensions;
             }
             await laneEntity.save(context, { reloadAfterSave: false });
-            laneCache[lane.id] = laneEntity;
+            laneCache[laneObj.id] = laneEntity;
         });
         await Promise.all(lanePromiseArray);
         return laneCache;
