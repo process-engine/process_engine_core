@@ -569,7 +569,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
         if (eventType === 'bpmn:MessageEventDefinition') {
           const messageId = node.eventDefinitions[0].messageRef ? node.eventDefinitions[0].messageRef.id : undefined;
-          const message = bpmnDiagram.getSignalById(messageId);
+          const message = bpmnDiagram.getMessageById(messageId);
           nodeDefEntity.message = message.name;
         }
 

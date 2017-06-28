@@ -406,7 +406,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 }
                 if (eventType === 'bpmn:MessageEventDefinition') {
                     const messageId = node.eventDefinitions[0].messageRef ? node.eventDefinitions[0].messageRef.id : undefined;
-                    const message = bpmnDiagram.getSignalById(messageId);
+                    const message = bpmnDiagram.getMessageById(messageId);
                     nodeDefEntity.message = message.name;
                 }
                 if (eventType === 'bpmn:ConditionalEventDefinition') {
