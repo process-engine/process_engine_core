@@ -559,6 +559,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         if (source && processEntity) {
           source.process = processEntity;
         }
+
+        if (source && token) {
+          if (processEntity) {
+            token.process = processEntity;
+          }
+          source.processToken = token;
+        }
       }
 
       if (source && token && nextDef) {
