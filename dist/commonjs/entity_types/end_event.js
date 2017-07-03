@@ -17,13 +17,11 @@ class EndEventEntity extends event_1.EventEntity {
             action: 'endEvent',
             data: currentToken
         };
-        // Todo: move to process.end
         const msg = this.messageBusService.createEntityMessage(data, this, context);
         if (this.participant) {
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }
         else {
-            // send message to users of lane role
             const role = this.nodeDef.lane.role;
             await this.messageBusService.publish('/role/' + role, msg);
         }

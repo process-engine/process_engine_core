@@ -172,7 +172,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             }
             const appInstanceId = appInstances[0];
             debugInfo(`start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)})`);
-            // Todo: set correct message format
             const messageOptions = {
                 action: 'POST',
                 typeName: 'ProcessDef',
@@ -227,9 +226,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async startTimer(context) {
         const features = this.features;
-        // only start timer if features of process match
         if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
-            // get start event
             const queryObject = {
                 operator: 'and',
                 queries: [
@@ -281,7 +278,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         }
         this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
         await this.save(context, { reloadAfterSave: false });
-        // await this.startTimers(processes, context);
         const lanes = bpmnDiagram.getLanes(key);
         const laneCache = await this._updateLanes(lanes, context, counter);
         const nodes = bpmnDiagram.getNodes(key);
@@ -289,7 +285,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await this._createBoundaries(nodes, nodeCache, context);
         const flows = bpmnDiagram.getFlows(key);
         await this._updateFlows(flows, nodeCache, context, counter);
-        // remove orphaned flows
         const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
         const queryObjectFlows = {
             operator: 'and',
@@ -302,7 +297,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await flowColl.each(context, async (flowEnt) => {
             await flowEnt.remove(context);
         });
-        // remove orphaned nodes
         const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
         const queryObjectNodes = {
             operator: 'and',
@@ -315,7 +309,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await nodeColl.each(context, async (nodeEnt) => {
             await nodeEnt.remove(context);
         });
-        // remove orphaned lanes
         const laneEntityType = await this.datastoreService.getEntityType('Lane');
         const queryObjectLanes = {
             operator: 'and',
@@ -392,9 +385,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     }
                     break;
                 case 'bpmn:SubProcess':
-                    // const subElements = node.flowElements ? node.flowElements : [];
-                    // const subNodes = subElements.filter((element) => element.$type !== 'bpmn:SequenceFlow');
-                    // const subFlows = subElements.filter((element) => element.$type === 'bpmn:SequenceFlow');
                     break;
                 default:
             }
@@ -679,7 +669,6 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     get persist() {
         const extensions = this.extensions;
         const properties = (extensions && extensions.properties) ? extensions.properties : null;
-        // persisting processes is default
         let found = true;
         if (properties) {
             properties.some((property) => {
