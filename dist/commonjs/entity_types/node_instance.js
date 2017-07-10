@@ -129,14 +129,8 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async start(context, source) {
         debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
-        // check if context matches to lane
         let role = await this.nodeDef.lane.role;
         if (role !== null) {
-            // Todo: refactor check if user has lane role
-            // const permissions = {
-            //   'execute': [role]
-            // };
-            // await context.checkPermissions(this.id + '.execute', permissions);
         }
         if (!this.state) {
             this.state = 'start';
@@ -195,12 +189,10 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         this.changeState(context, 'end', this);
     }
     async proceed(context, data, source, applicationId) {
-        // by default do nothing, implementation should be overwritten by child class
     }
     async event(context, event, data, source, applicationId) {
         debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        // check if definition exists
         const nodeDef = this.nodeDef;
         if (nodeDef && nodeDef.events) {
             const events = nodeDef.events.filter((el) => {
@@ -260,7 +252,6 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                             break;
                         default:
                     }
-                    // await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, token);
                 }
             }
         }
@@ -305,7 +296,6 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 tokenData.history[this.key] = arr;
             }
             else {
-                // tokenData.history[this.key].push(tokenData.current);
             }
         }
         else {
@@ -315,7 +305,6 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         if (this.process.processDef.persist) {
             await processToken.save(internalContext, { reloadAfterSave: false });
         }
-        // cancel subscriptions
         nodeInstance.eventAggregatorSubscription.dispose();
         const messagebusSubscription = await nodeInstance.messagebusSubscription;
         messagebusSubscription.cancel();
@@ -324,7 +313,6 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
             }
             catch (err) {
-                // we can't continue, handle error in process
                 const process = await this.getProcess(internalContext);
                 await process.error(context, err);
             }
