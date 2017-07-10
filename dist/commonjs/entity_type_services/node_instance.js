@@ -84,6 +84,7 @@ class NodeInstanceEntityTypeService {
         const sourceRef = (msg && msg.source) ? msg.source : null;
         let source = null;
         if (sourceRef) {
+            // source is a ProcessEntityReference, if this is subprocess_external
             if (sourceRef._meta.type === 'Process') {
                 if (binding.entity.processEngineService.activeInstances.hasOwnProperty(sourceRef.id)) {
                     source = binding.entity.processEngineService.activeInstances[sourceRef.id];
@@ -95,6 +96,7 @@ class NodeInstanceEntityTypeService {
                     source = await entityType.getById(sourceRef.id, context);
                 }
                 catch (err) {
+                    // source could not be found, ignore atm
                 }
             }
         }
@@ -117,6 +119,7 @@ class NodeInstanceEntityTypeService {
         return anyNode;
     }
     async createNextNode(context, source, nextDef, token) {
+        // const process = await source.getProcess(internalContext);
         const process = source.process;
         let participant = source.participant;
         const map = new Map();
@@ -134,12 +137,25 @@ class NodeInstanceEntityTypeService {
         map.set('bpmn:SubProcess', 'SubprocessInternal');
         const className = map.get(nextDef.type);
         const entityType = await this.datastoreService.getEntityType(className);
+        // const currentDef = await source.getNodeDef(internalContext);
         const currentDef = source.nodeDef;
         const currentLane = currentDef.lane;
         const nextLane = nextDef.lane;
+        // check for lane change
         if (currentLane && nextLane && currentLane.id !== nextLane.id) {
+            // if we have a new lane, create a temporary context with lane role
             const role = await nextDef.lane.role;
             if (role) {
+                // Todo: refactor lane change
+                /*const identityContext = await context.createNewContext('identity');
+                const tempUser = role + source.id;
+        
+                const identity = model._datastore._processengine.identity;
+                await identity.addSystemUser(tempUser, { roles: [role] }, identityContext);
+        
+                const jwt = await identity.loginByToken(tempUser);
+                // use new context of temporary lane user
+                context = await identity.token.verifyToken(jwt);*/
                 participant = null;
             }
         }
@@ -198,6 +214,7 @@ class NodeInstanceEntityTypeService {
         const processDef = source.process.processDef;
         let flowsOut = [];
         if (nodeInstance.follow) {
+            // we have already a list of flows to follow
             if (nodeInstance.follow.length > 0) {
                 for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
                     const flowDef = processDef.flowDefCollection.data[i];
@@ -275,11 +292,15 @@ class NodeInstanceEntityTypeService {
                     else {
                         const appInstances = this.featureService.getApplicationIdsByFeatures(features);
                         if (appInstances.length === 0) {
+                            // TODO
+                            // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for
+                            // first "registration" of compatible (feature-matching) application instance
                             debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, no matching instance found`);
                             throw new Error('can not route, no matching instance found');
                         }
                         const appInstanceId = appInstances[0];
                         debugInfo(`continue on application '${appInstanceId}' with next node key '${nextDef.key}', features: ${JSON.stringify(features)}`);
+                        // Todo: set correct message format
                         const options = {
                             action: 'POST',
                             typeName: 'NodeInstance',
@@ -307,6 +328,7 @@ class NodeInstanceEntityTypeService {
                         }
                         catch (err) {
                             debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
+                            // look for boundary error event
                             if (nextDef && nextDef.events) {
                                 const event = nextDef.events.find((el) => {
                                     return el.type === 'error';
@@ -316,10 +338,12 @@ class NodeInstanceEntityTypeService {
                                     const boundaryEntity = nodeInstance.process.processDef.nodeDefCollection.data.find((el) => {
                                         return el.id === boundaryDefId;
                                     });
+                                    // continue with boundary
                                     await this.createNextNode(context, nodeInstance, boundaryEntity, currentToken);
                                 }
                             }
                             else {
+                                // bubble error
                                 throw err;
                             }
                         }
@@ -334,12 +358,14 @@ class NodeInstanceEntityTypeService {
         let nextDef = undefined;
         try {
             const internalContext = await this.iamService.createInternalContext('processengine_system');
+            // Todo: restore entities from references respecting namespaces
             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
             const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
             const nextDefRef = new data_model_contracts_1.EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
             nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
             const processDef = await nextDef.getProcessDef(internalContext);
             if (params.source._meta.isRef) {
+                // source is a pojo of an entityRef
                 const sourceRef = new data_model_contracts_1.EntityReference(params.source._meta.namespace, params.source._meta.type, params.source.id);
                 const sourceEntityType = await this.datastoreService.getEntityType(sourceRef.type);
                 if (sourceEntityType && sourceRef.id) {
@@ -347,16 +373,19 @@ class NodeInstanceEntityTypeService {
                 }
             }
             else {
+                // source is a pojo of an entity
                 const sourceEntityType = await this.datastoreService.getEntityType(params.source._meta.type);
                 if (sourceEntityType) {
                     source = await sourceEntityType.createEntity(context, params.source);
                 }
             }
             if (params.token._meta.isRef) {
+                // token is a pojo of an entityRef
                 const tokenRef = new data_model_contracts_1.EntityReference(params.token._meta.namespace, params.token._meta.type, params.token.id);
                 token = await processTokenEntityType.getById(tokenRef.id, context);
             }
             else {
+                // token is a pojo of an entity
                 token = await processTokenEntityType.createEntity(context, params.token);
             }
             const sourceProcessRef = source && source.process ? source.process : undefined;
@@ -388,6 +417,7 @@ class NodeInstanceEntityTypeService {
                     await processDef.laneCollection.each(internalContext, async (lane) => {
                         lane.processDef = processDef;
                     });
+                    // set lane entities
                     for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
                         const nodeDef = processDef.nodeDefCollection.data[i];
                         if (nodeDef.lane) {

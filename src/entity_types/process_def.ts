@@ -863,40 +863,40 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       this.counter = 0;
       if (!this.xml) {
         this.xml = '<?xml version="1.0" encoding="UTF-8"?>' +
-          '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"' +
-            'xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + this.defId + '"' +
-            'targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.7.2">' +
-          '<bpmn:collaboration id="Collaboration_0ge6yss">' +
-          '<bpmn:participant id="Participant_03ad0kv" name="' + this.name + '" processRef="' + this.key + '" />' +
+          '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" ' +
+           'xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="' + this.defId + '" ' +
+           'targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.0">' +
+          '<bpmn:collaboration id="Collaboration_1cidyxu">' +
+          '<bpmn:participant id="Participant_0px403d" name="' + this.name + '" processRef="' + this.key + '" />' +
           '</bpmn:collaboration>' +
           '<bpmn:process id="' + this.key + '" name="' + this.name + '" isExecutable="false">' +
           '<bpmn:laneSet>' +
-          '<bpmn:lane id="Lane_0g5v1sg">' +
+          '<bpmn:lane id="Lane_1xzf0d3" name="Lane">' +
           '<bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>' +
           '</bpmn:lane>' +
           '</bpmn:laneSet>' +
           '<bpmn:startEvent id="StartEvent_1" name="' + this.name + '" />' +
           '</bpmn:process>' +
           '<bpmndi:BPMNDiagram id="BPMNDiagram_1">' +
-          '<bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0ge6yss">' +
-          '<bpmndi:BPMNShape id="Participant_03ad0kv_di" bpmnElement="Participant_03ad0kv">' +
-          '<dc:Bounds x="151" y="116" width="606" height="190" />' +
+          '<bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1cidyxu">' +
+          '<bpmndi:BPMNShape id="Participant_0px403d_di" bpmnElement="Participant_0px403d">' +
+          '<dc:Bounds x="5" y="4" width="581" height="170" />' +
           '</bpmndi:BPMNShape>' +
           '<bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">' +
-          '<dc:Bounds x="231" y="191" width="36" height="36" />' +
+          '<dc:Bounds x="101" y="65" width="36" height="36" />' +
           '<bpmndi:BPMNLabel>' +
-          '<dc:Bounds x="235" y="227" width="29" height="13" />' +
+          '<dc:Bounds x="109" y="101" width="21" height="13" />' +
           '</bpmndi:BPMNLabel>' +
           '</bpmndi:BPMNShape>' +
-          '<bpmndi:BPMNShape id="Lane_0g5v1sg_di" bpmnElement="Lane_0g5v1sg">' +
-          '<dc:Bounds x="181" y="116" width="576" height="190" />' +
+          '<bpmndi:BPMNShape id="Lane_1xzf0d3_di" bpmnElement="Lane_1xzf0d3">' +
+          '<dc:Bounds x="35" y="4" width="551" height="170" />' +
           '</bpmndi:BPMNShape>' +
           '</bpmndi:BPMNPlane>' +
           '</bpmndi:BPMNDiagram>' +
           '</bpmn:definitions>';
       }
     }
-    const savedEntity = this.entityType.save(this, context, options);
+    const savedEntity = await this.entityType.save(this, context, options);
     return savedEntity;
   }
 
