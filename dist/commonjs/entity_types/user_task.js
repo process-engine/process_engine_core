@@ -18,6 +18,10 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
     }
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const laneRole = await this.getLaneRole(internalContext);
+        if (!context.hasRole(laneRole)) {
+            this.participant = null;
+        }
         this.changeState(context, 'wait', this);
         const pojo = await this.toPojo(internalContext, { maxDepth: 1 });
         const data = {

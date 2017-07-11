@@ -177,7 +177,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     // const process = await source.getProcess(internalContext);
     const process = source.process;
 
-    let participant = source.participant;
     let applicationId = source.application;
 
     const map = new Map();
@@ -219,7 +218,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         const jwt = await identity.loginByToken(tempUser);
         // use new context of temporary lane user
         context = await identity.token.verifyToken(jwt);*/
-        participant = null;
       }
 
     }
@@ -266,9 +264,12 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       node.nodeDef = nextDef;
       node.type = nextDef.type;
       node.processToken = token;
-      node.participant = participant;
       node.application = applicationId;
       node.instanceCounter = count;
+
+      if (source.hasOwnProperty('participant')) {
+        node.participant =  source.participant;
+      }
 
       if (nextDef.type === 'bpmn:BoundaryEvent') {
         node.attachedToInstance = source;

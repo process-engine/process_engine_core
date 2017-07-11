@@ -119,7 +119,6 @@ class NodeInstanceEntityTypeService {
     }
     async createNextNode(context, source, nextDef, token) {
         const process = source.process;
-        let participant = source.participant;
         let applicationId = source.application;
         const map = new Map();
         map.set('bpmn:UserTask', 'UserTask');
@@ -142,7 +141,6 @@ class NodeInstanceEntityTypeService {
         if (currentLane && nextLane && currentLane.id !== nextLane.id) {
             const role = await nextDef.lane.role;
             if (role) {
-                participant = null;
             }
         }
         let node = null;
@@ -181,9 +179,11 @@ class NodeInstanceEntityTypeService {
             node.nodeDef = nextDef;
             node.type = nextDef.type;
             node.processToken = token;
-            node.participant = participant;
             node.application = applicationId;
             node.instanceCounter = count;
+            if (source.hasOwnProperty('participant')) {
+                node.participant = source.participant;
+            }
             if (nextDef.type === 'bpmn:BoundaryEvent') {
                 node.attachedToInstance = source;
             }

@@ -28,6 +28,11 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
+    const laneRole = await this.getLaneRole(internalContext);
+    if (!context.hasRole(laneRole)) {
+      this.participant = null;
+    }
+
     this.changeState(context, 'wait', this);
 
     const pojo = await this.toPojo(internalContext, {maxDepth: 1});
