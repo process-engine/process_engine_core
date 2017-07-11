@@ -8,5 +8,5 @@ export declare class BoundaryEventEntity extends EventEntity implements IBoundar
     constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void>;
+    proceed(context: ExecutionContext, data: any, source: INodeInstanceEntity, applicationId: string, participant: string): Promise<void>;
 }

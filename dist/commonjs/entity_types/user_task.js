@@ -33,14 +33,17 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
             await this.messageBusService.publish('/participant/' + this.participant, msg);
         }
         else {
+            // send message to users of lane role
             const role = await this.nodeDef.lane.role;
             await this.messageBusService.publish('/role/' + role, msg);
         }
     }
     async proceed(context, newData, source, applicationId, participant) {
+        // check if participant changed
         if (this.participant !== participant) {
             this.participant = participant;
         }
+        // save new data in token
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;

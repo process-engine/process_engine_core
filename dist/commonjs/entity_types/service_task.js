@@ -19,6 +19,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         let continueEnd = true;
+        // call service
         const nodeDef = this.nodeDef;
         const extensions = nodeDef.extensions || null;
         const props = (extensions && extensions.properties) ? extensions.properties : null;
@@ -52,7 +53,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                             event: 'condition',
                             data: data
                         };
-                        const event = self.eventAggregator.createEntityEvent(eventData, self, context);
+                        const event = self.eventAggregator.createEntityEvent(eventData, self, context, (('participant' in self) ? { participantId: self.participant } : null));
                         self.eventAggregator.publish('/processengine/node/' + self.id, event);
                     };
                     const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];

@@ -36,7 +36,7 @@ class BoundaryEventEntity extends event_1.EventEntity {
             event: 'timer',
             data: {}
         };
-        const event = this.eventAggregator.createEntityEvent(payload, source, context);
+        const event = this.eventAggregator.createEntityEvent(payload, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null));
         this.eventAggregator.publish('/processengine/node/' + target.id, event);
     }
 }

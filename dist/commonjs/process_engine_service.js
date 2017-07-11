@@ -68,6 +68,7 @@ class ProcessEngineService {
         const initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;
         let source = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
         const participant = (msg && msg.metadata && msg.metadata.options && msg.metadata.options.participantId) ? msg.metadata.options.participantId : null;
+        // fallback to old origin
         if (!source) {
             source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
         }
@@ -92,6 +93,8 @@ class ProcessEngineService {
     async _initializeMessageBus() {
         try {
             await this.messageBusService.initialize();
+            // Todo: we subscribe on the old channel to leave frontend intact
+            // this is deprecated and should be replaced with the new datastore api
             if (this.messageBusService.isMaster) {
                 await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);

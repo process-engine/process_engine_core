@@ -76,7 +76,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
               data: data
             };
 
-            const event = self.eventAggregator.createEntityEvent(eventData, self, context);
+            const event = self.eventAggregator.createEntityEvent(eventData, self, context, (('participant' in self) ? { participantId: self.participant } : null ));
             self.eventAggregator.publish('/processengine/node/' + self.id, event);
           };
 

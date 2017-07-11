@@ -68,7 +68,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
     _sendProceed(context, data, source) {
         data = data || {};
         data.action = 'proceed';
-        const event = this.eventAggregator.createEntityEvent(data, source, context);
+        const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null));
         this.eventAggregator.publish('/processengine/node/' + this.id, event);
     }
     async initializeSignal() {
@@ -101,6 +101,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
                     source = await entityType.getById(sourceRef.id, context);
                 }
                 catch (err) {
+                    // source could not be found, ignore atm
                 }
             }
         }
@@ -130,6 +131,8 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
                 source = await entityType.getById(sourceRef.id, context);
             }
             catch (err) {
+                // source could not be found
+                // Todo: try to resolve source with unsafed node instance entities
             }
         }
         const data = (msg && msg.data) ? msg.data : null;

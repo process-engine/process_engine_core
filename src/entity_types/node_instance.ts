@@ -224,7 +224,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.changeState(context, 'execute', this);
   }
 
-  public changeState(context: ExecutionContext, newState: string, source: IEntity) {
+  public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity) {
 
     debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
 
@@ -233,7 +233,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       data: newState
     };
 
-    const event = this.eventAggregator.createEntityEvent(data, source, context);
+    const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null ));
     this.eventAggregator.publish('/processengine/node/' + this.id, event);
   }
 
@@ -257,7 +257,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         data: error
       };
 
-      const entityEvent = this.eventAggregator.createEntityEvent(data, this, context);
+      const entityEvent = this.eventAggregator.createEntityEvent(data, this, context, (('participant' in this) ? { participantId: this.participant } : null ));
       this.eventAggregator.publish('/processengine/node/' + this.id, entityEvent);
     }
   }
@@ -388,7 +388,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         data: null
       };
 
-      const msg = this.eventAggregator.createEntityEvent(data, this, context);
+      const msg = this.eventAggregator.createEntityEvent(data, this, context, (('participant' in this) ? { participantId: this.participant } : null ));
       this.eventAggregator.publish('/processengine/node/' + this.id, msg);
     }
   }

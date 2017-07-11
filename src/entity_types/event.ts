@@ -1,7 +1,7 @@
 import {NodeInstanceEntity} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {IEventEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 import * as moment from 'moment';
@@ -92,11 +92,11 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     this._sendProceed(context, null, this);
   }
 
-  private _sendProceed(context: ExecutionContext, data: any, source: IEntity): void {
+  private _sendProceed(context: ExecutionContext, data: any, source: INodeInstanceEntity): void {
     data = data || {};
     data.action = 'proceed';
 
-    const event = this.eventAggregator.createEntityEvent(data, source, context);
+    const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null ));
     this.eventAggregator.publish('/processengine/node/' + this.id, event);
   }
 

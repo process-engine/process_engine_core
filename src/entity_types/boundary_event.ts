@@ -46,7 +46,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
   }
 
-  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
+  public async proceed(context: ExecutionContext, data: any, source: INodeInstanceEntity, applicationId: string, participant: string): Promise<void> {
 
     const target = this.attachedToInstance;
     const payload = {
@@ -55,7 +55,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
       data: {}
     };
 
-    const event = this.eventAggregator.createEntityEvent(payload, source, context);
+    const event = this.eventAggregator.createEntityEvent(payload, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null ));
     this.eventAggregator.publish('/processengine/node/' + target.id, event);
   }
 }

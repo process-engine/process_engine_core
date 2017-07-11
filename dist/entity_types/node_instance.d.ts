@@ -40,7 +40,7 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     instanceCounter: number;
     getLaneRole(context: ExecutionContext): Promise<string>;
     start(context: ExecutionContext, source: IEntity): Promise<void>;
-    changeState(context: ExecutionContext, newState: string, source: IEntity): void;
+    changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void;
     error(context: ExecutionContext, error: any): void;
     wait(context: ExecutionContext): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;

@@ -8,6 +8,10 @@ import { IRoutingService } from '@process-engine-js/routing_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 
 import * as debug from 'debug';
+
+import {ProcessTokenEntity} from '../entity_types/process_token';
+import {NodeDefEntity} from '../entity_types/node_def';
+
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 
@@ -149,7 +153,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
 
     const data: any = (msg && msg.data) ? msg.data : null;
-    const event = binding.eventAggregator.createEntityEvent(data, source, context);
+    const event = binding.eventAggregator.createEntityEvent(data, source, context, (msg && msg.metadata ? msg.metadata.options : null ));
     binding.eventAggregator.publish('/processengine/node/' + binding.entity.id, event);
   }
 
@@ -249,7 +253,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           token: null
         };
 
-        const event = this.eventAggregator.createEntityEvent(data, source, context);
+        const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null ));
         this.eventAggregator.publish('/processengine/node/' + node.id, event);
 
         createNode = false;
@@ -267,7 +271,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       node.application = applicationId;
       node.instanceCounter = count;
 
-      if (source.hasOwnProperty('participant')) {
+      if ('participant' in source) {
         node.participant =  source.participant;
       }
 
@@ -465,18 +469,18 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
     let source: any = undefined;
-    let token = undefined;
+    let token: ProcessTokenEntity = undefined;
     let nextDef: INodeDefEntity = undefined;
 
     try {
       const internalContext = await this.iamService.createInternalContext('processengine_system');
 
       // Todo: restore entities from references respecting namespaces
-      const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
-      const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+      const processTokenEntityType = await this.datastoreService.getEntityType<ProcessTokenEntity>('ProcessToken');
+      const nodeDefEntityType = await this.datastoreService.getEntityType<NodeDefEntity>('NodeDef');
 
       const nextDefRef = new EntityReference(params.nextDef._meta.namespace, params.nextDef._meta.type, params.nextDef.id);
-      nextDef = <INodeDefEntity> await nodeDefEntityType.getById(nextDefRef.id, context);
+      nextDef = await nodeDefEntityType.getById(nextDefRef.id, context);
 
       const processDef = await nextDef.getProcessDef(internalContext);
 
