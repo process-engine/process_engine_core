@@ -26,7 +26,7 @@ class CatchEventEntity extends event_1.EventEntity {
                 this.changeState(context, 'end', this);
         }
     }
-    async proceed(context, newData, source, applicationId) {
+    async proceed(context, newData, source, applicationId, participant) {
         this.changeState(context, 'end', this);
     }
 }

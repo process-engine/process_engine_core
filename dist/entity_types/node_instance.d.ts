@@ -34,6 +34,7 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     type: string;
     state: string;
     participant: string;
+    application: string;
     processToken: IProcessTokenEntity;
     getProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity>;
     instanceCounter: number;
@@ -43,8 +44,8 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     error(context: ExecutionContext, error: any): void;
     wait(context: ExecutionContext): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void>;
-    event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string): Promise<void>;
+    proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void>;
+    event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void>;
     cancel(context: ExecutionContext): Promise<void>;
     end(context: ExecutionContext, cancelFlow?: boolean): Promise<void>;
 }

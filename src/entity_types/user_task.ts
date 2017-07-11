@@ -47,10 +47,12 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 
     // check if participant changed
-    // if (this.participant !== applicationId) {}
+    if (this.participant !== participant) {
+      this.participant = participant; 
+    }
 
     // save new data in token
     const processToken = this.processToken;

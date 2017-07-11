@@ -6,5 +6,5 @@ export declare class UserTaskEntity extends NodeInstanceEntity implements IUserT
     constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void>;
+    proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void>;
 }

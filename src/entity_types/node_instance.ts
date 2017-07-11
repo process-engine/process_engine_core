@@ -152,6 +152,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.setProperty(this, 'participant', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get application(): string {
+    return this.getProperty(this, 'application');
+  }
+
+  public set application(value: string) {
+    this.setProperty(this, 'application', value);
+  }
+
   @schemaAttribute({ type: 'ProcessToken' })
   public get processToken(): IProcessTokenEntity {
     return this.getProperty(this, 'processToken');
@@ -273,11 +282,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.changeState(context, 'end', this);
   }
 
-  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
     // by default do nothing, implementation should be overwritten by child class
   }
 
-  public async event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string): Promise<void> {
+  public async event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 
     debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
 

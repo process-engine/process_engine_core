@@ -107,6 +107,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     set participant(value) {
         this.setProperty(this, 'participant', value);
     }
+    get application() {
+        return this.getProperty(this, 'application');
+    }
+    set application(value) {
+        this.setProperty(this, 'application', value);
+    }
     get processToken() {
         return this.getProperty(this, 'processToken');
     }
@@ -188,9 +194,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         this.state = 'progress';
         this.changeState(context, 'end', this);
     }
-    async proceed(context, data, source, applicationId) {
+    async proceed(context, data, source, applicationId, participant) {
     }
-    async event(context, event, data, source, applicationId) {
+    async event(context, event, data, source, applicationId, participant) {
         debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${event}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const nodeDef = this.nodeDef;
@@ -344,6 +350,9 @@ __decorate([
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
 ], NodeInstanceEntity.prototype, "participant", null);
+__decorate([
+    metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })
+], NodeInstanceEntity.prototype, "application", null);
 __decorate([
     metadata_1.schemaAttribute({ type: 'ProcessToken' })
 ], NodeInstanceEntity.prototype, "processToken", null);

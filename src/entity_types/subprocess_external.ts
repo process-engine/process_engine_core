@@ -62,7 +62,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 
     // save new data in token
     const processToken = this.processToken;

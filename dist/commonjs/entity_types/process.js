@@ -91,11 +91,12 @@ class ProcessEntity extends data_model_contracts_1.Entity {
         const source = params ? params.source : undefined;
         const isSubProcess = params ? params.isSubProcess : false;
         const initialToken = params ? params.initialToken : undefined;
+        const participant = params ? params.participant : null;
         const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
         const startEventType = await this.datastoreService.getEntityType('StartEvent');
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         let laneContext = context;
-        let participant = null;
+        let applicationId = null;
         this.isSubProcess = isSubProcess;
         this.callerId = (isSubProcess && source) ? source.id : null;
         this.status = 'progress';
@@ -103,7 +104,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             await this.save(internalContext, { reloadAfterSave: false });
         }
         if (!isSubProcess) {
-            participant = source || null;
+            applicationId = source || null;
         }
         const processDef = await this.getProcessDef(internalContext);
         await processDef.getNodeDefCollection(internalContext);
@@ -155,6 +156,7 @@ class ProcessEntity extends data_model_contracts_1.Entity {
             startEvent.type = startEventDef.type;
             startEvent.processToken = processToken;
             startEvent.participant = participant;
+            startEvent.application = applicationId;
             startEvent.changeState(laneContext, 'start', this);
         }
     }

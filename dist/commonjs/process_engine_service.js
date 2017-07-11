@@ -67,6 +67,7 @@ class ProcessEngineService {
         const key = (msg && msg.data && msg.data.key) ? msg.data.key : null;
         const initialToken = (msg && msg.data && msg.data.token) ? msg.data.token : null;
         let source = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+        const participant = (msg && msg.metadata && msg.metadata.options && msg.metadata.options.participantId) ? msg.metadata.options.participantId : null;
         if (!source) {
             source = (msg && msg.origin && msg.origin.id) ? msg.origin.id : null;
         }
@@ -78,7 +79,8 @@ class ProcessEngineService {
                     key: key,
                     initialToken: initialToken,
                     source: source,
-                    isSubProcess: isSubProcess
+                    isSubProcess: isSubProcess,
+                    participant: participant
                 };
                 await this.processDefEntityTypeService.start(context, params);
                 break;

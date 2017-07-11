@@ -46,7 +46,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
   }
 
-  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 
     const target = this.attachedToInstance;
     const payload = {

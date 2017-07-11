@@ -52,6 +52,7 @@ class NodeInstanceEntityTypeService {
         const source = (event && event.source) ? event.source : null;
         const context = (event && event.metadata && event.metadata.context) ? event.metadata.context : {};
         const applicationId = (event && event.metadata && event.metadata.applicationId) ? event.metadata.applicationId : null;
+        const participant = (event && event.metadata && event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
         if (action === 'changeState') {
             const newState = (event && event.data && event.data.data) ? event.data.data : null;
             switch (newState) {
@@ -69,12 +70,12 @@ class NodeInstanceEntityTypeService {
         }
         if (action === 'proceed') {
             const newData = (event && event.data && event.data.token) ? event.data.token : null;
-            await binding.entity.proceed(context, newData, source, applicationId);
+            await binding.entity.proceed(context, newData, source, applicationId, participant);
         }
         if (action === 'event') {
             const nodeEvent = (event && event.data && event.data.event) ? event.data.event : null;
             const data = (event && event.data && event.data.data) ? event.data.data : null;
-            await binding.entity.event(context, nodeEvent, data, source, applicationId);
+            await binding.entity.event(context, nodeEvent, data, source, applicationId, participant);
         }
     }
     async _nodeHandlerMessagebus(msg) {
@@ -119,6 +120,7 @@ class NodeInstanceEntityTypeService {
     async createNextNode(context, source, nextDef, token) {
         const process = source.process;
         let participant = source.participant;
+        let applicationId = source.application;
         const map = new Map();
         map.set('bpmn:UserTask', 'UserTask');
         map.set('bpmn:ExclusiveGateway', 'ExclusiveGateway');
@@ -180,6 +182,7 @@ class NodeInstanceEntityTypeService {
             node.type = nextDef.type;
             node.processToken = token;
             node.participant = participant;
+            node.application = applicationId;
             node.instanceCounter = count;
             if (nextDef.type === 'bpmn:BoundaryEvent') {
                 node.attachedToInstance = source;

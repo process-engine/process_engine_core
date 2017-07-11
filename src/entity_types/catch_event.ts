@@ -44,7 +44,7 @@ export class CatchEventEntity extends EventEntity implements ICatchEventEntity {
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
     this.changeState(context, 'end', this);
   }
 }

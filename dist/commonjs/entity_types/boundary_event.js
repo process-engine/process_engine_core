@@ -29,7 +29,7 @@ class BoundaryEventEntity extends event_1.EventEntity {
                 this.changeState(context, 'end', this);
         }
     }
-    async proceed(context, data, source, applicationId) {
+    async proceed(context, data, source, applicationId, participant) {
         const target = this.attachedToInstance;
         const payload = {
             action: 'event',

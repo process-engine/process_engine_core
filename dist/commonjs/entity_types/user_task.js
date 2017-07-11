@@ -33,7 +33,10 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
             await this.messageBusService.publish('/role/' + role, msg);
         }
     }
-    async proceed(context, newData, source, applicationId) {
+    async proceed(context, newData, source, applicationId, participant) {
+        if (this.participant !== participant) {
+            this.participant = participant;
+        }
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;

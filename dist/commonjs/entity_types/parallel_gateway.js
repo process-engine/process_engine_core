@@ -54,7 +54,7 @@ class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
             }
         }
     }
-    async proceed(context, newData, source, applicationId) {
+    async proceed(context, newData, source, applicationId, participant) {
         const nodeDef = this.nodeDef;
         const processDef = this.process.processDef;
         const prevDefsKeys = [];

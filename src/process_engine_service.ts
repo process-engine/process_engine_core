@@ -94,6 +94,7 @@ export class ProcessEngineService implements IProcessEngineService {
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
     let source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
+    const participant = (msg && msg.metadata && msg.metadata.options && msg.metadata.options.participantId) ? msg.metadata.options.participantId : null;
 
     // fallback to old origin
     if (!source) {
@@ -110,7 +111,8 @@ export class ProcessEngineService implements IProcessEngineService {
           key: key,
           initialToken: initialToken,
           source: source,
-          isSubProcess: isSubProcess
+          isSubProcess: isSubProcess,
+          participant: participant
         };
 
         await this.processDefEntityTypeService.start(context, params);

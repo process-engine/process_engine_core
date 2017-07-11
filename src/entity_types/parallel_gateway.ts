@@ -74,7 +74,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void> {
+  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
     // check if all tokens are there
 
     const nodeDef = this.nodeDef;

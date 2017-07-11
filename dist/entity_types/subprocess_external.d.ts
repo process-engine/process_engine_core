@@ -8,5 +8,5 @@ export declare class SubprocessExternalEntity extends NodeInstanceEntity impleme
     private readonly processDefEntityTypeService;
     initialize(derivedClassInstance: IEntity): Promise<void>;
     execute(context: ExecutionContext): Promise<void>;
-    proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string): Promise<void>;
+    proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void>;
 }

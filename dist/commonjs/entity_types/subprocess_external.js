@@ -40,7 +40,7 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
             debugInfo(`No key is provided for call activity key '${this.key}'`);
         }
     }
-    async proceed(context, newData, source, applicationId) {
+    async proceed(context, newData, source, applicationId, participant) {
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;
