@@ -101,7 +101,6 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
                     source = await entityType.getById(sourceRef.id, context);
                 }
                 catch (err) {
-                    // source could not be found, ignore atm
                 }
             }
         }
@@ -131,8 +130,6 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
                 source = await entityType.getById(sourceRef.id, context);
             }
             catch (err) {
-                // source could not be found
-                // Todo: try to resolve source with unsafed node instance entities
             }
         }
         const data = (msg && msg.data) ? msg.data : null;

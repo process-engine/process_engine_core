@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
-// const debugErr = debug('processengine:error');
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
     constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
@@ -25,7 +24,6 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         }
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
-        // call sub process
         const nodeDef = this.nodeDef;
         const subProcessKey = nodeDef.subProcessKey || null;
         if (subProcessKey) {
@@ -43,7 +41,6 @@ class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
         }
     }
     async proceed(context, newData, source, applicationId, participant) {
-        // save new data in token
         const processToken = this.processToken;
         const tokenData = processToken.data || {};
         tokenData.current = newData;
