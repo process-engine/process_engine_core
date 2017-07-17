@@ -24,9 +24,36 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
         }
         this.changeState(context, 'wait', this);
         const pojo = await this.toPojo(internalContext, { maxDepth: 1 });
+        let uiName;
+        let uiConfig;
+        let uiData;
+        const processToken = this.processToken;
+        const token = processToken.data || {};
+        const nodeDef = this.nodeDef;
+        const extensions = nodeDef.extensions || null;
+        const props = (extensions && extensions.properties) ? extensions.properties : null;
+        if (props) {
+            props.forEach((prop) => {
+                if (prop.name === 'uiName') {
+                    uiName = this.parseExtensionProperty(prop.value, token, context);
+                }
+                if (prop.name === 'uiConfig') {
+                    uiConfig = this.parseExtensionProperty(prop.value, token, context);
+                }
+                if (prop.name === 'uiData') {
+                    uiData = this.parseExtensionProperty(prop.value, token, context);
+                }
+            });
+        }
+        const userTaskMessageData = {
+            userTaskEntity: pojo,
+            uiName: uiName,
+            uiData: uiData,
+            uiConfig: uiConfig
+        };
         const data = {
             action: 'userTask',
-            data: pojo
+            data: userTaskMessageData
         };
         const msg = this.messageBusService.createEntityMessage(data, this, context);
         if (this.participant) {
