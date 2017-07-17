@@ -328,6 +328,23 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             await process.end(context, processToken);
         }
     }
+    parseExtensionProperty(propertyString, token, context) {
+        if (typeof propertyString === 'string' && propertyString.length > 1 && propertyString.charAt(0) === '$') {
+            const functionString = 'return ' + propertyString.substr(1);
+            const evaluateFunction = new Function('token', 'context', functionString);
+            let result;
+            try {
+                result = evaluateFunction.call(undefined, token, context);
+            }
+            catch (err) {
+                throw new Error('parsing extension property failed');
+            }
+            return result;
+        }
+        else {
+            return propertyString;
+        }
+    }
 };
 __decorate([
     metadata_1.schemaAttribute({ type: core_contracts_1.SchemaAttributeType.string })

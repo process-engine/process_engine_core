@@ -48,4 +48,5 @@ export declare class NodeInstanceEntity extends Entity implements INodeInstanceE
     event(context: ExecutionContext, event: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void>;
     cancel(context: ExecutionContext): Promise<void>;
     end(context: ExecutionContext, cancelFlow?: boolean): Promise<void>;
+    parseExtensionProperty(propertyString: string, token: any, context: ExecutionContext): any;
 }

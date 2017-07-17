@@ -462,4 +462,22 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       await process.end(context, processToken);
     }
   }
+
+
+  public parseExtensionProperty(propertyString: string, token: any, context: ExecutionContext): any {
+    if (typeof propertyString === 'string' && propertyString.length > 1 && propertyString.charAt(0) === '$') {
+
+      const functionString = 'return ' + propertyString.substr(1);
+      const evaluateFunction = new Function('token', 'context', functionString);
+      let result;
+      try {
+        result = evaluateFunction.call(undefined, token, context);
+      } catch (err) {
+        throw new Error ('parsing extension property failed');
+      }
+      return result;
+    } else {
+      return propertyString;
+    }
+  }
 }
