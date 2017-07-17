@@ -27,7 +27,7 @@ let UserTaskEntity = class UserTaskEntity extends node_instance_1.NodeInstanceEn
         let uiName;
         let uiConfig;
         let uiData;
-        const processToken = this.processToken;
+        const processToken = pojo.processToken;
         const token = processToken.data || {};
         const nodeDef = this.nodeDef;
         const extensions = nodeDef.extensions || null;

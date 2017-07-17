@@ -40,7 +40,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     let uiConfig;
     let uiData;
 
-    const processToken = this.processToken;
+    const processToken = pojo.processToken;
     const token = processToken.data || {};
 
     const nodeDef = this.nodeDef;
