@@ -131,7 +131,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const moddle = BpmnModdle();
 
-    return new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
+    return <any>(new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
 
       moddle.fromXML(xml, (error, definitions) => {
         if (error) {
@@ -142,7 +142,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           resolve(bpmnDiagram);
         }
       });
-    });
+    }));
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {

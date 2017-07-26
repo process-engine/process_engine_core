@@ -179,7 +179,8 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             };
             const message = this.messageBusService.createDatastoreMessage(messageOptions, context, params);
             try {
-                const response = (await this.routingService.request(appInstanceId, message));
+                const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
+                const response = (await this.routingService.request(appInstanceId, message, adapterKey));
                 const ref = new data_model_contracts_1.EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
                 return ref;
             }
@@ -272,10 +273,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         }
         const processes = bpmnDiagram.getProcesses();
         const currentProcess = processes.find((item) => item.id === key);
-        if (currentProcess.extensionElements) {
-            const extensions = this._updateExtensionElements(currentProcess.extensionElements.values, this);
-            this.extensions = extensions;
-        }
+        this.extensions = this._updateExtensionElements(currentProcess.extensionElements ? currentProcess.extensionElements.values : null, this);
         this.version = currentProcess.$attrs ? currentProcess.$attrs['camunda:versionTag'] : '';
         await this.save(context, { reloadAfterSave: false });
         const lanes = bpmnDiagram.getLanes(key);
@@ -347,10 +345,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             laneEntity.name = laneObj.name;
             laneEntity.processDef = this;
             laneEntity.counter = counter;
-            if (laneObj.extensionElements) {
-                const extensions = this._updateExtensionElements(laneObj.extensionElements.values, laneEntity);
-                laneEntity.extensions = extensions;
-            }
+            laneEntity.extensions = this._updateExtensionElements(laneObj.extensionElements ? laneObj.extensionElements.values : null, laneEntity);
             await laneEntity.save(context, { reloadAfterSave: false });
             laneCache[laneObj.id] = laneEntity;
         });
@@ -391,7 +386,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
             if (eventType) {
                 nodeDefEntity.eventType = eventType;
-                nodeDefEntity.cancelActivity = node.cancelActivity || true;
+                nodeDefEntity.cancelActivity = node.hasOwnProperty('cancelActivity') ? node.cancelActivity : true;
                 if (eventType === 'bpmn:TimerEventDefinition') {
                     nodeDefEntity.timerDefinitionType = this._parseTimerDefinitionType(node.eventDefinitions[0]);
                     nodeDefEntity.timerDefinition = this._parseTimerDefinition(node.eventDefinitions[0]);
@@ -414,10 +409,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     nodeDefEntity.condition = condition;
                 }
             }
-            if (node.extensionElements) {
-                const extensions = this._updateExtensionElements(node.extensionElements.values, nodeDefEntity);
-                nodeDefEntity.extensions = extensions;
-            }
+            nodeDefEntity.extensions = this._updateExtensionElements(node.extensionElements ? node.extensionElements.values : null, nodeDefEntity);
             nodeDefEntity.name = node.name;
             nodeDefEntity.type = node.$type;
             nodeDefEntity.events = null;
@@ -464,10 +456,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             if (flow.conditionExpression && flow.conditionExpression.body) {
                 flowDefEntity.condition = flow.conditionExpression.body;
             }
-            if (flow.extensionElements) {
-                const extensions = this._updateExtensionElements(flow.extensionElements.values, flowDefEntity);
-                flowDefEntity.extensions = extensions;
-            }
+            flowDefEntity.extensions = this._updateExtensionElements(flow.extensionElements ? flow.extensionElements.values : null, flowDefEntity);
             await flowDefEntity.save(context, { reloadAfterSave: false });
         });
         await Promise.all(flowPromiseArray);
@@ -532,81 +521,84 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await Promise.all(nodePromiseArray);
     }
     _updateExtensionElements(extensionElements, entity) {
-        const ext = {};
-        extensionElements.forEach((extensionElement) => {
-            if (extensionElement.$type === 'camunda:formData') {
-                const formFields = [];
-                if (extensionElement.$children) {
-                    extensionElement.$children.forEach((child) => {
-                        const formValues = [];
-                        const formProperties = [];
-                        if (child.$children) {
-                            child.$children.forEach((formValue) => {
-                                const childType = formValue.$type;
-                                switch (childType) {
-                                    case 'camunda:properties':
-                                        if (formValue.$children) {
-                                            formValue.$children.forEach((propChild) => {
-                                                const newChild = {
-                                                    $type: propChild.$type,
-                                                    name: propChild.id,
-                                                    value: propChild.value
-                                                };
-                                                formProperties.push(newChild);
-                                            });
-                                        }
-                                        break;
-                                    case 'camunda:value':
-                                        const newFormValue = {
-                                            $type: formValue.$type,
-                                            id: formValue.id,
-                                            name: formValue.name
-                                        };
-                                        formValues.push(newFormValue);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            });
-                        }
-                        const newChild = {
-                            $type: child.$type,
-                            id: child.id,
-                            label: child.label,
-                            type: child.type,
-                            defaultValue: child.defaultValue,
-                            formValues: formValues,
-                            formProperties: formProperties
-                        };
-                        formFields.push(newChild);
-                    });
+        let ext = null;
+        if (extensionElements && Array.isArray(extensionElements)) {
+            ext = {};
+            extensionElements.forEach((extensionElement) => {
+                if (extensionElement.$type === 'camunda:formData') {
+                    const formFields = [];
+                    if (extensionElement.$children) {
+                        extensionElement.$children.forEach((child) => {
+                            const formValues = [];
+                            const formProperties = [];
+                            if (child.$children) {
+                                child.$children.forEach((formValue) => {
+                                    const childType = formValue.$type;
+                                    switch (childType) {
+                                        case 'camunda:properties':
+                                            if (formValue.$children) {
+                                                formValue.$children.forEach((propChild) => {
+                                                    const newChild = {
+                                                        $type: propChild.$type,
+                                                        name: propChild.id,
+                                                        value: propChild.value
+                                                    };
+                                                    formProperties.push(newChild);
+                                                });
+                                            }
+                                            break;
+                                        case 'camunda:value':
+                                            const newFormValue = {
+                                                $type: formValue.$type,
+                                                id: formValue.id,
+                                                name: formValue.name
+                                            };
+                                            formValues.push(newFormValue);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                });
+                            }
+                            const newChild = {
+                                $type: child.$type,
+                                id: child.id,
+                                label: child.label,
+                                type: child.type,
+                                defaultValue: child.defaultValue,
+                                formValues: formValues,
+                                formProperties: formProperties
+                            };
+                            formFields.push(newChild);
+                        });
+                    }
+                    ext.formFields = formFields;
                 }
-                ext.formFields = formFields;
-            }
-            else if (extensionElement.$type === 'camunda:properties') {
-                const properties = [];
-                if (extensionElement.$children) {
-                    extensionElement.$children.forEach((child) => {
-                        const newChild = {
-                            $type: child.$type,
-                            name: child.name,
-                            value: child.value
-                        };
-                        switch (child.name) {
-                            case 'startContext':
-                                entity.startContext = child.value;
-                                break;
-                            case 'startContextEntityType':
-                                entity.startContextEntityType = child.value;
-                                break;
-                            default:
-                        }
-                        properties.push(newChild);
-                    });
+                else if (extensionElement.$type === 'camunda:properties') {
+                    const properties = [];
+                    if (extensionElement.$children) {
+                        extensionElement.$children.forEach((child) => {
+                            const newChild = {
+                                $type: child.$type,
+                                name: child.name,
+                                value: child.value
+                            };
+                            switch (child.name) {
+                                case 'startContext':
+                                    entity.startContext = child.value;
+                                    break;
+                                case 'startContextEntityType':
+                                    entity.startContextEntityType = child.value;
+                                    break;
+                                default:
+                            }
+                            properties.push(newChild);
+                        });
+                    }
+                    ext.properties = properties;
                 }
-                ext.properties = properties;
-            }
-        });
+            });
+        }
         return ext;
     }
     _extractFeatures() {

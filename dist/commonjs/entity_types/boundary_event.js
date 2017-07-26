@@ -14,30 +14,21 @@ class BoundaryEventEntity extends event_1.EventEntity {
         const nodeDef = this.nodeDef;
         switch (nodeDef.eventType) {
             case 'bpmn:SignalEventDefinition':
-                this.changeState(context, 'wait', this);
                 await this.initializeSignal();
                 break;
             case 'bpmn:MessageEventDefinition':
-                this.changeState(context, 'wait', this);
                 await this.initializeMessage();
                 break;
             case 'bpmn:TimerEventDefinition':
-                this.changeState(context, 'wait', this);
                 await this.initializeTimer();
                 break;
             default:
-                this.changeState(context, 'end', this);
         }
+        this.changeState(context, 'wait', this);
     }
     async proceed(context, data, source, applicationId, participant) {
-        const target = this.attachedToInstance;
-        const payload = {
-            action: 'event',
-            event: 'timer',
-            data: {}
-        };
-        const event = this.eventAggregator.createEntityEvent(payload, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null));
-        this.eventAggregator.publish('/processengine/node/' + target.id, event);
+        const parent = this.attachedToInstance;
+        await parent.triggerBoundaryEvent(context, this, data);
     }
 }
 exports.BoundaryEventEntity = BoundaryEventEntity;

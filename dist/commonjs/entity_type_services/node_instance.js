@@ -65,6 +65,9 @@ class NodeInstanceEntityTypeService {
                 case ('end'):
                     await binding.entity.end(context);
                     break;
+                case ('follow'):
+                    await binding.entity.followBoundary(context);
+                    break;
                 default:
             }
         }
@@ -72,10 +75,15 @@ class NodeInstanceEntityTypeService {
             const newData = (event && event.data && event.data.token) ? event.data.token : null;
             await binding.entity.proceed(context, newData, source, applicationId, participant);
         }
-        if (action === 'event') {
-            const nodeEvent = (event && event.data && event.data.event) ? event.data.event : null;
+        if (action === 'boundary') {
+            const eventEntity = (event && event.data && event.data.eventEntity) ? event.data.eventEntity : null;
             const data = (event && event.data && event.data.data) ? event.data.data : null;
-            await binding.entity.event(context, nodeEvent, data, source, applicationId, participant);
+            await binding.entity.boundaryEvent(context, eventEntity, data, source, applicationId, participant);
+        }
+        if (action === 'event') {
+            const eventType = (event && event.data && event.data.eventType) ? event.data.eventType : null;
+            const data = (event && event.data && event.data.data) ? event.data.data : null;
+            await binding.entity.event(context, eventType, data, source, applicationId, participant);
         }
     }
     async _nodeHandlerMessagebus(msg) {
@@ -99,9 +107,19 @@ class NodeInstanceEntityTypeService {
                 }
             }
         }
-        const data = (msg && msg.data) ? msg.data : null;
-        const event = binding.eventAggregator.createEntityEvent(data, source, context, (msg && msg.metadata ? msg.metadata.options : null));
-        binding.eventAggregator.publish('/processengine/node/' + binding.entity.id, event);
+        const payload = (msg && msg.data) ? msg.data : null;
+        const action = (payload && payload.action) ? payload.action : null;
+        if (action === 'proceed') {
+            const newData = (payload && payload.token) ? payload.token : null;
+            const applicationId = msg.metadata.applicationId;
+            const participant = (msg.metadata.options) ? msg.metadata.options.participantId : null;
+            await binding.entity.proceed(context, newData, source, applicationId, participant);
+        }
+        if (action === 'event') {
+            const eventType = (payload && payload.eventType) ? payload.eventType : null;
+            const data = (payload && payload.data) ? payload.data : null;
+            await binding.entity.triggerEvent(context, eventType, data);
+        }
     }
     async createNode(context, entityType) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');
