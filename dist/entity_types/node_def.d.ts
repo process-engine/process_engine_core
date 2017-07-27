@@ -30,6 +30,8 @@ export declare class NodeDefEntity extends Entity implements INodeDefEntity {
     signal: string;
     message: string;
     condition: string;
+    errorName: string;
+    errorCode: string;
     readonly features: Array<IFeature>;
     getLaneRole(context: ExecutionContext): Promise<string>;
     getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection>;

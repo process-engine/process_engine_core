@@ -348,12 +348,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       switch (boundaryDef.eventType) {
         case 'bpmn:ErrorEventDefinition':
 
-          // Todo: check error code
-
-          await this._publishToApi(context, 'cancel', data);
-          eventEntity.changeState(context, 'end', this);
-          await this.end(context, true);
-
+          const errCode = data.number || data.code || '';
+          if ((boundaryDef.errorCode && data.errorCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
+            await this._publishToApi(context, 'cancel', data);
+            eventEntity.changeState(context, 'end', this);
+            await this.end(context, true);
+          }
           break;
 
         case 'bpmn:TimerEventDefinition':

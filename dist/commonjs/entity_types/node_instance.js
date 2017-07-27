@@ -237,9 +237,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         if (boundaryDef) {
             switch (boundaryDef.eventType) {
                 case 'bpmn:ErrorEventDefinition':
-                    await this._publishToApi(context, 'cancel', data);
-                    eventEntity.changeState(context, 'end', this);
-                    await this.end(context, true);
+                    const errCode = data.number || data.code || '';
+                    if ((boundaryDef.errorCode && data.errorCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
+                        await this._publishToApi(context, 'cancel', data);
+                        eventEntity.changeState(context, 'end', this);
+                        await this.end(context, true);
+                    }
                     break;
                 case 'bpmn:TimerEventDefinition':
                     if (boundaryDef.cancelActivity) {

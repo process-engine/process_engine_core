@@ -409,6 +409,12 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     const message = bpmnDiagram.getMessageById(messageId);
                     nodeDefEntity.message = message.name;
                 }
+                if (eventType === 'bpmn:ErrorEventDefinition') {
+                    const errorId = node.eventDefinitions[0].errorRef ? node.eventDefinitions[0].errorRef.id : undefined;
+                    const errorDef = bpmnDiagram.getErrorById(errorId);
+                    nodeDefEntity.errorName = errorDef.name;
+                    nodeDefEntity.errorCode = errorDef.errorCode;
+                }
                 if (eventType === 'bpmn:ConditionalEventDefinition') {
                     const condition = node.eventDefinitions[0].condition ? node.eventDefinitions[0].condition.body : null;
                     nodeDefEntity.condition = condition;
