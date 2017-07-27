@@ -46,7 +46,7 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
         result = await scriptFunction.call(this, tokenData, context);
       } catch (err) {
         result = err;
-        await this.error(context, err);
+        this.error(context, err);
       }
 
       let finalResult = result;

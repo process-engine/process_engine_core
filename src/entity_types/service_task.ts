@@ -46,16 +46,16 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
       props.forEach((prop) => {
         if (prop.name === 'module') {
-          serviceModule = prop.value;
+          serviceModule = <string>this.parseExtensionProperty(prop.value, tokenData, context);
         }
         if (prop.name === 'method') {
-          serviceMethod = prop.value;
+          serviceMethod = <string>this.parseExtensionProperty(prop.value, tokenData, context);
         }
         if (prop.name === 'params') {
-          paramString = prop.value;
+          paramString = <string>this.parseExtensionProperty(prop.value, tokenData, context);
         }
         if (prop.name === 'namespace') {
-          namespace = prop.value;
+          namespace = <string>this.parseExtensionProperty(prop.value, tokenData, context);
         }
       });
 
@@ -70,14 +70,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
           const self = this;
 
           const cb = function (data) {
-            const eventData = {
-              action: 'event',
-              event: 'condition',
-              data: data
-            };
-
-            const event = self.eventAggregator.createEntityEvent(eventData, self, context, (('participant' in self) ? { participantId: self.participant } : null ));
-            self.eventAggregator.publish('/processengine/node/' + self.id, event);
+            self.triggerEvent(context, 'data', data);
           };
 
           const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
@@ -87,7 +80,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         } catch (err) {
           result = err;
           continueEnd = false;
-          await this.error(context, err);
+          this.error(context, err);
         }
 
         let finalResult = result;

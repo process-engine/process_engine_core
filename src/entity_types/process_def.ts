@@ -2,7 +2,7 @@ import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQuery
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
-  IProcessRepository, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+  IProcessRepository, TimerDefinitionType, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
 import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
@@ -28,8 +28,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _featureService: IFeatureService = undefined;
-  private _routingService: IRoutingService = undefined
-  ;
+  private _routingService: IRoutingService = undefined;
+  private _processEngineService: IProcessEngineService = undefined;
+
   constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
               processRepository: IProcessRepository,
               featureService: IFeatureService,
@@ -37,6 +38,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               routingService: IRoutingService,
               eventAggregator: IEventAggregator,
               timingService: ITimingService,
+              processEngineService: IProcessEngineService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema) {
@@ -49,6 +51,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this._routingService = routingService;
     this._eventAggregator = eventAggregator;
     this._timingService = timingService;
+    this._processEngineService = processEngineService;
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
@@ -82,6 +85,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private get routingService(): IRoutingService {
     return this._routingService;
+  }
+
+  private get processEngineService(): IProcessEngineService {
+    return this._processEngineService;
   }
 
   @schemaAttribute({
@@ -893,6 +900,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     // persisting processes is default
     let found: boolean = true;
+
+    if (this.processEngineService.config && this.processEngineService.config.hasOwnProperty('persist')) {
+      found = this.processEngineService.config.persist;
+    }
 
     if (properties) {
       properties.some((property) => {

@@ -15,7 +15,7 @@ const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, entityDependencyHelper, context, schema) {
+    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, processEngineService, entityDependencyHelper, context, schema) {
         super(entityDependencyHelper, context, schema);
         this._messageBusService = undefined;
         this._eventAggregator = undefined;
@@ -24,6 +24,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         this._processRepository = undefined;
         this._featureService = undefined;
         this._routingService = undefined;
+        this._processEngineService = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
         this._processRepository = processRepository;
         this._featureService = featureService;
@@ -31,6 +32,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         this._routingService = routingService;
         this._eventAggregator = eventAggregator;
         this._timingService = timingService;
+        this._processEngineService = processEngineService;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -56,6 +58,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     get routingService() {
         return this._routingService;
+    }
+    get processEngineService() {
+        return this._processEngineService;
     }
     get name() {
         return this.getProperty(this, 'name');
@@ -662,6 +667,9 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const extensions = this.extensions;
         const properties = (extensions && extensions.properties) ? extensions.properties : null;
         let found = true;
+        if (this.processEngineService.config && this.processEngineService.config.hasOwnProperty('persist')) {
+            found = this.processEngineService.config.persist;
+        }
         if (properties) {
             properties.some((property) => {
                 if (property.name === 'persist') {

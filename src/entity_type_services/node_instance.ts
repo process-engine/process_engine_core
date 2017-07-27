@@ -176,7 +176,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     if (action === 'event') {
       const eventType = (payload && payload.eventType) ? payload.eventType : null;
       const data = (payload && payload.data) ? payload.data : null;
-      await binding.entity.triggerEvent(context, eventType, data);
+      binding.entity.triggerEvent(context, eventType, data);
     }
   }
 

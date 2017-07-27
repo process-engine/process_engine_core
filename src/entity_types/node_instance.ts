@@ -223,7 +223,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity) {
+  public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void {
 
     debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
 
@@ -237,9 +237,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async error(context: ExecutionContext, error: any): Promise<void> {
+  public error(context: ExecutionContext, error: any): void {
     debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
-    await this.triggerEvent(context, 'error', error);
+    this.triggerEvent(context, 'error', error);
   }
 
 
@@ -269,7 +269,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async triggerEvent(context: ExecutionContext, eventType: string, data: any): Promise<void> {
+  public triggerEvent(context: ExecutionContext, eventType: string, data: any): void {
     const payload = {
       action: 'event',
       eventType: eventType,
@@ -301,13 +301,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const map = new Map();
     map.set('error', 'bpmn:ErrorEventDefinition');
     map.set('cancel', 'bpmn:CancelEventDefinition');
-    map.set('data', 'bpmn:conditionalEventDefinition');
+    map.set('data', 'bpmn:ConditionalEventDefinition');
     const bpmnType = map.get(eventType);
 
     // get boundary event instance and handle event
-    for (let i = 0; i < this.process.activeInstances.data.length; i++) {
-      const boundaryEntity = <IBoundaryEventEntity>this.process.activeInstances.data[i];
-      if (boundaryEntity.attachedToInstance && boundaryEntity.attachedToInstance.id === this.id && boundaryEntity.type === bpmnType) {
+    const activeInstancesKeys = Object.keys(this.process.activeInstances);
+    for (let i = 0; i < activeInstancesKeys.length; i++) {
+      const boundaryEntity = <IBoundaryEventEntity>this.process.activeInstances[activeInstancesKeys[i]];
+      if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id) && (boundaryEntity.nodeDef.eventType === bpmnType)) {
         // we have a boundary, let it handle the event
         await this.boundaryEvent(context, boundaryEntity, data, source, applicationId, participant);
       } else {
@@ -359,7 +360,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
           if (boundaryDef.cancelActivity) {
             eventEntity.changeState(context, 'end', this);
-            await this.cancel(internalContext);
+            this.cancel(internalContext);
           } else {
             await this._publishToApi(context, 'timer', data);
             eventEntity.changeState(context, 'follow', this);
@@ -369,7 +370,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         case 'bpmn:SignalEventDefinition':
           if (boundaryDef.cancelActivity) {
             eventEntity.changeState(context, 'end', this);
-            await this.cancel(internalContext);
+            this.cancel(internalContext);
           } else {
             await this._publishToApi(context, 'signal', data);
             eventEntity.changeState(context, 'follow', this);
@@ -379,7 +380,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         case 'bpmn:MessageEventDefinition':
           if (boundaryDef.cancelActivity) {
             eventEntity.changeState(context, 'end', this);
-            await this.cancel(internalContext);
+            this.cancel(internalContext);
           } else {
             await this._publishToApi(context, 'message', data);
             eventEntity.changeState(context, 'follow', this);
@@ -392,7 +393,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           await this.end(context, true);
           break;
 
-        case 'bpmn:conditionalEventDefinition':
+        case 'bpmn:ConditionalEventDefinition':
           if (boundaryDef.condition) {
             const functionString = 'return ' + boundaryDef.condition;
             const evaluateFunction = new Function('token', functionString);
@@ -406,7 +407,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             if (result) {
               if (boundaryDef.cancelActivity) {
                 eventEntity.changeState(context, 'end', this);
-                await this.cancel(internalContext);
+                this.cancel(internalContext);
               } else {
                 await this._publishToApi(context, 'conditional', data);
                 eventEntity.changeState(context, 'follow', this);
@@ -422,9 +423,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
 
-  public async cancel(context: ExecutionContext): Promise<void> {
+  public cancel(context: ExecutionContext): void {
     debugInfo(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
-    await this.triggerEvent(context, 'cancel', null);
+    this.triggerEvent(context, 'cancel', null);
   }
 
   // follow next flow, but not end current node (non interrupting boundaries)
@@ -439,7 +440,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     } catch (err) {
       // we can't continue, handle error in process
       const process = await this.getProcess(internalContext);
-      await process.error(context, err);
+      process.error(context, err);
     }
   }
 
@@ -511,7 +512,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       } catch (err) {
         // we can't continue, handle error in process
         const process = await this.getProcess(internalContext);
-        await process.error(context, err);
+        process.error(context, err);
       }
     } else {
       const process = await this.getProcess(internalContext);

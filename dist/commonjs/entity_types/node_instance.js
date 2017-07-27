@@ -160,9 +160,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null));
         this.eventAggregator.publish('/processengine/node/' + this.id, event);
     }
-    async error(context, error) {
+    error(context, error) {
         debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
-        await this.triggerEvent(context, 'error', error);
+        this.triggerEvent(context, 'error', error);
     }
     async wait(context) {
         debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
@@ -179,7 +179,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
     }
     async proceed(context, data, source, applicationId, participant) {
     }
-    async triggerEvent(context, eventType, data) {
+    triggerEvent(context, eventType, data) {
         const payload = {
             action: 'event',
             eventType: eventType,
@@ -203,11 +203,12 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         const map = new Map();
         map.set('error', 'bpmn:ErrorEventDefinition');
         map.set('cancel', 'bpmn:CancelEventDefinition');
-        map.set('data', 'bpmn:conditionalEventDefinition');
+        map.set('data', 'bpmn:ConditionalEventDefinition');
         const bpmnType = map.get(eventType);
-        for (let i = 0; i < this.process.activeInstances.data.length; i++) {
-            const boundaryEntity = this.process.activeInstances.data[i];
-            if (boundaryEntity.attachedToInstance && boundaryEntity.attachedToInstance.id === this.id && boundaryEntity.type === bpmnType) {
+        const activeInstancesKeys = Object.keys(this.process.activeInstances);
+        for (let i = 0; i < activeInstancesKeys.length; i++) {
+            const boundaryEntity = this.process.activeInstances[activeInstancesKeys[i]];
+            if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id) && (boundaryEntity.nodeDef.eventType === bpmnType)) {
                 await this.boundaryEvent(context, boundaryEntity, data, source, applicationId, participant);
             }
             else {
@@ -243,7 +244,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 case 'bpmn:TimerEventDefinition':
                     if (boundaryDef.cancelActivity) {
                         eventEntity.changeState(context, 'end', this);
-                        await this.cancel(internalContext);
+                        this.cancel(internalContext);
                     }
                     else {
                         await this._publishToApi(context, 'timer', data);
@@ -253,7 +254,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 case 'bpmn:SignalEventDefinition':
                     if (boundaryDef.cancelActivity) {
                         eventEntity.changeState(context, 'end', this);
-                        await this.cancel(internalContext);
+                        this.cancel(internalContext);
                     }
                     else {
                         await this._publishToApi(context, 'signal', data);
@@ -263,7 +264,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                 case 'bpmn:MessageEventDefinition':
                     if (boundaryDef.cancelActivity) {
                         eventEntity.changeState(context, 'end', this);
-                        await this.cancel(internalContext);
+                        this.cancel(internalContext);
                     }
                     else {
                         await this._publishToApi(context, 'message', data);
@@ -275,7 +276,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                     eventEntity.changeState(context, 'end', this);
                     await this.end(context, true);
                     break;
-                case 'bpmn:conditionalEventDefinition':
+                case 'bpmn:ConditionalEventDefinition':
                     if (boundaryDef.condition) {
                         const functionString = 'return ' + boundaryDef.condition;
                         const evaluateFunction = new Function('token', functionString);
@@ -290,7 +291,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                         if (result) {
                             if (boundaryDef.cancelActivity) {
                                 eventEntity.changeState(context, 'end', this);
-                                await this.cancel(internalContext);
+                                this.cancel(internalContext);
                             }
                             else {
                                 await this._publishToApi(context, 'conditional', data);
@@ -303,9 +304,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             }
         }
     }
-    async cancel(context) {
+    cancel(context) {
         debugInfo(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
-        await this.triggerEvent(context, 'cancel', null);
+        this.triggerEvent(context, 'cancel', null);
     }
     async followBoundary(context) {
         debugInfo(`follow boundary, id ${this.id}, key ${this.key}, type ${this.type}`);
@@ -317,7 +318,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
         catch (err) {
             const process = await this.getProcess(internalContext);
-            await process.error(context, err);
+            process.error(context, err);
         }
     }
     async _updateToken(context) {
@@ -369,7 +370,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             }
             catch (err) {
                 const process = await this.getProcess(internalContext);
-                await process.error(context, err);
+                process.error(context, err);
             }
         }
         else {
