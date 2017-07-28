@@ -1,7 +1,7 @@
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {schemaClass} from '@process-engine-js/metadata';
-import { IUserTaskEntity, IUserTaskMessageData} from '@process-engine-js/process_engine_contracts';
+import { IUserTaskEntity, IUserTaskMessageData, IBoundaryEventEntity} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 @schemaClass({
@@ -82,6 +82,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     }
 
   }
+
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 

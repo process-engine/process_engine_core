@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "bluebird": "registry:npm/bluebird#3.4.1+20160909132857"
-  },
-  "globalDependencies": {
-    "node": "registry:dt/node#7.0.0+20170124134802"
-  }
-}

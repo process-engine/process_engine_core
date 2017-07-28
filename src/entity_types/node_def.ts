@@ -222,6 +222,24 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'condition', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get errorName(): string {
+    return this.getProperty(this, 'errorName');
+  }
+
+  public set errorName(value: string) {
+    this.setProperty(this, 'errorName', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get errorCode(): string {
+    return this.getProperty(this, 'errorCode');
+  }
+
+  public set errorCode(value: string) {
+    this.setProperty(this, 'errorCode', value);
+  }
+
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }

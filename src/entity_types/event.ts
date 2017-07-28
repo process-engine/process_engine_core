@@ -2,6 +2,8 @@ import {NodeInstanceEntity} from './node_instance';
 import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import { IMessageSubscription } from '@process-engine-js/messagebus_contracts';
+import { ISubscription } from '@process-engine-js/event_aggregator_contracts';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 import * as moment from 'moment';
@@ -11,6 +13,7 @@ const debugInfo = debug('processengine:info');
 export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
   public config: any = undefined;
+  private _subscription: IMessageSubscription | ISubscription = undefined;
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               entityDependencyHelper: EntityDependencyHelper,
@@ -56,7 +59,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     };
 
     const channelName = `events/timer/${this.id}`;
-    this.eventAggregator.subscribe(channelName, () => {
+    this._subscription = this.eventAggregator.subscribe(channelName, () => {
       this._handleTimerElapsed(context);
     });
 
@@ -69,7 +72,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     const date = moment().add(duration);
 
     const channelName = `events/timer/${this.id}`;
-    this.eventAggregator.subscribeOnce(channelName, () => {
+    this._subscription = this.eventAggregator.subscribeOnce(channelName, () => {
       this._handleTimerElapsed(context);
     });
 
@@ -81,7 +84,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     const date = moment(timerDefinition);
 
     const channelName = `events/timer/${this.id}`;
-    this.eventAggregator.subscribeOnce(channelName, () => {
+    this._subscription = this.eventAggregator.subscribeOnce(channelName, () => {
       this._handleTimerElapsed(context);
     });
 
@@ -108,8 +111,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
       messagebusService: this.messageBusService,
       datastoreService: this.datastoreService
     };
-    this.messagebusSubscription = this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
-
+    this._subscription = await this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
   }
 
   private async _signalHandler(msg: any) {
@@ -156,7 +158,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
       messagebusService: this.messageBusService,
       datastoreService: this.datastoreService
     };
-    this.messagebusSubscription = this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
+    this._subscription = await this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
 
   }
 
@@ -186,4 +188,9 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     binding.entity._sendProceed(context, data, source);
   }
 
+  public dispose(): void {
+    if (this._subscription) {
+      this._subscription.dispose();
+    }
+  }
 }

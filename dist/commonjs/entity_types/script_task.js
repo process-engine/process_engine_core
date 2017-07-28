@@ -37,7 +37,7 @@ class ScriptTaskEntity extends node_instance_1.NodeInstanceEntity {
             }
             catch (err) {
                 result = err;
-                await this.error(context, err);
+                this.error(context, err);
             }
             let finalResult = result;
             const toPojoOptions = { skipCalculation: true };

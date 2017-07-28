@@ -29,16 +29,16 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
             let paramString;
             props.forEach((prop) => {
                 if (prop.name === 'module') {
-                    serviceModule = prop.value;
+                    serviceModule = this.parseExtensionProperty(prop.value, tokenData, context);
                 }
                 if (prop.name === 'method') {
-                    serviceMethod = prop.value;
+                    serviceMethod = this.parseExtensionProperty(prop.value, tokenData, context);
                 }
                 if (prop.name === 'params') {
-                    paramString = prop.value;
+                    paramString = this.parseExtensionProperty(prop.value, tokenData, context);
                 }
                 if (prop.name === 'namespace') {
-                    namespace = prop.value;
+                    namespace = this.parseExtensionProperty(prop.value, tokenData, context);
                 }
             });
             if (serviceModule && serviceMethod) {
@@ -47,13 +47,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 try {
                     const self = this;
                     const cb = function (data) {
-                        const eventData = {
-                            action: 'event',
-                            event: 'condition',
-                            data: data
-                        };
-                        const event = self.eventAggregator.createEntityEvent(eventData, self, context, (('participant' in self) ? { participantId: self.participant } : null));
-                        self.eventAggregator.publish('/processengine/node/' + self.id, event);
+                        self.triggerEvent(context, 'data', data);
                     };
                     const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
                     result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
@@ -61,7 +55,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 catch (err) {
                     result = err;
                     continueEnd = false;
-                    await this.error(context, err);
+                    this.error(context, err);
                 }
                 let finalResult = result;
                 const toPojoOptions = { skipCalculation: true };

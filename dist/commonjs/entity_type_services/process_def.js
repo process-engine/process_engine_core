@@ -90,7 +90,7 @@ class ProcessDefEntityTypeService {
     }
     parseBpmnXml(xml) {
         const moddle = BpmnModdle();
-        return new BluebirdPromise((resolve, reject) => {
+        return (new BluebirdPromise((resolve, reject) => {
             moddle.fromXML(xml, (error, definitions) => {
                 if (error) {
                     reject(error);
@@ -100,7 +100,7 @@ class ProcessDefEntityTypeService {
                     resolve(bpmnDiagram);
                 }
             });
-        });
+        }));
     }
     async start(context, params, options) {
         const key = params ? params.key : undefined;
