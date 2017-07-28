@@ -402,18 +402,18 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                 if (eventType === 'bpmn:SignalEventDefinition') {
                     const signalId = node.eventDefinitions[0].signalRef ? node.eventDefinitions[0].signalRef.id : undefined;
                     const signal = bpmnDiagram.getSignalById(signalId);
-                    nodeDefEntity.signal = signal.name;
+                    nodeDefEntity.signal = signal ? signal.name : null;
                 }
                 if (eventType === 'bpmn:MessageEventDefinition') {
                     const messageId = node.eventDefinitions[0].messageRef ? node.eventDefinitions[0].messageRef.id : undefined;
                     const message = bpmnDiagram.getMessageById(messageId);
-                    nodeDefEntity.message = message.name;
+                    nodeDefEntity.message = message ? message.name : null;
                 }
                 if (eventType === 'bpmn:ErrorEventDefinition') {
                     const errorId = node.eventDefinitions[0].errorRef ? node.eventDefinitions[0].errorRef.id : undefined;
                     const errorDef = bpmnDiagram.getErrorById(errorId);
-                    nodeDefEntity.errorName = errorDef.name;
-                    nodeDefEntity.errorCode = errorDef.errorCode;
+                    nodeDefEntity.errorName = errorDef ? errorDef.name : null;
+                    nodeDefEntity.errorCode = errorDef ? errorDef.errorCode : null;
                 }
                 if (eventType === 'bpmn:ConditionalEventDefinition') {
                     const condition = node.eventDefinitions[0].condition ? node.eventDefinitions[0].condition.body : null;
