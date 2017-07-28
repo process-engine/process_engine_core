@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
+const event_1 = require("./event");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -367,6 +368,18 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         nodeInstance.eventAggregatorSubscription.dispose();
         const messagebusSubscription = await nodeInstance.messagebusSubscription;
         messagebusSubscription.cancel();
+        if (this instanceof event_1.EventEntity) {
+            if (this._subscription) {
+                this._subscription.dispose();
+            }
+        }
+        const activeInstancesKeys = Object.keys(this.process.activeInstances);
+        for (let i = 0; i < activeInstancesKeys.length; i++) {
+            const boundaryEntity = this.process.activeInstances[activeInstancesKeys[i]];
+            if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
+                await boundaryEntity.end(context, true);
+            }
+        }
         if (!isEndEvent && !cancelFlow) {
             try {
                 await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);

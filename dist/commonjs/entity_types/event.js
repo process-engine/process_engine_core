@@ -9,6 +9,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
     constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
         super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
         this.config = undefined;
+        this._subscription = undefined;
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
@@ -40,7 +41,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             second: duration.seconds()
         };
         const channelName = `events/timer/${this.id}`;
-        this.eventAggregator.subscribe(channelName, () => {
+        this._subscription = this.eventAggregator.subscribe(channelName, () => {
             this._handleTimerElapsed(context);
         });
         await this.timingService.periodic(timingRule, channelName, context);
@@ -49,7 +50,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
         const duration = moment.duration(timerDefinition);
         const date = moment().add(duration);
         const channelName = `events/timer/${this.id}`;
-        this.eventAggregator.subscribeOnce(channelName, () => {
+        this._subscription = this.eventAggregator.subscribeOnce(channelName, () => {
             this._handleTimerElapsed(context);
         });
         await this.timingService.once(date, channelName, context);
@@ -57,7 +58,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
     async _startDateTimer(timerDefinition, context) {
         const date = moment(timerDefinition);
         const channelName = `events/timer/${this.id}`;
-        this.eventAggregator.subscribeOnce(channelName, () => {
+        this._subscription = this.eventAggregator.subscribeOnce(channelName, () => {
             this._handleTimerElapsed(context);
         });
         await this.timingService.once(date, channelName, context);
@@ -79,7 +80,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             messagebusService: this.messageBusService,
             datastoreService: this.datastoreService
         };
-        this.messagebusSubscription = this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
+        this._subscription = await this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
     }
     async _signalHandler(msg) {
         const binding = this;
@@ -116,7 +117,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             messagebusService: this.messageBusService,
             datastoreService: this.datastoreService
         };
-        this.messagebusSubscription = this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
+        this._subscription = await this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
     }
     async _messageHandler(msg) {
         const binding = this;
@@ -135,6 +136,11 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
         const data = (msg && msg.data) ? msg.data : null;
         debugInfo(`message '${binding.entity.nodeDef.message}' received for node key '${binding.entity.key}'`);
         binding.entity._sendProceed(context, data, source);
+    }
+    dispose() {
+        if (this._subscription) {
+            this._subscription.dispose();
+        }
     }
 }
 exports.EventEntity = EventEntity;

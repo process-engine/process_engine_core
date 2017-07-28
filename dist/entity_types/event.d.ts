@@ -5,6 +5,7 @@ import { IEventEntity } from '@process-engine-js/process_engine_contracts';
 import { NodeInstanceEntityDependencyHelper } from './node_instance';
 export declare class EventEntity extends NodeInstanceEntity implements IEventEntity {
     config: any;
+    private _subscription;
     constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
     initialize(derivedClassInstance: IEntity): Promise<void>;
     protected initializeTimer(): Promise<void>;
@@ -17,4 +18,5 @@ export declare class EventEntity extends NodeInstanceEntity implements IEventEnt
     private _signalHandler(msg);
     protected initializeMessage(): Promise<void>;
     private _messageHandler(msg);
+    dispose(): void;
 }

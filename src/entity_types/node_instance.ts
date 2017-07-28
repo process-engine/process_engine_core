@@ -6,6 +6,7 @@ import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
 import { IMessageBusService, IMessageSubscription } from '@process-engine-js/messagebus_contracts';
 import { IEventAggregator, ISubscription } from '@process-engine-js/event_aggregator_contracts';
 import { ITimingService } from '@process-engine-js/timing_contracts';
+import { EventEntity } from './event';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
@@ -505,6 +506,22 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     nodeInstance.eventAggregatorSubscription.dispose();
     const messagebusSubscription = await nodeInstance.messagebusSubscription;
     messagebusSubscription.cancel();
+
+    // if event entity dispose subscriptions for timers, messages & signals
+    if (this instanceof EventEntity) {
+      if ((<any>this)._subscription) {
+        (<any>this)._subscription.dispose();
+      }
+    }
+
+    // dispose boundary events
+    const activeInstancesKeys = Object.keys(this.process.activeInstances);
+    for (let i = 0; i < activeInstancesKeys.length; i++) {
+      const boundaryEntity = <IBoundaryEventEntity>this.process.activeInstances[activeInstancesKeys[i]];
+      if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
+        await boundaryEntity.end(context, true);
+      }
+    }
 
     if (!isEndEvent && !cancelFlow) {
       try {
