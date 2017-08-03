@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const process_engine_contracts_1 = require("@process-engine-js/process_engine_contracts");
+const bpmn_diagram_1 = require("../bpmn_diagram");
 const BluebirdPromise = require("bluebird");
 const BpmnModdle = require("bpmn-moddle");
 class ProcessDefEntityTypeService {
@@ -96,7 +96,7 @@ class ProcessDefEntityTypeService {
                     reject(error);
                 }
                 else {
-                    const bpmnDiagram = new process_engine_contracts_1.BpmnDiagram(definitions);
+                    const bpmnDiagram = new bpmn_diagram_1.BpmnDiagram(definitions);
                     resolve(bpmnDiagram);
                 }
             });

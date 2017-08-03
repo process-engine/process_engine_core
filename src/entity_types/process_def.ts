@@ -1,7 +1,7 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions,
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
-import { IProcessDefEntityTypeService, BpmnDiagram, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
+import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
   IProcessRepository, TimerDefinitionType, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
@@ -9,6 +9,7 @@ import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
 import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService, IDataMessage } from '@process-engine-js/messagebus_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
+import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as moment from 'moment';
 import * as debug from 'debug';

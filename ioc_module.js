@@ -25,7 +25,7 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
-
+const processEngineContractsIocModule = require('@process-engine-js/process_engine_contracts/ioc_module');
 
 
 function registerInContainer(container) {
@@ -124,6 +124,8 @@ function registerInContainer(container) {
   container.register('UserTaskEntity', UserTaskEntity)
     .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
+
+  processEngineContractsIocModule.registerInContainer(container);
 }
 
 module.exports.registerInContainer = registerInContainer;

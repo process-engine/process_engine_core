@@ -14,16 +14,16 @@
     "Simon Reymann <simon.reymann@quantusflow.com>"
   ],
   "dependencies": {
-    "@process-engine-js/core_contracts": "^1.0.34",
+    "@process-engine-js/core_contracts": "^1.0.50",
     "@process-engine-js/data_model": "^1.0.41",
-    "@process-engine-js/data_model_contracts": "^1.0.44",
+    "@process-engine-js/data_model_contracts": "^1.0.68",
     "@process-engine-js/event_aggregator_contracts": "^1.0.2",
     "@process-engine-js/feature_contracts": "^1.0.0",
     "@process-engine-js/invocation_contracts": "^1.0.1",
     "@process-engine-js/messagebus_contracts": "^1.0.14",
     "@process-engine-js/metadata": "^1.0.4",
     "@process-engine-js/metadata_contracts": "^1.0.1",
-    "@process-engine-js/process_engine_contracts": "^1.0.26",
+    "@process-engine-js/process_engine_contracts": "^1.0.27",
     "@process-engine-js/routing_contracts": "^1.0.0",
     "@process-engine-js/timing_contracts": "^1.0.4",
     "addict-ioc": "^2.0.0",
@@ -33,10 +33,10 @@
     "moment": "^2.18.1"
   },
   "devDependencies": {
-    "@process-engine-js/gulptraum": "^1.2.5",
-    "@types/bluebird": "^3.5.8",
-    "@types/node": "^8.0.16",
+    "gulptraum": "^2.1.3",
+    "gulptraum-typescript": "^1.0.0",
     "gulp": "^3.9.1",
-    "tsconfig": "^6.0.0"
+    "tsconfig": "^6.0.0",
+    "tslint-config-5minds": "^1.0.3"
   }
 }
