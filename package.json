@@ -37,6 +37,7 @@
     "gulptraum-typescript": "^1.0.0",
     "gulp": "^3.9.1",
     "tsconfig": "^6.0.0",
+    "tslint": "^5.4.3",
     "tslint-config-5minds": "^1.0.3"
   }
 }

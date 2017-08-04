@@ -1,0 +1,744 @@
+{
+  "type": "object",
+  "properties": {
+    "messageBusService": {
+      "$ref": "#/definitions/IMessageBusService"
+    },
+    "eventAggregator": {
+      "$ref": "#/definitions/IEventAggregator"
+    },
+    "iamService": {
+      "$ref": "#/definitions/IIamService"
+    },
+    "nodeInstanceEntityTypeService": {
+      "$ref": "#/definitions/INodeInstanceEntityTypeService"
+    },
+    "processEngineService": {
+      "$ref": "#/definitions/IProcessEngineService"
+    },
+    "timingService": {
+      "$ref": "#/definitions/ITimingService"
+    }
+  },
+  "definitions": {
+    "IMessageBusService": {
+      "type": "object",
+      "properties": {
+        "isMaster": {
+          "type": "boolean"
+        },
+        "publish": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "message",
+              "type": "IMessage"
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": "IMessageOptions"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        },
+        "subscribe": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "callback",
+              "type": "Function"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IMessageSubscription"
+            }
+          ]
+        },
+        "respond": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "callback",
+              "type": "Function"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IMessageSubscription"
+            }
+          ]
+        },
+        "request": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "message",
+              "type": "IMessage"
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": "IMessageOptions"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IMessage"
+            }
+          ]
+        },
+        "createEntityMessage": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "data"
+            },
+            {
+              "name": "source",
+              "type": "IEntity"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "IEntityMessage"
+        },
+        "createDatastoreMessage": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "options",
+              "type": "IDatastoreMessageOptions"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "data",
+              "optional": true
+            }
+          ],
+          "returnType": "IDatastoreMessage"
+        },
+        "createDataMessage": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "data"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "metadataOptions",
+              "optional": true,
+              "type": "object"
+            }
+          ],
+          "returnType": "IDataMessage"
+        },
+        "createErrorMessage": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "errorMessage",
+              "type": "string"
+            },
+            {
+              "name": "error"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "IErrorMessage"
+        },
+        "initialize": {
+          "type": "object",
+          "parameters": [],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        },
+        "verifyMessage": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "message",
+              "type": "IMessage"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        }
+      }
+    },
+    "IEventAggregator": {
+      "type": "object",
+      "properties": {
+        "publish": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "event",
+              "type": "union",
+              "typeArguments": [
+                {
+                  "type": "string"
+                },
+                {}
+              ]
+            },
+            {
+              "name": "data",
+              "optional": true
+            }
+          ]
+        },
+        "subscribe": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "event",
+              "type": "union",
+              "typeArguments": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "Function"
+                }
+              ]
+            },
+            {
+              "name": "callback",
+              "type": "Function"
+            }
+          ],
+          "returnType": "ISubscription"
+        },
+        "subscribeOnce": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "event",
+              "type": "union",
+              "typeArguments": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "Function"
+                }
+              ]
+            },
+            {
+              "name": "callback",
+              "type": "Function"
+            }
+          ],
+          "returnType": "ISubscription"
+        },
+        "createEntityEvent": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "data"
+            },
+            {
+              "name": "source",
+              "type": "IEntity"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "metadataOptions",
+              "optional": true,
+              "type": "object"
+            }
+          ],
+          "returnType": "IEvent"
+        }
+      }
+    },
+    "IIamService": {
+      "type": "object",
+      "properties": {
+        "authenticateByUsername": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "username",
+              "type": "string"
+            },
+            {
+              "name": "password",
+              "type": "string"
+            },
+            {
+              "name": "tokenType",
+              "optional": true,
+              "type": "TokenType"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IAuthObject"
+            }
+          ]
+        },
+        "authenticateBySystemUser": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "systemUser",
+              "type": "string"
+            },
+            {
+              "name": "tokenType",
+              "optional": true,
+              "type": "TokenType"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "createInternalContext": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "systemUser",
+              "type": "string"
+            },
+            {
+              "name": "tokenType",
+              "optional": true,
+              "type": "TokenType"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "ExecutionContext"
+            }
+          ]
+        },
+        "resolveExecutionContext": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "encodedToken",
+              "type": "string"
+            },
+            {
+              "name": "tokenType",
+              "optional": true,
+              "type": "TokenType"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "ExecutionContext"
+            }
+          ]
+        },
+        "hasClaim": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "claim",
+              "type": "string"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "getIdentity": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IIdentity"
+            }
+          ]
+        },
+        "getIdentityEntity": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IUserEntity"
+            }
+          ]
+        },
+        "logout": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "initialize": {
+          "type": "object",
+          "parameters": []
+        },
+        "flattenRoles": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "roles",
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "returnType": "Array",
+          "returnTypeArguments": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "getGuest": {
+          "type": "object",
+          "parameters": [],
+          "returnType": "IIdentity"
+        },
+        "createContextFromAuthObject": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "authObject",
+              "type": "IAuthObject"
+            },
+            {
+              "name": "tokenType",
+              "optional": true,
+              "type": "TokenType"
+            }
+          ],
+          "returnType": "ExecutionContext"
+        },
+        "createAuthObject": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "optional": true,
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IAuthObject"
+            }
+          ]
+        },
+        "validateCredentials": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "username",
+              "type": "string"
+            },
+            {
+              "name": "password",
+              "type": "string"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "INodeInstanceEntityTypeService": {
+      "type": "object",
+      "properties": {
+        "createNode": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "entityType",
+              "type": "IEntityType",
+              "typeArguments": [
+                {
+                  "type": "IEntity"
+                }
+              ]
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "IEntity"
+            }
+          ]
+        },
+        "createNextNode": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "source"
+            },
+            {
+              "name": "nextDef"
+            },
+            {
+              "name": "token"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        },
+        "continueExecution": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "nodeInstance",
+              "type": "IEntity"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        },
+        "continueFromRemote": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "params",
+              "type": "IParamsContinueFromRemote"
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": "IPublicGetOptions"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        }
+      }
+    },
+    "IProcessEngineService": {
+      "type": "object",
+      "properties": {
+        "initialize": {
+          "type": "object",
+          "parameters": [],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        },
+        "start": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "options",
+              "type": "IPublicGetOptions"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "addActiveInstance": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "entity",
+              "type": "IEntity"
+            }
+          ]
+        },
+        "removeActiveInstance": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "entity",
+              "type": "IEntity"
+            }
+          ]
+        },
+        "activeInstances": {},
+        "config": {}
+      }
+    },
+    "ITimingService": {
+      "type": "object",
+      "properties": {
+        "once": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "date",
+              "type": "moment.Moment"
+            },
+            {
+              "name": "eventName",
+              "type": "string"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "periodic": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "rule",
+              "type": "ITimingRule"
+            },
+            {
+              "name": "eventName",
+              "type": "string"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "cancel": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "timerId",
+              "type": "string"
+            },
+            {
+              "name": "context",
+              "type": "ExecutionContext"
+            }
+          ],
+          "returnType": "Promise",
+          "returnTypeArguments": [
+            {}
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "http://json-schema.org/draft-06/schema#"
+}

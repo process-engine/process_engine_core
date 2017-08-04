@@ -261,7 +261,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     };
 
     const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
-    return boundaryColl;
+    return boundaryColl as EntityCollection;
   }
 
   private _extractFeatures(): Array<IFeature> {
