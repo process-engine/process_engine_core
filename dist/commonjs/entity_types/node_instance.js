@@ -206,16 +206,22 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         map.set('data', 'bpmn:ConditionalEventDefinition');
         const bpmnType = map.get(eventType);
         const activeInstancesKeys = Object.keys(this.process.activeInstances);
+        const boundaries = [];
         for (let i = 0; i < activeInstancesKeys.length; i++) {
             const boundaryEntity = this.process.activeInstances[activeInstancesKeys[i]];
             if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id) && (boundaryEntity.nodeDef.eventType === bpmnType)) {
-                await this.boundaryEvent(context, boundaryEntity, data, source, applicationId, participant);
+                boundaries.push(boundaryEntity);
             }
-            else {
-                if (eventType === 'error' || eventType === 'cancel') {
-                    await this._publishToApi(context, eventType, data);
-                    await this.end(context);
-                }
+        }
+        if (boundaries.length > 0) {
+            for (let i = 0; i < boundaries.length; i++) {
+                await this.boundaryEvent(context, boundaries[i], data, source, applicationId, participant);
+            }
+        }
+        else {
+            if (eventType === 'error' || eventType === 'cancel') {
+                await this._publishToApi(context, eventType, data);
+                await this.end(context);
             }
         }
     }

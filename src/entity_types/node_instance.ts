@@ -306,19 +306,27 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     // get boundary event instance and handle event
     const activeInstancesKeys = Object.keys(this.process.activeInstances);
+    const boundaries = [];
     for (let i = 0; i < activeInstancesKeys.length; i++) {
       const boundaryEntity = <IBoundaryEventEntity>this.process.activeInstances[activeInstancesKeys[i]];
       if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id) && (boundaryEntity.nodeDef.eventType === bpmnType)) {
-        // we have a boundary, let it handle the event
-        await this.boundaryEvent(context, boundaryEntity, data, source, applicationId, participant);
-      } else {
-        // error or cancel ends the node anyway
-        if (eventType === 'error' || eventType === 'cancel') {
-          await this._publishToApi(context, eventType, data);
-          await this.end(context);
-        }
+        boundaries.push(boundaryEntity); 
       }
     }
+
+    if (boundaries.length > 0) {
+      // we have 1 or more boundaries, let it handle the event
+      for (let i = 0; i < boundaries.length; i++) {
+        await this.boundaryEvent(context, boundaries[i], data, source, applicationId, participant);
+      }
+    } else {
+      // error or cancel ends the node anyway
+      if (eventType === 'error' || eventType === 'cancel') {
+        await this._publishToApi(context, eventType, data);
+        await this.end(context);
+      }
+    }
+    
   }
 
 
