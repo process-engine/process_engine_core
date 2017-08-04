@@ -402,7 +402,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodes = bpmnDiagram.getNodes(key);
 
-    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject);
+    const nodeCache = await this._updateNodes(nodes, laneCache, bpmnDiagram as BpmnDiagram, context, counter, helperObject);
 
     await this._createBoundaries(nodes, nodeCache, context);
 
