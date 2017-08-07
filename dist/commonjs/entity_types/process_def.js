@@ -194,8 +194,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
             }
         }
     }
-    async updateBpmn(context, params) {
-        const xml = params && params.xml ? params.xml : null;
+    async updateBpmn(context, xml) {
         if (xml) {
             this.xml = xml;
             this.counter = this.counter + 1;

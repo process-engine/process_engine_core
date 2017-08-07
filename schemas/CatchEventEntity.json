@@ -6148,7 +6148,35 @@
             },
             {
               "name": "results",
-              "type": "IValidationResults"
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "RegistrationKey"
+                }
+              ]
+            },
+            {
+              "name": "missing",
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "RegistrationKey"
+                }
+              ]
+            },
+            {
+              "name": "recursive",
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "Array",
+                  "typeArguments": [
+                    {
+                      "type": "RegistrationKey"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "name": "nest",
@@ -6159,55 +6187,6 @@
                   "type": "RegistrationKey"
                 }
               ]
-            }
-          ]
-        },
-        "validateDependencies": {
-          "type": "object",
-          "parameters": [
-            {
-              "name": "keys",
-              "type": "Array",
-              "typeArguments": [
-                {
-                  "type": "RegistrationKey"
-                }
-              ]
-            }
-          ],
-          "returnType": "Array",
-          "returnTypeArguments": [
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "_valDependencies": {
-          "type": "object",
-          "parameters": [
-            {
-              "name": "registration",
-              "type": "IRegistration"
-            },
-            {
-              "name": "results",
-              "type": "IValidationResults"
-            },
-            {
-              "name": "nest",
-              "optional": true,
-              "type": "Array",
-              "typeArguments": [
-                {
-                  "type": "IRegistration"
-                }
-              ]
-            }
-          ],
-          "returnType": "Array",
-          "returnTypeArguments": [
-            {
-              "type": "string"
             }
           ]
         },
@@ -7409,8 +7388,7 @@
           "type": "object",
           "parameters": [
             {
-              "name": "instance",
-              "type": "T"
+              "name": "instance"
             },
             {
               "name": "registration",
@@ -7419,11 +7397,6 @@
             {
               "name": "runtimeConfig",
               "optional": true
-            }
-          ],
-          "typeParameters": [
-            {
-              "name": "T"
             }
           ]
         },
@@ -7501,7 +7474,7 @@
             }
           ]
         },
-        "validateDependencies2": {
+        "validateDependencies": {
           "type": "object",
           "parameters": [
             {
@@ -7517,7 +7490,7 @@
           "returnType": "Array",
           "returnTypeArguments": [
             {
-              "type": "string"
+              "type": "IValidationError"
             }
           ]
         },
@@ -7547,7 +7520,7 @@
           "returnType": "Array",
           "returnTypeArguments": [
             {
-              "type": "string"
+              "type": "IValidationError"
             }
           ]
         },
@@ -7571,12 +7544,6 @@
                 }
               ]
             }
-          ],
-          "returnType": "Array",
-          "returnTypeArguments": [
-            {
-              "type": "string"
-            }
           ]
         },
         "_historyHasCircularBreak": {
@@ -7598,18 +7565,50 @@
           ],
           "returnType": "boolean"
         },
+        "_createValidationError": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "registration",
+              "type": "IRegistration"
+            },
+            {
+              "name": "history",
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "IRegistration"
+                }
+              ]
+            },
+            {
+              "name": "errorMessage",
+              "type": "string"
+            }
+          ],
+          "returnType": "IValidationError"
+        },
         "_validateOverwrittenKeys": {
           "type": "object",
           "parameters": [
             {
               "name": "registration",
               "type": "IRegistration"
+            },
+            {
+              "name": "history",
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "IRegistration"
+                }
+              ]
             }
           ],
           "returnType": "Array",
           "returnTypeArguments": [
             {
-              "type": "string"
+              "type": "IValidationError"
             }
           ]
         },
@@ -7623,12 +7622,21 @@
             {
               "name": "overwrittenKey",
               "type": "RegistrationKey"
+            },
+            {
+              "name": "history",
+              "type": "Array",
+              "typeArguments": [
+                {
+                  "type": "IRegistration"
+                }
+              ]
             }
           ],
           "returnType": "Array",
           "returnTypeArguments": [
             {
-              "type": "string"
+              "type": "IValidationError"
             }
           ]
         },
@@ -7845,11 +7853,11 @@
           ],
           "returnType": "string"
         },
-        "parentRegistry": {
-          "$ref": "#/definitions/IRegistry"
-        },
         "registrations": {
           "$ref": "#/definitions/IRegistrationsCache"
+        },
+        "parentRegistry": {
+          "$ref": "#/definitions/IRegistry"
         },
         "_mergeSettings": {
           "type": "object",
@@ -8018,6 +8026,11 @@
               "type": "RegistrationKey"
             }
           ],
+          "typeParameters": [
+            {
+              "name": "T"
+            }
+          ],
           "returnType": "IRegistration"
         },
         "createRegistration": {
@@ -8118,6 +8131,11 @@
               "type": "RegistrationKey"
             }
           ],
+          "typeParameters": [
+            {
+              "name": "T"
+            }
+          ],
           "returnType": "IRegistration"
         },
         "getRegistrationKeys": {
@@ -8165,15 +8183,7 @@
               "type": "Array",
               "typeArguments": [
                 {
-                  "type": "union",
-                  "typeArguments": [
-                    {
-                      "type": "ITags"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
+                  "type": "string"
                 }
               ]
             }
@@ -8185,28 +8195,42 @@
             }
           ]
         },
-        "_buildTagQuery": {
+        "getKeysByAttributes": {
           "type": "object",
           "parameters": [
             {
-              "name": "tags",
-              "type": "Array",
-              "typeArguments": [
-                {
-                  "type": "union",
-                  "typeArguments": [
-                    {
-                      "type": "ITags"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              ]
+              "name": "attributes",
+              "type": "ITags"
             }
           ],
-          "returnType": "ITags"
+          "returnType": "Array",
+          "returnTypeArguments": [
+            {
+              "type": "RegistrationKey"
+            }
+          ]
+        },
+        "_hasRegistrationAttributes": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "registration"
+            },
+            {
+              "name": "attributes"
+            }
+          ]
+        },
+        "_hasRegistrationTags": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "registration"
+            },
+            {
+              "name": "tags"
+            }
+          ]
         }
       }
     },
@@ -8292,10 +8316,10 @@
             "type": "string"
           }
         },
-        "wantsLazyInjectionAsync": {
+        "wantsPromiseLazyInjection": {
           "type": "boolean"
         },
-        "lazyDependenciesAsync": {
+        "lazyPromiseDependencies": {
           "type": "array",
           "items": {
             "type": "string"
@@ -8378,10 +8402,10 @@
             "type": "string"
           }
         },
-        "wantsLazyInjectionAsync": {
+        "wantsPromiseLazyInjection": {
           "type": "boolean"
         },
-        "lazyDependenciesAsync": {
+        "lazyPromiseDependencies": {
           "type": "array",
           "items": {
             "type": "string"
@@ -8418,23 +8442,20 @@
               "type": "ITypeRegistration",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             }
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
           "returnType": "Type",
           "returnTypeArguments": [
             {
-              "type": "V"
+              "type": "T"
             }
           ]
         },
@@ -8455,17 +8476,14 @@
               "type": "ITypeRegistration",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             }
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
           "returnType": "Promise",
@@ -8474,7 +8492,7 @@
               "type": "Type",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             }
@@ -8496,16 +8514,7 @@
               "name": "registration",
               "type": "IRegistration"
             }
-          ],
-          "typeParameters": [
-            {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
-            }
-          ],
-          "returnType": "V"
+          ]
         },
         "resolveObjectAsync": {
           "type": "object",
@@ -8524,19 +8533,9 @@
               "type": "IRegistration"
             }
           ],
-          "typeParameters": [
-            {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
-            }
-          ],
           "returnType": "Promise",
           "returnTypeArguments": [
-            {
-              "type": "V"
-            }
+            {}
           ]
         },
         "resolveFactory": {
@@ -8555,16 +8554,7 @@
               "name": "registration",
               "type": "IRegistration"
             }
-          ],
-          "typeParameters": [
-            {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
-            }
-          ],
-          "returnType": "V"
+          ]
         },
         "resolveFactoryAsync": {
           "type": "object",
@@ -8583,19 +8573,9 @@
               "type": "IRegistration"
             }
           ],
-          "typeParameters": [
-            {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
-            }
-          ],
           "returnType": "Promise",
           "returnTypeArguments": [
-            {
-              "type": "V"
-            }
+            {}
           ]
         },
         "createInstance": {
@@ -8618,7 +8598,7 @@
               "type": "ITypeRegistration",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             },
@@ -8640,13 +8620,10 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
-          "returnType": "V"
+          "returnType": "T"
         },
         "createObject": {
           "type": "object",
@@ -8668,7 +8645,7 @@
               "type": "ITypeRegistration",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             },
@@ -8690,13 +8667,10 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
-          "returnType": "V"
+          "returnType": "T"
         },
         "createFactory": {
           "type": "object",
@@ -8718,7 +8692,7 @@
               "type": "ITypeRegistration",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             },
@@ -8740,13 +8714,10 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
-          "returnType": "V"
+          "returnType": "T"
         },
         "resolveConfig": {
           "type": "object",
@@ -8774,17 +8745,14 @@
               "type": "Type",
               "typeArguments": [
                 {
-                  "type": "V"
+                  "type": "T"
                 }
               ]
             }
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
           "returnType": "string"
@@ -8793,16 +8761,7 @@
           "type": "object",
           "parameters": [
             {
-              "name": "object",
-              "type": "V"
-            }
-          ],
-          "typeParameters": [
-            {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "object"
             }
           ],
           "returnType": "string"
@@ -8811,16 +8770,7 @@
           "type": "object",
           "parameters": [
             {
-              "name": "factory",
-              "type": "V"
-            }
-          ],
-          "typeParameters": [
-            {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "factory"
             }
           ],
           "returnType": "string"
@@ -8888,13 +8838,10 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
-          "returnType": "V"
+          "returnType": "T"
         },
         "resolveLazy": {
           "type": "object",
@@ -8918,16 +8865,13 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
           "returnType": "IFactory",
           "returnTypeArguments": [
             {
-              "type": "V"
+              "type": "T"
             }
           ]
         },
@@ -8953,16 +8897,13 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
           "returnType": "Promise",
           "returnTypeArguments": [
             {
-              "type": "V"
+              "type": "T"
             }
           ]
         },
@@ -8988,16 +8929,13 @@
           ],
           "typeParameters": [
             {
-              "name": "V",
-              "constraint": {
-                "type": "T"
-              }
+              "name": "T"
             }
           ],
           "returnType": "IFactoryAsync",
           "returnTypeArguments": [
             {
-              "type": "V"
+              "type": "T"
             }
           ]
         },
@@ -9017,7 +8955,7 @@
           "returnType": "Array",
           "returnTypeArguments": [
             {
-              "type": "string"
+              "type": "IValidationError"
             }
           ]
         },
@@ -9073,6 +9011,11 @@
               "type": "RegistrationKey"
             }
           ],
+          "typeParameters": [
+            {
+              "name": "T"
+            }
+          ],
           "returnType": "IRegistration"
         },
         "getKeysByTags": {
@@ -9083,17 +9026,24 @@
               "type": "Array",
               "typeArguments": [
                 {
-                  "type": "union",
-                  "typeArguments": [
-                    {
-                      "type": "ITags"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
+                  "type": "string"
                 }
               ]
+            }
+          ],
+          "returnType": "Array",
+          "returnTypeArguments": [
+            {
+              "type": "RegistrationKey"
+            }
+          ]
+        },
+        "getKeysByAttributes": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "attributes",
+              "type": "ITags"
             }
           ],
           "returnType": "Array",
@@ -9132,18 +9082,12 @@
             {
               "name": "settings",
               "optional": true,
-              "type": "U"
+              "type": "IRegistrationSettings"
             }
           ],
           "typeParameters": [
             {
               "name": "T"
-            },
-            {
-              "name": "U",
-              "constraint": {
-                "type": "IRegistrationSettings"
-              }
             }
           ],
           "returnType": "ITypeRegistration",
@@ -9161,67 +9105,15 @@
               "type": "RegistrationKey"
             },
             {
-              "name": "object",
-              "type": "T"
+              "name": "object"
             },
             {
               "name": "settings",
               "optional": true,
-              "type": "U"
+              "type": "IRegistrationSettings"
             }
           ],
-          "typeParameters": [
-            {
-              "name": "T"
-            },
-            {
-              "name": "U",
-              "constraint": {
-                "type": "IRegistrationSettings"
-              }
-            }
-          ],
-          "returnType": "IObjectRegistration",
-          "returnTypeArguments": [
-            {
-              "type": "T"
-            }
-          ]
-        },
-        "registerFactory": {
-          "type": "object",
-          "parameters": [
-            {
-              "name": "key",
-              "type": "RegistrationKey"
-            },
-            {
-              "name": "factory",
-              "type": "T"
-            },
-            {
-              "name": "settings",
-              "optional": true,
-              "type": "U"
-            }
-          ],
-          "typeParameters": [
-            {
-              "name": "T"
-            },
-            {
-              "name": "U",
-              "constraint": {
-                "type": "IRegistrationSettings"
-              }
-            }
-          ],
-          "returnType": "IFactoryRegistration",
-          "returnTypeArguments": [
-            {
-              "type": "T"
-            }
-          ]
+          "returnType": "IRegistration"
         },
         "unregister": {
           "type": "object",
@@ -9258,6 +9150,20 @@
       "additionalProperties": {
         "type": "object",
         "properties": {}
+      }
+    },
+    "IRegistrationsCache": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/IRegistration"
+      }
+    },
+    "IRegistration": {
+      "type": "object",
+      "properties": {
+        "settings": {
+          "$ref": "#/definitions/IRegistrationSettings"
+        }
       }
     },
     "IRegistry": {
@@ -9315,6 +9221,11 @@
               "type": "RegistrationKey"
             }
           ],
+          "typeParameters": [
+            {
+              "name": "T"
+            }
+          ],
           "returnType": "IRegistration"
         },
         "getKeysByTags": {
@@ -9325,17 +9236,24 @@
               "type": "Array",
               "typeArguments": [
                 {
-                  "type": "union",
-                  "typeArguments": [
-                    {
-                      "type": "ITags"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
+                  "type": "string"
                 }
               ]
+            }
+          ],
+          "returnType": "Array",
+          "returnTypeArguments": [
+            {
+              "type": "RegistrationKey"
+            }
+          ]
+        },
+        "getKeysByAttributes": {
+          "type": "object",
+          "parameters": [
+            {
+              "name": "attributes",
+              "type": "ITags"
             }
           ],
           "returnType": "Array",
@@ -9374,18 +9292,12 @@
             {
               "name": "settings",
               "optional": true,
-              "type": "U"
+              "type": "IRegistrationSettings"
             }
           ],
           "typeParameters": [
             {
               "name": "T"
-            },
-            {
-              "name": "U",
-              "constraint": {
-                "type": "IRegistrationSettings"
-              }
             }
           ],
           "returnType": "ITypeRegistration",
@@ -9403,67 +9315,15 @@
               "type": "RegistrationKey"
             },
             {
-              "name": "object",
-              "type": "T"
+              "name": "object"
             },
             {
               "name": "settings",
               "optional": true,
-              "type": "U"
+              "type": "IRegistrationSettings"
             }
           ],
-          "typeParameters": [
-            {
-              "name": "T"
-            },
-            {
-              "name": "U",
-              "constraint": {
-                "type": "IRegistrationSettings"
-              }
-            }
-          ],
-          "returnType": "IObjectRegistration",
-          "returnTypeArguments": [
-            {
-              "type": "T"
-            }
-          ]
-        },
-        "registerFactory": {
-          "type": "object",
-          "parameters": [
-            {
-              "name": "key",
-              "type": "RegistrationKey"
-            },
-            {
-              "name": "factory",
-              "type": "T"
-            },
-            {
-              "name": "settings",
-              "optional": true,
-              "type": "U"
-            }
-          ],
-          "typeParameters": [
-            {
-              "name": "T"
-            },
-            {
-              "name": "U",
-              "constraint": {
-                "type": "IRegistrationSettings"
-              }
-            }
-          ],
-          "returnType": "IFactoryRegistration",
-          "returnTypeArguments": [
-            {
-              "type": "T"
-            }
-          ]
+          "returnType": "IRegistration"
         },
         "unregister": {
           "type": "object",
@@ -9492,20 +9352,6 @@
               ]
             }
           ]
-        }
-      }
-    },
-    "IRegistrationsCache": {
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/IRegistration"
-      }
-    },
-    "IRegistration": {
-      "type": "object",
-      "properties": {
-        "settings": {
-          "$ref": "#/definitions/IRegistrationSettings"
         }
       }
     },

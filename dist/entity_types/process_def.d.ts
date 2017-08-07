@@ -45,7 +45,7 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     getLaneCollection(context: ExecutionContext): Promise<EntityCollection>;
     readonly features: Array<IFeature>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference>;
-    updateBpmn(context: ExecutionContext, params?: any): Promise<any>;
+    updateBpmn(context: ExecutionContext, xml: string): Promise<any>;
     private _parseTimerDefinitionType(eventDefinition);
     private _parseTimerDefinition(eventDefinition);
     startTimer(context: ExecutionContext): Promise<void>;

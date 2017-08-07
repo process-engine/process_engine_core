@@ -190,8 +190,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                 }
             }
         }
-        async updateBpmn(context, params) {
-            const xml = params && params.xml ? params.xml : null;
+        async updateBpmn(context, xml) {
             if (xml) {
                 this.xml = xml;
                 this.counter = this.counter + 1;

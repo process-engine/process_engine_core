@@ -242,6 +242,10 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                     case 'bpmn:ErrorEventDefinition':
                         const errCode = data.number || data.code || '';
                         if ((boundaryDef.errorCode && data.errorCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
+                            const processToken = this.processToken;
+                            const tokenData = processToken.data || {};
+                            tokenData.current = data;
+                            processToken.data = tokenData;
                             await this._publishToApi(context, 'cancel', data);
                             eventEntity.changeState(context, 'end', this);
                             await this.end(context, true);
@@ -259,20 +263,48 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                         break;
                     case 'bpmn:SignalEventDefinition':
                         if (boundaryDef.cancelActivity) {
+                            const processToken = this.processToken;
+                            const tokenData = processToken.data || {};
+                            tokenData.current = data;
+                            processToken.data = tokenData;
                             eventEntity.changeState(context, 'end', this);
                             this.cancel(internalContext);
                         }
                         else {
+                            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                            const newToken = await processTokenEntityType.createEntity(internalContext);
+                            newToken.process = this.process;
+                            const processToken = this.processToken;
+                            const tokenData = processToken.data || {};
+                            tokenData.current = data;
+                            newToken.data = processToken.data;
+                            this.processToken = newToken;
                             await this._publishToApi(context, 'signal', data);
                             eventEntity.changeState(context, 'follow', this);
                         }
                         break;
                     case 'bpmn:MessageEventDefinition':
                         if (boundaryDef.cancelActivity) {
+                            const processToken = this.processToken;
+                            const tokenData = processToken.data || {};
+                            tokenData.current = data;
+                            processToken.data = tokenData;
                             eventEntity.changeState(context, 'end', this);
                             this.cancel(internalContext);
                         }
                         else {
+                            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                            const newToken = await processTokenEntityType.createEntity(internalContext);
+                            newToken.process = this.process;
+                            const processToken = this.processToken;
+                            const tokenData = processToken.data || {};
+                            tokenData.current = data;
+                            newToken.data = processToken.data;
+                            this.processToken = newToken;
+                            if (this.nodeDef.processDef.persist) {
+                                await newToken.save(internalContext, { reloadAfterSave: false });
+                            }
+                            this.processToken = newToken;
                             await this._publishToApi(context, 'message', data);
                             eventEntity.changeState(context, 'follow', this);
                         }
@@ -296,10 +328,16 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             }
                             if (result) {
                                 if (boundaryDef.cancelActivity) {
+                                    processToken.data = tokenData;
                                     eventEntity.changeState(context, 'end', this);
                                     this.cancel(internalContext);
                                 }
                                 else {
+                                    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                                    const newToken = await processTokenEntityType.createEntity(internalContext);
+                                    newToken.process = this.process;
+                                    newToken.data = tokenData;
+                                    this.processToken = newToken;
                                     await this._publishToApi(context, 'conditional', data);
                                     eventEntity.changeState(context, 'follow', this);
                                 }

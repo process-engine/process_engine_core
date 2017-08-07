@@ -188,8 +188,8 @@
           "type": "ExecutionContext"
         },
         {
-          "name": "params",
-          "optional": true
+          "name": "xml",
+          "type": "string"
         }
       ],
       "returnType": "Promise",

@@ -284,8 +284,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   }
 
-  public async updateBpmn(context: ExecutionContext, params?: any): Promise<any> {
-    const xml = params && params.xml ? params.xml : null;
+  public async updateBpmn(context: ExecutionContext, xml: string): Promise<any> {
+    
     if (xml) {
       this.xml = xml;
       this.counter = this.counter + 1;
