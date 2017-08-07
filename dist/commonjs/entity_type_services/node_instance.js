@@ -308,18 +308,24 @@ class NodeInstanceEntityTypeService {
                         };
                         let data;
                         if (processDef.persist) {
-                            data = {
-                                source: nodeInstance.getEntityReference().toPojo(),
-                                nextDef: nextDef.getEntityReference().toPojo(),
-                                token: currentToken.getEntityReference().toPojo()
-                            };
+                            data = [
+                                null,
+                                {
+                                    source: nodeInstance.getEntityReference().toPojo(),
+                                    nextDef: nextDef.getEntityReference().toPojo(),
+                                    token: currentToken.getEntityReference().toPojo()
+                                }
+                            ];
                         }
                         else {
-                            data = {
-                                source: await nodeInstance.toPojo(internalContext, { maxDepth: 1 }),
-                                nextDef: nextDef.getEntityReference().toPojo(),
-                                token: await currentToken.toPojo(internalContext, { maxDepth: 1 })
-                            };
+                            data = [
+                                null,
+                                {
+                                    source: await nodeInstance.toPojo(internalContext, { maxDepth: 1 }),
+                                    nextDef: nextDef.getEntityReference().toPojo(),
+                                    token: await currentToken.toPojo(internalContext, { maxDepth: 1 })
+                                }
+                            ];
                         }
                         const message = this.messagebusService.createDatastoreMessage(options, context, data);
                         try {
