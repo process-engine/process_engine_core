@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -14,7 +14,7 @@
     "Simon Reymann <simon.reymann@quantusflow.com>"
   ],
   "dependencies": {
-    "@process-engine-js/core_contracts": "^2.0.0",
+    "@process-engine-js/core_contracts": "^1.0.50",
     "@process-engine-js/data_model": "^1.0.41",
     "@process-engine-js/data_model_contracts": "^1.0.68",
     "@process-engine-js/event_aggregator_contracts": "^1.0.2",
@@ -23,7 +23,7 @@
     "@process-engine-js/messagebus_contracts": "^1.0.14",
     "@process-engine-js/metadata": "^1.0.4",
     "@process-engine-js/metadata_contracts": "^1.0.1",
-    "@process-engine-js/process_engine_contracts": "^1.0.29",
+    "@process-engine-js/process_engine_contracts": "^2.0.0",
     "@process-engine-js/routing_contracts": "^1.0.0",
     "@process-engine-js/timing_contracts": "^1.0.4",
     "addict-ioc": "^2.0.0",
