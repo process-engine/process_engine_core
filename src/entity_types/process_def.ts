@@ -2,7 +2,7 @@ import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQuery
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
-  IProcessRepository, TimerDefinitionType, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
+  IProcessRepository, TimerDefinitionType, IProcessEngineService, IXmlObject } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
 import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
@@ -284,10 +284,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   }
 
-  public async updateBpmn(context: ExecutionContext, xml: string): Promise<any> {
+  public async updateBpmn(context: ExecutionContext, xml: IXmlObject): Promise<any> {
     
     if (xml) {
-      this.xml = xml;
+      this.xml = xml.xml;
       this.counter = this.counter + 1;
       await this.updateDefinitions(context);
 

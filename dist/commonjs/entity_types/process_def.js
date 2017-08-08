@@ -196,7 +196,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async updateBpmn(context, xml) {
         if (xml) {
-            this.xml = xml;
+            this.xml = xml.xml;
             this.counter = this.counter + 1;
             await this.updateDefinitions(context);
             if (this.internalName && this.path && !this.readonly) {
