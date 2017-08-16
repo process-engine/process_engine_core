@@ -74,7 +74,6 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async initialize(): Promise<void> {
-    this.featureService.initialize();
     await this._initializeMessageBus();
     await this._initializeProcesses();
     await this._startTimers();
@@ -128,8 +127,6 @@ export class ProcessEngineService implements IProcessEngineService {
 
     try {
 
-      await this.messageBusService.initialize();
-
       // Todo: we subscribe on the old channel to leave frontend intact
       // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
@@ -150,7 +147,6 @@ export class ProcessEngineService implements IProcessEngineService {
       overwriteExisting: false
     };
 
-    this.processRepository.initialize();
 
     const processes = this.processRepository.getProcessesByCategory('internal');
 

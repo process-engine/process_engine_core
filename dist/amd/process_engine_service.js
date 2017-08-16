@@ -51,7 +51,6 @@ define(["require", "exports", "debug"], function (require, exports, debug) {
             return this._activeInstances;
         }
         async initialize() {
-            this.featureService.initialize();
             await this._initializeMessageBus();
             await this._initializeProcesses();
             await this._startTimers();
@@ -91,7 +90,6 @@ define(["require", "exports", "debug"], function (require, exports, debug) {
         }
         async _initializeMessageBus() {
             try {
-                await this.messageBusService.initialize();
                 if (this.messageBusService.isMaster) {
                     await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                     debugInfo(`subscribed on Messagebus Master`);
@@ -107,7 +105,6 @@ define(["require", "exports", "debug"], function (require, exports, debug) {
             const options = {
                 overwriteExisting: false
             };
-            this.processRepository.initialize();
             const processes = this.processRepository.getProcessesByCategory('internal');
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
