@@ -20,7 +20,6 @@ export class ProcessEngineService implements IProcessEngineService {
   private _iamService: IIamService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _datastoreService: IDatastoreService = undefined;
-  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
 
   private _activeInstances: any = {};
 
@@ -28,14 +27,14 @@ export class ProcessEngineService implements IProcessEngineService {
 
   constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator,
               processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService,
-              processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>) {
+              processRepository: IProcessRepository, datastoreService: IDatastoreService) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._featureService = featureService;
     this._iamService = iamService;
     this._processRepository = processRepository;
-    this._datastoreServiceFactory = datastoreServiceFactory;
+    this._datastoreService = datastoreService;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -62,10 +61,8 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._processRepository;
   }
 
+  // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
   private get datastoreService(): IDatastoreService {
-    if (!this._datastoreService) {
-      this._datastoreService = this._datastoreServiceFactory();
-    }
     return this._datastoreService;
   }
 

@@ -6,17 +6,13 @@ const BpmnModdle = require("bpmn-moddle");
 class ProcessDefEntityTypeService {
     constructor(datastoreServiceFactory, processRepository, invoker) {
         this._datastoreService = undefined;
-        this._datastoreServiceFactory = undefined;
         this._processRepository = undefined;
         this._invoker = undefined;
-        this._datastoreServiceFactory = datastoreServiceFactory;
+        this._datastoreService = datastoreServiceFactory;
         this._processRepository = processRepository;
         this._invoker = invoker;
     }
     get datastoreService() {
-        if (!this._datastoreService) {
-            this._datastoreService = this._datastoreServiceFactory();
-        }
         return this._datastoreService;
     }
     get invoker() {

@@ -1,6 +1,6 @@
 import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService, IFactory, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IEntity } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
@@ -12,10 +12,9 @@ export declare class ProcessEngineService implements IProcessEngineService {
     private _iamService;
     private _processRepository;
     private _datastoreService;
-    private _datastoreServiceFactory;
     private _activeInstances;
     config: any;
-    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository, datastoreServiceFactory: IFactory<IDatastoreService>);
+    constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator, processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService, processRepository: IProcessRepository, datastoreService: IDatastoreService);
     private readonly messageBusService;
     private readonly eventAggregator;
     private readonly processDefEntityTypeService;

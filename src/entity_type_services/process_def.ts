@@ -3,7 +3,7 @@ import {
   IParamImportFromXml, IParamStart, IImportFromFileOptions,
   IProcessRepository, IImportFromXmlOptions
 } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IFactory, IEntityReference } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IEntityReference } from '@process-engine-js/core_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
@@ -14,20 +14,17 @@ import * as BpmnModdle from 'bpmn-moddle';
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
-  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
 
-  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, processRepository: IProcessRepository, invoker: IInvoker) {
-    this._datastoreServiceFactory = datastoreServiceFactory;
+  constructor(datastoreServiceFactory: IDatastoreService, processRepository: IProcessRepository, invoker: IInvoker) {
+    this._datastoreService = datastoreServiceFactory;
     this._processRepository = processRepository;
     this._invoker = invoker;
   }
 
+  // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
   private get datastoreService(): IDatastoreService {
-    if (!this._datastoreService) {
-      this._datastoreService = this._datastoreServiceFactory();
-    }
     return this._datastoreService;
   }
 

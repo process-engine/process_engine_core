@@ -30,7 +30,6 @@ interface BindingMessagebus {
 export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
-  private _datastoreServiceFactory: IFactory<IDatastoreService> = undefined;
   private _messagebusService: IMessageBusService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
   private _iamService: IIamService = undefined;
@@ -38,10 +37,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   private _routingService: IRoutingService = undefined;
   private _processEngineService: IProcessEngineService = undefined;
 
-  constructor(datastoreServiceFactory: IFactory<IDatastoreService>, messagebusService: IMessageBusService, iamService: IIamService,
+  constructor(datastoreService: IDatastoreService, messagebusService: IMessageBusService, iamService: IIamService,
               eventAggregator: IEventAggregator, featureService: IFeatureService, routingService: IRoutingService,
               processEngineService: IProcessEngineService) {
-    this._datastoreServiceFactory = datastoreServiceFactory;
+    this._datastoreService = datastoreService;
     this._messagebusService = messagebusService;
     this._eventAggregator = eventAggregator;
     this._iamService = iamService;
@@ -50,10 +49,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     this._processEngineService = processEngineService;
   }
 
+  // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
   private get datastoreService(): IDatastoreService {
-    if (!this._datastoreService) {
-      this._datastoreService = this._datastoreServiceFactory();
-    }
     return this._datastoreService;
   }
 
