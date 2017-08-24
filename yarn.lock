@@ -19,15 +19,7 @@
     normalize-path "^2.0.1"
     through2 "^2.0.3"
 
-"@process-engine-js/core_contracts@^1.0.2", "@process-engine-js/core_contracts@^1.0.31", "@process-engine-js/core_contracts@^1.0.34", "@process-engine-js/core_contracts@^1.0.39", "@process-engine-js/core_contracts@^1.0.42", "@process-engine-js/core_contracts@^1.0.48-0":
-  version "1.0.48"
-  resolved "https://registry.npmjs.org/@process-engine-js/core_contracts/-/core_contracts-1.0.48.tgz#3b55eb6273c476b8c8dc8998820c8ec23577684b"
-  dependencies:
-    "@process-engine-js/security_service_contracts" "^0.1.6-0"
-    ramda "^0.23.0"
-    uuid "^3.0.1"
-
-"@process-engine-js/core_contracts@^1.0.50":
+"@process-engine-js/core_contracts@^1.0.2", "@process-engine-js/core_contracts@^1.0.31", "@process-engine-js/core_contracts@^1.0.34", "@process-engine-js/core_contracts@^1.0.39", "@process-engine-js/core_contracts@^1.0.42", "@process-engine-js/core_contracts@^1.0.48-0", "@process-engine-js/core_contracts@^1.0.50":
   version "1.0.50"
   resolved "https://registry.npmjs.org/@process-engine-js/core_contracts/-/core_contracts-1.0.50.tgz#6760a639f25f6a229e6488ee452af48aecda90bd"
   dependencies:
@@ -54,28 +46,9 @@
     underscore "^1.8.3"
     uuid "^3.0.1"
 
-"@process-engine-js/data_model_contracts@^1.0.0", "@process-engine-js/data_model_contracts@^1.0.68":
+"@process-engine-js/data_model_contracts@^1.0.0", "@process-engine-js/data_model_contracts@^1.0.44", "@process-engine-js/data_model_contracts@^1.0.68":
   version "1.0.68"
   resolved "https://registry.npmjs.org/@process-engine-js/data_model_contracts/-/data_model_contracts-1.0.68.tgz#51d46666ee8083f19212df832eb74c9d3d633a9d"
-  dependencies:
-    "@process-engine-js/core_contracts" "^1.0.48-0"
-    "@process-engine-js/iam_contracts" "^1.0.19-0"
-    "@process-engine-js/invocation_contracts" "^1.0.1"
-    "@process-engine-js/metadata" "^1.0.8"
-    "@process-engine-js/metadata_contracts" "^1.0.2"
-    "@process-engine-js/security_service_contracts" "^0.1.6-0"
-    bluebird "^3.4.7"
-    deep-equal "^1.0.1"
-    deepcopy "^0.6.3"
-    loggerhythm "1.0.0"
-    string-hash "^1.1.3"
-    toposort "^1.0.3"
-    underscore "^1.8.3"
-    uuid "^3.0.1"
-
-"@process-engine-js/data_model_contracts@^1.0.44":
-  version "1.0.67"
-  resolved "https://registry.npmjs.org/@process-engine-js/data_model_contracts/-/data_model_contracts-1.0.67.tgz#baae4066aca57d6e6215ed029ad9107a5f06a05e"
   dependencies:
     "@process-engine-js/core_contracts" "^1.0.48-0"
     "@process-engine-js/iam_contracts" "^1.0.19-0"
@@ -147,17 +120,9 @@
   dependencies:
     "@process-engine-js/core_contracts" "^1.0.2"
 
-"@process-engine-js/messagebus_contracts@^1.0.0", "@process-engine-js/messagebus_contracts@^1.0.14":
+"@process-engine-js/messagebus_contracts@^1.0.0", "@process-engine-js/messagebus_contracts@^1.0.14", "@process-engine-js/messagebus_contracts@^1.0.6":
   version "1.0.14"
   resolved "https://registry.npmjs.org/@process-engine-js/messagebus_contracts/-/messagebus_contracts-1.0.14.tgz#d35c3ffe226a790a7593576587ddd269706430f6"
-  dependencies:
-    "@process-engine-js/core_contracts" "^1.0.42"
-    "@process-engine-js/security_service_contracts" "^0.1.4"
-    uuid "^3.0.1"
-
-"@process-engine-js/messagebus_contracts@^1.0.6":
-  version "1.0.13"
-  resolved "https://registry.npmjs.org/@process-engine-js/messagebus_contracts/-/messagebus_contracts-1.0.13.tgz#04b39cf0b02ae10d38cafa781ff3ea0e4fee8646"
   dependencies:
     "@process-engine-js/core_contracts" "^1.0.42"
     "@process-engine-js/security_service_contracts" "^0.1.4"
@@ -181,9 +146,9 @@
     node-uuid "^1.4.7"
     underscore "^1.8.3"
 
-"@process-engine-js/process_engine_contracts@^1.0.27":
-  version "1.0.27"
-  resolved "https://registry.npmjs.org/@process-engine-js/process_engine_contracts/-/process_engine_contracts-1.0.27.tgz#709c41bb5a53a651329cd7e2cb3b56ff9c582803"
+"@process-engine-js/process_engine_contracts@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.npmjs.org/@process-engine-js/process_engine_contracts/-/process_engine_contracts-2.0.0.tgz#725536d25768409ec3d10ea0f86155405b321568"
   dependencies:
     "@process-engine-js/core_contracts" "^1.0.50"
     "@process-engine-js/data_model_contracts" "^1.0.0"
@@ -2143,9 +2108,9 @@ gulptraum-typescript@^1.0.0:
     vinyl-paths "^2.1.0"
     yargs "^8.0.2"
 
-gulptraum@^2.1.3:
-  version "2.2.0"
-  resolved "https://registry.npmjs.org/gulptraum/-/gulptraum-2.2.0.tgz#0f1924b173c5b74f25a63b158144fe769e26c9b0"
+gulptraum@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.npmjs.org/gulptraum/-/gulptraum-2.2.1.tgz#a13ea6e8163a1dc7e55b902b09b7e4f5fc92f340"
   dependencies:
     deepmerge "^1.4.4"
     gulp-bump "^2.7.0"
@@ -2157,7 +2122,7 @@ gulptraum@^2.1.3:
     vorpal "^1.12.0"
     yargs "^8.0.2"
 
-handlebars@4.0.5, handlebars@^4.0.2:
+handlebars@4.0.5:
   version "4.0.5"
   resolved "https://registry.npmjs.org/handlebars/-/handlebars-4.0.5.tgz#92c6ed6bb164110c50d4d8d0fbddc70806c6f8e7"
   dependencies:
@@ -2167,7 +2132,7 @@ handlebars@4.0.5, handlebars@^4.0.2:
   optionalDependencies:
     uglify-js "^2.6"
 
-handlebars@^4.0.6:
+handlebars@^4.0.2, handlebars@^4.0.6:
   version "4.0.10"
   resolved "https://registry.npmjs.org/handlebars/-/handlebars-4.0.10.tgz#3d30c718b09a3d96f23ea4cc1f403c4d3ba9ff4f"
   dependencies:
@@ -4336,7 +4301,7 @@ tslint@^4.4.2:
     tsutils "^1.1.0"
     update-notifier "^2.0.0"
 
-tslint@^5.5.0:
+tslint@^5.4.3, tslint@^5.5.0:
   version "5.5.0"
   resolved "https://registry.npmjs.org/tslint/-/tslint-5.5.0.tgz#10e8dab3e3061fa61e9442e8cee3982acf20a6aa"
   dependencies:
