@@ -44,9 +44,13 @@ class ProcessDefEntityTypeService {
         const module = params && params.module ? params.module : null;
         const readonly = params && params.readonly ? params.readonly : null;
         if (xml) {
+            console.log('ProcessDefService - Import from xml 1');
             const bpmnDiagram = await this.parseBpmnXml(xml);
+            console.log('ProcessDefService - Import from xml 2');
             const processDef = await this.datastoreService.getEntityType('ProcessDef');
+            console.log('ProcessDefService - Import from xml 3', typeof processDef);
             const processes = bpmnDiagram.getProcesses();
+            console.log('ProcessDefService - Import from xml 4');
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
                 const queryObject = {
@@ -55,7 +59,9 @@ class ProcessDefEntityTypeService {
                     value: process.id
                 };
                 const queryParams = { query: queryObject };
+                console.log('ProcessDefService - Import from xml 5');
                 const processDefColl = await processDef.query(context, queryParams);
+                console.log('ProcessDefService - Import from xml 6');
                 let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
                 let canSave = false;
                 if (!processDefEntity) {

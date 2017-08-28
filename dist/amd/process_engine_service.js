@@ -47,9 +47,13 @@ define(["require", "exports", "debug"], function (require, exports, debug) {
             return this._activeInstances;
         }
         async initialize() {
+            console.log('init PE Service 1');
             await this._initializeMessageBus();
+            console.log('init PE Service 2');
             await this._initializeProcesses();
+            console.log('init PE Service 3');
             await this._startTimers();
+            console.log('init PE Service 4');
         }
         async start(context, params, options) {
             const processEntity = await this.processDefEntityTypeService.start(context, params, options);
@@ -86,22 +90,30 @@ define(["require", "exports", "debug"], function (require, exports, debug) {
         }
         async _initializeMessageBus() {
             try {
+                console.log('initMB1');
                 if (this.messageBusService.isMaster) {
-                    await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                    console.log('initMB1.5', this.messageBusService);
+                    this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                    console.log('initMB2');
                     debugInfo(`subscribed on Messagebus Master`);
                 }
+                console.log('initMB3');
             }
             catch (err) {
+                console.log(err);
                 debugErr('subscription failed on Messagebus', err.message);
                 throw new Error(err.message);
             }
         }
         async _initializeProcesses() {
+            console.log('Init Processes 1');
             const internalContext = await this.iamService.createInternalContext('processengine_system');
             const options = {
                 overwriteExisting: false
             };
+            console.log('Init Processes 2');
             const processes = this.processRepository.getProcessesByCategory('internal');
+            console.log('Init Processes 3');
             for (let i = 0; i < processes.length; i++) {
                 const process = processes[i];
                 const params = {
@@ -113,7 +125,9 @@ define(["require", "exports", "debug"], function (require, exports, debug) {
                     readonly: process.readonly
                 };
                 await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
+                console.log(`Init Processes 3.${i}`);
             }
+            console.log('init processes 4');
         }
         async _startTimers() {
             const internalContext = await this.iamService.createInternalContext('processengine_system');

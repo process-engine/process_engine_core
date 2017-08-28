@@ -12,6 +12,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
     }
     async initialize(derivedClassInstance) {
         const actualInstance = derivedClassInstance || this;
+        console.log('service_task_init');
         await super.initialize(actualInstance);
     }
     async execute(context) {

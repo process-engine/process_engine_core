@@ -43,7 +43,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
       const xmlString = await this.processRepository.getXmlFromFile(pathString);
       const name = pathString.split('/').pop();
-
       await this.importBpmnFromXml(
         context,
         {
@@ -71,11 +70,15 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const readonly = params && params.readonly ? params.readonly : null;
 
     if (xml) {
+      console.log('ProcessDefService - Import from xml 1')
       const bpmnDiagram = await this.parseBpmnXml(xml);
 
+      console.log('ProcessDefService - Import from xml 2')
       const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+      console.log('ProcessDefService - Import from xml 3', typeof processDef);
 
       const processes = bpmnDiagram.getProcesses();
+      console.log('ProcessDefService - Import from xml 4')
 
       for (let i = 0; i < processes.length; i++) {
         const process = processes[i];
@@ -87,7 +90,9 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           value: process.id
         };
         const queryParams: IPrivateQueryOptions = { query: queryObject };
+        console.log('ProcessDefService - Import from xml 5')
         const processDefColl = await processDef.query(context, queryParams);
+        console.log('ProcessDefService - Import from xml 6')
 
         let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity>processDefColl.data[0] : null;
 

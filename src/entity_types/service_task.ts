@@ -24,6 +24,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
+    console.log('service_task_init')
     await super.initialize(actualInstance);
   }
 

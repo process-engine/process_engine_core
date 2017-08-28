@@ -71,9 +71,13 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async initialize(): Promise<void> {
+    console.log('init PE Service 1')
     await this._initializeMessageBus();
+    console.log('init PE Service 2')
     await this._initializeProcesses();
+    console.log('init PE Service 3')
     await this._startTimers();
+    console.log('init PE Service 4')
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -126,12 +130,17 @@ export class ProcessEngineService implements IProcessEngineService {
 
       // Todo: we subscribe on the old channel to leave frontend intact
       // this is deprecated and should be replaced with the new datastore api
+      console.log('initMB1')
       if (this.messageBusService.isMaster) {
-        await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+        console.log('initMB1.5', this.messageBusService)
+        this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+        console.log('initMB2')
         debugInfo(`subscribed on Messagebus Master`);
       }
+      console.log('initMB3')
 
     } catch (err) {
+      console.log(err);
       debugErr('subscription failed on Messagebus', err.message);
       throw new Error(err.message);
     }
@@ -139,14 +148,17 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private async _initializeProcesses(): Promise<void> {
 
+    console.log('Init Processes 1')
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     const options: IImportFromFileOptions = {
       overwriteExisting: false
     };
 
+    console.log('Init Processes 2')
 
     const processes = this.processRepository.getProcessesByCategory('internal');
 
+    console.log('Init Processes 3')
     for (let i = 0; i < processes.length; i++) {
 
         const process = processes[i];
@@ -161,7 +173,9 @@ export class ProcessEngineService implements IProcessEngineService {
         };
 
         await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
+        console.log(`Init Processes 3.${i}`);
     }
+    console.log('init processes 4')
   }
 
   private async _startTimers(): Promise<void> {

@@ -12,6 +12,7 @@ define(["require", "exports", "./node_instance"], function (require, exports, no
         }
         async initialize(derivedClassInstance) {
             const actualInstance = derivedClassInstance || this;
+            console.log('service_task_init');
             await super.initialize(actualInstance);
         }
         async execute(context) {
