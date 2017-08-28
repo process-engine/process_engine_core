@@ -322,6 +322,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     } else {
       // error or cancel ends the node anyway
       if (eventType === 'error' || eventType === 'cancel') {
+        if (eventType === 'error') {
+          data = {message: data.message};
+        }
         await this._publishToApi(context, eventType, data);
         await this.end(context);
       }
@@ -364,6 +367,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             const tokenData = processToken.data || {};
             tokenData.current = data;
             processToken.data = tokenData;
+
+            data = { message: data.message };
 
             await this._publishToApi(context, 'cancel', data);
             eventEntity.changeState(context, 'end', this);

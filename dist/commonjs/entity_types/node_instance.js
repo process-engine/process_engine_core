@@ -220,6 +220,9 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
         else {
             if (eventType === 'error' || eventType === 'cancel') {
+                if (eventType === 'error') {
+                    data = { message: data.message };
+                }
                 await this._publishToApi(context, eventType, data);
                 await this.end(context);
             }
@@ -249,6 +252,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                         const tokenData = processToken.data || {};
                         tokenData.current = data;
                         processToken.data = tokenData;
+                        data = { message: data.message };
                         await this._publishToApi(context, 'cancel', data);
                         eventEntity.changeState(context, 'end', this);
                         await this.end(context, true);
