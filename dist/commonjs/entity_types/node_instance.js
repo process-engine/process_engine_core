@@ -271,7 +271,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                         tokenData.current = data;
                         processToken.data = tokenData;
                         eventEntity.changeState(context, 'end', this);
-                        this.cancel(internalContext);
+                        this.cancel(context);
                     }
                     else {
                         const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
@@ -293,7 +293,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                         tokenData.current = data;
                         processToken.data = tokenData;
                         eventEntity.changeState(context, 'end', this);
-                        this.cancel(internalContext);
+                        this.cancel(context);
                     }
                     else {
                         const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');

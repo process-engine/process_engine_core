@@ -93,6 +93,9 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
         tokenData.current = finalResult;
         processToken.data = tokenData;
+      } else {
+        continueEnd = false;
+        this.error(context, new Error('missing extensions properties'));
       }
 
     }

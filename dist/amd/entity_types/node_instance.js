@@ -268,7 +268,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             tokenData.current = data;
                             processToken.data = tokenData;
                             eventEntity.changeState(context, 'end', this);
-                            this.cancel(internalContext);
+                            this.cancel(context);
                         }
                         else {
                             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
@@ -290,7 +290,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             tokenData.current = data;
                             processToken.data = tokenData;
                             eventEntity.changeState(context, 'end', this);
-                            this.cancel(internalContext);
+                            this.cancel(context);
                         }
                         else {
                             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');

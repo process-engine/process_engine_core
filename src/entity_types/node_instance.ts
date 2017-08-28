@@ -392,7 +392,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             processToken.data = tokenData;
 
             eventEntity.changeState(context, 'end', this);
-            this.cancel(internalContext);
+            this.cancel(context);
           } else {
 
             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
@@ -419,7 +419,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             processToken.data = tokenData;
 
             eventEntity.changeState(context, 'end', this);
-            this.cancel(internalContext);
+            this.cancel(context);
           } else {
 
             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');

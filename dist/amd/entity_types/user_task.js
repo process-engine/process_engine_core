@@ -25,9 +25,9 @@ define(["require", "exports", "@process-engine-js/metadata", "./node_instance"],
             const pojo = await this.toPojo(internalContext, { maxDepth: 1 });
             let uiName;
             let uiConfig;
-            let uiData;
             const processToken = pojo.processToken;
             const token = processToken.data || {};
+            let uiData = token;
             const nodeDef = this.nodeDef;
             const extensions = nodeDef.extensions || null;
             const props = (extensions && extensions.properties) ? extensions.properties : null;
