@@ -229,7 +229,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity>this.process.processDef.nodeDefCollection.data[i];
       if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
       }
     }
 

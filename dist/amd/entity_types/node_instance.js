@@ -152,7 +152,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
                 const boundary = this.process.processDef.nodeDefCollection.data[i];
                 if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
                 }
             }
             this.changeState(context, 'execute', this);

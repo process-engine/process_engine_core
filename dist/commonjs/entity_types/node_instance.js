@@ -155,7 +155,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
             const boundary = this.process.processDef.nodeDefCollection.data[i];
             if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-                await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+                await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
             }
         }
         this.changeState(context, 'execute', this);
