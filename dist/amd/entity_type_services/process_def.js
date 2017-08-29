@@ -62,18 +62,22 @@ define(["require", "exports", "../bpmn_diagram", "bluebird", "bpmn-moddle"], fun
                     console.log('ProcessDefService - Import from xml 6');
                     let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
                     let canSave = false;
+                    console.log('ProcessDefService - Import from xml 7');
                     if (!processDefEntity) {
                         const processDefData = {
                             key: process.id,
                             defId: bpmnDiagram.definitions.id,
                             counter: 0
                         };
+                        console.log('ProcessDefService - Import from xml 7.1');
                         processDefEntity = await processDef.createEntity(context, processDefData);
+                        console.log('ProcessDefService - Import from xml 7.2');
                         canSave = true;
                     }
                     else {
                         canSave = overwriteExisting;
                     }
+                    console.log('ProcessDefService - Import from xml 8');
                     if (canSave) {
                         processDefEntity.name = process.name;
                         processDefEntity.xml = xml;
@@ -85,6 +89,7 @@ define(["require", "exports", "../bpmn_diagram", "bluebird", "bpmn-moddle"], fun
                         processDefEntity.counter = processDefEntity.counter + 1;
                         await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
                     }
+                    console.log('ProcessDefService - Import from xml 9');
                 }
             }
         }

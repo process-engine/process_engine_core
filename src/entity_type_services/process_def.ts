@@ -97,6 +97,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity>processDefColl.data[0] : null;
 
         let canSave = false;
+        console.log('ProcessDefService - Import from xml 7')
         if (!processDefEntity) {
 
           const processDefData = {
@@ -105,7 +106,9 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
             counter: 0
           };
 
+          console.log('ProcessDefService - Import from xml 7.1')
           processDefEntity = await processDef.createEntity<IProcessDefEntity>(context, processDefData);
+          console.log('ProcessDefService - Import from xml 7.2')
 
           // always create new processes
           canSave = true;
@@ -113,6 +116,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           // check if we can overwrite existing processes
           canSave = overwriteExisting;
         }
+        console.log('ProcessDefService - Import from xml 8')
 
         if (canSave) {
           processDefEntity.name = process.name;
@@ -126,6 +130,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
           await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
         }
+        console.log('ProcessDefService - Import from xml 9')
       }
     }
   }
