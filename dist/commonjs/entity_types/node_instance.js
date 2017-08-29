@@ -142,7 +142,16 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
             this.state = 'start';
         }
         this.process.addActiveInstance(this);
+        const internalContext = await this.iamService.createInternalContext('processengine_system');
+        const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
         const processToken = this.processToken;
+        const processDef = this.process.processDef;
+        const currentToken = await processTokenEntityType.createEntity(internalContext);
+        currentToken.process = processToken.process;
+        currentToken.data = processToken.data;
+        if (processDef.persist) {
+            await currentToken.save(internalContext, { reloadAfterSave: false });
+        }
         for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
             const boundary = this.process.processDef.nodeDefCollection.data[i];
             if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {

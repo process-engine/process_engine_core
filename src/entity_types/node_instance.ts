@@ -210,7 +210,21 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     this.process.addActiveInstance(this);
 
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+
     const processToken = this.processToken;
+    const processDef = this.process.processDef;
+
+    // create new process token entity to split flow at boundary
+    const currentToken = <any>await processTokenEntityType.createEntity(internalContext);
+    currentToken.process = processToken.process;
+    currentToken.data = processToken.data;
+
+    if (processDef.persist) {
+      await currentToken.save(internalContext, { reloadAfterSave: false });
+    }
 
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity>this.process.processDef.nodeDefCollection.data[i];
