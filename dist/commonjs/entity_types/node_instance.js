@@ -246,13 +246,13 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         if (boundaryDef) {
             switch (boundaryDef.eventType) {
                 case 'bpmn:ErrorEventDefinition':
-                    const errCode = data.number || data.code || '';
-                    if ((boundaryDef.errorCode && data.errorCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
+                    const errCode = data.number || data.code || data.errorCode || undefined;
+                    if ((boundaryDef.errorCode && errCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
                         const processToken = this.processToken;
                         const tokenData = processToken.data || {};
+                        data = { message: data.message, errorCode: errCode };
                         tokenData.current = data;
                         processToken.data = tokenData;
-                        data = { message: data.message };
                         await this._publishToApi(context, 'cancel', data);
                         eventEntity.changeState(context, 'end', this);
                         await this.end(context, true);
