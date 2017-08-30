@@ -4,7 +4,7 @@ const debug = require("debug");
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 class ProcessEngineService {
-    constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService, processRepository, datastoreServiceFactory) {
+    constructor(messageBusService, eventAggregator, processDefEntityTypeService, featureService, iamService, processRepository, datastoreService) {
         this._messageBusService = undefined;
         this._eventAggregator = undefined;
         this._processDefEntityTypeService = undefined;
@@ -12,7 +12,6 @@ class ProcessEngineService {
         this._iamService = undefined;
         this._processRepository = undefined;
         this._datastoreService = undefined;
-        this._datastoreServiceFactory = undefined;
         this._activeInstances = {};
         this.config = undefined;
         this._messageBusService = messageBusService;
@@ -21,7 +20,7 @@ class ProcessEngineService {
         this._featureService = featureService;
         this._iamService = iamService;
         this._processRepository = processRepository;
-        this._datastoreServiceFactory = datastoreServiceFactory;
+        this._datastoreService = datastoreService;
     }
     get messageBusService() {
         return this._messageBusService;
@@ -42,16 +41,12 @@ class ProcessEngineService {
         return this._processRepository;
     }
     get datastoreService() {
-        if (!this._datastoreService) {
-            this._datastoreService = this._datastoreServiceFactory();
-        }
         return this._datastoreService;
     }
     get activeInstances() {
         return this._activeInstances;
     }
     async initialize() {
-        this.featureService.initialize();
         await this._initializeMessageBus();
         await this._initializeProcesses();
         await this._startTimers();
@@ -91,9 +86,8 @@ class ProcessEngineService {
     }
     async _initializeMessageBus() {
         try {
-            await this.messageBusService.initialize();
             if (this.messageBusService.isMaster) {
-                await this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
+                this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
                 debugInfo(`subscribed on Messagebus Master`);
             }
         }
@@ -107,7 +101,6 @@ class ProcessEngineService {
         const options = {
             overwriteExisting: false
         };
-        this.processRepository.initialize();
         const processes = this.processRepository.getProcessesByCategory('internal');
         for (let i = 0; i < processes.length; i++) {
             const process = processes[i];

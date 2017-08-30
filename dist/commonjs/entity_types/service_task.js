@@ -42,7 +42,7 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 }
             });
             if (serviceModule && serviceMethod) {
-                const serviceInstance = this.container.resolve(serviceModule);
+                const serviceInstance = await this.container.resolveAsync(serviceModule);
                 let result;
                 try {
                     const self = this;

@@ -61,7 +61,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
       if (serviceModule && serviceMethod) {
 
-        const serviceInstance = this.container.resolve(serviceModule);
+        const serviceInstance = await this.container.resolveAsync(serviceModule);
 
         let result;
 

@@ -42,7 +42,7 @@ define(["require", "exports", "./node_instance"], function (require, exports, no
                     }
                 });
                 if (serviceModule && serviceMethod) {
-                    const serviceInstance = this.container.resolve(serviceModule);
+                    const serviceInstance = await this.container.resolveAsync(serviceModule);
                     let result;
                     try {
                         const self = this;

@@ -4,16 +4,15 @@ define(["require", "exports", "@process-engine-js/data_model_contracts", "debug"
     const debugInfo = debug('processengine:info');
     const debugErr = debug('processengine:error');
     class NodeInstanceEntityTypeService {
-        constructor(datastoreServiceFactory, messagebusService, iamService, eventAggregator, featureService, routingService, processEngineService) {
+        constructor(datastoreService, messagebusService, iamService, eventAggregator, featureService, routingService, processEngineService) {
             this._datastoreService = undefined;
-            this._datastoreServiceFactory = undefined;
             this._messagebusService = undefined;
             this._eventAggregator = undefined;
             this._iamService = undefined;
             this._featureService = undefined;
             this._routingService = undefined;
             this._processEngineService = undefined;
-            this._datastoreServiceFactory = datastoreServiceFactory;
+            this._datastoreService = datastoreService;
             this._messagebusService = messagebusService;
             this._eventAggregator = eventAggregator;
             this._iamService = iamService;
@@ -22,9 +21,6 @@ define(["require", "exports", "@process-engine-js/data_model_contracts", "debug"
             this._processEngineService = processEngineService;
         }
         get datastoreService() {
-            if (!this._datastoreService) {
-                this._datastoreService = this._datastoreServiceFactory();
-            }
             return this._datastoreService;
         }
         get messagebusService() {
