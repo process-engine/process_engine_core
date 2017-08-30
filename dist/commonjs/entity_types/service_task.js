@@ -68,6 +68,10 @@ class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
                 tokenData.current = finalResult;
                 processToken.data = tokenData;
             }
+            else {
+                continueEnd = false;
+                this.error(context, new Error('missing extensions properties'));
+            }
         }
         if (continueEnd) {
             this.changeState(context, 'end', this);

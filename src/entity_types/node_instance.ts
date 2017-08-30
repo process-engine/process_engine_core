@@ -210,12 +210,26 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     this.process.addActiveInstance(this);
 
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+
     const processToken = this.processToken;
+    const processDef = this.process.processDef;
+
+    // create new process token entity to split flow at boundary
+    const currentToken = <any>await processTokenEntityType.createEntity(internalContext);
+    currentToken.process = processToken.process;
+    currentToken.data = processToken.data;
+
+    if (processDef.persist) {
+      await currentToken.save(internalContext, { reloadAfterSave: false });
+    }
 
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity>this.process.processDef.nodeDefCollection.data[i];
       if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
       }
     }
 
@@ -322,6 +336,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     } else {
       // error or cancel ends the node anyway
       if (eventType === 'error' || eventType === 'cancel') {
+        if (eventType === 'error') {
+          data = {message: data.message};
+        }
         await this._publishToApi(context, eventType, data);
         await this.end(context);
       }
@@ -356,15 +373,19 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       switch (boundaryDef.eventType) {
         case 'bpmn:ErrorEventDefinition':
 
-          const errCode = data.number || data.code || '';
-          if ((boundaryDef.errorCode && data.errorCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
+          const errCode = data.number || data.code || data.errorCode || undefined;
+          if ((boundaryDef.errorCode && errCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
 
             // save new data in token
             const processToken = this.processToken;
             const tokenData = processToken.data || {};
+
+            data = { message: data.message, errorCode: errCode };
+
             tokenData.current = data;
             processToken.data = tokenData;
 
+            
             await this._publishToApi(context, 'cancel', data);
             eventEntity.changeState(context, 'end', this);
             await this.end(context, true);
@@ -392,7 +413,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             processToken.data = tokenData;
 
             eventEntity.changeState(context, 'end', this);
-            this.cancel(internalContext);
+            this.cancel(context);
           } else {
 
             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
@@ -419,7 +440,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             processToken.data = tokenData;
 
             eventEntity.changeState(context, 'end', this);
-            this.cancel(internalContext);
+            this.cancel(context);
           } else {
 
             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');

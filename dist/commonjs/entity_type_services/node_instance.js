@@ -267,7 +267,7 @@ class NodeInstanceEntityTypeService {
                         currentToken.process = processToken.process;
                         currentToken.data = processToken.data;
                         if (processDef.persist) {
-                            await processToken.save(internalContext, { reloadAfterSave: false });
+                            await currentToken.save(internalContext, { reloadAfterSave: false });
                         }
                     }
                     else {

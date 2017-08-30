@@ -68,6 +68,10 @@ define(["require", "exports", "./node_instance"], function (require, exports, no
                     tokenData.current = finalResult;
                     processToken.data = tokenData;
                 }
+                else {
+                    continueEnd = false;
+                    this.error(context, new Error('missing extensions properties'));
+                }
             }
             if (continueEnd) {
                 this.changeState(context, 'end', this);

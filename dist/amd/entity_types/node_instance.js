@@ -139,11 +139,20 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                 this.state = 'start';
             }
             this.process.addActiveInstance(this);
+            const internalContext = await this.iamService.createInternalContext('processengine_system');
+            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
             const processToken = this.processToken;
+            const processDef = this.process.processDef;
+            const currentToken = await processTokenEntityType.createEntity(internalContext);
+            currentToken.process = processToken.process;
+            currentToken.data = processToken.data;
+            if (processDef.persist) {
+                await currentToken.save(internalContext, { reloadAfterSave: false });
+            }
             for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
                 const boundary = this.process.processDef.nodeDefCollection.data[i];
                 if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, processToken);
+                    await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
                 }
             }
             this.changeState(context, 'execute', this);
@@ -217,6 +226,9 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             }
             else {
                 if (eventType === 'error' || eventType === 'cancel') {
+                    if (eventType === 'error') {
+                        data = { message: data.message };
+                    }
                     await this._publishToApi(context, eventType, data);
                     await this.end(context);
                 }
@@ -240,10 +252,11 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             if (boundaryDef) {
                 switch (boundaryDef.eventType) {
                     case 'bpmn:ErrorEventDefinition':
-                        const errCode = data.number || data.code || '';
-                        if ((boundaryDef.errorCode && data.errorCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
+                        const errCode = data.number || data.code || data.errorCode || undefined;
+                        if ((boundaryDef.errorCode && errCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
                             const processToken = this.processToken;
                             const tokenData = processToken.data || {};
+                            data = { message: data.message, errorCode: errCode };
                             tokenData.current = data;
                             processToken.data = tokenData;
                             await this._publishToApi(context, 'cancel', data);
@@ -268,7 +281,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             tokenData.current = data;
                             processToken.data = tokenData;
                             eventEntity.changeState(context, 'end', this);
-                            this.cancel(internalContext);
+                            this.cancel(context);
                         }
                         else {
                             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
@@ -290,7 +303,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             tokenData.current = data;
                             processToken.data = tokenData;
                             eventEntity.changeState(context, 'end', this);
-                            this.cancel(internalContext);
+                            this.cancel(context);
                         }
                         else {
                             const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
