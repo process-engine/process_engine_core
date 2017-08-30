@@ -41,56 +41,47 @@ define(["require", "exports", "../bpmn_diagram", "bluebird", "bpmn-moddle"], fun
             const category = params && params.category ? params.category : null;
             const module = params && params.module ? params.module : null;
             const readonly = params && params.readonly ? params.readonly : null;
-            if (xml) {
-                console.log('ProcessDefService - Import from xml 1');
-                const bpmnDiagram = await this.parseBpmnXml(xml);
-                console.log('ProcessDefService - Import from xml 2');
-                const processDef = await this.datastoreService.getEntityType('ProcessDef');
-                console.log('ProcessDefService - Import from xml 3', typeof processDef);
-                const processes = bpmnDiagram.getProcesses();
-                console.log('ProcessDefService - Import from xml 4');
-                for (let i = 0; i < processes.length; i++) {
-                    const process = processes[i];
-                    const queryObject = {
-                        attribute: 'key',
-                        operator: '=',
-                        value: process.id
+            if (!xml) {
+                return;
+            }
+            const bpmnDiagram = await this.parseBpmnXml(xml);
+            const processDef = await this.datastoreService.getEntityType('ProcessDef');
+            const processes = bpmnDiagram.getProcesses();
+            for (let i = 0; i < processes.length; i++) {
+                const process = processes[i];
+                const queryObject = {
+                    attribute: 'key',
+                    operator: '=',
+                    value: process.id
+                };
+                const queryParams = { query: queryObject };
+                const processDefColl = await processDef.query(context, queryParams);
+                let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
+                let canSave = false;
+                if (!processDefEntity) {
+                    const processDefData = {
+                        key: process.id,
+                        defId: bpmnDiagram.definitions.id,
+                        counter: 0
                     };
-                    const queryParams = { query: queryObject };
-                    console.log('ProcessDefService - Import from xml 5');
-                    const processDefColl = await processDef.query(context, queryParams);
-                    console.log('ProcessDefService - Import from xml 6');
-                    let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] : null;
-                    let canSave = false;
-                    console.log('ProcessDefService - Import from xml 7');
-                    if (!processDefEntity) {
-                        const processDefData = {
-                            key: process.id,
-                            defId: bpmnDiagram.definitions.id,
-                            counter: 0
-                        };
-                        console.log('ProcessDefService - Import from xml 7.1');
-                        processDefEntity = await processDef.createEntity(context, processDefData);
-                        console.log('ProcessDefService - Import from xml 7.2');
-                        canSave = true;
-                    }
-                    else {
-                        canSave = overwriteExisting;
-                    }
-                    console.log('ProcessDefService - Import from xml 8');
-                    if (canSave) {
-                        processDefEntity.name = process.name;
-                        processDefEntity.xml = xml;
-                        processDefEntity.internalName = internalName;
-                        processDefEntity.path = pathString;
-                        processDefEntity.category = category;
-                        processDefEntity.module = module;
-                        processDefEntity.readonly = readonly;
-                        processDefEntity.counter = processDefEntity.counter + 1;
-                        await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
-                    }
-                    console.log('ProcessDefService - Import from xml 9');
+                    processDefEntity = await processDef.createEntity(context, processDefData);
+                    canSave = true;
                 }
+                else {
+                    canSave = overwriteExisting;
+                }
+                if (!canSave) {
+                    continue;
+                }
+                processDefEntity.name = process.name;
+                processDefEntity.xml = xml;
+                processDefEntity.internalName = internalName;
+                processDefEntity.path = pathString;
+                processDefEntity.category = category;
+                processDefEntity.module = module;
+                processDefEntity.readonly = readonly;
+                processDefEntity.counter = processDefEntity.counter + 1;
+                await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
             }
         }
         parseBpmnXml(xml) {
