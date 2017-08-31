@@ -4,11 +4,11 @@ const bpmn_diagram_1 = require("../bpmn_diagram");
 const BluebirdPromise = require("bluebird");
 const BpmnModdle = require("bpmn-moddle");
 class ProcessDefEntityTypeService {
-    constructor(datastoreServiceFactory, processRepository, invoker) {
+    constructor(datastoreService, processRepository, invoker) {
         this._datastoreService = undefined;
         this._processRepository = undefined;
         this._invoker = undefined;
-        this._datastoreService = datastoreServiceFactory;
+        this._datastoreService = datastoreService;
         this._processRepository = processRepository;
         this._invoker = invoker;
     }

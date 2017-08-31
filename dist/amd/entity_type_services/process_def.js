@@ -2,11 +2,11 @@ define(["require", "exports", "../bpmn_diagram", "bluebird", "bpmn-moddle"], fun
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ProcessDefEntityTypeService {
-        constructor(datastoreServiceFactory, processRepository, invoker) {
+        constructor(datastoreService, processRepository, invoker) {
             this._datastoreService = undefined;
             this._processRepository = undefined;
             this._invoker = undefined;
-            this._datastoreService = datastoreServiceFactory;
+            this._datastoreService = datastoreService;
             this._processRepository = processRepository;
             this._invoker = invoker;
         }

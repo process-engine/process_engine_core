@@ -7,7 +7,7 @@ export declare class ProcessDefEntityTypeService implements IProcessDefEntityTyp
     private _datastoreService;
     private _processRepository;
     private _invoker;
-    constructor(datastoreServiceFactory: IDatastoreService, processRepository: IProcessRepository, invoker: IInvoker);
+    constructor(datastoreService: IDatastoreService, processRepository: IProcessRepository, invoker: IInvoker);
     private readonly datastoreService;
     private readonly invoker;
     private readonly processRepository;

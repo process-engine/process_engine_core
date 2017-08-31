@@ -17,8 +17,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
 
-  constructor(datastoreServiceFactory: IDatastoreService, processRepository: IProcessRepository, invoker: IInvoker) {
-    this._datastoreService = datastoreServiceFactory;
+  constructor(datastoreService: IDatastoreService, processRepository: IProcessRepository, invoker: IInvoker) {
+    this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;
   }
@@ -70,7 +70,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const readonly = params && params.readonly ? params.readonly : null;
 
     if (!xml) {
-      return
+      return;
     }
 
     const bpmnDiagram = await this.parseBpmnXml(xml);
@@ -112,7 +112,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       if (!canSave) {
         continue;
       }
-      
+
       processDefEntity.name = process.name;
       processDefEntity.xml = xml;
       processDefEntity.internalName = internalName;

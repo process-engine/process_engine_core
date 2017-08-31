@@ -1,6 +1,6 @@
 import { INodeInstanceEntityTypeService, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity,
   IFlowDefEntity, ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IEntity, IIamService, IFactory } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IEntity, IIamService } from '@process-engine-js/core_contracts';
 import {IDatastoreService, IEntityType, EntityReference} from '@process-engine-js/data_model_contracts';
 import { IMessageBusService, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
@@ -130,7 +130,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  
   private async _nodeHandlerMessagebus(msg: any): Promise<void> {
     const binding: Binding = <any>this;
 
