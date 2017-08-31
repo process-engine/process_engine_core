@@ -75,7 +75,7 @@ define(["require", "exports", "./node_instance", "@process-engine-js/process_eng
                 entity: this,
                 eventAggregator: this.eventAggregator,
                 messagebusService: this.messageBusService,
-                datastoreService: this.datastoreService
+                datastoreService: (await this.getDatastoreService())
             };
             this._subscription = await this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
         }
@@ -112,7 +112,7 @@ define(["require", "exports", "./node_instance", "@process-engine-js/process_eng
                 entity: this,
                 eventAggregator: this.eventAggregator,
                 messagebusService: this.messageBusService,
-                datastoreService: this.datastoreService
+                datastoreService: (await this.getDatastoreService())
             };
             this._subscription = await this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
         }

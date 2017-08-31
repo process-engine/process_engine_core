@@ -1,7 +1,7 @@
 import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions,
   IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IFactory, IEntity } from '@process-engine-js/core_contracts';
+import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IEntity } from '@process-engine-js/core_contracts';
 import { IFeatureService } from '@process-engine-js/feature_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';

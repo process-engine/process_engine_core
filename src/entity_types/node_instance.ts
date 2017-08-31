@@ -212,7 +212,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
-    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+    const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
 
     const processToken = this.processToken;
     const processDef = this.process.processDef;
@@ -416,7 +416,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.cancel(context);
           } else {
 
-            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
             const newToken = <IProcessTokenEntity>await processTokenEntityType.createEntity(internalContext);
             newToken.process = this.process;
             const processToken = this.processToken;
@@ -443,7 +443,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.cancel(context);
           } else {
 
-            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
             const newToken = <IProcessTokenEntity>await processTokenEntityType.createEntity(internalContext);
             newToken.process = this.process;
             const processToken = this.processToken;
@@ -488,10 +488,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                 this.cancel(internalContext);
               } else {
 
-                const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                 const newToken = <IProcessTokenEntity>await processTokenEntityType.createEntity(internalContext);
                 newToken.process = this.process;
-                
+
                 newToken.data = tokenData;
                 this.processToken = newToken;
 

@@ -245,7 +245,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
       debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
 
-      const processEntityType = await this.datastoreService.getEntityType('Process');
+      const processEntityType = await (await this.getDatastoreService()).getEntityType('Process');
       const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
 
       await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
@@ -285,7 +285,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   public async updateBpmn(context: ExecutionContext, xml: IXmlObject): Promise<any> {
-    
+
     if (xml) {
       this.xml = xml.xml;
       this.counter = this.counter + 1;
@@ -339,7 +339,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           { attribute: 'processDef', operator: '=', value: this.id }
         ]
       };
-      const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+      const nodeDefEntityType = await (await this.getDatastoreService()).getEntityType('NodeDef');
       const startEventDef: any = await nodeDefEntityType.findOne(context, { query: queryObject });
 
       if (startEventDef) {
@@ -410,8 +410,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     await this._updateFlows(flows, nodeCache, context, counter);
 
+    const datastoreService = await this.getDatastoreService();
     // remove orphaned flows
-    const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+    const flowDefEntityType = await datastoreService.getEntityType('FlowDef');
     const queryObjectFlows: ICombinedQueryClause = {
       operator: 'and',
       queries: [
@@ -425,7 +426,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     });
 
     // remove orphaned nodes
-    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const nodeDefEntityType = await datastoreService.getEntityType('NodeDef');
     const queryObjectNodes: ICombinedQueryClause = {
       operator: 'and',
       queries: [
@@ -439,7 +440,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     });
 
     // remove orphaned lanes
-    const laneEntityType = await this.datastoreService.getEntityType('Lane');
+    const laneEntityType = await datastoreService.getEntityType('Lane');
     const queryObjectLanes: ICombinedQueryClause = {
       operator: 'and',
       queries: [
@@ -461,7 +462,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const laneCache = {};
 
-    const lane = await this.datastoreService.getEntityType('Lane');
+    const lane = await (await this.getDatastoreService()).getEntityType('Lane');
 
     const lanePromiseArray = lanes.map(async (laneObj) => {
 
@@ -504,7 +505,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodeCache = {};
 
-    const nodeDef = await this.datastoreService.getEntityType('NodeDef');
+    const nodeDef = await (await this.getDatastoreService()).getEntityType('NodeDef');
 
     const nodePromiseArray = nodes.map(async (node) => {
 
@@ -616,7 +617,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private async _updateFlows(flows: Array<any>, nodeCache: ICache<any>, context: ExecutionContext, counter: number): Promise<void> {
 
-    const flowDef = await this.datastoreService.getEntityType('FlowDef');
+    const flowDef = await (await this.getDatastoreService()).getEntityType('FlowDef');
 
     const flowPromiseArray = flows.map(async (flow) => {
 

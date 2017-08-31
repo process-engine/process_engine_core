@@ -78,7 +78,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             entity: this,
             eventAggregator: this.eventAggregator,
             messagebusService: this.messageBusService,
-            datastoreService: this.datastoreService
+            datastoreService: (await this.getDatastoreService())
         };
         this._subscription = await this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
     }
@@ -115,7 +115,7 @@ class EventEntity extends node_instance_1.NodeInstanceEntity {
             entity: this,
             eventAggregator: this.eventAggregator,
             messagebusService: this.messageBusService,
-            datastoreService: this.datastoreService
+            datastoreService: (await this.getDatastoreService())
         };
         this._subscription = await this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
     }

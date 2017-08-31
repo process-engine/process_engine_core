@@ -140,7 +140,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             }
             this.process.addActiveInstance(this);
             const internalContext = await this.iamService.createInternalContext('processengine_system');
-            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
             const processToken = this.processToken;
             const processDef = this.process.processDef;
             const currentToken = await processTokenEntityType.createEntity(internalContext);
@@ -284,7 +284,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             this.cancel(context);
                         }
                         else {
-                            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                             const newToken = await processTokenEntityType.createEntity(internalContext);
                             newToken.process = this.process;
                             const processToken = this.processToken;
@@ -306,7 +306,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                             this.cancel(context);
                         }
                         else {
-                            const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                             const newToken = await processTokenEntityType.createEntity(internalContext);
                             newToken.process = this.process;
                             const processToken = this.processToken;
@@ -346,7 +346,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
                                     this.cancel(internalContext);
                                 }
                                 else {
-                                    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                                    const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                                     const newToken = await processTokenEntityType.createEntity(internalContext);
                                     newToken.process = this.process;
                                     newToken.data = tokenData;

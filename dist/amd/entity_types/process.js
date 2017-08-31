@@ -89,8 +89,9 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             const isSubProcess = params ? params.isSubProcess : false;
             const initialToken = params ? params.initialToken : undefined;
             const participant = params ? params.participant : null;
-            const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
-            const startEventType = await this.datastoreService.getEntityType('StartEvent');
+            const datastoreService = await this.getDatastoreService();
+            const processTokenType = await datastoreService.getEntityType('ProcessToken');
+            const startEventType = await datastoreService.getEntityType('StartEvent');
             const internalContext = await this.iamService.createInternalContext('processengine_system');
             let laneContext = context;
             let applicationId = null;

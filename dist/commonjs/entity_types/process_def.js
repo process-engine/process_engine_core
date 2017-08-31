@@ -163,7 +163,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         const features = this.features;
         if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
             debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
-            const processEntityType = await this.datastoreService.getEntityType('Process');
+            const processEntityType = await (await this.getDatastoreService()).getEntityType('Process');
             const processEntity = (await processEntityType.createEntity(context, processData));
             await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
             const ref = processEntity.getEntityReference();
@@ -239,7 +239,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
                     { attribute: 'processDef', operator: '=', value: this.id }
                 ]
             };
-            const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+            const nodeDefEntityType = await (await this.getDatastoreService()).getEntityType('NodeDef');
             const startEventDef = await nodeDefEntityType.findOne(context, { query: queryObject });
             if (startEventDef) {
                 const channelName = `events/timer/${this.id}`;
@@ -287,7 +287,8 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await this._createBoundaries(nodes, nodeCache, context);
         const flows = bpmnDiagram.getFlows(key);
         await this._updateFlows(flows, nodeCache, context, counter);
-        const flowDefEntityType = await this.datastoreService.getEntityType('FlowDef');
+        const datastoreService = await this.getDatastoreService();
+        const flowDefEntityType = await datastoreService.getEntityType('FlowDef');
         const queryObjectFlows = {
             operator: 'and',
             queries: [
@@ -299,7 +300,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await flowColl.each(context, async (flowEnt) => {
             await flowEnt.remove(context);
         });
-        const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+        const nodeDefEntityType = await datastoreService.getEntityType('NodeDef');
         const queryObjectNodes = {
             operator: 'and',
             queries: [
@@ -311,7 +312,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         await nodeColl.each(context, async (nodeEnt) => {
             await nodeEnt.remove(context);
         });
-        const laneEntityType = await this.datastoreService.getEntityType('Lane');
+        const laneEntityType = await datastoreService.getEntityType('Lane');
         const queryObjectLanes = {
             operator: 'and',
             queries: [
@@ -329,7 +330,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async _updateLanes(lanes, context, counter) {
         const laneCache = {};
-        const lane = await this.datastoreService.getEntityType('Lane');
+        const lane = await (await this.getDatastoreService()).getEntityType('Lane');
         const lanePromiseArray = lanes.map(async (laneObj) => {
             const queryObject = {
                 operator: 'and',
@@ -358,7 +359,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
     }
     async _updateNodes(nodes, laneCache, bpmnDiagram, context, counter, helperObject) {
         const nodeCache = {};
-        const nodeDef = await this.datastoreService.getEntityType('NodeDef');
+        const nodeDef = await (await this.getDatastoreService()).getEntityType('NodeDef');
         const nodePromiseArray = nodes.map(async (node) => {
             const queryObject = {
                 operator: 'and',
@@ -436,7 +437,7 @@ class ProcessDefEntity extends data_model_contracts_1.Entity {
         return nodeCache;
     }
     async _updateFlows(flows, nodeCache, context, counter) {
-        const flowDef = await this.datastoreService.getEntityType('FlowDef');
+        const flowDef = await (await this.getDatastoreService()).getEntityType('FlowDef');
         const flowPromiseArray = flows.map(async (flow) => {
             const queryObject = {
                 operator: 'and',

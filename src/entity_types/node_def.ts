@@ -252,7 +252,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
 
   public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
 
-    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+    const nodeDefEntityType = await (await this.getDatastoreService()).getEntityType('NodeDef');
 
     const queryObject: IQueryClause = {
       attribute: 'attachedToNode',

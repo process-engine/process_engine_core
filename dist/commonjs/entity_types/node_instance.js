@@ -143,7 +143,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         }
         this.process.addActiveInstance(this);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
-        const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+        const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
         const processToken = this.processToken;
         const processDef = this.process.processDef;
         const currentToken = await processTokenEntityType.createEntity(internalContext);
@@ -287,7 +287,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                         this.cancel(context);
                     }
                     else {
-                        const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                        const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                         const newToken = await processTokenEntityType.createEntity(internalContext);
                         newToken.process = this.process;
                         const processToken = this.processToken;
@@ -309,7 +309,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                         this.cancel(context);
                     }
                     else {
-                        const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                        const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                         const newToken = await processTokenEntityType.createEntity(internalContext);
                         newToken.process = this.process;
                         const processToken = this.processToken;
@@ -349,7 +349,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
                                 this.cancel(internalContext);
                             }
                             else {
-                                const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+                                const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                                 const newToken = await processTokenEntityType.createEntity(internalContext);
                                 newToken.process = this.process;
                                 newToken.data = tokenData;

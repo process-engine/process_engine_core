@@ -173,7 +173,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             return lane.role;
         }
         async getBoundaryEvents(context) {
-            const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
+            const nodeDefEntityType = await (await this.getDatastoreService()).getEntityType('NodeDef');
             const queryObject = {
                 attribute: 'attachedToNode',
                 operator: '=',

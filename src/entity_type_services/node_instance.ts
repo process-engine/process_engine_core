@@ -486,7 +486,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               }
             }
           }
-
         }
       }
     }
