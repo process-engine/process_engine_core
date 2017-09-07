@@ -1,5 +1,5 @@
 import { ExecutionContext, IEntity, IPublicGetOptions, IInheritedSchema, IIamService } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { IProcessEntity, IProcessDefEntity, IParamStart, INodeInstanceEntityTypeService, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
 export declare class ProcessEntity extends Entity implements IProcessEntity {
@@ -10,7 +10,7 @@ export declare class ProcessEntity extends Entity implements IProcessEntity {
     private _activeInstances;
     private _allInstances;
     boundProcesses: any;
-    constructor(iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, messageBusService: IMessageBusService, processEngineService: IProcessEngineService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema, propertyBag: IPropertyBag);
+    constructor(iamService: IIamService, nodeInstanceEntityTypeService: INodeInstanceEntityTypeService, messageBusService: IMessageBusService, processEngineService: IProcessEngineService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema, propertyBag: IPropertyBag, entityType: IEntityType<IEntity>);
     private readonly iamService;
     private readonly nodeInstanceEntityTypeService;
     private readonly messageBusService;

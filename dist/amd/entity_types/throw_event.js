@@ -2,8 +2,8 @@ define(["require", "exports", "./event"], function (require, exports, event_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ThrowEventEntity extends event_1.EventEntity {
-        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
-            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
+        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
         }
         async initialize() {
             await super.initialize(this);

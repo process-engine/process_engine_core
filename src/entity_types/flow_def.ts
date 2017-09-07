@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IFlowDefEntity, IProcessDefEntity, INodeDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 
@@ -8,8 +8,9 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
   constructor(entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
-              propertyBag: IPropertyBag) {
-    super(entityDependencyHelper, context, schema, propertyBag);
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(entityDependencyHelper, context, schema, propertyBag, entityType);
   }
 
   public async initialize(): Promise<void> {

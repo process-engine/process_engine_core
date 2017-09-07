@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInheritedSchema, IIamService } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { IProcessEntity, IProcessDefEntity, IParamStart, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity,
   ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -26,8 +26,9 @@ export class ProcessEntity extends Entity implements IProcessEntity {
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
-              propertyBag: IPropertyBag) {
-    super(entityDependencyHelper, context, schema, propertyBag);
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._iamService = iamService;
     this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;

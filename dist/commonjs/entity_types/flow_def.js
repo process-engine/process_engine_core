@@ -10,8 +10,8 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class FlowDefEntity extends data_model_contracts_1.Entity {
-    constructor(entityDependencyHelper, context, schema, propertyBag) {
-        super(entityDependencyHelper, context, schema, propertyBag);
+    constructor(entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(entityDependencyHelper, context, schema, propertyBag, entityType);
     }
     async initialize() {
         await super.initialize(this);

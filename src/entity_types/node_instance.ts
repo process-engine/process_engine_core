@@ -1,5 +1,5 @@
 import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, IIamService} from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity,
   IProcessEngineService, IBoundaryEventEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
@@ -47,8 +47,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
-              propertyBag: IPropertyBag) {
-    super(entityDependencyHelper, context, schema, propertyBag);
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._nodeInstanceEntityDependencyHelper = nodeInstanceEntityDependencyHelper;
   }

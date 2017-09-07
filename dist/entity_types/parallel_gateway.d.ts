@@ -1,9 +1,9 @@
 import { ExecutionContext, IEntity, IInheritedSchema } from '@process-engine-js/core_contracts';
-import { EntityDependencyHelper, IPropertyBag } from '@process-engine-js/data_model_contracts';
+import { EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { NodeInstanceEntity, NodeInstanceEntityDependencyHelper } from './node_instance';
 import { IParallelGatewayEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
-    constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema, propertyBag: IPropertyBag);
+    constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema, propertyBag: IPropertyBag, entityType: IEntityType<IEntity>);
     initialize(): Promise<void>;
     parallelType: string;
     execute(context: ExecutionContext): Promise<void>;

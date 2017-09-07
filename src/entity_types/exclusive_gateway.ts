@@ -1,5 +1,5 @@
 import {NodeInstanceEntity} from './node_instance';
-import {EntityDependencyHelper, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {IExclusiveGatewayEntity, IFlowDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -11,8 +11,9 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
-              propertyBag: IPropertyBag) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
   }
 
   public async initialize(): Promise<void> {

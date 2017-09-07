@@ -30,8 +30,8 @@ class NodeInstanceEntityDependencyHelper {
 }
 exports.NodeInstanceEntityDependencyHelper = NodeInstanceEntityDependencyHelper;
 let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1.Entity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
-        super(entityDependencyHelper, context, schema, propertyBag);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(entityDependencyHelper, context, schema, propertyBag, entityType);
         this._nodeInstanceEntityDependencyHelper = undefined;
         this.messagebusSubscription = undefined;
         this.eventAggregatorSubscription = undefined;

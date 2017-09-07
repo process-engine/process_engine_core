@@ -4,8 +4,8 @@ const node_instance_1 = require("./node_instance");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema, propertyBag) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
+    constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
         this._processDefEntityTypeService = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }

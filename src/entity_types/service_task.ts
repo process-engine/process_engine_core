@@ -1,6 +1,6 @@
 import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
-import {EntityDependencyHelper, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
 import { Container, IInstanceWrapper } from 'addict-ioc';
 
@@ -13,8 +13,9 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
-              propertyBag: IPropertyBag) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._container = container;
   }

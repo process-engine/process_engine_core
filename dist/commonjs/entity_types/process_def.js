@@ -15,8 +15,8 @@ const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 ;
 class ProcessDefEntity extends data_model_contracts_1.Entity {
-    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, processEngineService, entityDependencyHelper, context, schema, propertyBag) {
-        super(entityDependencyHelper, context, schema, propertyBag);
+    constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, processEngineService, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(entityDependencyHelper, context, schema, propertyBag, entityType);
         this._messageBusService = undefined;
         this._eventAggregator = undefined;
         this._timingService = undefined;

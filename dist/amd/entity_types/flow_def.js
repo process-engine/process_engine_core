@@ -8,8 +8,8 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class FlowDefEntity extends data_model_contracts_1.Entity {
-        constructor(entityDependencyHelper, context, schema, propertyBag) {
-            super(entityDependencyHelper, context, schema, propertyBag);
+        constructor(entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(entityDependencyHelper, context, schema, propertyBag, entityType);
         }
         async initialize() {
             await super.initialize(this);

@@ -3,8 +3,8 @@ define(["require", "exports", "./node_instance", "@process-engine-js/process_eng
     Object.defineProperty(exports, "__esModule", { value: true });
     const debugInfo = debug('processengine:info');
     class EventEntity extends node_instance_1.NodeInstanceEntity {
-        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
-            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
+        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
             this.config = undefined;
             this._subscription = undefined;
         }

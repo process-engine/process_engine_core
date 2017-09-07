@@ -12,8 +12,8 @@ const metadata_1 = require("@process-engine-js/metadata");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 class ProcessEntity extends data_model_contracts_1.Entity {
-    constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema, propertyBag) {
-        super(entityDependencyHelper, context, schema, propertyBag);
+    constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(entityDependencyHelper, context, schema, propertyBag, entityType);
         this._iamService = undefined;
         this._nodeInstanceEntityTypeService = undefined;
         this._messageBusService = undefined;

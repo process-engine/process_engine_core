@@ -1,6 +1,6 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions,
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection, EntityReference, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection, EntityReference, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
   IProcessRepository, TimerDefinitionType, IProcessEngineService, IXmlObject } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -43,8 +43,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
-              propertyBag: IPropertyBag) {
-    super(entityDependencyHelper, context, schema, propertyBag);
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._processRepository = processRepository;
