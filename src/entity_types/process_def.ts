@@ -55,9 +55,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this._processEngineService = processEngineService;
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initEntity(actualInstance);
   }
 
   private get eventAggregator(): IEventAggregator {

@@ -50,9 +50,9 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     return this._processEngineService;
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initEntity(actualInstance);
   }
 
   public get activeInstances(): any {

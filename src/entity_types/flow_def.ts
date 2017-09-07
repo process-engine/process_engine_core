@@ -11,9 +11,9 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
     super(entityDependencyHelper, context, schema);
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initEntity(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

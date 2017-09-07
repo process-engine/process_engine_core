@@ -14,9 +14,9 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initEntity(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.object })

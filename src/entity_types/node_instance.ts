@@ -76,9 +76,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this._nodeInstanceEntityDependencyHelper.timingService;
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initEntity(actualInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
@@ -366,7 +366,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const boundaryDef = eventEntity.nodeDef;
-    const processToken = await this.processToken;
+    const processToken = await eventEntity.processToken;
     const tokenData: any = processToken.data || {};
 
     if (boundaryDef) {

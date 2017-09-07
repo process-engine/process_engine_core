@@ -13,8 +13,8 @@ export class StartEventEntity extends EventEntity implements IStartEventEntity {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
     const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initEntity(actualInstance);
   }
 }
