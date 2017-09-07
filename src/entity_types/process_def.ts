@@ -1,6 +1,6 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions,
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection, EntityReference, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
   IProcessRepository, TimerDefinitionType, IProcessEngineService, IXmlObject } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -42,8 +42,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               processEngineService: IProcessEngineService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag) {
+    super(entityDependencyHelper, context, schema, propertyBag);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._processRepository = processRepository;
@@ -55,9 +56,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this._processEngineService = processEngineService;
   }
 
-  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initEntity(actualInstance);
+  public async initialize(): Promise<void> {
+    await super.initialize(this);
   }
 
   private get eventAggregator(): IEventAggregator {

@@ -2,13 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
 class BoundaryEventEntity extends event_1.EventEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
         this.attachedToInstance = undefined;
     }
-    async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+    async initialize() {
+        await super.initialize(this);
     }
     async execute(context) {
         const nodeDef = this.nodeDef;

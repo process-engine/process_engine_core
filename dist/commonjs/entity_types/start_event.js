@@ -2,12 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const event_1 = require("./event");
 class StartEventEntity extends event_1.EventEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
     }
-    async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+    async initialize() {
+        await super.initialize(this);
     }
 }
 exports.StartEventEntity = StartEventEntity;

@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInheritedSchema, IIamService } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { IProcessEntity, IProcessDefEntity, IParamStart, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity,
   ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
@@ -25,8 +25,9 @@ export class ProcessEntity extends Entity implements IProcessEntity {
               processEngineService: IProcessEngineService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag) {
+    super(entityDependencyHelper, context, schema, propertyBag);
 
     this._iamService = iamService;
     this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
@@ -50,9 +51,8 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     return this._processEngineService;
   }
 
-  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initEntity(actualInstance);
+  public async initialize(): Promise<void> {
+    await super.initialize(this);
   }
 
   public get activeInstances(): any {

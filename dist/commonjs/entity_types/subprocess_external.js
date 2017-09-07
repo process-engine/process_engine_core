@@ -4,17 +4,16 @@ const node_instance_1 = require("./node_instance");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 class SubprocessExternalEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+    constructor(nodeInstanceEntityDependencyHelper, processDefEntityTypeService, entityDependencyHelper, context, schema, propertyBag) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
         this._processDefEntityTypeService = undefined;
         this._processDefEntityTypeService = processDefEntityTypeService;
     }
     get processDefEntityTypeService() {
         return this._processDefEntityTypeService;
     }
-    async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+    async initialize() {
+        await super.initialize(this);
     }
     async execute(context) {
         const internalContext = await this.iamService.createInternalContext('processengine_system');

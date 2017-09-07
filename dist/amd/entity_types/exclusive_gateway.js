@@ -8,12 +8,11 @@ define(["require", "exports", "./node_instance", "@process-engine-js/core_contra
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
-        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
+            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
         }
-        async initialize(derivedClassInstance) {
-            const actualInstance = derivedClassInstance || this;
-            await super.initialize(actualInstance);
+        async initialize() {
+            await super.initialize(this);
         }
         get follow() {
             return this.getProperty(this, 'follow');

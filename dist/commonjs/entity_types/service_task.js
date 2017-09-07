@@ -2,17 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_instance_1 = require("./node_instance");
 class ServiceTaskEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(container, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+    constructor(container, nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag);
         this._container = undefined;
         this._container = container;
     }
     get container() {
         return this._container;
     }
-    async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+    async initialize() {
+        await super.initialize(this);
     }
     async execute(context) {
         this.state = 'progress';

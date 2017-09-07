@@ -11,8 +11,8 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
     const debugErr = debug('processengine:error');
     ;
     class ProcessDefEntity extends data_model_contracts_1.Entity {
-        constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, processEngineService, entityDependencyHelper, context, schema) {
-            super(entityDependencyHelper, context, schema);
+        constructor(processDefEntityTypeService, processRepository, featureService, messageBusService, routingService, eventAggregator, timingService, processEngineService, entityDependencyHelper, context, schema, propertyBag) {
+            super(entityDependencyHelper, context, schema, propertyBag);
             this._messageBusService = undefined;
             this._eventAggregator = undefined;
             this._timingService = undefined;
@@ -30,9 +30,8 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
             this._timingService = timingService;
             this._processEngineService = processEngineService;
         }
-        async initialize(derivedClassInstance) {
-            const actualInstance = derivedClassInstance || this;
-            await super.initialize(actualInstance);
+        async initialize() {
+            await super.initialize(this);
         }
         get eventAggregator() {
             return this._eventAggregator;

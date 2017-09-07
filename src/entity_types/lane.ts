@@ -1,5 +1,5 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ILaneEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
 import {IFeature} from '@process-engine-js/feature_contracts';
@@ -8,13 +8,13 @@ export class LaneEntity extends Entity implements ILaneEntity {
 
   constructor(entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag) {
+    super(entityDependencyHelper, context, schema, propertyBag);
   }
 
-  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initEntity(actualInstance);
+  public async initialize(): Promise<void> {
+    await super.initialize(this);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

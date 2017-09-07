@@ -1,5 +1,5 @@
 import { ExecutionContext, SchemaAttributeType, IInheritedSchema, IEntity, IIamService} from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { INodeInstanceEntity, INodeInstanceEntityTypeService, INodeDefEntity, IProcessEntity, IProcessTokenEntity,
   IProcessEngineService, IBoundaryEventEntity } from '@process-engine-js/process_engine_contracts';
 import { schemaAttribute, schemaClass } from '@process-engine-js/metadata';
@@ -46,8 +46,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag) {
+    super(entityDependencyHelper, context, schema, propertyBag);
 
     this._nodeInstanceEntityDependencyHelper = nodeInstanceEntityDependencyHelper;
   }
@@ -76,9 +77,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     return this._nodeInstanceEntityDependencyHelper.timingService;
   }
 
-  public async initEntity(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initEntity(actualInstance);
+  public async initialize(derivedClassInstance: IEntity): Promise<void> {
+    await super.initialize(derivedClassInstance);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })

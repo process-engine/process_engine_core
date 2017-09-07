@@ -1,5 +1,5 @@
 import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions, IEntityReference, IPrivateSaveOptions } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, EntityCollection } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, EntityCollection, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessRepository, IProcessEngineService, IXmlObject } from '@process-engine-js/process_engine_contracts';
 import { ITimingService } from '@process-engine-js/timing_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
@@ -15,8 +15,8 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     private _featureService;
     private _routingService;
     private _processEngineService;
-    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, processRepository: IProcessRepository, featureService: IFeatureService, messageBusService: IMessageBusService, routingService: IRoutingService, eventAggregator: IEventAggregator, timingService: ITimingService, processEngineService: IProcessEngineService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): Promise<void>;
+    constructor(processDefEntityTypeService: IProcessDefEntityTypeService, processRepository: IProcessRepository, featureService: IFeatureService, messageBusService: IMessageBusService, routingService: IRoutingService, eventAggregator: IEventAggregator, timingService: ITimingService, processEngineService: IProcessEngineService, entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema, propertyBag: IPropertyBag);
+    initialize(): Promise<void>;
     private readonly eventAggregator;
     private readonly timingService;
     private readonly processDefEntityTypeService;
