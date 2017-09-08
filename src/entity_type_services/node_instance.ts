@@ -541,6 +541,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           processEntity = this.processEngineService.activeInstances[sourceProcessRef.id];
         } else {
           const processData = {
+            id: sourceProcessRef.id,
             key: processDef.key,
             processDef: processDef
           };

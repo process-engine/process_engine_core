@@ -390,6 +390,7 @@ class NodeInstanceEntityTypeService {
                 }
                 else {
                     const processData = {
+                        id: sourceProcessRef.id,
                         key: processDef.key,
                         processDef: processDef
                     };
