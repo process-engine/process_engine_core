@@ -1,6 +1,6 @@
 import { ExecutionContext, IEntity, IInheritedSchema, IPublicGetOptions, IEntityReference, IPrivateSaveOptions } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, EntityCollection, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
-import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessRepository, IProcessEngineService, IXmlObject } from '@process-engine-js/process_engine_contracts';
+import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessRepository, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import { ITimingService } from '@process-engine-js/timing_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
@@ -45,7 +45,7 @@ export declare class ProcessDefEntity extends Entity implements IProcessDefEntit
     getLaneCollection(context: ExecutionContext): Promise<EntityCollection>;
     readonly features: Array<IFeature>;
     start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference>;
-    updateBpmn(context: ExecutionContext, xml: IXmlObject): Promise<any>;
+    updateBpmn(context: ExecutionContext, xml: string): Promise<any>;
     private _parseTimerDefinitionType(eventDefinition);
     private _parseTimerDefinition(eventDefinition);
     startTimer(context: ExecutionContext): Promise<void>;

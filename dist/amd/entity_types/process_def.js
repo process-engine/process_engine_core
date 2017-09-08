@@ -191,7 +191,7 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
         }
         async updateBpmn(context, xml) {
             if (xml) {
-                this.xml = xml.xml;
+                this.xml = xml;
                 this.counter = this.counter + 1;
                 await this.updateDefinitions(context);
                 if (this.internalName && this.path && !this.readonly) {
