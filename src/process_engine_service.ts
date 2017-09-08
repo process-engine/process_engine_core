@@ -1,10 +1,10 @@
-import { IProcessRepository, IProcessEngineService, IProcessDefEntityTypeService, IParamStart, IImportFromFileOptions,
-  IParamImportFromXml } from '@process-engine-js/process_engine_contracts';
-import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { ExecutionContext, IPublicGetOptions, IIamService, IEntityReference, IEntity } from '@process-engine-js/core_contracts';
-import { IFeatureService } from '@process-engine-js/feature_contracts';
-import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { ExecutionContext, IEntity, IEntityReference, IIamService, IPublicGetOptions } from '@process-engine-js/core_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
+import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { IFeatureService } from '@process-engine-js/feature_contracts';
+import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IImportFromFileOptions, IParamImportFromXml, IParamStart, IProcessDefEntityTypeService, IProcessEngineService,
+  IProcessRepository } from '@process-engine-js/process_engine_contracts';
 
 import * as debug from 'debug';
 
@@ -108,7 +108,7 @@ export class ProcessEngineService implements IProcessEngineService {
           initialToken: initialToken,
           source: source,
           isSubProcess: isSubProcess,
-          participant: participant
+          participant: participant,
         };
 
         await this.processDefEntityTypeService.start(context, params);
@@ -141,7 +141,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     const options: IImportFromFileOptions = {
-      overwriteExisting: false
+      overwriteExisting: false,
     };
 
     const processes = this.processRepository.getProcessesByCategory('internal');
@@ -155,7 +155,7 @@ export class ProcessEngineService implements IProcessEngineService {
           category: process.category,
           module: process.module,
           path: process.path,
-          readonly: process.readonly
+          readonly: process.readonly,
         };
 
         await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
@@ -171,12 +171,12 @@ export class ProcessEngineService implements IProcessEngineService {
           operator: 'and',
           queries: [
             { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
-            { attribute: 'eventType', operator: '=', value: 'bpmn:TimerEventDefinition' }
-          ]
+            { attribute: 'eventType', operator: '=', value: 'bpmn:TimerEventDefinition' },
+          ],
         };
     const startEventColl: any = await nodeDefEntityType.query(internalContext, { query: queryObject });
 
-    startEventColl.each(internalContext, async (nodeDef) => {
+    startEventColl.each(internalContext, async(nodeDef) => {
       const processDef = await nodeDef.getProcessDef(internalContext);
       await processDef.startTimer(internalContext);
     });

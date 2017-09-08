@@ -1,8 +1,8 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryClause} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {TimerDefinitionType, INodeDefEntity, IProcessDefEntity, ILaneEntity} from '@process-engine-js/process_engine_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
+import {ExecutionContext, IEntity, IInheritedSchema, IQueryClause, SchemaAttributeType} from '@process-engine-js/core_contracts';
+import {Entity, EntityCollection, EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import { IFeature } from '@process-engine-js/feature_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
+import {ILaneEntity, INodeDefEntity, IProcessDefEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
@@ -258,7 +258,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     const queryObject: IQueryClause = {
       attribute: 'attachedToNode',
       operator: '=',
-      value: this.id
+      value: this.id,
     };
 
     const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
@@ -266,7 +266,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   private _extractFeatures(): Array<IFeature> {
-    let features = undefined;
+    let features;
     const extensions = this.extensions || null;
     const props = (extensions && extensions.properties) ? extensions.properties : null;
 
@@ -291,7 +291,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   private _extractMapper(): any {
-    let mapper = undefined;
+    let mapper;
     const extensions = this.extensions || undefined;
     const props = (extensions !== undefined && extensions.properties) ? extensions.properties : undefined;
 

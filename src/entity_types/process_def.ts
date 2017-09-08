@@ -1,25 +1,25 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions,
-  IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection, EntityReference, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
-  IProcessRepository, TimerDefinitionType, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
-import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
+import {ExecutionContext, ICombinedQueryClause, IEntity, IEntityReference, IInheritedSchema, IPrivateQueryOptions,
+  IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@process-engine-js/core_contracts';
+import {Entity, EntityCollection, EntityDependencyHelper, EntityReference, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
-import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService, IDataMessage } from '@process-engine-js/messagebus_contracts';
+import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
+import { IParamStart, IParamUpdateDefs, IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService,
+  IProcessEntity, IProcessRepository, TimerDefinitionType } from '@process-engine-js/process_engine_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
+import {ITimingRule, ITimingService} from '@process-engine-js/timing_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
-import * as moment from 'moment';
 import * as debug from 'debug';
+import * as moment from 'moment';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 
 interface ICache<T> {
   [key: string]: T;
-};
+}
 
 export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
@@ -94,7 +94,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   @schemaAttribute({
-    type: SchemaAttributeType.string
+    type: SchemaAttributeType.string,
   })
   public get name(): string {
     return this.getProperty(this, 'name');
@@ -238,7 +238,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const processData = {
       key: this.key,
-      processDef: this
+      processDef: this,
     };
 
     const features = this.features;
@@ -269,13 +269,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       const messageOptions: IDatastoreMessageOptions = {
         action: 'POST',
         typeName: 'ProcessDef',
-        method: 'start'
+        method: 'start',
       };
 
       const message: IDatastoreMessage = this.messageBusService.createDatastoreMessage(messageOptions, context, params);
       try {
         const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
-        const response: IDataMessage = <IDataMessage>(await this.routingService.request(appInstanceId, message, adapterKey));
+        const response: IDataMessage = <IDataMessage> (await this.routingService.request(appInstanceId, message, adapterKey));
         const ref = new EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
         return ref;
       } catch (err) {
@@ -337,8 +337,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         operator: 'and',
         queries: [
           { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
-          { attribute: 'processDef', operator: '=', value: this.id }
-        ]
+          { attribute: 'processDef', operator: '=', value: this.id },
+        ],
       };
       const nodeDefEntityType = await (await this.getDatastoreService()).getEntityType('NodeDef');
       const startEventDef: any = await nodeDefEntityType.findOne(context, { query: queryObject });
@@ -347,21 +347,21 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
         const channelName = `events/timer/${this.id}`;
 
-        const callback = async () => {
+        const callback = async() => {
           await this.start(context, undefined);
         };
 
         switch (startEventDef.timerDefinitionType) {
           case TimerDefinitionType.cycle:
-            await this.timingService.periodic(<ITimingRule>startEventDef.timerDefinition, channelName, context);
+            await this.timingService.periodic(<ITimingRule> startEventDef.timerDefinition, channelName, context);
             this.eventAggregator.subscribe(channelName, callback.bind(this));
             break;
           case TimerDefinitionType.date:
-            await this.timingService.once(<moment.Moment>startEventDef.timerDefinition, channelName, context);
+            await this.timingService.once(<moment.Moment> startEventDef.timerDefinition, channelName, context);
             this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
             break;
           case TimerDefinitionType.duration:
-            await this.timingService.once(<moment.Moment>startEventDef.timerDefinition, channelName, context);
+            await this.timingService.once(<moment.Moment> startEventDef.timerDefinition, channelName, context);
             this.eventAggregator.subscribeOnce(channelName, callback.bind(this));
             break;
           default: return;
@@ -379,7 +379,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const counter = this.counter;
 
     const helperObject = {
-      hasTimerStartEvent: false
+      hasTimerStartEvent: false,
     };
 
     if (!bpmnDiagram) {
@@ -418,11 +418,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       operator: 'and',
       queries: [
         { attribute: 'counter', operator: '<', value: counter },
-        { attribute: 'processDef', operator: '=', value: this.id }
-      ]
+        { attribute: 'processDef', operator: '=', value: this.id },
+      ],
     };
     const flowColl = await flowDefEntityType.query(context, { query: queryObjectFlows });
-    await flowColl.each(context, async (flowEnt) => {
+    await flowColl.each(context, async(flowEnt) => {
       await flowEnt.remove(context);
     });
 
@@ -432,11 +432,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       operator: 'and',
       queries: [
         { attribute: 'counter', operator: '<', value: counter },
-        { attribute: 'processDef', operator: '=', value: this.id }
-      ]
+        { attribute: 'processDef', operator: '=', value: this.id },
+      ],
     };
     const nodeColl = await nodeDefEntityType.query(context, { query: queryObjectNodes });
-    await nodeColl.each(context, async (nodeEnt) => {
+    await nodeColl.each(context, async(nodeEnt) => {
       await nodeEnt.remove(context);
     });
 
@@ -446,11 +446,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       operator: 'and',
       queries: [
         { attribute: 'counter', operator: '<', value: counter },
-        { attribute: 'processDef', operator: '=', value: this.id }
-      ]
+        { attribute: 'processDef', operator: '=', value: this.id },
+      ],
     };
     const laneColl = await laneEntityType.query(context, { query: queryObjectLanes });
-    await laneColl.each(context, async (laneEnt) => {
+    await laneColl.each(context, async(laneEnt) => {
       await laneEnt.remove(context);
     });
 
@@ -465,17 +465,17 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const lane = await (await this.getDatastoreService()).getEntityType('Lane');
 
-    const lanePromiseArray = lanes.map(async (laneObj) => {
+    const lanePromiseArray = lanes.map(async(laneObj) => {
 
       const queryObject: IQueryObject = {
         operator: 'and',
         queries: [
         { attribute: 'key', operator: '=', value: laneObj.id },
-        { attribute: 'processDef', operator: '=', value: this.id }
+        { attribute: 'processDef', operator: '=', value: this.id },
       ]};
 
       const queryOptions: IPrivateQueryOptions = {
-        query: queryObject
+        query: queryObject,
       };
 
       let laneEntity: any = await lane.findOne(context, queryOptions);
@@ -508,13 +508,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const nodeDef = await (await this.getDatastoreService()).getEntityType('NodeDef');
 
-    const nodePromiseArray = nodes.map(async (node) => {
+    const nodePromiseArray = nodes.map(async(node) => {
 
       const queryObject: IQueryObject = {
         operator: 'and',
         queries: [
         { attribute: 'key', operator: '=', value: node.id },
-        { attribute: 'processDef', operator: '=', value: this.id }
+        { attribute: 'processDef', operator: '=', value: this.id },
       ]};
 
       let nodeDefEntity: any = await nodeDef.findOne(context, { query: queryObject });
@@ -522,7 +522,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       if (!nodeDefEntity) {
 
         const nodeDefData = {
-          key: node.id
+          key: node.id,
         };
 
         nodeDefEntity = await nodeDef.createEntity(context, nodeDefData);
@@ -620,13 +620,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     const flowDef = await (await this.getDatastoreService()).getEntityType('FlowDef');
 
-    const flowPromiseArray = flows.map(async (flow) => {
+    const flowPromiseArray = flows.map(async(flow) => {
 
       const queryObject: IQueryObject = {
         operator: 'and',
         queries: [
         { attribute: 'key', operator: '=', value: flow.id },
-        { attribute: 'processDef', operator: '=', value: this.id }
+        { attribute: 'processDef', operator: '=', value: this.id },
       ]};
 
       let flowDefEntity: any = await flowDef.findOne(context, { query: queryObject });
@@ -634,7 +634,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       if (!flowDefEntity) {
 
         const flowDefData = {
-          key: flow.id
+          key: flow.id,
         };
 
         flowDefEntity = await flowDef.createEntity(context, flowDefData);
@@ -668,7 +668,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private async _createBoundaries(nodes: Array<any>, nodeCache: ICache<any>, context: ExecutionContext): Promise<void> {
 
-    const nodePromiseArray = nodes.map(async (node) => {
+    const nodePromiseArray = nodes.map(async(node) => {
 
       if (node.$type === 'bpmn:BoundaryEvent') {
         const attachedKey = (node.attachedToRef && node.attachedToRef.id) ? node.attachedToRef.id : null;
@@ -687,42 +687,42 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
             case 'bpmn:ErrorEventDefinition':
               events.push({
                 type: 'error',
-                boundary: boundary.id
+                boundary: boundary.id,
               });
               break;
 
             case 'bpmn:TimerEventDefinition':
               events.push({
                 type: 'timer',
-                boundary: boundary.id
+                boundary: boundary.id,
               });
               break;
 
             case 'bpmn:SignalEventDefinition':
               events.push({
                 type: 'signal',
-                boundary: boundary.id
+                boundary: boundary.id,
               });
               break;
 
             case 'bpmn:MessageEventDefinition':
               events.push({
                 type: 'message',
-                boundary: boundary.id
+                boundary: boundary.id,
               });
               break;
 
             case 'bpmn:CancelEventDefinition':
               events.push({
                 type: 'cancel',
-                boundary: boundary.id
+                boundary: boundary.id,
               });
               break;
 
             case 'bpmn:ConditionalEventDefinition':
               events.push({
                 type: 'condition',
-                boundary: boundary.id
+                boundary: boundary.id,
               });
               break;
 
@@ -767,7 +767,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
                           const newChild = {
                             $type: propChild.$type,
                             name: propChild.id,
-                            value: propChild.value
+                            value: propChild.value,
                           };
 
                           formProperties.push(newChild);
@@ -780,7 +780,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
                       const newFormValue = {
                         $type: formValue.$type,
                         id: formValue.id,
-                        name: formValue.name
+                        name: formValue.name,
                       };
                       formValues.push(newFormValue);
                       break;
@@ -799,7 +799,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
                 type: child.type,
                 defaultValue: child.defaultValue,
                 formValues: formValues,
-                formProperties: formProperties
+                formProperties: formProperties,
               };
 
               formFields.push(newChild);
@@ -817,7 +817,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               const newChild = {
                 $type: child.$type,
                 name: child.name,
-                value: child.value
+                value: child.value,
               };
 
               switch (child.name) {
@@ -845,7 +845,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   private _extractFeatures(): Array<IFeature> {
-    let features = undefined;
+    let features;
     const extensions = this.extensions || null;
     const props = (extensions && extensions.properties) ? extensions.properties : null;
 

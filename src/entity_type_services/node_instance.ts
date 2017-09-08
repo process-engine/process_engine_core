@@ -1,16 +1,16 @@
-import { INodeInstanceEntityTypeService, IProcessEntity, IParamsContinueFromRemote, INodeDefEntity, INodeInstanceEntity,
-  IFlowDefEntity, ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IEntity, IIamService } from '@process-engine-js/core_contracts';
-import {IDatastoreService, IEntityType, EntityReference} from '@process-engine-js/data_model_contracts';
-import { IMessageBusService, IDatastoreMessageOptions, IDatastoreMessage } from '@process-engine-js/messagebus_contracts';
-import { IFeatureService } from '@process-engine-js/feature_contracts';
-import { IRoutingService } from '@process-engine-js/routing_contracts';
+import { ExecutionContext, IEntity, IIamService, IPublicGetOptions } from '@process-engine-js/core_contracts';
+import {EntityReference, IDatastoreService, IEntityType} from '@process-engine-js/data_model_contracts';
 import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
+import { IFeatureService } from '@process-engine-js/feature_contracts';
+import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
+  IParamsContinueFromRemote, IProcessEngineService, IProcessEntity } from '@process-engine-js/process_engine_contracts';
+import { IRoutingService } from '@process-engine-js/routing_contracts';
 
 import * as debug from 'debug';
 
-import {ProcessTokenEntity} from '../entity_types/process_token';
 import {NodeDefEntity} from '../entity_types/node_def';
+import {ProcessTokenEntity} from '../entity_types/process_token';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -79,7 +79,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   private async _nodeHandler(event: any): Promise<void> {
-    const binding: Binding = <any>this;
+    const binding: Binding = <any> this;
 
     const action = (event && event.data && event.data.action) ? event.data.action : null;
     const source: IEntity = (event && event.source) ? event.source : null;
@@ -105,7 +105,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
           case ('follow'):
           await binding.entity.followBoundary(context);
-            break;
+          break;
 
           default:
           // error ???
@@ -131,7 +131,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   private async _nodeHandlerMessagebus(msg: any): Promise<void> {
-    const binding: Binding = <any>this;
+    const binding: Binding = <any> this;
 
     await binding.messagebusService.verifyMessage(msg);
 
@@ -185,10 +185,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       entity: node,
       eventAggregator: this.eventAggregator,
       messagebusService: this.messagebusService,
-      datastoreService: this.datastoreService
+      datastoreService: this.datastoreService,
     };
 
-    const anyNode = <any>node;
+    const anyNode = <any> node;
     anyNode.eventAggregatorSubscription = this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
     anyNode.messagebusSubscription = this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandlerMessagebus.bind(binding));
     return anyNode;
@@ -200,7 +200,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     // const process = await source.getProcess(internalContext);
     const process = source.process;
 
-    let applicationId = source.application;
+    const applicationId = source.application;
 
     const map = new Map();
     map.set('bpmn:UserTask', 'UserTask');
@@ -269,7 +269,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       if (node) {
         const data = {
           action: 'proceed',
-          token: null
+          token: null,
         };
 
         const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null ));
@@ -309,23 +309,23 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
 
-    const nodeInstance = <any>source;
+    const nodeInstance = <any> source;
     const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
 
-    let nextDefs = [];
+    const nextDefs = [];
 
     const nodeDef = nodeInstance.nodeDef;
 
-    const processDef = (<INodeInstanceEntity>source).process.processDef;
+    const processDef = (<INodeInstanceEntity> source).process.processDef;
 
-    let flowsOut = [];
+    const flowsOut = [];
 
     if (nodeInstance.follow) {
       // we have already a list of flows to follow
       if (nodeInstance.follow.length > 0) {
 
         for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-          const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+          const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
           if (nodeInstance.follow.indexOf(flowDef.id) !== -1) {
             flowsOut.push(flowDef);
           }
@@ -334,7 +334,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     } else {
 
       for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-        const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+        const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
         if (flowDef.source.id === nodeDef.id) {
           flowsOut.push(flowDef);
         }
@@ -351,7 +351,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         mappers.push(flow.mapper);
       }
 
-      await (<INodeInstanceEntity>source).process.processDef.nodeDefCollection.each(internalContext, async (nodeDefEntity) => {
+      await (<INodeInstanceEntity> source).process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
         if (ids.indexOf(nodeDefEntity.id) !== -1 && nodeDefEntity.processDef.id === processDef.id) {
           nextDefs.push(nodeDefEntity);
         }
@@ -396,9 +396,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
           const laneRef = await nextDef.lane;
           const laneId = laneRef ? laneRef.id : undefined;
-          let laneFeatures = undefined;
+          let laneFeatures;
           for (let j = 0; j < processDef.laneCollection.data.length; j++) {
-            const lane = <ILaneEntity>processDef.laneCollection.data[j];
+            const lane = <ILaneEntity> processDef.laneCollection.data[j];
             if (lane.id === laneId) {
               laneFeatures = lane.features;
             }
@@ -431,7 +431,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
             const options: IDatastoreMessageOptions = {
               action: 'POST',
               typeName: 'NodeInstance',
-              method: 'continueFromRemote'
+              method: 'continueFromRemote',
             };
 
             let data;
@@ -441,8 +441,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
                 {
                   source: nodeInstance.getEntityReference().toPojo(),
                   nextDef: nextDef.getEntityReference().toPojo(),
-                  token: currentToken.getEntityReference().toPojo()
-                }
+                  token: currentToken.getEntityReference().toPojo(),
+                },
               ];
             } else {
               data = [
@@ -450,8 +450,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
                 {
                   source: await nodeInstance.toPojo(internalContext, { maxDepth: 1 }),
                   nextDef: nextDef.getEntityReference().toPojo(),
-                  token: await currentToken.toPojo(internalContext, { maxDepth: 1 })
-                }
+                  token: await currentToken.toPojo(internalContext, { maxDepth: 1 }),
+                },
               ];
             }
 
@@ -492,9 +492,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
-    let source: any = undefined;
-    let token: ProcessTokenEntity = undefined;
-    let nextDef: INodeDefEntity = undefined;
+    let source: any;
+    let token: ProcessTokenEntity;
+    let nextDef: INodeDefEntity;
 
     try {
       const internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -530,7 +530,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         token = await processTokenEntityType.getById(tokenRef.id, context);
       } else {
         // token is a pojo of an entity
-        token = <ProcessTokenEntity>await processTokenEntityType.createEntity(context, params.token);
+        token = <ProcessTokenEntity> await processTokenEntityType.createEntity(context, params.token);
       }
 
       const sourceProcessRef = source && source.process ? source.process : undefined;
@@ -543,7 +543,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           const processData = {
             id: sourceProcessRef.id,
             key: processDef.key,
-            processDef: processDef
+            processDef: processDef,
           };
 
           const processEntityType = await this.datastoreService.getEntityType('Process');
@@ -556,26 +556,26 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           }
 
           await processDef.getNodeDefCollection(internalContext);
-          await processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+          await processDef.nodeDefCollection.each(internalContext, async(nodeDef) => {
             nodeDef.processDef = processDef;
           });
           await processDef.getFlowDefCollection(internalContext);
-          await processDef.flowDefCollection.each(internalContext, async (flowDef) => {
+          await processDef.flowDefCollection.each(internalContext, async(flowDef) => {
             flowDef.processDef = processDef;
           });
           await processDef.getLaneCollection(internalContext);
-          await processDef.laneCollection.each(internalContext, async (lane) => {
+          await processDef.laneCollection.each(internalContext, async(lane) => {
             lane.processDef = processDef;
           });
 
           // set lane entities
           for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
-            const nodeDef = <INodeDefEntity>processDef.nodeDefCollection.data[i];
+            const nodeDef = <INodeDefEntity> processDef.nodeDefCollection.data[i];
 
             if (nodeDef.lane) {
               const laneId = nodeDef.lane.id;
               for (let j = 0; j < processDef.laneCollection.length; j++) {
-                const lane = <ILaneEntity>processDef.laneCollection.data[j];
+                const lane = <ILaneEntity> processDef.laneCollection.data[j];
                 if (lane.id === laneId) {
                   nodeDef.lane = lane;
                 }

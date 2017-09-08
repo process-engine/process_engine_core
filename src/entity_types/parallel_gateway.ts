@@ -1,8 +1,8 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {schemaAttribute} from '@process-engine-js/metadata';
-import {IParallelGatewayEntity, INodeInstanceEntity, IFlowDefEntity, INodeDefEntity} from '@process-engine-js/process_engine_contracts';
+import {IFlowDefEntity, INodeDefEntity, INodeInstanceEntity, IParallelGatewayEntity} from '@process-engine-js/process_engine_contracts';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
 
@@ -33,19 +33,19 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
     const nodeDef = await this.nodeDef;
     const processDef = await this.process.processDef;
 
-    let flowsOut = [];
+    const flowsOut = [];
 
     for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
       if (flowDef.source.id === nodeDef.id) {
         flowsOut.push(flowDef);
       }
     }
 
-    let flowsIn = [];
+    const flowsIn = [];
 
     for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
       if (flowDef.target.id === nodeDef.id) {
         flowsIn.push(flowDef);
       }
@@ -84,12 +84,12 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
     const prevDefsKeys: Array<string> = [];
 
     for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
       if (flowDef.target.id === nodeDef.id) {
         const sourceDefId = flowDef.source.id;
 
         for (let j = 0; j < processDef.nodeDefCollection.data.length; j++) {
-          const sourceDef = <INodeDefEntity>processDef.nodeDefCollection.data[j];
+          const sourceDef = <INodeDefEntity> processDef.nodeDefCollection.data[j];
           if (sourceDef.id === sourceDefId) {
             prevDefsKeys.push(sourceDef.key);
           }
@@ -100,7 +100,7 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
     if (prevDefsKeys.length > 0) {
       if (source) {
 
-        const token = await (<INodeInstanceEntity>source).processToken;
+        const token = await (<INodeInstanceEntity> source).processToken;
 
         let allthere = true;
 

@@ -1,9 +1,9 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IPublicGetOptions, IInheritedSchema, IIamService } from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IIamService, IInheritedSchema, IPublicGetOptions, SchemaAttributeType } from '@process-engine-js/core_contracts';
 import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
-import { IProcessEntity, IProcessDefEntity, IParamStart, IStartEventEntity, INodeInstanceEntityTypeService, INodeDefEntity,
-  ILaneEntity, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
 import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
+import { ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
+  IProcessEntity, IStartEventEntity } from '@process-engine-js/process_engine_contracts';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
@@ -134,7 +134,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     const startEventType = await datastoreService.getEntityType('StartEvent');
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
-    let laneContext = context;
+    const laneContext = context;
 
     let applicationId = null;
 
@@ -153,27 +153,27 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     const processDef = await this.getProcessDef(internalContext);
 
     await processDef.getNodeDefCollection(internalContext);
-    await processDef.nodeDefCollection.each(internalContext, async (nodeDef) => {
+    await processDef.nodeDefCollection.each(internalContext, async(nodeDef) => {
       nodeDef.processDef = processDef;
     });
     await processDef.getFlowDefCollection(internalContext);
-    await processDef.flowDefCollection.each(internalContext, async (flowDef) => {
+    await processDef.flowDefCollection.each(internalContext, async(flowDef) => {
       flowDef.processDef = processDef;
     });
     await processDef.getLaneCollection(internalContext);
-    await processDef.laneCollection.each(internalContext, async (lane) => {
+    await processDef.laneCollection.each(internalContext, async(lane) => {
       lane.processDef = processDef;
     });
 
     // get start event, set lane entities
-    let startEventDef: INodeDefEntity = undefined;
+    let startEventDef: INodeDefEntity;
     for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
-      const nodeDef = <INodeDefEntity>processDef.nodeDefCollection.data[i];
+      const nodeDef = <INodeDefEntity> processDef.nodeDefCollection.data[i];
 
       if (nodeDef.lane) {
         const laneId = nodeDef.lane.id;
         for (let j = 0; j < processDef.laneCollection.length; j++) {
-          const lane = <ILaneEntity>processDef.laneCollection.data[j];
+          const lane = <ILaneEntity> processDef.laneCollection.data[j];
           if (lane.id === laneId) {
             nodeDef.lane = lane;
           }
@@ -191,7 +191,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       processToken.process = this;
       if (initialToken) {
         processToken.data = {
-          current: initialToken
+          current: initialToken,
         };
       }
 
@@ -203,7 +203,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
       debugInfo(`process id ${this.id} started: `);
 
-      const startEvent: IStartEventEntity = <IStartEventEntity>await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
+      const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
       startEvent.name = startEventDef.name;
       startEvent.key = startEventDef.key;
       startEvent.process = this;
@@ -231,7 +231,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const source = this;
       const data = {
         action: 'proceed',
-        token: processToken.data
+        token: processToken.data,
       };
       const msg = this.messageBusService.createEntityMessage(data, source, context);
       const channel = '/processengine/node/' + callerId;
@@ -256,7 +256,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const data = {
         action: 'event',
         event: 'error',
-        data: error
+        data: error,
       };
       const msg = this.messageBusService.createEntityMessage(data, source, context);
       const channel = '/processengine/node/' + callerId;
