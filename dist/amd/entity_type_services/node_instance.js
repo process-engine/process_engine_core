@@ -389,6 +389,7 @@ define(["require", "exports", "@process-engine-js/data_model_contracts", "debug"
                     }
                     else {
                         const processData = {
+                            id: sourceProcessRef.id,
                             key: processDef.key,
                             processDef: processDef
                         };

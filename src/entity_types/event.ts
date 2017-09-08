@@ -1,5 +1,5 @@
 import {NodeInstanceEntity} from './node_instance';
-import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
 import { IMessageSubscription } from '@process-engine-js/messagebus_contracts';
@@ -18,13 +18,14 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+    await super.initialize(derivedClassInstance);
   }
 
   protected async initializeTimer(): Promise<void> {

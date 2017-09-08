@@ -10,12 +10,11 @@ const core_contracts_1 = require("@process-engine-js/core_contracts");
 const data_model_contracts_1 = require("@process-engine-js/data_model_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class LaneEntity extends data_model_contracts_1.Entity {
-    constructor(entityDependencyHelper, context, schema) {
-        super(entityDependencyHelper, context, schema);
+    constructor(entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(entityDependencyHelper, context, schema, propertyBag, entityType);
     }
-    async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+    async initialize() {
+        await super.initialize(this);
     }
     get name() {
         return this.getProperty(this, 'name');

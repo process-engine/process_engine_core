@@ -1,8 +1,8 @@
 import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema, IQueryObject, IPrivateQueryOptions,
   IPublicGetOptions, ICombinedQueryClause, IEntityReference, IPrivateSaveOptions} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection, EntityReference} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityCollection, EntityReference, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import { IProcessDefEntityTypeService, IProcessDefEntity, IParamUpdateDefs, IParamStart, IProcessEntity,
-  IProcessRepository, TimerDefinitionType, IProcessEngineService, IXmlObject } from '@process-engine-js/process_engine_contracts';
+  IProcessRepository, TimerDefinitionType, IProcessEngineService } from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import {ITimingService, ITimingRule} from '@process-engine-js/timing_contracts';
 import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
@@ -42,8 +42,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               processEngineService: IProcessEngineService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._processRepository = processRepository;
@@ -55,9 +57,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this._processEngineService = processEngineService;
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+  public async initialize(): Promise<void> {
+    await super.initialize(this);
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -284,10 +285,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   }
 
-  public async updateBpmn(context: ExecutionContext, xml: IXmlObject): Promise<any> {
+  public async updateBpmn(context: ExecutionContext, xml: string): Promise<any> {
 
     if (xml) {
-      this.xml = xml.xml;
+      this.xml = xml;
       this.counter = this.counter + 1;
       await this.updateDefinitions(context);
 

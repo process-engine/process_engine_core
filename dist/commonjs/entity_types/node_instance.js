@@ -30,8 +30,8 @@ class NodeInstanceEntityDependencyHelper {
 }
 exports.NodeInstanceEntityDependencyHelper = NodeInstanceEntityDependencyHelper;
 let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1.Entity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        super(entityDependencyHelper, context, schema);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(entityDependencyHelper, context, schema, propertyBag, entityType);
         this._nodeInstanceEntityDependencyHelper = undefined;
         this.messagebusSubscription = undefined;
         this.eventAggregatorSubscription = undefined;
@@ -56,8 +56,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         return this._nodeInstanceEntityDependencyHelper.timingService;
     }
     async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+        await super.initialize(derivedClassInstance);
     }
     get name() {
         return this.getProperty(this, 'name');
@@ -250,7 +249,7 @@ let NodeInstanceEntity = class NodeInstanceEntity extends data_model_contracts_1
         debugInfo(`node boundary event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventEntity.type}`);
         const internalContext = await this.iamService.createInternalContext('processengine_system');
         const boundaryDef = eventEntity.nodeDef;
-        const processToken = await this.processToken;
+        const processToken = await eventEntity.processToken;
         const tokenData = processToken.data || {};
         if (boundaryDef) {
             switch (boundaryDef.eventType) {

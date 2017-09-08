@@ -1,5 +1,5 @@
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
-import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {ISubprocessExternalEntity, IProcessDefEntityTypeService, IParamStart} from '@process-engine-js/process_engine_contracts';
 
@@ -16,8 +16,10 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
               processDefEntityTypeService: IProcessDefEntityTypeService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
   }
@@ -26,9 +28,8 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     return this._processDefEntityTypeService;
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+  public async initialize(): Promise<void> {
+    await super.initialize(this);
   }
 
   public async execute(context: ExecutionContext): Promise<void> {

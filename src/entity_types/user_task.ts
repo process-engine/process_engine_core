@@ -1,5 +1,5 @@
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {EntityDependencyHelper} from '@process-engine-js/data_model_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {schemaClass} from '@process-engine-js/metadata';
 import { IUserTaskEntity, IUserTaskMessageData, IBoundaryEventEntity} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
@@ -15,13 +15,14 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
-              schema: IInheritedSchema) {
-    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+              schema: IInheritedSchema,
+              propertyBag: IPropertyBag,
+              entityType: IEntityType<IEntity>) {
+    super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
   }
 
-  public async initialize(derivedClassInstance: IEntity): Promise<void> {
-    const actualInstance = derivedClassInstance || this;
-    await super.initialize(actualInstance);
+  public async initialize(): Promise<void> {
+    await super.initialize(this);
   }
 
   public async execute(context: ExecutionContext) {

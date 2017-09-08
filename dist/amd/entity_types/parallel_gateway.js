@@ -8,12 +8,11 @@ define(["require", "exports", "@process-engine-js/core_contracts", "./node_insta
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ParallelGatewayEntity extends node_instance_1.NodeInstanceEntity {
-        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
         }
-        async initialize(derivedClassInstance) {
-            const actualInstance = derivedClassInstance || this;
-            await super.initialize(actualInstance);
+        async initialize() {
+            await super.initialize(this);
         }
         get parallelType() {
             return this.getProperty(this, 'parallelType');

@@ -1,9 +1,9 @@
 import { ExecutionContext, IEntity, IInheritedSchema } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper } from '@process-engine-js/data_model_contracts';
+import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
 import { IProcessTokenEntity, IProcessEntity } from '@process-engine-js/process_engine_contracts';
 export declare class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
-    constructor(entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema);
-    initialize(derivedClassInstance: IEntity): Promise<void>;
+    constructor(entityDependencyHelper: EntityDependencyHelper, context: ExecutionContext, schema: IInheritedSchema, propertyBag: IPropertyBag, entityType: IEntityType<IEntity>);
+    initialize(): Promise<void>;
     data: any;
     process: IProcessEntity;
     getProcess(context: ExecutionContext): Promise<IProcessEntity>;

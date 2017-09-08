@@ -2,12 +2,11 @@ define(["require", "exports", "./event"], function (require, exports, event_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class CatchEventEntity extends event_1.EventEntity {
-        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+        constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
         }
-        async initialize(derivedClassInstance) {
-            const actualInstance = derivedClassInstance || this;
-            await super.initialize(actualInstance);
+        async initialize() {
+            await super.initialize(this);
         }
         async execute(context) {
             this.changeState(context, 'wait', this);

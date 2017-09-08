@@ -8,12 +8,11 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class NodeDefEntity extends data_model_contracts_1.Entity {
-        constructor(entityDependencyHelper, context, schema) {
-            super(entityDependencyHelper, context, schema);
+        constructor(entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(entityDependencyHelper, context, schema, propertyBag, entityType);
         }
-        async initialize(derivedClassInstance) {
-            const actualInstance = derivedClassInstance || this;
-            await super.initialize(actualInstance);
+        async initialize() {
+            await super.initialize(this);
         }
         get name() {
             return this.getProperty(this, 'name');

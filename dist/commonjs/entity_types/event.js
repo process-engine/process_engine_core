@@ -6,14 +6,13 @@ const moment = require("moment");
 const debug = require("debug");
 const debugInfo = debug('processengine:info');
 class EventEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
         this.config = undefined;
         this._subscription = undefined;
     }
     async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+        await super.initialize(derivedClassInstance);
     }
     async initializeTimer() {
         const internalContext = await this.iamService.createInternalContext('processengine_system');

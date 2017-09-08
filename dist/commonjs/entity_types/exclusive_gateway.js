@@ -10,12 +10,11 @@ const node_instance_1 = require("./node_instance");
 const core_contracts_1 = require("@process-engine-js/core_contracts");
 const metadata_1 = require("@process-engine-js/metadata");
 class ExclusiveGatewayEntity extends node_instance_1.NodeInstanceEntity {
-    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema) {
-        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema);
+    constructor(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType) {
+        super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
     }
-    async initialize(derivedClassInstance) {
-        const actualInstance = derivedClassInstance || this;
-        await super.initialize(actualInstance);
+    async initialize() {
+        await super.initialize(this);
     }
     get follow() {
         return this.getProperty(this, 'follow');

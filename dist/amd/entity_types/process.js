@@ -9,8 +9,8 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
     Object.defineProperty(exports, "__esModule", { value: true });
     const debugInfo = debug('processengine:info');
     class ProcessEntity extends data_model_contracts_1.Entity {
-        constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema) {
-            super(entityDependencyHelper, context, schema);
+        constructor(iamService, nodeInstanceEntityTypeService, messageBusService, processEngineService, entityDependencyHelper, context, schema, propertyBag, entityType) {
+            super(entityDependencyHelper, context, schema, propertyBag, entityType);
             this._iamService = undefined;
             this._nodeInstanceEntityTypeService = undefined;
             this._messageBusService = undefined;
@@ -35,9 +35,8 @@ define(["require", "exports", "@process-engine-js/core_contracts", "@process-eng
         get processEngineService() {
             return this._processEngineService;
         }
-        async initialize(derivedClassInstance) {
-            const actualInstance = derivedClassInstance || this;
-            await super.initialize(actualInstance);
+        async initialize() {
+            await super.initialize(this);
         }
         get activeInstances() {
             return this._activeInstances;
