@@ -28,18 +28,18 @@
     "@process-engine-js/timing_contracts": "^1.0.4",
     "addict-ioc": "^2.0.0",
     "bluebird": "^3.4.7",
-    "bpmn-moddle": "^0.13.0",
+    "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.1",
     "moment": "^2.18.1"
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.8",
-    "@types/node": "^8.0.26",
+    "@types/node": "^8.0.27",
     "gulp": "^3.9.1",
     "gulptraum": "^2.2.1",
     "gulptraum-typescript": "^1.0.0",
-    "tsconfig": "^6.0.0",
-    "tslint": "^5.4.3",
+    "tsconfig": "^7.0.0",
+    "tslint": "^5.7.0",
     "tslint-config-5minds": "^1.0.3"
   }
 }
