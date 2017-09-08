@@ -33,6 +33,7 @@
     "moment": "^2.18.1"
   },
   "devDependencies": {
+    "@process-engine-js/tslint-config": "^1.0.0",
     "@types/bluebird": "^3.5.8",
     "@types/node": "^8.0.27",
     "gulp": "^3.9.1",
@@ -40,6 +41,6 @@
     "gulptraum-typescript": "^1.0.0",
     "tsconfig": "^7.0.0",
     "tslint": "^5.7.0",
-    "tslint-config-5minds": "^1.0.3"
+    "typescript": "^2.5.2"
   }
 }
