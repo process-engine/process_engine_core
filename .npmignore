@@ -1,0 +1,28 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# src directories
+src
+
+# Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Dependency directories
+node_modules
+
+# Optional npm cache directory
+.npm
+
+# OSX-finder info-files
+*.DS_Store
+
+# IDE configs
+.vscode
+.idea/
+*.iml
+*.iws
+.classpath
+.project
+.settings/
