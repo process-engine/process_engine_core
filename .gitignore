@@ -20,3 +20,9 @@ node_modules
 
 # IDE configs
 .vscode
+.idea/
+*.iml
+*.iws
+.classpath
+.project
+.settings/
