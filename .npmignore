@@ -3,9 +3,6 @@ logs
 *.log
 npm-debug.log*
 
-# src directories
-src
-
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
 
