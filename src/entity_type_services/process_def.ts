@@ -89,7 +89,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const queryParams: IPrivateQueryOptions = { query: queryObject };
       const processDefColl = await processDef.query(context, queryParams);
 
-      let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity> processDefColl.data[0] : null;
+      let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] as IProcessDefEntity : null;
 
       let canSave = false;
       if (!processDefEntity) {
@@ -100,7 +100,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           counter: 0,
         };
 
-        processDefEntity = await processDef.createEntity<IProcessDefEntity>(context, processDefData);
+        processDefEntity = await processDef.createEntity(context, processDefData);
 
         // always create new processes
         canSave = true;
