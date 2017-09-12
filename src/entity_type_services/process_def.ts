@@ -100,7 +100,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           counter: 0,
         };
 
-        processDefEntity = await processDef.createEntity(context, processDefData);
+        processDefEntity = await processDef.createEntity<IProcessDefEntity>(context, processDefData);
 
         // always create new processes
         canSave = true;
