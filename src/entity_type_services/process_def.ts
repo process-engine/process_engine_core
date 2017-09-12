@@ -89,7 +89,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const queryParams: IPrivateQueryOptions = { query: queryObject };
       const processDefColl = await processDef.query(context, queryParams);
 
-      let processDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] as IProcessDefEntity : null;
+      let processDefEntity: IProcessDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] as IProcessDefEntity : null;
 
       let canSave = false;
       if (!processDefEntity) {
