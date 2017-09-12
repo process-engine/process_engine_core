@@ -1,8 +1,8 @@
 import {ExecutionContext, IEntity, IInheritedSchema, IQueryClause, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {Entity, EntityCollection, EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityCollection, EntityDependencyHelper, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
 import { IFeature } from '@process-engine-js/feature_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
-import {ILaneEntity, INodeDefEntity, IProcessDefEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import {ILaneEntity, INodeDefEntity, IProcessDefEntity, TimerDefinitionType, IBoundaryEventEntity} from '@process-engine-js/process_engine_contracts';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
@@ -251,7 +251,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     return lane.role;
   }
 
-  public async getBoundaryEvents(context: ExecutionContext): Promise<EntityCollection> {
+  public async getBoundaryEvents(context: ExecutionContext): Promise<IEntityCollection<IBoundaryEventEntity>> {
 
     const nodeDefEntityType = await (await this.getDatastoreService()).getEntityType('NodeDef');
 
@@ -262,7 +262,7 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     };
 
     const boundaryColl = await nodeDefEntityType.query(context, { query: queryObject });
-    return boundaryColl as EntityCollection;
+    return boundaryColl as IEntityCollection<IBoundaryEventEntity>;
   }
 
   private _extractFeatures(): Array<IFeature> {

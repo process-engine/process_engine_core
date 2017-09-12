@@ -1,12 +1,12 @@
 import {ExecutionContext, ICombinedQueryClause, IEntity, IEntityReference, IInheritedSchema, IPrivateQueryOptions,
   IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {Entity, EntityCollection, EntityDependencyHelper, EntityReference, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityReference, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
 import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
 import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
 import { IParamStart, IParamUpdateDefs, IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService,
-  IProcessEntity, IProcessRepository, TimerDefinitionType } from '@process-engine-js/process_engine_contracts';
+  IProcessEntity, IProcessRepository, TimerDefinitionType, INodeDefEntity, ILaneEntity, IFlowDefEntity } from '@process-engine-js/process_engine_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
 import {ITimingRule, ITimingService} from '@process-engine-js/timing_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
@@ -204,29 +204,29 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   @schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'processDef' })
-  public get nodeDefCollection(): EntityCollection {
+  public get nodeDefCollection(): IEntityCollection<INodeDefEntity> {
     return this.getProperty(this, 'nodeDefCollection');
   }
 
-  public getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection> {
+  public getNodeDefCollection(context: ExecutionContext): Promise<IEntityCollection<INodeDefEntity>> {
     return this.getPropertyLazy(this, 'nodeDefCollection', context);
   }
 
   @schemaAttribute({ type: 'FlowDef', isList: true, relatedAttribute: 'processDef' })
-  public get flowDefCollection(): EntityCollection {
+  public get flowDefCollection(): IEntityCollection<IFlowDefEntity> {
     return this.getProperty(this, 'flowDefCollection');
   }
 
-  public getFlowDefCollection(context: ExecutionContext): Promise<EntityCollection> {
+  public getFlowDefCollection(context: ExecutionContext): Promise<IEntityCollection<IFlowDefEntity>> {
     return this.getPropertyLazy(this, 'flowDefCollection', context);
   }
 
   @schemaAttribute({ type: 'Lane', isList: true, relatedAttribute: 'processDef' })
-  public get laneCollection(): EntityCollection {
+  public get laneCollection(): IEntityCollection<ILaneEntity> {
     return this.getProperty(this, 'laneCollection');
   }
 
-  public getLaneCollection(context: ExecutionContext): Promise<EntityCollection> {
+  public getLaneCollection(context: ExecutionContext): Promise<IEntityCollection<ILaneEntity>> {
     return this.getPropertyLazy(this, 'laneCollection', context);
   }
 
