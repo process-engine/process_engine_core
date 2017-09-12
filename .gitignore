@@ -3,8 +3,16 @@ logs
 *.log
 npm-debug.log*
 
+# lock-files
+package-locak.json
+yarn.lock
+
 # build directories
 dist
+
+# auto-generated schemas and documentation
+doc
+schemas
 
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
