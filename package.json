@@ -45,7 +45,7 @@
   },
   "scripts": {
     "build": "gulp build",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npm run build-schemas && npm run build-doc",
     "build-doc": "gulp doc",
     "build-schemas": "gulp typescript-schema"
   }
