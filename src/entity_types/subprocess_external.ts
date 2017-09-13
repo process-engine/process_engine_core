@@ -1,7 +1,7 @@
-import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
-import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {ISubprocessExternalEntity, IProcessDefEntityTypeService, IParamStart} from '@process-engine-js/process_engine_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
+import {IParamStart, IProcessDefEntityTypeService, ISubprocessExternalEntity} from '@process-engine-js/process_engine_contracts';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 import * as debug from 'debug';
 
@@ -52,7 +52,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
         key: subProcessKey,
         source: this,
         isSubProcess: true,
-        initialToken: tokenData
+        initialToken: tokenData,
       };
       const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
       this.process.boundProcesses[subProcessRef.id] = subProcessRef;

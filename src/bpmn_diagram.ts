@@ -67,7 +67,7 @@ export class BpmnDiagram implements IBpmnDiagram {
 
       if (lanes) {
         lanes.forEach((lane) => {
-          if(lane.flowNodeRef) {
+          if (lane.flowNodeRef) {
             const result = lane.flowNodeRef.filter((nodeRef) => {
               return nodeRef.id === elementId;
             });
@@ -93,7 +93,7 @@ export class BpmnDiagram implements IBpmnDiagram {
         return element.$type !== 'bpmn:SequenceFlow';
       });
     }
-    
+
     return [];
   }
 
@@ -106,7 +106,7 @@ export class BpmnDiagram implements IBpmnDiagram {
         return element.$type === 'bpmn:SequenceFlow';
       });
     }
-    
+
     return [];
   }
 

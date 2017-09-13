@@ -1,11 +1,11 @@
-import {
-  IProcessDefEntityTypeService, IProcessDefEntity, IParamImportFromFile,
-  IParamImportFromXml, IParamStart, IImportFromFileOptions,
-  IProcessRepository, IImportFromXmlOptions
-} from '@process-engine-js/process_engine_contracts';
-import { ExecutionContext, IPublicGetOptions, IQueryClause, IPrivateQueryOptions, IEntityReference } from '@process-engine-js/core_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
+import { ExecutionContext, IEntityReference, IPrivateQueryOptions, IPublicGetOptions, IQueryClause } from '@process-engine-js/core_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
+import { IInvoker } from '@process-engine-js/invocation_contracts';
+import {
+  IImportFromFileOptions, IImportFromXmlOptions, IParamImportFromFile,
+  IParamImportFromXml, IParamStart, IProcessDefEntity,
+  IProcessDefEntityTypeService, IProcessRepository,
+} from '@process-engine-js/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as BluebirdPromise from 'bluebird';
@@ -48,7 +48,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         {
           xml: xmlString,
           path: pathString,
-          internalName: name
+          internalName: name,
         },
         options);
       return { result: true };
@@ -84,12 +84,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const queryObject: IQueryClause = {
         attribute: 'key',
         operator: '=',
-        value: process.id
+        value: process.id,
       };
       const queryParams: IPrivateQueryOptions = { query: queryObject };
       const processDefColl = await processDef.query(context, queryParams);
 
-      let processDefEntity = processDefColl && processDefColl.length > 0 ? <IProcessDefEntity>processDefColl.data[0] : null;
+      let processDefEntity: IProcessDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] as IProcessDefEntity : null;
 
       let canSave = false;
       if (!processDefEntity) {
@@ -97,7 +97,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         const processDefData = {
           key: process.id,
           defId: bpmnDiagram.definitions.id,
-          counter: 0
+          counter: 0,
         };
 
         processDefEntity = await processDef.createEntity<IProcessDefEntity>(context, processDefData);
@@ -130,7 +130,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const moddle = BpmnModdle();
 
-    return <any>(new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
+    return <any> (new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
 
       moddle.fromXML(xml, (error, definitions) => {
         if (error) {
@@ -152,7 +152,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
       const queryObject: IQueryClause = {
-        attribute: 'key', operator: '=', value: key
+        attribute: 'key', operator: '=', value: key,
       };
       const queryParams: IPrivateQueryOptions = { query: queryObject };
       const processDefEntity = await processDef.findOne(context, queryParams);

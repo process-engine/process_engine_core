@@ -1,8 +1,8 @@
-import {NodeInstanceEntity} from './node_instance';
+import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {IExclusiveGatewayEntity, IFlowDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import {IExclusiveGatewayEntity, IFlowDefEntity} from '@process-engine-js/process_engine_contracts';
+import {NodeInstanceEntity} from './node_instance';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclusiveGatewayEntity {
@@ -34,19 +34,19 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
     const nodeDef = this.nodeDef;
     const processDef = this.process.processDef;
 
-    let flowsOut = [];
+    const flowsOut = [];
 
     for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
       if (flowDef.source.id === nodeDef.id) {
         flowsOut.push(flowDef);
       }
     }
 
-    let flowsIn = [];
+    const flowsIn = [];
 
     for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-      const flowDef = <IFlowDefEntity>processDef.flowDefCollection.data[i];
+      const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
       if (flowDef.target.id === nodeDef.id) {
         flowsIn.push(flowDef);
       }
@@ -59,7 +59,7 @@ export class ExclusiveGatewayEntity extends NodeInstanceEntity implements IExclu
       const follow: Array<string> = [];
 
       for (let i = 0; i < flowsOut.length; i++) {
-        const flow = <IFlowDefEntity>flowsOut[i];
+        const flow = <IFlowDefEntity> flowsOut[i];
         if (flow.condition) {
 
           // const processToken = await this.getProcessToken(internalContext);

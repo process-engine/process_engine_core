@@ -1,13 +1,13 @@
-import {NodeInstanceEntity} from './node_instance';
-import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
-import { IMessageSubscription } from '@process-engine-js/messagebus_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import { ISubscription } from '@process-engine-js/event_aggregator_contracts';
+import { IMessageSubscription } from '@process-engine-js/messagebus_contracts';
+import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import {NodeInstanceEntity} from './node_instance';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
-import * as moment from 'moment';
 import * as debug from 'debug';
+import * as moment from 'moment';
 const debugInfo = debug('processengine:info');
 
 export class EventEntity extends NodeInstanceEntity implements IEventEntity {
@@ -56,7 +56,7 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
       date: duration.days(),
       hour: duration.hours(),
       minute: duration.minutes(),
-      second: duration.seconds()
+      second: duration.seconds(),
     };
 
     const channelName = `events/timer/${this.id}`;
@@ -110,13 +110,13 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
       entity: this,
       eventAggregator: this.eventAggregator,
       messagebusService: this.messageBusService,
-      datastoreService: (await this.getDatastoreService())
+      datastoreService: (await this.getDatastoreService()),
     };
     this._subscription = await this.messageBusService.subscribe('/processengine/signal/' + signal, this._signalHandler.bind(binding));
   }
 
   private async _signalHandler(msg: any) {
-    const binding = <any>this;
+    const binding = <any> this;
 
     await binding.messagebusService.verifyMessage(msg);
 
@@ -157,14 +157,14 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
       entity: this,
       eventAggregator: this.eventAggregator,
       messagebusService: this.messageBusService,
-      datastoreService: (await this.getDatastoreService())
+      datastoreService: (await this.getDatastoreService()),
     };
     this._subscription = await this.messageBusService.subscribe('/processengine/message/' + message, this._messageHandler.bind(binding));
 
   }
 
   private async _messageHandler(msg: any) {
-    const binding = <any>this;
+    const binding = <any> this;
 
     await binding.messagebusService.verifyMessage(msg);
 

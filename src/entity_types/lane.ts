@@ -1,8 +1,8 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityCollection, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
-import {ILaneEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@process-engine-js/core_contracts';
+import {Entity, EntityCollection, EntityDependencyHelper, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
 import {IFeature} from '@process-engine-js/feature_contracts';
+import {schemaAttribute} from '@process-engine-js/metadata';
+import {ILaneEntity, IProcessDefEntity, INodeDefEntity} from '@process-engine-js/process_engine_contracts';
 
 export class LaneEntity extends Entity implements ILaneEntity {
 
@@ -68,11 +68,11 @@ export class LaneEntity extends Entity implements ILaneEntity {
   }
 
   @schemaAttribute({ type: 'NodeDef', isList: true, relatedAttribute: 'lane' })
-  public get nodeDefCollection(): EntityCollection {
+  public get nodeDefCollection(): IEntityCollection<INodeDefEntity> {
     return this.getProperty(this, 'nodeDefCollection');
   }
 
-  public getNodeDefCollection(context: ExecutionContext): Promise<EntityCollection> {
+  public getNodeDefCollection(context: ExecutionContext): Promise<IEntityCollection<INodeDefEntity>> {
     return this.getPropertyLazy(this, 'nodeDefCollection', context);
   }
 
@@ -81,7 +81,7 @@ export class LaneEntity extends Entity implements ILaneEntity {
   }
 
   private _extractFeatures(): Array<IFeature> {
-    let features = undefined;
+    let features;
     const extensions = this.extensions || null;
     const props = (extensions && extensions.properties) ? extensions.properties : null;
 

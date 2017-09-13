@@ -1,7 +1,7 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {IProcessTokenEntity, IProcessEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import {IProcessEntity, IProcessTokenEntity} from '@process-engine-js/process_engine_contracts';
 
 export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
 

@@ -1,8 +1,8 @@
 import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
-import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
 import { Container, IInstanceWrapper } from 'addict-ioc';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTaskEntity {
 
@@ -47,16 +47,16 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
       props.forEach((prop) => {
         if (prop.name === 'module') {
-          serviceModule = <string>this.parseExtensionProperty(prop.value, tokenData, context);
+          serviceModule = <string> this.parseExtensionProperty(prop.value, tokenData, context);
         }
         if (prop.name === 'method') {
-          serviceMethod = <string>this.parseExtensionProperty(prop.value, tokenData, context);
+          serviceMethod = <string> this.parseExtensionProperty(prop.value, tokenData, context);
         }
         if (prop.name === 'params') {
-          paramString = <string>this.parseExtensionProperty(prop.value, tokenData, context);
+          paramString = <string> this.parseExtensionProperty(prop.value, tokenData, context);
         }
         if (prop.name === 'namespace') {
-          namespace = <string>this.parseExtensionProperty(prop.value, tokenData, context);
+          namespace = <string> this.parseExtensionProperty(prop.value, tokenData, context);
         }
       });
 
@@ -70,7 +70,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
 
           const self = this;
 
-          const cb = function (data) {
+          const cb = function(data) {
             self.triggerEvent(context, 'data', data);
           };
 

@@ -1,14 +1,14 @@
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {schemaClass} from '@process-engine-js/metadata';
-import { IUserTaskEntity, IUserTaskMessageData, IBoundaryEventEntity} from '@process-engine-js/process_engine_contracts';
+import { IBoundaryEventEntity, IUserTaskEntity, IUserTaskMessageData} from '@process-engine-js/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 @schemaClass({
   expandEntity: [
     { attribute: 'nodeDef' },
-    { attribute: 'processToken' }
-  ]
+    { attribute: 'processToken' },
+  ],
 })
 export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntity {
 
@@ -39,7 +39,6 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     const pojo = await this.toPojo(internalContext, {maxDepth: 1});
     let uiName;
     let uiConfig;
-    
 
     const processToken = pojo.processToken;
     const token = processToken.data || {};
@@ -51,7 +50,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     if (props) {
       props.forEach((prop) => {
         if (prop.name === 'uiName') {
-          uiName = <string>this.parseExtensionProperty(prop.value, token, context);
+          uiName = <string> this.parseExtensionProperty(prop.value, token, context);
         }
         if (prop.name === 'uiConfig') {
           uiConfig = this.parseExtensionProperty(prop.value, token, context);
@@ -62,17 +61,16 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       });
     }
 
-
     const userTaskMessageData: IUserTaskMessageData = {
       userTaskEntity: pojo,
       uiName: uiName,
       uiData: uiData,
-      uiConfig: uiConfig
+      uiConfig: uiConfig,
     };
 
     const data = {
       action: 'userTask',
-      data: userTaskMessageData
+      data: userTaskMessageData,
     };
 
     const msg = this.messageBusService.createEntityMessage(data, this, context);
@@ -86,12 +84,11 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
   }
 
-
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 
     // check if participant changed
     if (this.participant !== participant) {
-      this.participant = participant; 
+      this.participant = participant;
     }
 
     // save new data in token

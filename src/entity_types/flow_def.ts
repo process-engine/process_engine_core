@@ -1,7 +1,7 @@
-import {ExecutionContext, SchemaAttributeType, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@process-engine-js/core_contracts';
 import {Entity, EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {IFlowDefEntity, IProcessDefEntity, INodeDefEntity} from '@process-engine-js/process_engine_contracts';
 import {schemaAttribute} from '@process-engine-js/metadata';
+import {IFlowDefEntity, INodeDefEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
 
 export class FlowDefEntity extends Entity implements IFlowDefEntity {
 
@@ -106,7 +106,7 @@ export class FlowDefEntity extends Entity implements IFlowDefEntity {
   }
 
   private _extractMapper(): any {
-    let mapper = undefined;
+    let mapper;
     const extensions = this.extensions || undefined;
     const props = (extensions !== undefined && extensions.properties) ? extensions.properties : undefined;
 

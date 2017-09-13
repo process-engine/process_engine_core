@@ -1,7 +1,7 @@
-import {EventEntity} from './event';
-import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
 import {IBoundaryEventEntity, INodeInstanceEntity} from '@process-engine-js/process_engine_contracts';
+import {EventEntity} from './event';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEntity {
@@ -34,7 +34,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
         await this.initializeMessage();
         break;
 
-      case 'bpmn:TimerEventDefinition':  
+      case 'bpmn:TimerEventDefinition':
         await this.initializeTimer();
         break;
 
