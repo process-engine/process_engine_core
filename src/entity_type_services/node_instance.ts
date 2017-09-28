@@ -99,6 +99,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               await binding.entity.execute(context);
               break;
 
+          case ('wait'):
+            await binding.entity.wait(context);
+            break;
+
           case ('end'):
               await binding.entity.end(context);
               break;
