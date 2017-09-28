@@ -491,6 +491,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
+  // tslint:disable-next-line:cyclomatic-complexity
   public async continueFromRemote(context: ExecutionContext, params: IParamsContinueFromRemote, options?: IPublicGetOptions): Promise<void> {
     let source: any;
     let token: ProcessTokenEntity;
@@ -538,8 +539,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
       if (sourceProcessRef) {
         if (this.processEngineService.activeInstances.hasOwnProperty(sourceProcessRef.id)) {
+          // process is already an active instance, restore
           processEntity = this.processEngineService.activeInstances[sourceProcessRef.id];
         } else {
+          // process should be restored
           const processData = {
             id: sourceProcessRef.id,
             key: processDef.key,
@@ -552,7 +555,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           processEntity.status = 'progress';
 
           if (processDef.persist) {
-            await processEntity.save(internalContext, { reloadAfterSave: false });
+            await processEntity.save(internalContext, { reloadAfterSave: false, isNew: false });
           }
 
           await processDef.getNodeDefCollection(internalContext);
