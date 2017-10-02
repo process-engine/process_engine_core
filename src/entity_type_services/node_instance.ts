@@ -591,9 +591,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           }
 
           this.processEngineService.addActiveInstance(processEntity);
-
-          processEntity.addActiveInstance(source);
-          processEntity.removeActiveInstance(source);
         }
 
         if (source && processEntity) {
