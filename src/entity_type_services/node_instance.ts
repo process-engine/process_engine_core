@@ -146,20 +146,11 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     if (sourceRef) {
 
-      // source is a ProcessEntityReference, if this is subprocess_external
-      if (sourceRef._meta.type === 'Process') {
-        if (binding.entity.processEngineService.activeInstances.hasOwnProperty(sourceRef.id)) {
-          source = binding.entity.processEngineService.activeInstances[sourceRef.id];
-        }
-      }
-
-      if (!source) {
-        const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
-        try {
-          source = await entityType.getById(sourceRef.id, context);
-        } catch (err) {
-          // source could not be found, ignore atm
-        }
+      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+      try {
+        source = await entityType.getById(sourceRef.id, context);
+      } catch (err) {
+        // source could not be found, ignore atm
       }
     }
 
@@ -542,55 +533,48 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       let processEntity: IProcessEntity;
 
       if (sourceProcessRef) {
-        if (this.processEngineService.activeInstances.hasOwnProperty(sourceProcessRef.id)) {
-          // process is already an active instance, restore
-          processEntity = this.processEngineService.activeInstances[sourceProcessRef.id];
-        } else {
-          // process should be restored
-          const processData = {
-            id: sourceProcessRef.id,
-            key: processDef.key,
-            processDef: processDef,
-          };
+        // process should be restored
+        const processData = {
+          id: sourceProcessRef.id,
+          key: processDef.key,
+          processDef: processDef,
+        };
 
-          const processEntityType = await this.datastoreService.getEntityType('Process');
-          processEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
+        const processEntityType = await this.datastoreService.getEntityType('Process');
+        processEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
 
-          processEntity.status = 'progress';
+        processEntity.status = 'progress';
 
-          if (processDef.persist) {
-            await processEntity.save(internalContext, { reloadAfterSave: false, isNew: false });
-          }
+        if (processDef.persist) {
+          await processEntity.save(internalContext, { reloadAfterSave: false, isNew: false });
+        }
 
-          await processDef.getNodeDefCollection(internalContext);
-          await processDef.nodeDefCollection.each(internalContext, async(nodeDef) => {
-            nodeDef.processDef = processDef;
-          });
-          await processDef.getFlowDefCollection(internalContext);
-          await processDef.flowDefCollection.each(internalContext, async(flowDef) => {
-            flowDef.processDef = processDef;
-          });
-          await processDef.getLaneCollection(internalContext);
-          await processDef.laneCollection.each(internalContext, async(lane) => {
-            lane.processDef = processDef;
-          });
+        await processDef.getNodeDefCollection(internalContext);
+        await processDef.nodeDefCollection.each(internalContext, async(nodeDef) => {
+          nodeDef.processDef = processDef;
+        });
+        await processDef.getFlowDefCollection(internalContext);
+        await processDef.flowDefCollection.each(internalContext, async(flowDef) => {
+          flowDef.processDef = processDef;
+        });
+        await processDef.getLaneCollection(internalContext);
+        await processDef.laneCollection.each(internalContext, async(lane) => {
+          lane.processDef = processDef;
+        });
 
-          // set lane entities
-          for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
-            const nodeDef = <INodeDefEntity> processDef.nodeDefCollection.data[i];
+        // set lane entities
+        for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
+          const nodeDef = <INodeDefEntity> processDef.nodeDefCollection.data[i];
 
-            if (nodeDef.lane) {
-              const laneId = nodeDef.lane.id;
-              for (let j = 0; j < processDef.laneCollection.length; j++) {
-                const lane = <ILaneEntity> processDef.laneCollection.data[j];
-                if (lane.id === laneId) {
-                  nodeDef.lane = lane;
-                }
+          if (nodeDef.lane) {
+            const laneId = nodeDef.lane.id;
+            for (let j = 0; j < processDef.laneCollection.length; j++) {
+              const lane = <ILaneEntity> processDef.laneCollection.data[j];
+              if (lane.id === laneId) {
+                nodeDef.lane = lane;
               }
             }
           }
-
-          this.processEngineService.addActiveInstance(processEntity);
         }
 
         if (source && processEntity) {

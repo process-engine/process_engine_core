@@ -199,8 +199,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
         await processToken.save(internalContext, { reloadAfterSave: false });
       }
 
-      this.processEngineService.addActiveInstance(this);
-
       debugInfo(`process id ${this.id} started: `);
 
       const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
