@@ -235,12 +235,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const channel = '/processengine/node/' + callerId;
       await this.messageBusService.publish(channel, msg);
 
-    } else {
-
-      Object.keys(this.boundProcesses).forEach((id) => {
-        this.processEngineService.removeActiveInstance(this.boundProcesses[id]);
-      });
-      this.processEngineService.removeActiveInstance(this);
     }
 
   }
