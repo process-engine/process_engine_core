@@ -199,8 +199,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
         await processToken.save(internalContext, { reloadAfterSave: false });
       }
 
-      this.processEngineService.addActiveInstance(this);
-
       debugInfo(`process id ${this.id} started: `);
 
       const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
@@ -237,12 +235,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const channel = '/processengine/node/' + callerId;
       await this.messageBusService.publish(channel, msg);
 
-    } else {
-
-      Object.keys(this.boundProcesses).forEach((id) => {
-        this.processEngineService.removeActiveInstance(this.boundProcesses[id]);
-      });
-      this.processEngineService.removeActiveInstance(this);
     }
 
   }

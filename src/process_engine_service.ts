@@ -21,8 +21,6 @@ export class ProcessEngineService implements IProcessEngineService {
   private _processRepository: IProcessRepository = undefined;
   private _datastoreService: IDatastoreService = undefined;
 
-  private _activeInstances: any = {};
-
   public config: any = undefined;
 
   constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator,
@@ -64,10 +62,6 @@ export class ProcessEngineService implements IProcessEngineService {
   // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
   private get datastoreService(): IDatastoreService {
     return this._datastoreService;
-  }
-
-  public get activeInstances(): any {
-    return this._activeInstances;
   }
 
   public async initialize(): Promise<void> {
@@ -180,18 +174,6 @@ export class ProcessEngineService implements IProcessEngineService {
       const processDef = await nodeDef.getProcessDef(internalContext);
       await processDef.startTimer(internalContext);
     });
-  }
-
-  public addActiveInstance(entity: IEntity): void {
-    this._activeInstances[entity.id] = entity;
-  }
-
-  public removeActiveInstance(entity: IEntity): void {
-    if (this._activeInstances.hasOwnProperty(entity.id)) {
-      delete this._activeInstances[entity.id];
-    }
-
-    entity = null;
   }
 
 }
