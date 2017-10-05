@@ -1,6 +1,6 @@
 import {ExecutionContext, ICombinedQueryClause, IEntity, IEntityReference, IInheritedSchema, IPrivateQueryOptions,
   IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityReference, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityReference, IDatastoreService, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
 import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
 import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
@@ -9,6 +9,7 @@ import { IParamStart, IParamUpdateDefs, IProcessDefEntity, IProcessDefEntityType
   IProcessEntity, IProcessRepository, TimerDefinitionType, INodeDefEntity, ILaneEntity, IFlowDefEntity } from '@process-engine-js/process_engine_contracts';
 import { IRoutingService } from '@process-engine-js/routing_contracts';
 import {ITimingRule, ITimingService} from '@process-engine-js/timing_contracts';
+
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as debug from 'debug';
@@ -31,6 +32,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   private _featureService: IFeatureService = undefined;
   private _routingService: IRoutingService = undefined;
   private _processEngineService: IProcessEngineService = undefined;
+  private _datastoreService: IDatastoreService = undefined;
 
   constructor(processDefEntityTypeService: IProcessDefEntityTypeService,
               processRepository: IProcessRepository,
@@ -40,6 +42,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
               eventAggregator: IEventAggregator,
               timingService: ITimingService,
               processEngineService: IProcessEngineService,
+              datastoreService: IDatastoreService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
@@ -55,6 +58,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     this._eventAggregator = eventAggregator;
     this._timingService = timingService;
     this._processEngineService = processEngineService;
+    this._datastoreService = datastoreService;
   }
 
   public async initialize(): Promise<void> {
@@ -91,6 +95,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   private get processEngineService(): IProcessEngineService {
     return this._processEngineService;
+  }
+
+  private get datastoreService(): IDatastoreService {
+    return this._datastoreService;
   }
 
   @schemaAttribute({
@@ -230,6 +238,24 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this.getPropertyLazy(this, 'laneCollection', context);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.boolean })
+  public get draft(): boolean {
+    return this.getProperty(this, 'draft');
+  }
+
+  public set draft(value: boolean) {
+    this.setProperty(this, 'draft', value);
+  }
+
+  @schemaAttribute({ type: SchemaAttributeType.boolean })
+  public get latest(): boolean {
+    return this.getProperty(this, 'latest');
+  }
+
+  public set latest(value: boolean) {
+    this.setProperty(this, 'latest', value);
+  }
+
   public get features(): Array<IFeature> {
     return this._extractFeatures();
   }
@@ -287,14 +313,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
   public async updateBpmn(context: ExecutionContext, xml: string): Promise<any> {
 
+    if (!this.draft) {
+      throw new Error('Process definition is not a draft!');
+    }
+
     if (xml) {
       this.xml = xml;
       this.counter = this.counter + 1;
       await this.updateDefinitions(context);
 
-      if (this.internalName && this.path && !this.readonly) {
-        await this.processRepository.saveProcess(this.internalName, this.xml);
-      }
       return { result: true };
     }
   }
@@ -925,5 +952,88 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     }
 
     return found;
+  }
+
+  public async getDraft(context: ExecutionContext): Promise<IProcessDefEntity> {
+    const queryObject: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        {
+          attribute: 'key',
+          operator: '=',
+          value: this.key,
+        },
+        {
+          attribute: 'draft',
+          operator: '=',
+          value: true,
+        },
+      ],
+    };
+    const queryParams: IPrivateQueryOptions = { query: queryObject };
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    let draftEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
+
+    if (!draftEntity) {
+      const processDefData: any = {
+        key: this.key,
+        defId: this.defId,
+        counter: 0,
+        draft: true,
+        name: this.name,
+        xml: this.xml,
+        internalName: this.internalName,
+        path: this.path,
+        category: this.category,
+        module: this.module,
+        readonly: this.readonly,
+        version: this.version,
+        latest: false,
+        extensions: this.extensions,
+        persist: this.persist,
+      };
+
+      draftEntity = await processDef.createEntity(context, processDefData);
+      await draftEntity.save(context);
+    }
+
+    return draftEntity;
+  }
+
+  public async publishDraft(context: ExecutionContext): Promise<IProcessDefEntity> {
+    this.latest = true;
+    this.draft = false;
+
+    await this.save(context);
+
+    const queryObject: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        {
+          attribute: 'key',
+          operator: '=',
+          value: this.key,
+        },
+        {
+          attribute: 'draft',
+          operator: '=',
+          value: true,
+        },
+      ],
+    };
+    const queryParams: IPrivateQueryOptions = { query: queryObject };
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
+
+    if (latestEntity) {
+      latestEntity.latest = false;
+      await latestEntity.save(context, { reloadAfterSave: false });
+    }
+
+    if (this.internalName && this.path && !this.readonly) {
+      await this.processRepository.saveProcess(this.internalName, this.xml);
+    }
+
+    return this;
   }
 }

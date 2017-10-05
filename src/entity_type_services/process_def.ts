@@ -1,4 +1,11 @@
-import { ExecutionContext, IEntityReference, IPrivateQueryOptions, IPublicGetOptions, IQueryClause } from '@process-engine-js/core_contracts';
+import {
+  ExecutionContext,
+  ICombinedQueryClause,
+  IEntityReference,
+  IPrivateQueryOptions,
+  IPublicGetOptions,
+  IQueryClause,
+} from '@process-engine-js/core_contracts';
 import { IDatastoreService } from '@process-engine-js/data_model_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import {
@@ -58,6 +65,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     throw new Error('file does not exist');
   }
 
+  // tslint:disable-next-line:cyclomatic-complexity
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
@@ -81,10 +89,20 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       const process = processes[i];
 
       // query with key
-      const queryObject: IQueryClause = {
-        attribute: 'key',
-        operator: '=',
-        value: process.id,
+      const queryObject: ICombinedQueryClause = {
+        operator: 'and',
+        queries: [
+          {
+            attribute: 'key',
+            operator: '=',
+            value: process.id,
+          },
+          {
+            attribute: 'latest',
+            operator: '=',
+            value: true,
+          },
+        ],
       };
       const queryParams: IPrivateQueryOptions = { query: queryObject };
       const processDefColl = await processDef.query(context, queryParams);
@@ -98,6 +116,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           key: process.id,
           defId: bpmnDiagram.definitions.id,
           counter: 0,
+          latest: true,
         };
 
         processDefEntity = await processDef.createEntity(context, processDefData);
