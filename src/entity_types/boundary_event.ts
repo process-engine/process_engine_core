@@ -41,6 +41,12 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
       default:
 
     }
+
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    if (this.process.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
     this.changeState(context, 'wait', this);
   }
 

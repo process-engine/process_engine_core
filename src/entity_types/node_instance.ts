@@ -298,14 +298,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async wait(context: ExecutionContext): Promise<void> {
-    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-
     this.state = 'wait';
-
-    if (this.process.processDef.persist) {
-      await this.save(internalContext, { reloadAfterSave: false });
-    }
   }
 
   public async execute(context: ExecutionContext): Promise<void> {

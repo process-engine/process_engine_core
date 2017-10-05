@@ -21,6 +21,10 @@ export class CatchEventEntity extends EventEntity implements ICatchEventEntity {
 
   public async execute(context: ExecutionContext) {
 
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    if (this.process.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
     this.changeState(context, 'wait', this);
 
     const nodeDef = this.nodeDef;
