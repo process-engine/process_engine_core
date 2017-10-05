@@ -227,14 +227,56 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       await currentToken.save(internalContext, { reloadAfterSave: false });
     }
 
+    const boundaryNodeCreatePromises = [];
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity> this.process.processDef.nodeDefCollection.data[i];
       if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
+        boundaryNodeCreatePromises.push(this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken));
       }
     }
 
-    this.changeState(context, 'execute', <any> this);
+    await this._waitForBoundaryNodesToIdle(boundaryNodeCreatePromises);
+    this.changeState(context, 'execute', this);
+  }
+
+  private async _waitForBoundaryNodesToIdle(boundaryNodePromises: Array<Promise<IEntity>>): Promise<void> {
+    if (boundaryNodePromises.length === 0) {
+      return Promise.resolve();
+    }
+
+    let nodes: Array<IEntity> = await Promise.all(boundaryNodePromises);
+    nodes = nodes.filter((node) => {
+      return node !== undefined && node !== null;
+    });
+
+    if (nodes.length === 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve: any, reject: any): void => {
+
+      let finishedNodes: number = 0;
+      for (const node of nodes) {
+        this.eventAggregator.subscribe('/processengine/node/' + node.id, (event: any) => {
+          if (!event ||
+              !event.data ||
+              !event.data.action ||
+              event.data.action !== 'changeState') {
+                return;
+              }
+
+          const newState: string = event.data.data;
+          if (newState !== 'wait') {
+            return;
+          }
+
+          finishedNodes++;
+          if (finishedNodes === nodes.length) {
+            resolve();
+          }
+        });
+      }
+    });
   }
 
   public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void {

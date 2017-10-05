@@ -190,7 +190,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   }
 
-  public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<void> {
+  public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<IEntity> {
 
     // const process = await source.getProcess(internalContext);
     const process = source.process;
@@ -296,6 +296,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       debugInfo(`node created key '${node.key}'`);
 
       node.changeState(context, 'start', source);
+      return node;
     }
   }
 
