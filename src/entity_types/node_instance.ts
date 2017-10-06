@@ -244,34 +244,29 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       return Promise.resolve();
     }
 
-    let nodes: Array<IEntity> = await Promise.all(boundaryNodePromises);
-    nodes = nodes.filter((node) => {
-      return node !== undefined && node !== null;
-    });
-
-    if (nodes.length === 0) {
-      return Promise.resolve();
-    }
+    const nodes: Array<IEntity> = await Promise.all(boundaryNodePromises);
+    const finishedNodes: {[nodeId: string]: boolean} = {};
+    let unfinishedNodes: number = nodes.length;
 
     return new Promise<void>((resolve: any, reject: any): void => {
 
-      let finishedNodes: number = 0;
       for (const node of nodes) {
-        this.eventAggregator.subscribe('/processengine/node/' + node.id, (event: any) => {
+        finishedNodes[node.id] = false;
+        const subscription: ISubscription = this.eventAggregator.subscribe('/processengine/node/' + node.id, (event: any) => {
           if (!event ||
               !event.data ||
-              !event.data.action ||
-              event.data.action !== 'changeState') {
+              event.data.eventType !== 'waitTransitionFinished') {
                 return;
               }
 
-          const newState: string = event.data.data;
-          if (newState !== 'wait') {
-            return;
+          if (finishedNodes[node.id] === true) {
+            throw new Error(`Boundary ${node.id} changed to state 'wait' twice during creation`);
           }
+          finishedNodes[node.id] = true;
+          subscription.dispose();
 
-          finishedNodes++;
-          if (finishedNodes === nodes.length) {
+          unfinishedNodes--;
+          if (unfinishedNodes === 0) {
             resolve();
           }
         });
@@ -298,7 +293,16 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async wait(context: ExecutionContext): Promise<void> {
+    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
     this.state = 'wait';
+
+    if (this.process.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
+
+    this.triggerEvent(context, 'waitTransitionFinished', null);
   }
 
   public async execute(context: ExecutionContext): Promise<void> {

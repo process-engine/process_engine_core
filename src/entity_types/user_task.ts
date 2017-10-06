@@ -34,6 +34,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       this.participant = null;
     }
 
+    this.changeState(context, 'wait', this);
     const pojo = await this.toPojo(internalContext, {maxDepth: 1});
     let uiName;
     let uiConfig;
@@ -79,11 +80,6 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       const role = await this.nodeDef.lane.role;
       await this.messageBusService.publish('/role/' + role, msg);
     }
-
-    if (this.process.processDef.persist) {
-      await this.save(internalContext, { reloadAfterSave: false });
-    }
-    this.changeState(context, 'wait', this);
 
   }
 
