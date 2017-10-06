@@ -227,14 +227,51 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       await currentToken.save(internalContext, { reloadAfterSave: false });
     }
 
+    const boundaryNodeCreatePromises = [];
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity> this.process.processDef.nodeDefCollection.data[i];
       if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-        await this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken);
+        boundaryNodeCreatePromises.push(this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken));
       }
     }
 
-    this.changeState(context, 'execute', <any> this);
+    await this._waitForBoundaryNodesToIdle(boundaryNodeCreatePromises);
+    this.changeState(context, 'execute', this);
+  }
+
+  private async _waitForBoundaryNodesToIdle(boundaryNodePromises: Array<Promise<IEntity>>): Promise<void> {
+    if (boundaryNodePromises.length === 0) {
+      return Promise.resolve();
+    }
+
+    const nodes: Array<IEntity> = await Promise.all(boundaryNodePromises);
+    const finishedNodes: {[nodeId: string]: boolean} = {};
+    let unfinishedNodes: number = nodes.length;
+
+    return new Promise<void>((resolve: any, reject: any): void => {
+
+      for (const node of nodes) {
+        finishedNodes[node.id] = false;
+        const subscription: ISubscription = this.eventAggregator.subscribe(`/processengine/node/${node.id}`, (event: any) => {
+          if (!event ||
+              !event.data ||
+              event.data.eventType !== 'waitTransitionFinished') {
+                return;
+              }
+
+          if (finishedNodes[node.id] === true) {
+            throw new Error(`Boundary ${node.id} changed to state 'wait' twice during creation`);
+          }
+          finishedNodes[node.id] = true;
+          subscription.dispose();
+
+          unfinishedNodes--;
+          if (unfinishedNodes === 0) {
+            resolve();
+          }
+        });
+      }
+    });
   }
 
   public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void {
@@ -264,6 +301,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     if (this.process.processDef.persist) {
       await this.save(internalContext, { reloadAfterSave: false });
     }
+
+    this.triggerEvent(context, 'waitTransitionFinished', null);
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
