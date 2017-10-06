@@ -23,7 +23,7 @@
     "@process-engine-js/messagebus_contracts": "^2.0.0",
     "@process-engine-js/metadata": "^2.0.0",
     "@process-engine-js/metadata_contracts": "^2.0.0",
-    "@process-engine-js/process_engine_contracts": "^4.0.0",
+    "@process-engine-js/process_engine_contracts": "^4.1.0",
     "@process-engine-js/routing_contracts": "^2.0.0",
     "@process-engine-js/timing_contracts": "^2.0.0",
     "addict-ioc": "^2.2.8",
