@@ -252,7 +252,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
       for (const node of nodes) {
         finishedNodes[node.id] = false;
-        const subscription: ISubscription = this.eventAggregator.subscribe('/processengine/node/' + node.id, (event: any) => {
+        const subscription: ISubscription = this.eventAggregator.subscribe(`/processengine/node/${node.id}`, (event: any) => {
           if (!event ||
               !event.data ||
               event.data.eventType !== 'waitTransitionFinished') {
