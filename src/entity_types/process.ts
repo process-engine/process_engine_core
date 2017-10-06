@@ -219,8 +219,11 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     // Todo: end active node instances
 
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+
     if (this.processDef.persist) {
       this.status = 'end';
+      await this.save(internalContext, { reloadAfterSave: false });
     }
 
     if (this.isSubProcess) {
