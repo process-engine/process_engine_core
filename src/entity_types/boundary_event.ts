@@ -41,7 +41,6 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
       default:
 
     }
-
     this.changeState(context, 'wait', this);
   }
 

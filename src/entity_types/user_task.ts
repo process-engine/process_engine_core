@@ -35,6 +35,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     }
 
     this.changeState(context, 'wait', this);
+
     const pojo = await this.toPojo(internalContext, {maxDepth: 1});
     let uiName;
     let uiConfig;
