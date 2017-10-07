@@ -6,7 +6,7 @@ import {
   IPublicGetOptions,
   IQueryClause,
 } from '@process-engine-js/core_contracts';
-import { IDatastoreService } from '@process-engine-js/data_model_contracts';
+import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
 import { IInvoker } from '@process-engine-js/invocation_contracts';
 import {
   IImportFromFileOptions, IImportFromXmlOptions, IParamImportFromFile,
@@ -166,21 +166,68 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const key: string = params ? params.key : undefined;
-
+    const version: string = params ? params.version : undefined;
     if (key) {
-      const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+      const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+      let processDefEntity: IProcessDefEntity;
+      let queryObjectVersion: ICombinedQueryClause;
 
-      const queryObject: IQueryClause = {
-        attribute: 'key', operator: '=', value: key,
-      };
-      const queryParams: IPrivateQueryOptions = { query: queryObject };
-      const processDefEntity = await processDef.findOne(context, queryParams);
+      if (version) {
+        queryObjectVersion = {
+          operator: 'and',
+          queries: [
+            {
+              attribute: 'key',
+              operator: '=',
+              value: key,
+            },
+            {
+              attribute: 'version',
+              operator: '=',
+              value: version,
+            },
+          ],
+        };
+      } else {
+        queryObjectVersion = {
+          operator: 'and',
+          queries: [
+            {
+              attribute: 'key',
+              operator: '=',
+              value: key,
+            },
+            {
+              attribute: 'latest',
+              operator: '=',
+              value: true,
+            },
+          ],
+        };
+      }
+
+      const queryParamsLatest: IPrivateQueryOptions = { query: queryObjectVersion };
+      processDefEntity = await processDef.findOne(context, queryParamsLatest);
+
+      if (!processDefEntity) {
+        // no process def with flag latest is found, for backwards compability we only query with key
+        const queryObject: IQueryClause = {
+          attribute: 'key',
+          operator: '=',
+          value: key,
+        };
+
+        const queryParams: IPrivateQueryOptions = { query: queryObject };
+        processDefEntity = await processDef.findOne(context, queryParams);
+      }
 
       if (processDefEntity) {
         const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+
         return processEntityRef;
       }
     }
+
     return null;
   }
 

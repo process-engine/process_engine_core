@@ -1015,9 +1015,14 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           value: this.key,
         },
         {
-          attribute: 'draft',
+          attribute: 'latest',
           operator: '=',
           value: true,
+        },
+        {
+          attribute: 'id',
+          operator: '!=',
+          value: this.id,
         },
       ],
     };
