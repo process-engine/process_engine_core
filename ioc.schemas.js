@@ -2,7 +2,7 @@
 
 const schemas = require('./schemas/index');
 
-const schemaDiscoveryTag = require('@process-engine-js/core_contracts').SchemaDiscoveryTag;
+const schemaDiscoveryTag = require('@essential-projects/core_contracts').SchemaDiscoveryTag;
 
 function registerInContainer(container, registrationSettings) {
 

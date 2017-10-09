@@ -1,8 +1,8 @@
-import {ExecutionContext, IEntity, IInheritedSchema} from '@process-engine-js/core_contracts';
-import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import { ISubscription } from '@process-engine-js/event_aggregator_contracts';
-import { IMessageSubscription } from '@process-engine-js/messagebus_contracts';
-import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema} from '@essential-projects/core_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
+import { ISubscription } from '@essential-projects/event_aggregator_contracts';
+import { IMessageSubscription } from '@essential-projects/messagebus_contracts';
+import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 import {NodeInstanceEntity} from './node_instance';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 

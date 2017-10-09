@@ -1,9 +1,9 @@
-import {ExecutionContext, IEntity, IIamService, IInheritedSchema, IPublicGetOptions, SchemaAttributeType } from '@process-engine-js/core_contracts';
-import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@process-engine-js/data_model_contracts';
-import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
+import {ExecutionContext, IEntity, IIamService, IInheritedSchema, IPublicGetOptions, SchemaAttributeType } from '@essential-projects/core_contracts';
+import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@essential-projects/data_model_contracts';
+import { IMessageBusService } from '@essential-projects/messagebus_contracts';
+import {schemaAttribute} from '@essential-projects/metadata';
 import { ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
-  IProcessEntity, IStartEventEntity } from '@process-engine-js/process_engine_contracts';
+  IProcessEntity, IStartEventEntity } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');

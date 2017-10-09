@@ -1,5 +1,5 @@
 {
-  "name": "@process-engine-js/process_engine",
+  "name": "@process-engine/process_engine",
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
@@ -14,18 +14,18 @@
     "Simon Reymann <simon.reymann@quantusflow.com>"
   ],
   "dependencies": {
-    "@process-engine-js/core_contracts": "^2.0.0",
-    "@process-engine-js/data_model": "^2.0.0",
-    "@process-engine-js/data_model_contracts": "^2.0.0",
-    "@process-engine-js/event_aggregator_contracts": "^2.0.0",
-    "@process-engine-js/feature_contracts": "^2.0.0",
-    "@process-engine-js/invocation_contracts": "^2.0.0",
-    "@process-engine-js/messagebus_contracts": "^2.0.0",
-    "@process-engine-js/metadata": "^2.0.0",
-    "@process-engine-js/metadata_contracts": "^2.0.0",
-    "@process-engine-js/process_engine_contracts": "^4.1.0",
-    "@process-engine-js/routing_contracts": "^2.0.0",
-    "@process-engine-js/timing_contracts": "^2.0.0",
+    "@essential-projects/core_contracts": "^2.0.0",
+    "@essential-projects/data_model": "^2.0.0",
+    "@essential-projects/data_model_contracts": "^2.0.0",
+    "@essential-projects/event_aggregator_contracts": "^2.0.0",
+    "@essential-projects/feature_contracts": "^2.0.0",
+    "@essential-projects/invocation_contracts": "^2.0.0",
+    "@essential-projects/messagebus_contracts": "^2.0.0",
+    "@essential-projects/metadata": "^2.0.0",
+    "@essential-projects/metadata_contracts": "^2.0.0",
+    "@process-engine/process_engine_contracts": "^4.1.0",
+    "@essential-projects/routing_contracts": "^2.0.0",
+    "@essential-projects/timing_contracts": "^2.0.0",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",
@@ -33,7 +33,7 @@
     "moment": "^2.18.1"
   },
   "devDependencies": {
-    "@process-engine-js/tslint-config": "^1.0.1",
+    "@essential-projects/tslint-config": "^1.0.1",
     "@types/bluebird": "^3.5.8",
     "@types/node": "^8.0.27",
     "gulp": "^3.9.1",

@@ -1,10 +1,10 @@
-import { ExecutionContext, IEntity, IEntityReference, IIamService, IPublicGetOptions } from '@process-engine-js/core_contracts';
-import { IDatastoreService } from '@process-engine-js/data_model_contracts';
-import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
-import { IFeatureService } from '@process-engine-js/feature_contracts';
-import { IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { ExecutionContext, IEntity, IEntityReference, IIamService, IPublicGetOptions } from '@essential-projects/core_contracts';
+import { IDatastoreService } from '@essential-projects/data_model_contracts';
+import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IFeatureService } from '@essential-projects/feature_contracts';
+import { IMessageBusService } from '@essential-projects/messagebus_contracts';
 import { IImportFromFileOptions, IParamImportFromXml, IParamStart, IProcessDefEntityTypeService, IProcessEngineService,
-  IProcessRepository } from '@process-engine-js/process_engine_contracts';
+  IProcessRepository } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 

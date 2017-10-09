@@ -1,11 +1,11 @@
-import { ExecutionContext, IEntity, IIamService, IPublicGetOptions } from '@process-engine-js/core_contracts';
-import {EntityReference, IDatastoreService, IEntityType} from '@process-engine-js/data_model_contracts';
-import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
-import { IFeatureService } from '@process-engine-js/feature_contracts';
-import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
+import { ExecutionContext, IEntity, IIamService, IPublicGetOptions } from '@essential-projects/core_contracts';
+import {EntityReference, IDatastoreService, IEntityType} from '@essential-projects/data_model_contracts';
+import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IFeatureService } from '@essential-projects/feature_contracts';
+import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
-  IParamsContinueFromRemote, IProcessEngineService, IProcessEntity } from '@process-engine-js/process_engine_contracts';
-import { IRoutingService } from '@process-engine-js/routing_contracts';
+  IParamsContinueFromRemote, IProcessEngineService, IProcessEntity } from '@process-engine/process_engine_contracts';
+import { IRoutingService } from '@essential-projects/routing_contracts';
 
 import * as debug from 'debug';
 

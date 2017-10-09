@@ -1,11 +1,11 @@
-import { ExecutionContext, IEntityReference, IPrivateQueryOptions, IPublicGetOptions, IQueryClause } from '@process-engine-js/core_contracts';
-import { IDatastoreService } from '@process-engine-js/data_model_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
+import { ExecutionContext, IEntityReference, IPrivateQueryOptions, IPublicGetOptions, IQueryClause } from '@essential-projects/core_contracts';
+import { IDatastoreService } from '@essential-projects/data_model_contracts';
+import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   IImportFromFileOptions, IImportFromXmlOptions, IParamImportFromFile,
   IParamImportFromXml, IParamStart, IProcessDefEntity,
   IProcessDefEntityTypeService, IProcessRepository,
-} from '@process-engine-js/process_engine_contracts';
+} from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as BluebirdPromise from 'bluebird';

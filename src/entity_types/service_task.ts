@@ -1,6 +1,6 @@
-import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions} from '@process-engine-js/core_contracts';
-import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {IServiceTaskEntity} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions} from '@essential-projects/core_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
+import {IServiceTaskEntity} from '@process-engine/process_engine_contracts';
 import { Container, IInstanceWrapper } from 'addict-ioc';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
