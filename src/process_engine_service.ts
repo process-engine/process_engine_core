@@ -1,10 +1,17 @@
-import { ExecutionContext, IEntity, IEntityReference, IIamService, IPublicGetOptions } from '@essential-projects/core_contracts';
-import { IDatastoreService } from '@essential-projects/data_model_contracts';
+import {
+  ExecutionContext,
+  IEntity,
+  IEntityReference,
+  IIamService,
+  IPrivateQueryOptions,
+  IPublicGetOptions,
+} from '@essential-projects/core_contracts';
+import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
 import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
 import { IFeatureService } from '@essential-projects/feature_contracts';
 import { IMessageBusService } from '@essential-projects/messagebus_contracts';
-import { IImportFromFileOptions, IParamImportFromXml, IParamStart, IProcessDefEntityTypeService, IProcessEngineService,
-  IProcessRepository } from '@process-engine/process_engine_contracts';
+import { IImportFromFileOptions, INodeInstanceEntity, IParamImportFromXml, IParamStart, IProcessDefEntityTypeService,
+  IProcessEngineService, IProcessRepository } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 
@@ -68,6 +75,7 @@ export class ProcessEngineService implements IProcessEngineService {
     await this._initializeMessageBus();
     await this._initializeProcesses();
     await this._startTimers();
+    return this._continueOwnProcesses();
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -174,6 +182,37 @@ export class ProcessEngineService implements IProcessEngineService {
       const processDef = await nodeDef.getProcessDef(internalContext);
       await processDef.startTimer(internalContext);
     });
+  }
+
+  private async _continueOwnProcesses(): Promise<any> {
+    const internalContextPromise: Promise<ExecutionContext> = this.iamService.createInternalContext('processengine_system');
+    const nodeInstanceEntityTypePromise: Promise<IEntityType<INodeInstanceEntity>> = this.datastoreService.getEntityType('NodeInstance');
+    const internalContext: ExecutionContext = await internalContextPromise;
+    const nodeInstanceEntityType: IEntityType<INodeInstanceEntity> = await nodeInstanceEntityTypePromise;
+
+    const queryObject: IPrivateQueryOptions = {
+      query: {
+        attribute: 'state',
+        operator: '=',
+        value: 'wait',
+      },
+      expandCollection: [{
+        attribute: 'process',
+      }],
+    };
+    const allRunningNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext);
+    const allRunningNodes: Array<INodeInstanceEntity> = [];
+    allRunningNodesCollection.each(internalContext, (process: INodeInstanceEntity) => {
+      allRunningNodes.push(process);
+    });
+
+    return Promise.all<void>(allRunningNodes.map((runningNode: INodeInstanceEntity) => {
+      return this._continueOwnProcess(runningNode);
+    }));
+  }
+
+  private async _continueOwnProcess(runningNode: INodeInstanceEntity): Promise<any> {
+    
   }
 
 }
