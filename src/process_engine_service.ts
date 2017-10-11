@@ -12,6 +12,7 @@ import { IFeatureService } from '@essential-projects/feature_contracts';
 import { IMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {
   IImportFromFileOptions,
+  INodeDefEntity,
   INodeInstanceEntity,
   INodeInstanceEntityTypeService,
   IParamImportFromXml,
@@ -100,7 +101,7 @@ export class ProcessEngineService implements IProcessEngineService {
     await this._initializeMessageBus();
     await this._initializeProcesses();
     await this._startTimers();
-    // return this._continueOwnProcesses();
+    return this._continueOwnProcesses();
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -222,13 +223,16 @@ export class ProcessEngineService implements IProcessEngineService {
         value: 'wait',
       },
       expandCollection: [{
-        attribute: 'process',
+        attribute: 'nodeDef',
+        childAttributes: [{ attribute: 'lane' }],
+      }, {
+        attribute: 'processToken',
       }],
     };
-    const allRunningNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext);
+    const allRunningNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext, queryObject);
     const allRunningNodes: Array<INodeInstanceEntity> = [];
     debugInfo(allRunningNodesCollection);
-    allRunningNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
+    await allRunningNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
       allRunningNodes.push(nodeInstance);
     });
 
@@ -259,13 +263,28 @@ export class ProcessEngineService implements IProcessEngineService {
       // answered to our 'checkResponsibleInstance'-request, which means that no one is responsible
       // for that process. This means, that we can safely claim responsibility and continue running
       // the process that belongs to the node
-      const process: IProcessEntity = await runningNode.getProcess(context);
-      process.initializeProcess();
+
+      const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+      const specificEntityTypePromise: Promise<IEntityType<INodeInstanceEntity>> = nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(runningNode.type);
+      const processPromise: Promise<IProcessEntity> = runningNode.getProcess(context);
+
+      const process: IProcessEntity = await processPromise;
+      const specificEntityType: IEntityType<INodeInstanceEntity> = await specificEntityTypePromise;
+
+      const processInitializePromise: Promise<INodeDefEntity> = process.initializeProcess();
+      const specificEntityPromise: Promise<INodeInstanceEntity> = specificEntityType.getById(runningNode.id, context, {
+        expandEntity: [{
+          attribute: 'process',
+        }],
+      });
+
+      await processInitializePromise;
+      const specificEntity: INodeInstanceEntity = await specificEntityPromise;
 
       // TODO: Here'd we have to check, if we have the features required to continue the execution
       // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
-      const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
-      nodeInstanceEntityTypeService.subscibeToNodeChannels(runningNode);
+      nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
+      // runningNode.changeState(context, 'start', null);
   }
 
 }

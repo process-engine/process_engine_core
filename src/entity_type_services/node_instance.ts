@@ -11,8 +11,18 @@ import {
   IMessageBusService,
 } from '@essential-projects/messagebus_contracts';
 import { IRoutingService } from '@essential-projects/routing_contracts';
-import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
-  IParamsContinueFromRemote, IProcessEngineService, IProcessEntity } from '@process-engine/process_engine_contracts';
+import {
+  BpmnType,
+  EntityTypeName,
+  IFlowDefEntity,
+  ILaneEntity,
+  INodeDefEntity,
+  INodeInstanceEntity,
+  INodeInstanceEntityTypeService,
+  IParamsContinueFromRemote,
+  IProcessEngineService,
+  IProcessEntity,
+} from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 
@@ -223,10 +233,30 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     node.messagebusSubscription = this.messagebusService.subscribe(`/processengine/node/${node.id}`, (message: IMessage) => {
       console.log(message);
-      return this._nodeHandlerMessagebus.bind(message, binding);
+      return this._nodeHandlerMessagebus(message, binding);
     });
 
     return node;
+  }
+
+  public getEntityTypeFromBpmnType<TEntity extends IEntity = IEntity>(bpmnType: BpmnType): Promise<IEntityType<TEntity>> {
+    const typeMapping: Map<BpmnType, EntityTypeName> = new Map();
+    typeMapping.set(BpmnType.userTask, 'UserTask');
+    typeMapping.set(BpmnType.exclusiveGateway, 'ExclusiveGateway');
+    typeMapping.set(BpmnType.parallelGateway, 'ParallelGateway');
+    typeMapping.set(BpmnType.serviceTask, 'ServiceTask');
+    typeMapping.set(BpmnType.startEvent, 'StartEvent');
+    typeMapping.set(BpmnType.endEvent, 'EndEvent');
+    typeMapping.set(BpmnType.intermediateCatchEvent, 'CatchEvent');
+    typeMapping.set(BpmnType.intermediateThrowEvent, 'ThrowEvent');
+    typeMapping.set(BpmnType.scriptTask, 'ScriptTask');
+    typeMapping.set(BpmnType.boundaryEvent, 'BoundaryEvent');
+    typeMapping.set(BpmnType.callActivity, 'SubprocessExternal');
+    typeMapping.set(BpmnType.subProcess, 'SubprocessInternal');
+
+    const entityTypeName: EntityTypeName = typeMapping.get(bpmnType);
+
+    return this.datastoreService.getEntityType<TEntity>(entityTypeName);
   }
 
   public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<IEntity> {
@@ -236,22 +266,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const applicationId = source.application;
 
-    const map = new Map();
-    map.set('bpmn:UserTask', 'UserTask');
-    map.set('bpmn:ExclusiveGateway', 'ExclusiveGateway');
-    map.set('bpmn:ParallelGateway', 'ParallelGateway');
-    map.set('bpmn:ServiceTask', 'ServiceTask');
-    map.set('bpmn:StartEvent', 'StartEvent');
-    map.set('bpmn:EndEvent', 'EndEvent');
-    map.set('bpmn:IntermediateCatchEvent', 'CatchEvent');
-    map.set('bpmn:IntermediateThrowEvent', 'ThrowEvent');
-    map.set('bpmn:ScriptTask', 'ScriptTask');
-    map.set('bpmn:BoundaryEvent', 'BoundaryEvent');
-    map.set('bpmn:CallActivity', 'SubprocessExternal');
-    map.set('bpmn:SubProcess', 'SubprocessInternal');
-
-    const className = map.get(nextDef.type);
-    const entityType = await this.datastoreService.getEntityType(className);
+    const entityType: IEntityType<IEntity> = await this.getEntityTypeFromBpmnType(nextDef.type);
 
     // const currentDef = await source.getNodeDef(internalContext);
     const currentDef = source.nodeDef;
