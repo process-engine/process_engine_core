@@ -41,6 +41,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService> = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
+  private _internalContext: ExecutionContext;
   public config: any = undefined;
 
   constructor(messageBusService: IMessageBusService,
@@ -97,10 +98,19 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._nodeInstanceEntityTypeService;
   }
 
+  private async _getInternalContext(): Promise<ExecutionContext> {
+    if (!this._internalContext) {
+      this._internalContext = await this.iamService.createInternalContext('processengine_system');
+    }
+
+    return this._internalContext;
+  }
+
   public async initialize(): Promise<void> {
     await this._initializeMessageBus();
     await this._initializeProcesses();
     await this._startTimers();
+
     return this._continueOwnProcesses();
   }
 
@@ -211,75 +221,103 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _continueOwnProcesses(): Promise<any> {
-    const internalContextPromise: Promise<ExecutionContext> = this.iamService.createInternalContext('processengine_system');
-    const nodeInstanceEntityTypePromise: Promise<IEntityType<INodeInstanceEntity>> = this.datastoreService.getEntityType('NodeInstance');
-    const internalContext: ExecutionContext = await internalContextPromise;
-    const nodeInstanceEntityType: IEntityType<INodeInstanceEntity> = await nodeInstanceEntityTypePromise;
+    const [
+      allWaitingNodes,
+      internalContext,
+    ] = await Promise.all([
+      this._getAllWaitingNodes(),
+      this._getInternalContext(),
+    ]);
 
-    const queryObject: IPrivateQueryOptions = {
+    return Promise.all<void>(allWaitingNodes.map((runningNode: INodeInstanceEntity) => {
+      return this._continueOwnProcess(internalContext, runningNode);
+    }));
+  }
+
+  private async _continueOwnProcess(context: ExecutionContext, waitingNode: INodeInstanceEntity): Promise<any> {
+    if (await this._nodeAlreadyBelongsToOtherProcessEngine(context, waitingNode)) {
+      return;
+    }
+
+    const specificEntity: INodeInstanceEntity = await this._getSpecificEntityByNodeInstance(context, waitingNode);
+    const processToContinue: IProcessEntity = await specificEntity.getProcess(context);
+    await processToContinue.initializeProcess();
+
+    // TODO: Here'd we have to check, if we have the features required to continue the execution
+    // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
+    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+    nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
+  }
+
+  private async _getAllWaitingNodes(): Promise<Array<INodeInstanceEntity>> {
+    const [
+      internalContext,
+      nodeInstanceEntityType,
+    ] = await Promise.all([
+      this._getInternalContext(),
+      this.datastoreService.getEntityType<INodeInstanceEntity>('NodeInstance'),
+    ]);
+
+    const waitingNodesQuery: IPrivateQueryOptions = {
       query: {
         attribute: 'state',
         operator: '=',
         value: 'wait',
       },
     };
-    const allRunningNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext, queryObject);
-    const allRunningNodes: Array<INodeInstanceEntity> = [];
-    debugInfo(allRunningNodesCollection);
-    await allRunningNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
-      allRunningNodes.push(nodeInstance);
+
+    const allWaitingNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext, waitingNodesQuery);
+    const allWaitingNodes: Array<INodeInstanceEntity> = [];
+    await allWaitingNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
+      allWaitingNodes.push(nodeInstance);
     });
 
-    return Promise.all<void>(allRunningNodes.map((runningNode: INodeInstanceEntity) => {
-      return this._continueOwnProcess(internalContext, runningNode);
-    }));
+    return allWaitingNodes;
   }
 
-  private async _continueOwnProcess(context: ExecutionContext, runningNode: INodeInstanceEntity): Promise<any> {
-      const checkMessageData: any = {
-        action: 'checkResponsibleInstance',
-      };
+  private async _nodeAlreadyBelongsToOtherProcessEngine(context: ExecutionContext, node: INodeInstanceEntity): Promise<boolean> {
+    const checkMessageData: any = {
+      action: 'checkResponsibleInstance',
+    };
 
-      const checkMessage: IMessage = this.messageBusService.createDataMessage(checkMessageData, context);
-      debugInfo(runningNode.id);
-      try {
-        await this.messageBusService.request(`/processengine/node/${runningNode.id}`, checkMessage);
+    const checkMessage: IMessage = this.messageBusService.createDataMessage(checkMessageData, context);
 
-        return;
-      } catch (error) {
-        if (error.message !== 'request timed out') {
-          throw error;
-        }
+    try {
+      await this.messageBusService.request(`/processengine/node/${node.id}`, checkMessage);
+
+      return true;
+    } catch (error) {
+      if (error.message !== 'request timed out') {
+        throw error;
       }
+    }
 
-      // the request didn't return, wich means it error'd, but it also didn't rethrow the error,
-      // which means it error'd, because the request timed out. This in turn means, that no one
-      // answered to our 'checkResponsibleInstance'-request, which means that no one is responsible
-      // for that process. This means, that we can safely claim responsibility and continue running
-      // the process that belongs to the node
+    // the request didn't return, wich means it error'd, but it also didn't rethrow the error,
+    // which means it error'd, because the request timed out. This in turn means, that no one
+    // answered to our 'checkResponsibleInstance'-request, which means that no one is responsible
+    // for that process
+    return false;
+  }
 
-      const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
-      const specificEntityTypePromise: Promise<IEntityType<INodeInstanceEntity>> = nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(runningNode.type);
-
-      const specificEntityType: IEntityType<INodeInstanceEntity> = await specificEntityTypePromise;
-
-      const specificEntityPromise: Promise<INodeInstanceEntity> = specificEntityType.getById(runningNode.id, context, {
-        expandEntity: [{
-          attribute: 'nodeDef',
-          childAttributes: [{ attribute: 'lane' }],
-        }, {
-          attribute: 'processToken',
+  // When we only have the general NodeInstanceEntity, but what we want the specific entity that represents that nodeInstace
+  // (for example the UserTaskEntity), then this method gives us that specific entity
+  private async _getSpecificEntityByNodeInstance(context: ExecutionContext, nodeInstance: INodeInstanceEntity): Promise<INodeInstanceEntity> {
+    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+    const specificEntityQueryOptions: IPrivateQueryOptions = {
+      expandEntity: [{
+        attribute: 'nodeDef',
+        childAttributes: [{
+          attribute: 'lane',
         }],
-      });
+      }, {
+        attribute: 'processToken',
+      }],
+    };
 
-      const specificEntity: INodeInstanceEntity = await specificEntityPromise;
-      const process: IProcessEntity = await specificEntity.getProcess(context);
-      await process.initializeProcess();
+    // tslint:disable-next-line:max-line-length
+    const specificEntityType: IEntityType<INodeInstanceEntity> = await nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(nodeInstance.type);
 
-      // TODO: Here'd we have to check, if we have the features required to continue the execution
-      // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
-      nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
-      // runningNode.changeState(context, 'start', null);
+    return specificEntityType.getById(nodeInstance.id, context, specificEntityQueryOptions);
   }
 
 }
