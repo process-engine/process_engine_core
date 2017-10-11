@@ -2,7 +2,7 @@ import {ExecutionContext, IEntity, IIamService, IInheritedSchema, IPublicGetOpti
 import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@essential-projects/data_model_contracts';
 import { IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
-import { ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
+import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
   IProcessEntity, IStartEventEntity } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
@@ -122,6 +122,45 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'callerId', value);
   }
 
+  public async initializeProcess(): Promise<INodeDefEntity> {
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+    const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
+
+    await processDef.getNodeDefCollection(internalContext);
+    await processDef.nodeDefCollection.each(internalContext, async(nodeDef: INodeDefEntity) => {
+      nodeDef.processDef = processDef;
+    });
+    await processDef.getFlowDefCollection(internalContext);
+    await processDef.flowDefCollection.each(internalContext, async(flowDef: IFlowDefEntity) => {
+      flowDef.processDef = processDef;
+    });
+    await processDef.getLaneCollection(internalContext);
+    await processDef.laneCollection.each(internalContext, async(lane: ILaneEntity) => {
+      lane.processDef = processDef;
+    });
+
+    // set lane entities
+    for (const nodeDef of processDef.nodeDefCollection.data) {
+      if (!nodeDef.lane) {
+        continue;
+      }
+
+      const lane: ILaneEntity = processDef.laneCollection.data.find((lane: ILaneEntity) => {
+        return lane.id === nodeDef.lane.id;
+      });
+
+      if (lane !== null) {
+        nodeDef.lane = lane;
+      }
+    }
+
+    const startEventDef: INodeDefEntity = processDef.nodeDefCollection.data.find((nodeDef: INodeDefEntity) => {
+      return nodeDef.type === 'bpmn:StartEvent';
+    });
+
+    return startEventDef;
+  }
+
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
 
     const source = params ? params.source : undefined;
@@ -150,69 +189,38 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       applicationId = source || null;
     }
 
-    const processDef = await this.getProcessDef(internalContext);
+    const startEventDef: INodeDefEntity = await this.initializeProcess();
 
-    await processDef.getNodeDefCollection(internalContext);
-    await processDef.nodeDefCollection.each(internalContext, async(nodeDef) => {
-      nodeDef.processDef = processDef;
-    });
-    await processDef.getFlowDefCollection(internalContext);
-    await processDef.flowDefCollection.each(internalContext, async(flowDef) => {
-      flowDef.processDef = processDef;
-    });
-    await processDef.getLaneCollection(internalContext);
-    await processDef.laneCollection.each(internalContext, async(lane) => {
-      lane.processDef = processDef;
-    });
-
-    // get start event, set lane entities
-    let startEventDef: INodeDefEntity;
-    for (let i = 0; i < processDef.nodeDefCollection.length; i++) {
-      const nodeDef = <INodeDefEntity> processDef.nodeDefCollection.data[i];
-
-      if (nodeDef.lane) {
-        const laneId = nodeDef.lane.id;
-        for (let j = 0; j < processDef.laneCollection.length; j++) {
-          const lane = <ILaneEntity> processDef.laneCollection.data[j];
-          if (lane.id === laneId) {
-            nodeDef.lane = lane;
-          }
-        }
-      }
-
-      if (nodeDef.type === 'bpmn:StartEvent') {
-        startEventDef = nodeDef;
-      }
+    if (!startEventDef) {
+      return;
     }
 
-    if (startEventDef) {
-      // create an empty process token
-      const processToken: any = await processTokenType.createEntity(internalContext);
-      processToken.process = this;
-      if (initialToken) {
-        processToken.data = {
-          current: initialToken,
-        };
-      }
-
-      if (this.processDef.persist) {
-        await processToken.save(internalContext, { reloadAfterSave: false });
-      }
-
-      debugInfo(`process id ${this.id} started: `);
-
-      const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
-      startEvent.name = startEventDef.name;
-      startEvent.key = startEventDef.key;
-      startEvent.process = this;
-      startEvent.nodeDef = startEventDef;
-      startEvent.type = startEventDef.type;
-      startEvent.processToken = processToken;
-      startEvent.participant = participant;
-      startEvent.application = applicationId;
-
-      startEvent.changeState(laneContext, 'start', this);
+    // create an empty process token
+    const processToken: any = await processTokenType.createEntity(internalContext);
+    processToken.process = this;
+    if (initialToken) {
+      processToken.data = {
+        current: initialToken,
+      };
     }
+
+    if (this.processDef.persist) {
+      await processToken.save(internalContext, { reloadAfterSave: false });
+    }
+
+    debugInfo(`process id ${this.id} started: `);
+
+    const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
+    startEvent.name = startEventDef.name;
+    startEvent.key = startEventDef.key;
+    startEvent.process = this;
+    startEvent.nodeDef = startEventDef;
+    startEvent.type = startEventDef.type;
+    startEvent.processToken = processToken;
+    startEvent.participant = participant;
+    startEvent.application = applicationId;
+
+    startEvent.changeState(laneContext, 'start', this);
   }
 
   public async end(context: ExecutionContext, processToken: any): Promise<void> {
