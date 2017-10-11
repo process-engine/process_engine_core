@@ -145,12 +145,12 @@ export class ProcessEntity extends Entity implements IProcessEntity {
         continue;
       }
 
-      const lane: ILaneEntity = processDef.laneCollection.data.find((lane: ILaneEntity) => {
+      const laneForNode: ILaneEntity = processDef.laneCollection.data.find((lane: ILaneEntity) => {
         return lane.id === nodeDef.lane.id;
       });
 
-      if (lane !== null) {
-        nodeDef.lane = lane;
+      if (laneForNode !== null) {
+        nodeDef.lane = laneForNode;
       }
     }
 
