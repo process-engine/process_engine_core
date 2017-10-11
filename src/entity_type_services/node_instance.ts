@@ -156,22 +156,43 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return message.data !== undefined && message.source !== undefined;
   }
 
-  private async _nodeHandlerMessagebus(message: IMessage | IEntityMessage, binding: any): Promise<void> {
+  private async _nodeHandlerMessagebus(msg: any, binding): Promise<void> {
 
-    if (!this.messageIsDataMessage(message)) {
-      return;
+    await binding.messagebusService.verifyMessage(msg);
+
+    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+
+    const sourceRef = (msg && msg.source) ? msg.source : null;
+    let source = null;
+
+    if (sourceRef) {
+
+      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+      try {
+        source = await entityType.getById(sourceRef.id, context);
+      } catch (err) {
+        // source could not be found, ignore atm
+      }
     }
 
-    const payload: any = message.data;
+    const payload: any = (msg && msg.data) ? msg.data : null;
     const action = (payload && payload.action) ? payload.action : null;
 
-    let context: ExecutionContext = <ExecutionContext> {};
-    if (message.metadata.context) {
-      context = message.metadata.context;
+    if (action === 'proceed') {
+      const newData = (payload && payload.token) ? payload.token : null;
+      const applicationId = msg.metadata.applicationId;
+      const participant = (msg.metadata.options) ? msg.metadata.options.participantId : null;
+      await binding.entity.proceed(context, newData, source, applicationId, participant);
+    }
+
+    if (action === 'event') {
+      const eventType = (payload && payload.eventType) ? payload.eventType : null;
+      const data = (payload && payload.data) ? payload.data : null;
+      binding.entity.triggerEvent(context, eventType, data);
     }
 
     if (action === 'checkResponsibleInstance') {
-      const responseChannel: string = message.metadata.response;
+      const responseChannel: string = msg.metadata.response;
       const responseData: any = {
         action: 'isResponsibleInstance',
       };
@@ -180,34 +201,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       // we don't need to wait for an answer, we just want to inform the requesting process-engine,
       // that we are responsible for the requested node
       this.messagebusService.publish(responseChannel, responseMessage);
-      return;
-    }
-
-    await binding.messagebusService.verifyMessage(message);
-
-    let source = null;
-
-    if (this.messageIsEntityMessage(message)) {
-
-      const entityType = await binding.datastoreService.getEntityType(message.source._meta.type);
-      try {
-        source = await entityType.getById(message.source.id, context);
-      } catch (err) {
-        // source could not be found, ignore atm
-      }
-    }
-
-    if (action === 'proceed') {
-      const newData = (payload && payload.token) ? payload.token : null;
-      const applicationId = message.metadata.applicationId;
-      const participant = (message.metadata.options) ? message.metadata.options.participantId : null;
-      await binding.entity.proceed(context, newData, source, applicationId, participant);
-    }
-
-    if (action === 'event') {
-      const eventType = (payload && payload.eventType) ? payload.eventType : null;
-      const data = (payload && payload.data) ? payload.data : null;
-      binding.entity.triggerEvent(context, eventType, data);
     }
   }
 
