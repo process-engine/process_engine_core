@@ -89,20 +89,16 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return event.data !== undefined && event.source !== undefined;
   }
 
-  private async _nodeHandler(event: IEvent, binding: any): Promise<void> {
+  private async _nodeHandler(event: any, binding: any): Promise<void> {
 
-    if (!this.eventIsEntityEvent(event)) {
-      return;
-    }
+    const action = (event && event.data && event.data.action) ? event.data.action : null;
+    const source: IEntity = (event && event.source) ? event.source : null;
+    const context = (event && event.metadata && event.metadata.context) ? event.metadata.context : {};
+    const applicationId = (event && event.metadata && event.metadata.applicationId) ? event.metadata.applicationId : null;
+    const participant = (event && event.metadata && event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
 
-    const action = event.data.action ? event.data.action : null;
-    const source: IEntity = event.source ? event.source : null;
-    const context = event.metadata.context ? event.metadata.context : {};
-    const applicationId = event.metadata.applicationId ? event.metadata.applicationId : null;
-    const participant = (event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
-    console.log('nodehandler participant', participant);
     if (action === 'changeState') {
-      const newState = event.data.data ? event.data.data : null;
+      const newState = (event && event.data && event.data.data) ? event.data.data : null;
 
       switch (newState) {
           case ('start'):
@@ -131,19 +127,19 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
 
     if (action === 'proceed') {
-      const newData = (event.data && event.data.token) ? event.data.token : null;
+      const newData = (event && event.data && event.data.token) ? event.data.token : null;
       await binding.entity.proceed(context, newData, source, applicationId, participant);
     }
 
     if (action === 'boundary') {
-      const eventEntity = (event.data && event.data.eventEntity) ? event.data.eventEntity : null;
+      const eventEntity = (event && event.data && event.data.eventEntity) ? event.data.eventEntity : null;
       const data = (event && event.data && event.data.data) ? event.data.data : null;
       await binding.entity.boundaryEvent(context, eventEntity, data, source, applicationId, participant);
     }
 
     if (action === 'event') {
-      const eventType = (event.data && event.data.eventType) ? event.data.eventType : null;
-      const data = (event.data && event.data.data) ? event.data.data : null;
+      const eventType = (event && event.data && event.data.eventType) ? event.data.eventType : null;
+      const data = (event && event.data && event.data.data) ? event.data.data : null;
       await binding.entity.event(context, eventType, data, source, applicationId, participant);
     }
   }
