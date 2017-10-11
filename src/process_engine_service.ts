@@ -275,6 +275,9 @@ export class ProcessEngineService implements IProcessEngineService {
       const specificEntityPromise: Promise<INodeInstanceEntity> = specificEntityType.getById(runningNode.id, context, {
         expandEntity: [{
           attribute: 'process',
+          childAttributes: [{
+            attribute: 'processDef',
+          }],
         }],
       });
 
