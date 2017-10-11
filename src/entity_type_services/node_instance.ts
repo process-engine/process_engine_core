@@ -95,10 +95,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return this._processEngineService;
   }
 
-  private eventIsEntityEvent(event: any): event is IEntityEvent {
-    return event.data !== undefined && event.source !== undefined;
-  }
-
   private async _nodeHandler(event: any, binding: any): Promise<void> {
 
     const action = (event && event.data && event.data.action) ? event.data.action : null;
@@ -152,14 +148,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       const data = (event && event.data && event.data.data) ? event.data.data : null;
       await binding.entity.event(context, eventType, data, source, applicationId, participant);
     }
-  }
-
-  private messageIsDataMessage(message: any): message is IDataMessage {
-    return message.data !== undefined;
-  }
-
-  private messageIsEntityMessage(message: any): message is IEntityMessage {
-    return message.data !== undefined && message.source !== undefined;
   }
 
   private async _nodeHandlerMessagebus(msg: any, binding): Promise<void> {
