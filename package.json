@@ -30,7 +30,7 @@
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.1",
-    "moment": "^2.18.1"
+    "moment": "2.18.1"
   },
   "devDependencies": {
     "@essential-projects/tslint-config": "^0.1.0",
