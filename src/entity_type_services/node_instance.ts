@@ -100,7 +100,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const context = event.metadata.context ? event.metadata.context : {};
     const applicationId = event.metadata.applicationId ? event.metadata.applicationId : null;
     const participant = (event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
-
+    console.log('nodehandler participant', participant);
     if (action === 'changeState') {
       const newState = event.data.data ? event.data.data : null;
 

@@ -100,7 +100,7 @@ export class ProcessEngineService implements IProcessEngineService {
     await this._initializeMessageBus();
     await this._initializeProcesses();
     await this._startTimers();
-    return this._continueOwnProcesses();
+    // return this._continueOwnProcesses();
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -227,8 +227,9 @@ export class ProcessEngineService implements IProcessEngineService {
     };
     const allRunningNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext);
     const allRunningNodes: Array<INodeInstanceEntity> = [];
-    allRunningNodesCollection.each(internalContext, (process: INodeInstanceEntity) => {
-      allRunningNodes.push(process);
+    debugInfo(allRunningNodesCollection);
+    allRunningNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
+      allRunningNodes.push(nodeInstance);
     });
 
     return Promise.all<void>(allRunningNodes.map((runningNode: INodeInstanceEntity) => {
@@ -242,7 +243,7 @@ export class ProcessEngineService implements IProcessEngineService {
       };
 
       const checkMessage: IMessage = this.messageBusService.createDataMessage(checkMessageData, context);
-      console.log(runningNode.id);
+      debugInfo(runningNode.id);
       try {
         await this.messageBusService.request(`/processengine/node/${runningNode.id}`, checkMessage);
 
