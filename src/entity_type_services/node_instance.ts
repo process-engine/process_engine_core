@@ -1,11 +1,18 @@
 import { ExecutionContext, IEntity, IIamService, IPublicGetOptions } from '@essential-projects/core_contracts';
 import {EntityReference, IDatastoreService, IEntityType} from '@essential-projects/data_model_contracts';
-import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IEntityEvent, IEvent, IEventAggregator } from '@essential-projects/event_aggregator_contracts';
 import { IFeatureService } from '@essential-projects/feature_contracts';
-import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@essential-projects/messagebus_contracts';
+import {
+  IDataMessage,
+  IDatastoreMessage,
+  IDatastoreMessageOptions,
+  IEntityMessage,
+  IMessage,
+  IMessageBusService,
+} from '@essential-projects/messagebus_contracts';
+import { IRoutingService } from '@essential-projects/routing_contracts';
 import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
   IParamsContinueFromRemote, IProcessEngineService, IProcessEntity } from '@process-engine/process_engine_contracts';
-import { IRoutingService } from '@essential-projects/routing_contracts';
 
 import * as debug from 'debug';
 
@@ -78,17 +85,24 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return this._processEngineService;
   }
 
-  private async _nodeHandler(event: any): Promise<void> {
-    const binding: Binding = <any> this;
+  private eventIsEntityEvent(event: any): event is IEntityEvent {
+    return event.data !== undefined && event.source !== undefined;
+  }
 
-    const action = (event && event.data && event.data.action) ? event.data.action : null;
-    const source: IEntity = (event && event.source) ? event.source : null;
-    const context = (event && event.metadata && event.metadata.context) ? event.metadata.context : {};
-    const applicationId = (event && event.metadata && event.metadata.applicationId) ? event.metadata.applicationId : null;
-    const participant = (event && event.metadata && event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
+  private async _nodeHandler(event: IEvent, binding: any): Promise<void> {
+
+    if (!this.eventIsEntityEvent(event)) {
+      return;
+    }
+
+    const action = event.data.action ? event.data.action : null;
+    const source: IEntity = event.source ? event.source : null;
+    const context = event.metadata.context ? event.metadata.context : {};
+    const applicationId = event.metadata.applicationId ? event.metadata.applicationId : null;
+    const participant = (event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
 
     if (action === 'changeState') {
-      const newState = (event && event.data && event.data.data) ? event.data.data : null;
+      const newState = event.data.data ? event.data.data : null;
 
       switch (newState) {
           case ('start'):
@@ -117,50 +131,76 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
 
     if (action === 'proceed') {
-      const newData = (event && event.data && event.data.token) ? event.data.token : null;
+      const newData = (event.data && event.data.token) ? event.data.token : null;
       await binding.entity.proceed(context, newData, source, applicationId, participant);
     }
 
     if (action === 'boundary') {
-      const eventEntity = (event && event.data && event.data.eventEntity) ? event.data.eventEntity : null;
+      const eventEntity = (event.data && event.data.eventEntity) ? event.data.eventEntity : null;
       const data = (event && event.data && event.data.data) ? event.data.data : null;
       await binding.entity.boundaryEvent(context, eventEntity, data, source, applicationId, participant);
     }
 
     if (action === 'event') {
-      const eventType = (event && event.data && event.data.eventType) ? event.data.eventType : null;
-      const data = (event && event.data && event.data.data) ? event.data.data : null;
+      const eventType = (event.data && event.data.eventType) ? event.data.eventType : null;
+      const data = (event.data && event.data.data) ? event.data.data : null;
       await binding.entity.event(context, eventType, data, source, applicationId, participant);
     }
   }
 
-  private async _nodeHandlerMessagebus(msg: any): Promise<void> {
-    const binding: Binding = <any> this;
+  private messageIsDataMessage(message: any): message is IDataMessage {
+    return message.data !== undefined;
+  }
 
-    await binding.messagebusService.verifyMessage(msg);
+  private messageIsEntityMessage(message: any): message is IEntityMessage {
+    return message.data !== undefined && message.source !== undefined;
+  }
 
-    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+  private async _nodeHandlerMessagebus(message: IMessage | IEntityMessage, binding: any): Promise<void> {
 
-    const sourceRef = (msg && msg.source) ? msg.source : null;
+    if (!this.messageIsDataMessage(message)) {
+      return;
+    }
+
+    const payload: any = message.data;
+    const action = (payload && payload.action) ? payload.action : null;
+
+    let context: ExecutionContext = <ExecutionContext> {};
+    if (message.metadata.context) {
+      context = message.metadata.context;
+    }
+
+    if (action === 'checkResponsibleInstance') {
+      const responseChannel: string = message.metadata.response;
+      const responseData: any = {
+        action: 'isResponsibleInstance',
+      };
+      const responseMessage: IMessage = this.messagebusService.createDataMessage(responseData, context);
+
+      // we don't need to wait for an answer, we just want to inform the requesting process-engine,
+      // that we are responsible for the requested node
+      this.messagebusService.publish(responseChannel, responseMessage);
+      return;
+    }
+
+    await binding.messagebusService.verifyMessage(message);
+
     let source = null;
 
-    if (sourceRef) {
+    if (this.messageIsEntityMessage(message)) {
 
-      const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
+      const entityType = await binding.datastoreService.getEntityType(message.source._meta.type);
       try {
-        source = await entityType.getById(sourceRef.id, context);
+        source = await entityType.getById(message.source.id, context);
       } catch (err) {
         // source could not be found, ignore atm
       }
     }
 
-    const payload: any = (msg && msg.data) ? msg.data : null;
-    const action = (payload && payload.action) ? payload.action : null;
-
     if (action === 'proceed') {
       const newData = (payload && payload.token) ? payload.token : null;
-      const applicationId = msg.metadata.applicationId;
-      const participant = (msg.metadata.options) ? msg.metadata.options.participantId : null;
+      const applicationId = message.metadata.applicationId;
+      const participant = (message.metadata.options) ? message.metadata.options.participantId : null;
       await binding.entity.proceed(context, newData, source, applicationId, participant);
     }
 
@@ -173,9 +213,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
   public async createNode(context: ExecutionContext, entityType: IEntityType<IEntity>): Promise<IEntity> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-    const node = await entityType.createEntity(internalContext);
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+    const node: INodeInstanceEntity = <INodeInstanceEntity> await entityType.createEntity(internalContext);
 
+    return this.subscibeToNodeChannels(node);
+  }
+
+  public subscibeToNodeChannels(node: INodeInstanceEntity): INodeInstanceEntity {
     const binding: Binding = {
       entity: node,
       eventAggregator: this.eventAggregator,
@@ -183,11 +227,15 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       datastoreService: this.datastoreService,
     };
 
-    const anyNode = <any> node;
-    anyNode.eventAggregatorSubscription = this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
-    anyNode.messagebusSubscription = this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandlerMessagebus.bind(binding));
-    return anyNode;
+    node.eventAggregatorSubscription = this.eventAggregator.subscribe(`/processengine/node/${node.id}`, (event: IEvent) => {
+      return this._nodeHandler(event, binding);
+    });
 
+    node.messagebusSubscription = this.messagebusService.subscribe(`/processengine/node/${node.id}`, (message: IMessage) => {
+      return this._nodeHandlerMessagebus.bind(message, binding);
+    });
+
+    return node;
   }
 
   public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<IEntity> {

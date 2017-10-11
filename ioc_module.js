@@ -31,7 +31,7 @@ const schemasIocModule = require('./ioc.schemas');
 function registerInContainer(container) {
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService')
     .singleton()
     .configure('process_engine:process_engine_service');
 

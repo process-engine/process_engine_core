@@ -9,9 +9,18 @@ import {
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
 import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
 import { IFeatureService } from '@essential-projects/feature_contracts';
-import { IMessageBusService } from '@essential-projects/messagebus_contracts';
-import { IImportFromFileOptions, INodeInstanceEntity, IParamImportFromXml, IParamStart, IProcessDefEntityTypeService,
-  IProcessEngineService, IProcessRepository } from '@process-engine/process_engine_contracts';
+import { IMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
+import {
+  IImportFromFileOptions,
+  INodeInstanceEntity,
+  INodeInstanceEntityTypeService,
+  IParamImportFromXml,
+  IParamStart,
+  IProcessDefEntityTypeService,
+  IProcessEngineService,
+  IProcessEntity,
+  IProcessRepository,
+} from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 
@@ -27,12 +36,18 @@ export class ProcessEngineService implements IProcessEngineService {
   private _iamService: IIamService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _datastoreService: IDatastoreService = undefined;
+  private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService, eventAggregator: IEventAggregator,
-              processDefEntityTypeService: IProcessDefEntityTypeService, featureService: IFeatureService, iamService: IIamService,
-              processRepository: IProcessRepository, datastoreService: IDatastoreService) {
+  constructor(messageBusService: IMessageBusService,
+              eventAggregator: IEventAggregator,
+              processDefEntityTypeService: IProcessDefEntityTypeService,
+              featureService: IFeatureService,
+              iamService: IIamService,
+              processRepository: IProcessRepository,
+              datastoreService: IDatastoreService,
+              nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -40,6 +55,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._iamService = iamService;
     this._processRepository = processRepository;
     this._datastoreService = datastoreService;
+    this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -66,9 +82,12 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._processRepository;
   }
 
-  // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
   private get datastoreService(): IDatastoreService {
     return this._datastoreService;
+  }
+
+  private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
+    return this._nodeInstanceEntityTypeService;
   }
 
   public async initialize(): Promise<void> {
@@ -207,12 +226,37 @@ export class ProcessEngineService implements IProcessEngineService {
     });
 
     return Promise.all<void>(allRunningNodes.map((runningNode: INodeInstanceEntity) => {
-      return this._continueOwnProcess(runningNode);
+      return this._continueOwnProcess(internalContext, runningNode);
     }));
   }
 
-  private async _continueOwnProcess(runningNode: INodeInstanceEntity): Promise<any> {
-    
+  private async _continueOwnProcess(context: ExecutionContext, runningNode: INodeInstanceEntity): Promise<any> {
+      const checkMessageData: any = {
+        action: 'checkResponsibleInstance',
+      };
+
+      const checkMessage: IMessage = this.messageBusService.createDataMessage(checkMessageData, context);
+      try {
+        await this.messageBusService.request(`/processengine/node/${runningNode.id}`, checkMessage);
+
+        return;
+      } catch (error) {
+        if (error.message !== 'request timed out') {
+          throw error;
+        }
+      }
+
+      // the request didn't return, wich means it error'd, but it also didn't rethrow the error,
+      // which means it error'd, because the request timed out. This in turn means, that no one
+      // answered to our 'checkResponsibleInstance'-request, which means that no one is responsible
+      // for that process. This means, that we can safely claim responsibility and continue running
+      // the process that belongs to the node
+      const process: IProcessEntity = await runningNode.getProcess(context);
+      process.initializeProcess();
+
+      // TODO: Here'd we have to check, if we have the features required to continue the execution
+      // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
+      this.nodeInstanceEntityTypeService.subscibeToNodeChannels(runningNode);
   }
 
 }
