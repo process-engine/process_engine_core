@@ -222,12 +222,6 @@ export class ProcessEngineService implements IProcessEngineService {
         operator: '=',
         value: 'wait',
       },
-      expandCollection: [{
-        attribute: 'nodeDef',
-        childAttributes: [{ attribute: 'lane' }],
-      }, {
-        attribute: 'processToken',
-      }],
     };
     const allRunningNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext, queryObject);
     const allRunningNodes: Array<INodeInstanceEntity> = [];
@@ -266,23 +260,21 @@ export class ProcessEngineService implements IProcessEngineService {
 
       const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
       const specificEntityTypePromise: Promise<IEntityType<INodeInstanceEntity>> = nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(runningNode.type);
-      const processPromise: Promise<IProcessEntity> = runningNode.getProcess(context);
 
-      const process: IProcessEntity = await processPromise;
       const specificEntityType: IEntityType<INodeInstanceEntity> = await specificEntityTypePromise;
 
-      const processInitializePromise: Promise<INodeDefEntity> = process.initializeProcess();
       const specificEntityPromise: Promise<INodeInstanceEntity> = specificEntityType.getById(runningNode.id, context, {
         expandEntity: [{
-          attribute: 'process',
-          childAttributes: [{
-            attribute: 'processDef',
-          }],
+          attribute: 'nodeDef',
+          childAttributes: [{ attribute: 'lane' }],
+        }, {
+          attribute: 'processToken',
         }],
       });
 
-      await processInitializePromise;
       const specificEntity: INodeInstanceEntity = await specificEntityPromise;
+      const process: IProcessEntity = await specificEntity.getProcess(context);
+      await process.initializeProcess();
 
       // TODO: Here'd we have to check, if we have the features required to continue the execution
       // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
