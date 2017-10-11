@@ -227,11 +227,13 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       datastoreService: this.datastoreService,
     };
 
+    console.log('subscribing', node.id);
     node.eventAggregatorSubscription = this.eventAggregator.subscribe(`/processengine/node/${node.id}`, (event: IEvent) => {
       return this._nodeHandler(event, binding);
     });
 
     node.messagebusSubscription = this.messagebusService.subscribe(`/processengine/node/${node.id}`, (message: IMessage) => {
+      console.log(message);
       return this._nodeHandlerMessagebus.bind(message, binding);
     });
 

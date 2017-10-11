@@ -21,6 +21,7 @@ import {
   IProcessEntity,
   IProcessRepository,
 } from '@process-engine/process_engine_contracts';
+import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
 
@@ -36,6 +37,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _iamService: IIamService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _datastoreService: IDatastoreService = undefined;
+  private _nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService> = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
 
   public config: any = undefined;
@@ -47,7 +49,7 @@ export class ProcessEngineService implements IProcessEngineService {
               iamService: IIamService,
               processRepository: IProcessRepository,
               datastoreService: IDatastoreService,
-              nodeInstanceEntityTypeService: INodeInstanceEntityTypeService) {
+              nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -55,7 +57,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._iamService = iamService;
     this._processRepository = processRepository;
     this._datastoreService = datastoreService;
-    this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
+    this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -86,7 +88,11 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._datastoreService;
   }
 
-  private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
+  private async _getNodeInstanceEntityTypeService(): Promise<INodeInstanceEntityTypeService> {
+    if (!this._nodeInstanceEntityTypeService) {
+      this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
+    }
+
     return this._nodeInstanceEntityTypeService;
   }
 
@@ -236,6 +242,7 @@ export class ProcessEngineService implements IProcessEngineService {
       };
 
       const checkMessage: IMessage = this.messageBusService.createDataMessage(checkMessageData, context);
+      console.log(runningNode.id);
       try {
         await this.messageBusService.request(`/processengine/node/${runningNode.id}`, checkMessage);
 
@@ -256,7 +263,8 @@ export class ProcessEngineService implements IProcessEngineService {
 
       // TODO: Here'd we have to check, if we have the features required to continue the execution
       // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
-      this.nodeInstanceEntityTypeService.subscibeToNodeChannels(runningNode);
+      const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+      nodeInstanceEntityTypeService.subscibeToNodeChannels(runningNode);
   }
 
 }
