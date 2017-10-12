@@ -150,7 +150,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  private async _nodeHandlerMessagebus(msg: any, binding): Promise<void> {
+  private async _nodeHandlerMessagebus(msg: any, binding: any): Promise<void> {
 
     await binding.messagebusService.verifyMessage(msg);
 
