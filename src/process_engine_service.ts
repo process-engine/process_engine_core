@@ -9,7 +9,7 @@ import {
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
 import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
 import { IFeatureService } from '@essential-projects/feature_contracts';
-import { IMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
+import { IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {
   IImportFromFileOptions,
   INodeDefEntity,
@@ -111,7 +111,7 @@ export class ProcessEngineService implements IProcessEngineService {
     await this._initializeProcesses();
     await this._startTimers();
 
-    return this._continueOwnProcesses();
+    this._continueOwnProcesses();
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
@@ -221,6 +221,9 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _continueOwnProcesses(): Promise<any> {
+
+    await this._waitForMessagebus();
+
     const [
       allWaitingNodes,
       internalContext,
@@ -235,9 +238,14 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _continueOwnProcess(context: ExecutionContext, waitingNode: INodeInstanceEntity): Promise<any> {
+
+    debugInfo(`Checking, if node ${waitingNode.id} is abandoned`);
     if (await this._nodeAlreadyBelongsToOtherProcessEngine(context, waitingNode)) {
+      debugInfo(`node ${waitingNode.id} is not abandoned`);
+
       return;
     }
+    debugInfo(`node ${waitingNode.id} is indeed abandoned. Taking over responsibility`);
 
     const specificEntity: INodeInstanceEntity = await this._getSpecificEntityByNodeInstance(context, waitingNode);
     const processToContinue: IProcessEntity = await specificEntity.getProcess(context);
@@ -267,6 +275,7 @@ export class ProcessEngineService implements IProcessEngineService {
     };
 
     const allWaitingNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext, waitingNodesQuery);
+    debugInfo(`There are ${allWaitingNodesCollection.length} potentially abandoned nodeInstances`);
     const allWaitingNodes: Array<INodeInstanceEntity> = [];
     await allWaitingNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
       allWaitingNodes.push(nodeInstance);
@@ -318,6 +327,26 @@ export class ProcessEngineService implements IProcessEngineService {
     const specificEntityType: IEntityType<INodeInstanceEntity> = await nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(nodeInstance.type);
 
     return specificEntityType.getById(nodeInstance.id, context, specificEntityQueryOptions);
+  }
+
+  private _timeoutPromise(milliseconds: number): Promise<void> {
+    return new Promise((resolve: any, reject: any) => {
+      setTimeout(() => {
+        resolve();
+      }, milliseconds);
+    });
+  }
+
+  private async _waitForMessagebus(): Promise<void> {
+    // make sure the messagebus-adapter is ready
+    const initSubscription: IMessageSubscription = await this.messageBusService.subscribe(`/processengine/bootup`, null);
+    initSubscription.dispose();
+
+    if (this.messageBusService.isMaster) {
+      debugInfo(`This instance is messagebus-master. Giving clients 15 seconds time to connect now.`);
+      // give everyone some time to connect
+      await this._timeoutPromise(15000);
+    }
   }
 
 }
