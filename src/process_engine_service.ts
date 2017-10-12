@@ -355,7 +355,9 @@ export class ProcessEngineService implements IProcessEngineService {
     if (this.messageBusService.isMaster) {
       debugInfo(`This instance is messagebus-master. Giving clients 15 seconds time to connect now.`);
       // give everyone some time to connect
-      await this._timeoutPromise(15000);
+      const defaultclientConnectTime: number = 15000;
+      const clientConnectTime: number = this.config.messagebusClientConnectTime || defaultclientConnectTime;
+      await this._timeoutPromise(clientConnectTime);
     }
   }
 
