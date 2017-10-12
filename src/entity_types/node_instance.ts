@@ -3,9 +3,9 @@ import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@esse
 import { IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
 import { IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import { schemaAttribute, schemaClass } from '@essential-projects/metadata';
-import { IBoundaryEventEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService, IProcessEngineService,
-  IProcessEntity, IProcessTokenEntity } from '@process-engine/process_engine_contracts';
 import { ITimingService } from '@essential-projects/timing_contracts';
+import { BpmnType, IBoundaryEventEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
+  IProcessEngineService, IProcessEntity, IProcessTokenEntity } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
@@ -79,7 +79,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async initialize(derivedClassInstance: IEntity): Promise<void> {
-    await super.initialize(derivedClassInstance);
+    await super.initialize(derivedClassInstance || this);
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
@@ -127,11 +127,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
-  public get type(): string {
+  public get type(): BpmnType {
     return this.getProperty(this, 'type');
   }
 
-  public set type(value: string) {
+  public set type(value: BpmnType) {
     this.setProperty(this, 'type', value);
   }
 
