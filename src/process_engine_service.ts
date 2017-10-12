@@ -222,8 +222,6 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private async _continueOwnProcesses(): Promise<any> {
 
-    await this._waitForMessagebus();
-
     const [
       allWaitingNodes,
       internalContext,
@@ -231,6 +229,12 @@ export class ProcessEngineService implements IProcessEngineService {
       this._getAllWaitingNodes(),
       this._getInternalContext(),
     ]);
+
+    if (allWaitingNodes.length === 0) {
+      return;
+    }
+
+    await this._waitForMessagebus();
 
     return Promise.all<void>(allWaitingNodes.map((runningNode: INodeInstanceEntity) => {
       return this._continueOwnProcess(internalContext, runningNode);
