@@ -1,8 +1,22 @@
-import {ExecutionContext, IEntity, IInheritedSchema, IQueryClause, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {Entity, EntityCollection, EntityDependencyHelper, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
-import { IFeature } from '@process-engine-js/feature_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
-import {ILaneEntity, INodeDefEntity, IProcessDefEntity, TimerDefinitionType, IBoundaryEventEntity} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, IQueryClause, SchemaAttributeType} from '@essential-projects/core_contracts';
+import {
+  Entity,
+  EntityCollection,
+  EntityDependencyHelper,
+  IEntityCollection,
+  IEntityType,
+  IPropertyBag,
+} from '@essential-projects/data_model_contracts';
+import {IFeature} from '@essential-projects/feature_contracts';
+import {schemaAttribute} from '@essential-projects/metadata';
+import {
+  BpmnType,
+  IBoundaryEventEntity,
+  ILaneEntity,
+  INodeDefEntity,
+  IProcessDefEntity,
+  TimerDefinitionType,
+} from '@process-engine/process_engine_contracts';
 
 export class NodeDefEntity extends Entity implements INodeDefEntity {
 
@@ -63,11 +77,11 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
   }
 
   @schemaAttribute({ type: SchemaAttributeType.string })
-  public get type(): string {
+  public get type(): BpmnType {
     return this.getProperty(this, 'type');
   }
 
-  public set type(value: string) {
+  public set type(value: BpmnType) {
     this.setProperty(this, 'type', value);
   }
 

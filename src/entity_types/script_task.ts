@@ -1,7 +1,7 @@
-import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
-import {IScriptTaskEntity} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, IToPojoOptions, SchemaAttributeType} from '@essential-projects/core_contracts';
+import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
+import {schemaAttribute} from '@essential-projects/metadata';
+import {IScriptTaskEntity} from '@process-engine/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskEntity {

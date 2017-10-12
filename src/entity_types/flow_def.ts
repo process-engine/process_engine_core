@@ -1,7 +1,7 @@
-import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, IEntityType, IPropertyBag} from '@process-engine-js/data_model_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
-import {IFlowDefEntity, INodeDefEntity, IProcessDefEntity} from '@process-engine-js/process_engine_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@essential-projects/core_contracts';
+import {Entity, EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
+import {schemaAttribute} from '@essential-projects/metadata';
+import {IFlowDefEntity, INodeDefEntity, IProcessDefEntity} from '@process-engine/process_engine_contracts';
 
 export class FlowDefEntity extends Entity implements IFlowDefEntity {
 

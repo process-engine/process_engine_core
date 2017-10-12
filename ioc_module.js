@@ -22,18 +22,19 @@ const ThrowEventEntity = require('./dist/commonjs/index').ThrowEventEntity;
 const CatchEventEntity = require('./dist/commonjs/index').CatchEventEntity;
 const UserTaskEntity = require('./dist/commonjs/index').UserTaskEntity;
 const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefEntityTypeService;
-const entityDiscoveryTag = require('@process-engine-js/core_contracts').EntityDiscoveryTag;
+const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
-const processEngineContractsIocModule = require('@process-engine-js/process_engine_contracts/ioc_module');
+const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService')
-    .singleton()
-    .configure('process_engine:process_engine_service');
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService')
+    .injectPromiseLazy('NodeInstanceEntityTypeService')
+    .configure('process_engine:process_engine_service')
+    .singleton();
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');

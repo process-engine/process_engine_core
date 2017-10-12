@@ -5,14 +5,14 @@ import {
   IPrivateQueryOptions,
   IPublicGetOptions,
   IQueryClause,
-} from '@process-engine-js/core_contracts';
-import { IDatastoreService, IEntityType } from '@process-engine-js/data_model_contracts';
-import { IInvoker } from '@process-engine-js/invocation_contracts';
+} from '@essential-projects/core_contracts';
+import { IDatastoreService, IEntityType } from '@essential-projects/data_model_contracts';
+import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   IImportFromFileOptions, IImportFromXmlOptions, IParamImportFromFile,
   IParamImportFromXml, IParamStart, IProcessDefEntity,
   IProcessDefEntityTypeService, IProcessRepository,
-} from '@process-engine-js/process_engine_contracts';
+} from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as BluebirdPromise from 'bluebird';
@@ -65,7 +65,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     throw new Error('file does not exist');
   }
 
-  // tslint:disable-next-line:cyclomatic-complexity
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;

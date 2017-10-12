@@ -1,11 +1,28 @@
-import { ExecutionContext, IEntity, IIamService, IPublicGetOptions } from '@process-engine-js/core_contracts';
-import {EntityReference, IDatastoreService, IEntityType} from '@process-engine-js/data_model_contracts';
-import { IEventAggregator } from '@process-engine-js/event_aggregator_contracts';
-import { IFeatureService } from '@process-engine-js/feature_contracts';
-import { IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
-  IParamsContinueFromRemote, IProcessEngineService, IProcessEntity } from '@process-engine-js/process_engine_contracts';
-import { IRoutingService } from '@process-engine-js/routing_contracts';
+import { ExecutionContext, IEntity, IIamService, IPublicGetOptions } from '@essential-projects/core_contracts';
+import {EntityReference, IDatastoreService, IEntityType} from '@essential-projects/data_model_contracts';
+import { IEntityEvent, IEvent, IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IFeatureService } from '@essential-projects/feature_contracts';
+import {
+  IDataMessage,
+  IDatastoreMessage,
+  IDatastoreMessageOptions,
+  IEntityMessage,
+  IMessage,
+  IMessageBusService,
+} from '@essential-projects/messagebus_contracts';
+import { IRoutingService } from '@essential-projects/routing_contracts';
+import {
+  BpmnType,
+  EntityTypeName,
+  IFlowDefEntity,
+  ILaneEntity,
+  INodeDefEntity,
+  INodeInstanceEntity,
+  INodeInstanceEntityTypeService,
+  IParamsContinueFromRemote,
+  IProcessEngineService,
+  IProcessEntity,
+} from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
 
@@ -78,8 +95,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return this._processEngineService;
   }
 
-  private async _nodeHandler(event: any): Promise<void> {
-    const binding: Binding = <any> this;
+  private async _nodeHandler(event: any, binding: Binding): Promise<void> {
 
     const action = (event && event.data && event.data.action) ? event.data.action : null;
     const source: IEntity = (event && event.source) ? event.source : null;
@@ -134,8 +150,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  private async _nodeHandlerMessagebus(msg: any): Promise<void> {
-    const binding: Binding = <any> this;
+  private async _nodeHandlerMessagebus(msg: any, binding: Binding): Promise<void> {
 
     await binding.messagebusService.verifyMessage(msg);
 
@@ -169,13 +184,29 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       const data = (payload && payload.data) ? payload.data : null;
       binding.entity.triggerEvent(context, eventType, data);
     }
+
+    if (action === 'checkResponsibleInstance') {
+      const responseChannel: string = msg.metadata.response;
+      const responseData: any = {
+        action: 'isResponsibleInstance',
+      };
+      const responseMessage: IMessage = this.messagebusService.createDataMessage(responseData, context);
+
+      // we don't need to wait for an answer, we just want to inform the requesting process-engine,
+      // that we are responsible for the requested node
+      this.messagebusService.publish(responseChannel, responseMessage);
+    }
   }
 
   public async createNode(context: ExecutionContext, entityType: IEntityType<IEntity>): Promise<IEntity> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-    const node = await entityType.createEntity(internalContext);
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+    const node: INodeInstanceEntity = <INodeInstanceEntity> await entityType.createEntity(internalContext);
 
+    return this.subscibeToNodeChannels(node);
+  }
+
+  public subscibeToNodeChannels(node: INodeInstanceEntity): INodeInstanceEntity {
     const binding: Binding = {
       entity: node,
       eventAggregator: this.eventAggregator,
@@ -183,11 +214,35 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       datastoreService: this.datastoreService,
     };
 
-    const anyNode = <any> node;
-    anyNode.eventAggregatorSubscription = this.eventAggregator.subscribe('/processengine/node/' + node.id, this._nodeHandler.bind(binding));
-    anyNode.messagebusSubscription = this.messagebusService.subscribe('/processengine/node/' + node.id, this._nodeHandlerMessagebus.bind(binding));
-    return anyNode;
+    node.eventAggregatorSubscription = this.eventAggregator.subscribe(`/processengine/node/${node.id}`, (event: IEvent) => {
+      return this._nodeHandler(event, binding);
+    });
 
+    node.messagebusSubscription = this.messagebusService.subscribe(`/processengine/node/${node.id}`, (message: IMessage) => {
+      return this._nodeHandlerMessagebus(message, binding);
+    });
+
+    return node;
+  }
+
+  public getEntityTypeFromBpmnType<TEntity extends IEntity = IEntity>(bpmnType: BpmnType): Promise<IEntityType<TEntity>> {
+    const typeMapping: Map<BpmnType, EntityTypeName> = new Map();
+    typeMapping.set(BpmnType.userTask, 'UserTask');
+    typeMapping.set(BpmnType.exclusiveGateway, 'ExclusiveGateway');
+    typeMapping.set(BpmnType.parallelGateway, 'ParallelGateway');
+    typeMapping.set(BpmnType.serviceTask, 'ServiceTask');
+    typeMapping.set(BpmnType.startEvent, 'StartEvent');
+    typeMapping.set(BpmnType.endEvent, 'EndEvent');
+    typeMapping.set(BpmnType.intermediateCatchEvent, 'CatchEvent');
+    typeMapping.set(BpmnType.intermediateThrowEvent, 'ThrowEvent');
+    typeMapping.set(BpmnType.scriptTask, 'ScriptTask');
+    typeMapping.set(BpmnType.boundaryEvent, 'BoundaryEvent');
+    typeMapping.set(BpmnType.callActivity, 'SubprocessExternal');
+    typeMapping.set(BpmnType.subProcess, 'SubprocessInternal');
+
+    const entityTypeName: EntityTypeName = typeMapping.get(bpmnType);
+
+    return this.datastoreService.getEntityType<TEntity>(entityTypeName);
   }
 
   public async createNextNode(context: ExecutionContext, source: any, nextDef: any, token: any): Promise<IEntity> {
@@ -197,22 +252,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const applicationId = source.application;
 
-    const map = new Map();
-    map.set('bpmn:UserTask', 'UserTask');
-    map.set('bpmn:ExclusiveGateway', 'ExclusiveGateway');
-    map.set('bpmn:ParallelGateway', 'ParallelGateway');
-    map.set('bpmn:ServiceTask', 'ServiceTask');
-    map.set('bpmn:StartEvent', 'StartEvent');
-    map.set('bpmn:EndEvent', 'EndEvent');
-    map.set('bpmn:IntermediateCatchEvent', 'CatchEvent');
-    map.set('bpmn:IntermediateThrowEvent', 'ThrowEvent');
-    map.set('bpmn:ScriptTask', 'ScriptTask');
-    map.set('bpmn:BoundaryEvent', 'BoundaryEvent');
-    map.set('bpmn:CallActivity', 'SubprocessExternal');
-    map.set('bpmn:SubProcess', 'SubprocessInternal');
-
-    const className = map.get(nextDef.type);
-    const entityType = await this.datastoreService.getEntityType(className);
+    const entityType: IEntityType<IEntity> = await this.getEntityTypeFromBpmnType(nextDef.type);
 
     // const currentDef = await source.getNodeDef(internalContext);
     const currentDef = source.nodeDef;

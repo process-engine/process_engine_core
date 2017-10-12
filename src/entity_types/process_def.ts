@@ -1,15 +1,14 @@
 import {ExecutionContext, ICombinedQueryClause, IEntity, IEntityReference, IInheritedSchema, IPrivateQueryOptions,
-  IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@process-engine-js/core_contracts';
-import {Entity, EntityDependencyHelper, EntityReference, IDatastoreService, IEntityType, IPropertyBag, IEntityCollection} from '@process-engine-js/data_model_contracts';
-import {IEventAggregator} from '@process-engine-js/event_aggregator_contracts';
-import { IFeature, IFeatureService } from '@process-engine-js/feature_contracts';
-import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@process-engine-js/messagebus_contracts';
-import {schemaAttribute} from '@process-engine-js/metadata';
+  IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@essential-projects/core_contracts';
+import {Entity, EntityDependencyHelper, EntityReference, IDatastoreService, IEntityType, IPropertyBag, IEntityCollection} from '@essential-projects/data_model_contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
+import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@essential-projects/messagebus_contracts';
+import {schemaAttribute} from '@essential-projects/metadata';
 import { IParamStart, IParamUpdateDefs, IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService,
-  IProcessEntity, IProcessRepository, TimerDefinitionType, INodeDefEntity, ILaneEntity, IFlowDefEntity } from '@process-engine-js/process_engine_contracts';
-import { IRoutingService } from '@process-engine-js/routing_contracts';
-import {ITimingRule, ITimingService} from '@process-engine-js/timing_contracts';
-
+  IProcessEntity, IProcessRepository, TimerDefinitionType, INodeDefEntity, ILaneEntity, IFlowDefEntity } from '@process-engine/process_engine_contracts';
+import { IRoutingService } from '@essential-projects/routing_contracts';
+import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as debug from 'debug';

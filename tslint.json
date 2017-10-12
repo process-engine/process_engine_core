@@ -1,3 +1,3 @@
 {
-  "extends": "@process-engine-js/tslint-config"
+  "extends": "@essential-projects/tslint-config"
 }

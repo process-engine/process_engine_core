@@ -1,4 +1,4 @@
-import { IBpmnDiagram } from '@process-engine-js/process_engine_contracts';
+import { IBpmnDiagram } from '@process-engine/process_engine_contracts';
 
 export class BpmnDiagram implements IBpmnDiagram {
 
