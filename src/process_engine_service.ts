@@ -111,6 +111,12 @@ export class ProcessEngineService implements IProcessEngineService {
     await this._initializeProcesses();
     await this._startTimers();
 
+    // do not await this! continuing the waiting processes requires the messagebus
+    // to be fully initialized and started. Because of how the messagebus hooks into
+    // the http-server, it only starts after the initialize-lifecycle has been fully
+    // completed. If we were to await here, it would wait for the messagebus to start
+    // before continuing the initialize-lifecycle, which in turn would never finish,
+    // because the messagebus only ever starts after the initialize-lifecycle
     this._continueOwnProcesses();
   }
 
