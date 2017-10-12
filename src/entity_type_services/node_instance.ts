@@ -95,7 +95,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     return this._processEngineService;
   }
 
-  private async _nodeHandler(event: any, binding: any): Promise<void> {
+  private async _nodeHandler(event: any, binding: Binding): Promise<void> {
 
     const action = (event && event.data && event.data.action) ? event.data.action : null;
     const source: IEntity = (event && event.source) ? event.source : null;
@@ -150,7 +150,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  private async _nodeHandlerMessagebus(msg: any, binding: any): Promise<void> {
+  private async _nodeHandlerMessagebus(msg: any, binding: Binding): Promise<void> {
 
     await binding.messagebusService.verifyMessage(msg);
 

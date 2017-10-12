@@ -122,7 +122,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'callerId', value);
   }
 
-  public async initializeProcess(): Promise<INodeDefEntity> {
+  public async initializeProcess(): Promise<void> {
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
 
@@ -153,6 +153,11 @@ export class ProcessEntity extends Entity implements IProcessEntity {
         nodeDef.lane = laneForNode;
       }
     }
+  }
+
+  private async _getStartEvent(): Promise<INodeDefEntity> {
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+    const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
 
     const startEventDef: INodeDefEntity = processDef.nodeDefCollection.data.find((nodeDef: INodeDefEntity) => {
       return nodeDef.type === 'bpmn:StartEvent';
@@ -189,7 +194,8 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       applicationId = source || null;
     }
 
-    const startEventDef: INodeDefEntity = await this.initializeProcess();
+    await this.initializeProcess();
+    const startEventDef: INodeDefEntity = await this._getStartEvent();
 
     if (!startEventDef) {
       return;
