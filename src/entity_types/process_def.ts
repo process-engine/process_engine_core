@@ -892,6 +892,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         this.defId = 'Definition_1';
       }
       this.counter = 0;
+      this.draft = true;
+      this.latest = false;
       if (!this.xml) {
         this.xml = '<?xml version="1.0" encoding="UTF-8"?>' +
           '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" ' +
@@ -995,9 +997,34 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
       draftEntity = await processDef.createEntity(context, processDefData);
       await draftEntity.save(context);
+
+      await this.updateDefinitions(context);
     }
 
     return draftEntity;
+  }
+
+  public async getLatest(context: ExecutionContext): Promise<IProcessDefEntity> {
+    const queryObject: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        {
+          attribute: 'key',
+          operator: '=',
+          value: this.key,
+        },
+        {
+          attribute: 'latest',
+          operator: '=',
+          value: true,
+        },
+      ],
+    };
+    const queryParams: IPrivateQueryOptions = { query: queryObject };
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
+
+    return latestEntity;
   }
 
   public async publishDraft(context: ExecutionContext): Promise<IProcessDefEntity> {
