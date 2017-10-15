@@ -41,7 +41,8 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     }
 
     const processToken = this.processToken;
-    const tokenData = processToken.data || {};
+    const tokenData: any = processToken.data || {};
+    const currentToken: any = tokenData.current;
 
     // call sub process
     const nodeDef = this.nodeDef;
@@ -52,7 +53,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
         key: subProcessKey,
         source: this,
         isSubProcess: true,
-        initialToken: tokenData,
+        initialToken: currentToken,
       };
       const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
       this.process.boundProcesses[subProcessRef.id] = subProcessRef;
