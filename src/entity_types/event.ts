@@ -6,9 +6,7 @@ import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-e
 import {NodeInstanceEntity} from './node_instance';
 import {NodeInstanceEntityDependencyHelper} from './node_instance';
 
-import * as debug from 'debug';
 import * as moment from 'moment';
-const debugInfo = debug('processengine:info');
 
 export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
@@ -146,8 +144,6 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     }
 
     const data: any = (msg && msg.data) ? msg.data : null;
-
-    debugInfo(`signal '${binding.entity.nodeDef.signal}' received for node key '${binding.entity.key}'`);
     binding.entity._sendProceed(context, data, source);
   }
 
@@ -183,8 +179,6 @@ export class EventEntity extends NodeInstanceEntity implements IEventEntity {
     }
 
     const data: any = (msg && msg.data) ? msg.data : null;
-
-    debugInfo(`message '${binding.entity.nodeDef.message}' received for node key '${binding.entity.key}'`);
 
     binding.entity._sendProceed(context, data, source);
   }

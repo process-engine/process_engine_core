@@ -1,21 +1,19 @@
 import {ExecutionContext, ICombinedQueryClause, IEntity, IEntityReference, IInheritedSchema, IPrivateQueryOptions,
   IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@essential-projects/core_contracts';
-import {Entity, EntityDependencyHelper, EntityReference, IEntityType, IPropertyBag, IEntityCollection} from '@essential-projects/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityReference, IEntityCollection, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
 import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
-import { IParamStart, IParamUpdateDefs, IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService,
-  IProcessEntity, IProcessRepository, TimerDefinitionType, INodeDefEntity, ILaneEntity, IFlowDefEntity } from '@process-engine/process_engine_contracts';
 import { IRoutingService } from '@essential-projects/routing_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
+import { IFlowDefEntity, ILaneEntity, INodeDefEntity, IParamStart, IParamUpdateDefs,
+  IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService, IProcessEntity, IProcessRepository, TimerDefinitionType } from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
-import * as debug from 'debug';
+import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
-
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('process_def');
 
 interface ICache<T> {
   [key: string]: T;
@@ -244,7 +242,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const features = this.features;
 
     if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
-      debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
+      logger.verbose(`start '${this.key}' on this instance`);
 
       const processEntityType = await (await this.getDatastoreService()).getEntityType('Process');
       const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
@@ -257,13 +255,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       const appInstances = this.featureService.getApplicationIdsByFeatures(features);
 
       if (appInstances.length === 0) {
-        debugErr(`can not start process key '${this.key}', features: ${JSON.stringify(features)}, no matching instance found`);
+        logger.warn(`can not start '${this.key}', no known instance fulfills the required features`, features);
         throw new Error('can not start, no matching instance found');
       }
 
       const appInstanceId = appInstances[0];
 
-      debugInfo(`start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)})`);
+      logger.verbose(`start '${this.key}' on '${appInstanceId}'`, features);
 
       // Todo: set correct message format
       const messageOptions: IDatastoreMessageOptions = {
@@ -279,7 +277,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         const ref = new EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
         return ref;
       } catch (err) {
-        debugErr(`can not start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)}), error: ${err.message}`);
+        logger.error(`failed to delegate the start of '${this.key}' to '${appInstanceId}'`, err);
       }
     }
 

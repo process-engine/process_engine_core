@@ -7,9 +7,8 @@ import { ITimingService } from '@essential-projects/timing_contracts';
 import { BpmnType, IBoundaryEventEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
   IProcessEngineService, IProcessEntity, IProcessTokenEntity } from '@process-engine/process_engine_contracts';
 
-import * as debug from 'debug';
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+import {Logger} from 'loggerhythm';
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('node_instance');
 
 export class NodeInstanceEntityDependencyHelper {
 
@@ -192,7 +191,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async start(context: ExecutionContext, source: IEntity): Promise<void> {
 
-    debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`starting '${this.key}'`);
 
     // check if context matches to lane
     const role = await this.nodeDef.lane.role;
@@ -276,8 +275,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void {
 
-    debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
-
     const data = {
       action: 'changeState',
       data: newState,
@@ -288,12 +285,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public error(context: ExecutionContext, error: any): void {
-    debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
+    logger.error(`${this.key} errored`, error);
     this.triggerEvent(context, 'error', error);
   }
 
   public async wait(context: ExecutionContext): Promise<void> {
-    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+
+    logger.verbose(`making '${this.key}' wait`);
+
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'wait';
@@ -306,7 +305,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
-    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`executing '${this.key}'`);
 
     this.state = 'progress';
 
@@ -314,6 +313,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
+    logger.verbose(`proceed '${this.key}'`);
     // by default do nothing, implementation should be overwritten by child class
   }
 
@@ -340,7 +340,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async event(context: ExecutionContext, eventType: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
-    debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
+    logger.verbose(`event '${eventType}' triggered on '${this.key}'`);
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -391,7 +391,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async boundaryEvent(context: ExecutionContext, eventEntity: IBoundaryEventEntity, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
 
-    debugInfo(`node boundary event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventEntity.type}`);
+    logger.verbose(`boundaryEvent '${eventEntity.nodeDef.key}' triggered on '${this.key}'`);
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -506,7 +506,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             try {
               result = evaluateFunction.call(tokenData, tokenData);
             } catch (err) {
-              debugErr(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
+              logger.error(`error evaluating condition '${boundaryDef.condition}' on ${boundaryDef.key}`, err);
             }
             if (result) {
               if (boundaryDef.cancelActivity) {
@@ -538,13 +538,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public cancel(context: ExecutionContext): void {
-    debugInfo(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`cancel '${this.key}'`);
     this.triggerEvent(context, 'cancel', null);
   }
 
   // follow next flow, but not end current node (non interrupting boundaries)
   public async followBoundary(context: ExecutionContext): Promise<void> {
-    debugInfo(`follow boundary, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     await this._updateToken(internalContext);
@@ -596,7 +595,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
 
-    debugInfo(`end node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`ending '${this.key}'`);
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 

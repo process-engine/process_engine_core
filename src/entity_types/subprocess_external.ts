@@ -3,10 +3,8 @@ import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-proj
 import {IParamStart, IProcessDefEntityTypeService, ISubprocessExternalEntity} from '@process-engine/process_engine_contracts';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
-import * as debug from 'debug';
-
-const debugInfo = debug('processengine:info');
-// const debugErr = debug('processengine:error');
+import {Logger} from 'loggerhythm';
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('subprocess_external');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
@@ -47,21 +45,18 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     // call sub process
     const nodeDef = this.nodeDef;
     const subProcessKey = nodeDef.subProcessKey || null;
-    if (subProcessKey) {
-
-      const params: IParamStart = {
-        key: subProcessKey,
-        source: this,
-        isSubProcess: true,
-        initialToken: currentToken,
-      };
-      const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
-      this.process.boundProcesses[subProcessRef.id] = subProcessRef;
-
-    } else {
-      debugInfo(`No key is provided for call activity key '${this.key}'`);
+    if (!subProcessKey) {
+      return logger.warn(`No key provided for '${this.key}'`);
     }
 
+    const params: IParamStart = {
+      key: subProcessKey,
+      source: this,
+      isSubProcess: true,
+      initialToken: currentToken,
+    };
+    const subProcessRef = await this.processDefEntityTypeService.start(internalContext, params);
+    this.process.boundProcesses[subProcessRef.id] = subProcessRef;
   }
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
