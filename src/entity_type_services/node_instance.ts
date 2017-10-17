@@ -29,7 +29,7 @@ import {ProcessTokenEntity} from '../entity_types/process_token';
 
 import {Logger} from 'loggerhythm';
 
-const logger: Logger = Logger.createLogger('processengine').createChildLogger('node_instance_entity_type_servicenpm');
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('node_instance_entity_type_service');
 
 interface Binding {
   eventAggregator: IEventAggregator;
