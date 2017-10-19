@@ -38,7 +38,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
     const data = {
       action: 'userTask',
-      data: this.getUserTaskData(context),
+      data: await this.getUserTaskData(context),
     };
 
     const msg = this.messageBusService.createEntityMessage(data, this, context);
