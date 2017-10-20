@@ -1,5 +1,5 @@
 import { ExecutionContext, IEntityReference, IPrivateQueryOptions, IPublicGetOptions, IQueryClause } from '@essential-projects/core_contracts';
-import { IDatastoreService } from '@essential-projects/data_model_contracts';
+import { IDatastoreService, IEntityType } from '@essential-projects/data_model_contracts';
 import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   IImportFromFileOptions, IImportFromXmlOptions, IParamImportFromFile,
@@ -146,23 +146,36 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
-    const key: string = params ? params.key : undefined;
-
-    if (key) {
-      const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-
-      const queryObject: IQueryClause = {
-        attribute: 'key', operator: '=', value: key,
-      };
-      const queryParams: IPrivateQueryOptions = { query: queryObject };
-      const processDefEntity = await processDef.findOne(context, queryParams);
-
-      if (processDefEntity) {
-        const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
-        return processEntityRef;
-      }
+    if (params === undefined || params === null) {
+      return;
     }
-    return null;
+
+    let queryObject: IQueryClause = null;
+    if (params.id !== undefined && params.id !== null) {
+      queryObject = {
+        attribute: 'id',
+        operator: '=',
+        value: params.id,
+      };
+    } else if (params.key !== undefined && params.key !== null) {
+      queryObject = {
+        attribute: 'key',
+        operator: '=',
+        value: params.key,
+      };
+    } else {
+      // you can't start a process without an ID or a key
+      // to not make this change breaking, i return null here
+      // as this is what happend before my change as well
+      return;
+    }
+
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const processDefEntity: IProcessDefEntity = await processDef.findOne(context, { query: queryObject });
+
+    if (processDefEntity) {
+      return <Promise<IEntityReference>> this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+    }
   }
 
 }
