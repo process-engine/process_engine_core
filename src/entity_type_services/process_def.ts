@@ -165,66 +165,69 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const key: string = params ? params.key : undefined;
+    if (!key) {
+      return null;
+    }
+
     const version: string = params ? params.version : undefined;
-    if (key) {
-      const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-      let processDefEntity: IProcessDefEntity;
-      let queryObjectVersion: ICombinedQueryClause;
 
-      if (version) {
-        queryObjectVersion = {
-          operator: 'and',
-          queries: [
-            {
-              attribute: 'key',
-              operator: '=',
-              value: key,
-            },
-            {
-              attribute: 'version',
-              operator: '=',
-              value: version,
-            },
-          ],
-        };
-      } else {
-        queryObjectVersion = {
-          operator: 'and',
-          queries: [
-            {
-              attribute: 'key',
-              operator: '=',
-              value: key,
-            },
-            {
-              attribute: 'latest',
-              operator: '=',
-              value: true,
-            },
-          ],
-        };
-      }
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    let processDefEntity: IProcessDefEntity;
+    let queryObjectVersion: ICombinedQueryClause;
 
-      const queryParamsLatest: IPrivateQueryOptions = { query: queryObjectVersion };
-      processDefEntity = await processDef.findOne(context, queryParamsLatest);
+    if (version) {
+      queryObjectVersion = {
+        operator: 'and',
+        queries: [
+          {
+            attribute: 'key',
+            operator: '=',
+            value: key,
+          },
+          {
+            attribute: 'version',
+            operator: '=',
+            value: version,
+          },
+        ],
+      };
+    } else {
+      queryObjectVersion = {
+        operator: 'and',
+        queries: [
+          {
+            attribute: 'key',
+            operator: '=',
+            value: key,
+          },
+          {
+            attribute: 'latest',
+            operator: '=',
+            value: true,
+          },
+        ],
+      };
+    }
 
-      if (!processDefEntity) {
-        // no process def with flag latest is found, for backwards compability we only query with key
-        const queryObject: IQueryClause = {
-          attribute: 'key',
-          operator: '=',
-          value: key,
-        };
+    const queryParamsLatest: IPrivateQueryOptions = { query: queryObjectVersion };
+    processDefEntity = await processDef.findOne(context, queryParamsLatest);
 
-        const queryParams: IPrivateQueryOptions = { query: queryObject };
-        processDefEntity = await processDef.findOne(context, queryParams);
-      }
+    if (!processDefEntity) {
+      // no process def with flag latest is found, for backwards compability we only query with key
+      const queryObject: IQueryClause = {
+        attribute: 'key',
+        operator: '=',
+        value: key,
+      };
 
-      if (processDefEntity) {
-        const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+      const queryParams: IPrivateQueryOptions = { query: queryObject };
+      processDefEntity = await processDef.findOne(context, queryParams);
+    }
 
-        return processEntityRef;
-      }
+    if (processDefEntity) {
+      const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+
+      return processEntityRef;
     }
 
     return null;
