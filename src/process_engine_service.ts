@@ -21,6 +21,8 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessRepository,
+  IUserTaskEntity,
+  IUserTaskMessageData,
 } from '@process-engine/process_engine_contracts';
 import {IFactoryAsync} from 'addict-ioc';
 
@@ -123,6 +125,27 @@ export class ProcessEngineService implements IProcessEngineService {
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
     const processEntity: IEntityReference = await this.processDefEntityTypeService.start(context, params, options);
     return processEntity.id;
+  }
+
+  public async getUserTaskData(context: ExecutionContext, userTaskId: string): Promise<IUserTaskMessageData> {
+    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+    const userTaskEntityQueryOptions: IPrivateQueryOptions = {
+      expandEntity: [{
+        attribute: 'nodeDef',
+        childAttributes: [{
+          attribute: 'lane',
+        }, {
+          attribute: 'extensions',
+        }],
+      }, {
+        attribute: 'processToken',
+      }],
+    };
+
+    const userTaskEntityType: IEntityType<IUserTaskEntity> = await this.datastoreService.getEntityType<IUserTaskEntity>('UserTask');
+    const userTask: IUserTaskEntity = await userTaskEntityType.getById(userTaskId, context, userTaskEntityQueryOptions);
+
+    return userTask.getUserTaskData(context);
   }
 
   private async _messageHandler(msg): Promise<void> {

@@ -244,9 +244,12 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const callerId = this.callerId;
 
       const source = this;
+      const tokenData: any = processToken.data || {};
+      const currentToken: any = tokenData.current;
+
       const data = {
         action: 'proceed',
-        token: processToken.data,
+        token: currentToken,
       };
       const msg = this.messageBusService.createEntityMessage(data, source, context);
       const channel = '/processengine/node/' + callerId;

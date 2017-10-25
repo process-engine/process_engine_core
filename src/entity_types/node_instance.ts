@@ -372,7 +372,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           data = {message: data.message};
         }
         await this._publishToApi(context, eventType, data);
-        await this.end(context);
+        await this.end(context, true);
       }
     }
 

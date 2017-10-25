@@ -164,22 +164,49 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
+    if (params === undefined || params === null) {
+      return;
+    }
     const key: string = params ? params.key : undefined;
-    if (!key) {
+    const processId: string = params ? params.id : undefined;
+
+    if (!key && !processId) {
       return null;
     }
 
     const version: string = params ? params.version : undefined;
 
-    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     let processDefEntity: IProcessDefEntity;
+
+    processDefEntity = await this._findLatest(context, processId, key, version);
+
+    if (!processDefEntity) {
+      // no process def with flag latest is found, for backwards compability we only query with key
+      processDefEntity = await this._findByKeyOnly(context, processId, key);
+    }
+
+    if (processDefEntity) {
+      return <Promise<IEntityReference>>this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+    }
+  }
+
+  private async _findLatest(context: ExecutionContext, processId: string, key: string, version: string): Promise<IProcessDefEntity> {
+
+    let attributeName: string = 'key';
+    let attributeValue: string = key;
+
+    if (processId) {
+      attributeName = 'id';
+      attributeValue = processId;
+    }
+
     const queryObjectLatestVersion: ICombinedQueryClause = {
       operator: 'and',
       queries: [
         {
-          attribute: 'key',
+          attribute: attributeName,
           operator: '=',
-          value: key,
+          value: attributeValue,
         },
       ],
     };
@@ -198,28 +225,19 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       });
     }
 
-    const queryParamsLatest: IPrivateQueryOptions = { query: queryObjectLatestVersion };
-    processDefEntity = await processDef.findOne(context, queryParamsLatest);
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
-    if (!processDefEntity) {
-      // no process def with flag latest is found, for backwards compability we only query with key
-      const queryObjectKeyOnly: IQueryClause = {
-        attribute: 'key',
-        operator: '=',
-        value: key,
-      };
-
-      const queryParams: IPrivateQueryOptions = { query: queryObjectKeyOnly };
-      processDefEntity = await processDef.findOne(context, queryParams);
-    }
-
-    if (processDefEntity) {
-      const processEntityRef: IEntityReference = await this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
-
-      return processEntityRef;
-    }
-
-    return null;
+    return await processDef.findOne(context, { query: queryObjectLatestVersion });
   }
 
+  private async _findByKeyOnly(context: ExecutionContext, processId: string, key: string): Promise<IProcessDefEntity> {
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const queryObjectKeyOnly: IQueryClause = {
+      attribute: (processId ? 'id' : 'key'),
+      operator: '=',
+      value: (processId ? processId : key),
+    };
+
+    return processDef.findOne(context, { query: queryObjectKeyOnly });
+  }
 }
