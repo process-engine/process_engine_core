@@ -956,7 +956,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   public async getDraft(context: ExecutionContext): Promise<IProcessDefEntity> {
-    const queryObject: ICombinedQueryClause = {
+    const queryObjectDraft: ICombinedQueryClause = {
       operator: 'and',
       queries: [
         {
@@ -971,40 +971,30 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         },
       ],
     };
-    const queryParams: IPrivateQueryOptions = { query: queryObject };
+    const queryParams: IPrivateQueryOptions = { query: queryObjectDraft };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     let draftEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
 
-    if (!draftEntity) {
-      const processDefData: any = {
-        key: this.key,
-        defId: this.defId,
-        counter: 0,
-        draft: true,
-        name: this.name,
-        xml: this.xml,
-        internalName: this.internalName,
-        path: this.path,
-        category: this.category,
-        module: this.module,
-        readonly: this.readonly,
-        version: this.version,
-        latest: false,
-        extensions: this.extensions,
-        persist: this.persist,
-      };
-
-      draftEntity = await processDef.createEntity(context, processDefData);
-      await draftEntity.save(context);
-
-      await this.updateDefinitions(context);
+    if (draftEntity) {
+      return draftEntity;
     }
+
+    const processDefData: any = Object.assign(this, {
+      counter: 0,
+      draft: true,
+      latest: false,
+    });
+
+    draftEntity = await processDef.createEntity(context, processDefData);
+    await draftEntity.save(context);
+
+    await this.updateDefinitions(context);
 
     return draftEntity;
   }
 
   public async getLatest(context: ExecutionContext): Promise<IProcessDefEntity> {
-    const queryObject: ICombinedQueryClause = {
+    const queryObjectLatest: ICombinedQueryClause = {
       operator: 'and',
       queries: [
         {
@@ -1019,7 +1009,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         },
       ],
     };
-    const queryParams: IPrivateQueryOptions = { query: queryObject };
+    const queryParams: IPrivateQueryOptions = { query: queryObjectLatest };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
 
@@ -1032,7 +1022,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
     await this.save(context);
 
-    const queryObject: ICombinedQueryClause = {
+    const queryObjectLatest: ICombinedQueryClause = {
       operator: 'and',
       queries: [
         {
@@ -1052,7 +1042,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         },
       ],
     };
-    const queryParams: IPrivateQueryOptions = { query: queryObject };
+    const queryParams: IPrivateQueryOptions = { query: queryObjectLatest };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
 

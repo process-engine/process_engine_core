@@ -173,54 +173,43 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     let processDefEntity: IProcessDefEntity;
-    let queryObjectVersion: ICombinedQueryClause;
+    const queryObjectLatestVersion: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        {
+          attribute: 'key',
+          operator: '=',
+          value: key,
+        },
+      ],
+    };
 
     if (version) {
-      queryObjectVersion = {
-        operator: 'and',
-        queries: [
-          {
-            attribute: 'key',
-            operator: '=',
-            value: key,
-          },
-          {
-            attribute: 'version',
-            operator: '=',
-            value: version,
-          },
-        ],
-      };
+      queryObjectLatestVersion.queries.push({
+        attribute: 'version',
+        operator: '=',
+        value: version,
+      });
     } else {
-      queryObjectVersion = {
-        operator: 'and',
-        queries: [
-          {
-            attribute: 'key',
-            operator: '=',
-            value: key,
-          },
-          {
-            attribute: 'latest',
-            operator: '=',
-            value: true,
-          },
-        ],
-      };
+      queryObjectLatestVersion.queries.push({
+        attribute: 'latest',
+        operator: '=',
+        value: true,
+      });
     }
 
-    const queryParamsLatest: IPrivateQueryOptions = { query: queryObjectVersion };
+    const queryParamsLatest: IPrivateQueryOptions = { query: queryObjectLatestVersion };
     processDefEntity = await processDef.findOne(context, queryParamsLatest);
 
     if (!processDefEntity) {
       // no process def with flag latest is found, for backwards compability we only query with key
-      const queryObject: IQueryClause = {
+      const queryObjectKeyOnly: IQueryClause = {
         attribute: 'key',
         operator: '=',
         value: key,
       };
 
-      const queryParams: IPrivateQueryOptions = { query: queryObject };
+      const queryParams: IPrivateQueryOptions = { query: queryObjectKeyOnly };
       processDefEntity = await processDef.findOne(context, queryParams);
     }
 
