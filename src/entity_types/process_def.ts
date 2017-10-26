@@ -375,7 +375,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     let bpmnDiagram = params && params.bpmnDiagram ? params.bpmnDiagram : null;
 
     const xml = this.xml;
-    const key = this.key;
+    let key = this.key;
     const counter = this.counter;
 
     const helperObject = {
@@ -386,8 +386,24 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       bpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     }
 
+    // First we search the processes defined in the diagram. Usually
+    // one process id in the diagram matches the key stored in this.key.
+    // But when the process id in the diagram no longer matches the
+    // key saved in this.key, we are unable to find it.
     const processes = bpmnDiagram.getProcesses();
-    const currentProcess = processes.find((item) => item.id === key);
+    let currentProcess = processes.find((item) => item.id === key);
+
+    // When we are unable to find the process by the saved key and
+    // there is only one process in the bpmn diagram, we take the
+    // only process in the diagram.
+    if (currentProcess === undefined || currentProcess === null) {
+      if (processes.length !== 1) {
+        throw new Error('not supported');
+      }
+      currentProcess = processes[0];
+      key = currentProcess.id;
+      this.key = key;
+    }
 
     this.extensions = this._updateExtensionElements(currentProcess.extensionElements ? currentProcess.extensionElements.values : null, this);
 
