@@ -396,7 +396,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     // When we are unable to find the process by the saved key and
     // there is only one process in the bpmn diagram, we take the
     // only process in the diagram.
-    if (currentProcess === null || currentProcess === undefined) {
+    if (currentProcess === undefined || currentProcess === null) {
       if (processes.length !== 1) {
         throw new Error('not supported');
       }
