@@ -393,8 +393,9 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const processes = bpmnDiagram.getProcesses();
     let currentProcess = processes.find((item) => item.id === key);
 
-    // When we wore unable to find the process and the length
-    // it one we just the the one defined process in the array.
+    // When we are unable to find the process by the saved key and
+    // there is only one process in the bpmn diagram, we take the
+    // only process in the diagram.
     if (currentProcess === null || currentProcess === undefined) {
       if (processes.length !== 1) {
         throw new Error('not supported');
