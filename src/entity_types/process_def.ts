@@ -995,11 +995,23 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       return draftEntity;
     }
 
-    const processDefData: any = Object.assign(this, {
+    const processDefData: any = {
+      key: this.key,
+      defId: this.defId,
       counter: 0,
       draft: true,
+      name: this.name,
+      xml: this.xml,
+      internalName: this.internalName,
+      path: this.path,
+      category: this.category,
+      module: this.module,
+      readonly: this.readonly,
+      version: this.version,
       latest: false,
-    });
+      extensions: this.extensions,
+      persist: this.persist,
+    };
 
     draftEntity = await processDef.createEntity(context, processDefData);
     await draftEntity.save(context);
