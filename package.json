@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "0.1.6",
+  "version": "0.2.0-alpha.feature-7dcf05bf",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -23,7 +23,7 @@
     "@essential-projects/messagebus_contracts": "^0.1.0",
     "@essential-projects/metadata": "^0.1.0",
     "@essential-projects/metadata_contracts": "^0.1.0",
-    "@process-engine/process_engine_contracts": "^0.1.0",
+    "@process-engine/process_engine_contracts": "^0.2.0-alpha.feature-3d0b4a64",
     "@essential-projects/routing_contracts": "^0.1.0",
     "@essential-projects/timing_contracts": "^0.1.0",
     "addict-ioc": "^2.2.8",
