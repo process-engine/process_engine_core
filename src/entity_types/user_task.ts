@@ -47,7 +47,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     } else {
       // send message to users of lane role
       const configuredRole: string = await this.nodeDef.lane.role;
-      const roles: Array<string> = [configuredRole] || ['guest', 'default'];
+      const roles: Array<string> = configuredRole ? [configuredRole] : ['guest', 'default'];
       const flattenedRoles: Array<string> = this.iamService.flattenRoles(roles);
 
       for (const flatRole of flattenedRoles) {
