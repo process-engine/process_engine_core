@@ -301,7 +301,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       try {
         const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
         const response: IDataMessage = <IDataMessage> (await this.routingService.request(appInstanceId, message, adapterKey));
-        const ref = new EntityReference(response.data.namespace, response.data.namespace, response.data.namespace);
+        const ref = new EntityReference(response.data.namespace, response.data.type, response.data.id);
+
         return ref;
       } catch (err) {
         debugErr(`can not start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)}), error: ${err.message}`);
