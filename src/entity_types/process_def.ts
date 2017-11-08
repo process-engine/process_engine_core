@@ -1040,9 +1040,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     };
     const queryParams: IPrivateQueryOptions = { query: queryObjectLatest };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
 
-    return latestEntity;
+    return processDef.findOne(context, queryParams);
   }
 
   public async publishDraft(context: ExecutionContext): Promise<IProcessDefEntity> {

@@ -227,7 +227,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
-    return await processDef.findOne(context, { query: queryObjectLatestVersion });
+    return processDef.findOne(context, { query: queryObjectLatestVersion });
   }
 
   private async _findByKeyOnly(context: ExecutionContext, processId: string, key: string): Promise<IProcessDefEntity> {
