@@ -46,8 +46,13 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
       // send message to users of lane role
-      const role = await this.nodeDef.lane.role;
-      await this.messageBusService.publish('/role/' + role, msg);
+      const configuredRole: string = await this.nodeDef.lane.role;
+      const roles: Array<string> = configuredRole ? [configuredRole] : ['guest', 'default'];
+      const flattenedRoles: Array<string> = this.iamService.flattenRoles(roles);
+
+      for (const flatRole of flattenedRoles) {
+        await this.messageBusService.publish(`/role/${flatRole}`, msg);
+      }
     }
 
   }

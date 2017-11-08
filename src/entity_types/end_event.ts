@@ -36,8 +36,13 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
       await this.messageBusService.publish('/participant/' + this.participant, msg);
     } else {
       // send message to users of lane role
-      const role = this.nodeDef.lane.role;
-      await this.messageBusService.publish('/role/' + role, msg);
+      const configuredRole: string = await this.nodeDef.lane.role;
+      const roles: Array<string> = configuredRole ? [configuredRole] : ['guest', 'default'];
+      const flattenedRoles: Array<string> = this.iamService.flattenRoles(roles);
+
+      for (const flatRole of flattenedRoles) {
+        await this.messageBusService.publish(`/role/${flatRole}`, msg);
+      }
     }
 
     this.changeState(context, 'end', this);
