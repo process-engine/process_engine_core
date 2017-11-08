@@ -36,6 +36,31 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
 
     this.changeState(context, 'wait', this);
 
+    const data = {
+      action: 'userTask',
+      data: await this.getUserTaskData(context),
+    };
+
+    const msg = this.messageBusService.createEntityMessage(data, this, context);
+    if (this.participant) {
+      await this.messageBusService.publish('/participant/' + this.participant, msg);
+    } else {
+      // send message to users of lane role
+      const configuredRole: string = await this.nodeDef.lane.role;
+      const roles: Array<string> = configuredRole ? [configuredRole] : ['guest', 'default'];
+      const flattenedRoles: Array<string> = this.iamService.flattenRoles(roles);
+
+      for (const flatRole of flattenedRoles) {
+        await this.messageBusService.publish(`/role/${flatRole}`, msg);
+      }
+    }
+
+  }
+
+  public async getUserTaskData(context: ExecutionContext): Promise<IUserTaskMessageData> {
+
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+
     const pojo = await this.toPojo(internalContext, {maxDepth: 1});
     let uiName;
     let uiConfig;
@@ -68,20 +93,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
       uiConfig: uiConfig,
     };
 
-    const data = {
-      action: 'userTask',
-      data: userTaskMessageData,
-    };
-
-    const msg = this.messageBusService.createEntityMessage(data, this, context);
-    if (this.participant) {
-      await this.messageBusService.publish('/participant/' + this.participant, msg);
-    } else {
-      // send message to users of lane role
-      const role = await this.nodeDef.lane.role;
-      await this.messageBusService.publish('/role/' + role, msg);
-    }
-
+    return userTaskMessageData;
   }
 
   public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {

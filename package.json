@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "0.1.2",
+  "version": "0.2.0-alpha.feature-7dcf05bf",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -16,7 +16,7 @@
   "dependencies": {
     "@essential-projects/core_contracts": "^0.1.0",
     "@essential-projects/data_model": "^0.1.0",
-    "@essential-projects/data_model_contracts": "^0.1.0",
+    "@essential-projects/data_model_contracts": "^0.2.0",
     "@essential-projects/event_aggregator_contracts": "^0.1.0",
     "@essential-projects/feature_contracts": "^0.1.0",
     "@essential-projects/invocation_contracts": "^0.1.0",
@@ -25,7 +25,7 @@
     "@essential-projects/metadata_contracts": "^0.1.0",
     "@essential-projects/routing_contracts": "^0.1.0",
     "@essential-projects/timing_contracts": "^0.1.0",
-    "@process-engine/process_engine_contracts": "^0.1.0",
+    "@process-engine/process_engine_contracts": "^0.2.0",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",

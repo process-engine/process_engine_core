@@ -84,7 +84,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService', 'EventAggregator', 'TimingService', 'ProcessEngineService')
+    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService', 'EventAggregator', 'TimingService', 'ProcessEngineService', 'DatastoreService')
     .tags(entityDiscoveryTag);
 
   container.register('ProcessTokenEntity', ProcessTokenEntity)
