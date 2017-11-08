@@ -21,6 +21,7 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessRepository,
+  ISubprocessExternalEntity,
   IUserTaskEntity,
   IUserTaskMessageData,
 } from '@process-engine/process_engine_contracts';
@@ -384,4 +385,38 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
+  public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any): Promise<any> {
+
+    const subProcessEntityType: IEntityType<IEntity> = await this.datastoreService.getEntityType('SubprocessExternal');
+    const source: IEntity = await subProcessEntityType.createEntity(context, undefined, undefined);
+
+    const params: IParamStart = {
+      id: id,
+      key: key,
+      source: source,
+      isSubProcess: true,
+      initialToken: initialToken,
+    };
+
+    return new Promise<IMessage>(async (resolve, reject) => {
+
+      const subscription: IMessageSubscription = await this.messageBusService.subscribe(`/processengine/node/${source.id}`,
+      async(msg: IMessage) => {
+        subscription.cancel();
+
+        await this.messageBusService.verifyMessage(msg);
+
+        const payload: any = (msg && msg.data) ? msg.data : null;
+        const action: string = (payload && payload.action) ? payload.action : null;
+
+        if (action === 'proceed') {
+          const newData: any = (payload && payload.token) ? payload.token : null;
+
+          return resolve(newData);
+        }
+      });
+
+      await this.processDefEntityTypeService.start(context, params);
+    });
+  }
 }
