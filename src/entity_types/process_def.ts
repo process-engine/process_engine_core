@@ -1,14 +1,14 @@
 import {ExecutionContext, ICombinedQueryClause, IEntity, IEntityReference, IInheritedSchema, IPrivateQueryOptions,
   IPrivateSaveOptions, IPublicGetOptions, IQueryObject, SchemaAttributeType} from '@essential-projects/core_contracts';
-import {Entity, EntityDependencyHelper, EntityReference, IDatastoreService, IEntityType, IPropertyBag, IEntityCollection} from '@essential-projects/data_model_contracts';
+import {Entity, EntityDependencyHelper, EntityReference, IDatastoreService, IEntityCollection, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
 import { IDataMessage, IDatastoreMessage, IDatastoreMessageOptions, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
-import { IParamStart, IParamUpdateDefs, IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService,
-  IProcessEntity, IProcessRepository, TimerDefinitionType, INodeDefEntity, ILaneEntity, IFlowDefEntity } from '@process-engine/process_engine_contracts';
 import { IRoutingService } from '@essential-projects/routing_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
+import { IFlowDefEntity, ILaneEntity, INodeDefEntity, IParamStart, IParamUpdateDefs,
+  IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService, IProcessEntity, IProcessRepository, TimerDefinitionType } from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as debug from 'debug';
