@@ -418,7 +418,11 @@ export class ProcessEngineService implements IProcessEngineService {
         }
       });
 
-      await this.processDefEntityTypeService.start(context, params);
+      try {
+        await this.processDefEntityTypeService.start(context, params);
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 }
