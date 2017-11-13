@@ -5,9 +5,6 @@ import {schemaAttribute} from '@essential-projects/metadata';
 import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
   IProcessEntity, IStartEventEntity } from '@process-engine/process_engine_contracts';
 
-import * as debug from 'debug';
-const debugInfo = debug('processengine:info');
-
 export class ProcessEntity extends Entity implements IProcessEntity {
 
   private _iamService: IIamService = undefined;
@@ -213,8 +210,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     if (this.processDef.persist) {
       await processToken.save(internalContext, { reloadAfterSave: false });
     }
-
-    debugInfo(`process id ${this.id} started: `);
 
     const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
     startEvent.name = startEventDef.name;

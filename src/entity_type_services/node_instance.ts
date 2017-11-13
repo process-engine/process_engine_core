@@ -24,13 +24,12 @@ import {
   IProcessEntity,
 } from '@process-engine/process_engine_contracts';
 
-import * as debug from 'debug';
-
 import {NodeDefEntity} from '../entity_types/node_def';
 import {ProcessTokenEntity} from '../entity_types/process_token';
 
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+import {Logger} from 'loggerhythm';
+
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('node_instance_entity_type_service');
 
 interface Binding {
   eventAggregator: IEventAggregator;
@@ -333,8 +332,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         node.attachedToInstance = source;
       }
 
-      debugInfo(`node created key '${node.key}'`);
-
       node.changeState(context, 'start', source);
       return node;
     }
@@ -446,7 +443,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
 
           if (features.length === 0 || this.featureService.hasFeatures(features)) {
-            debugInfo(`continue in same thread with next node key ${nextDef.key}, features: ${JSON.stringify(features)}`);
+            logger.verbose(`continue '${nextDef.key}' on this intance`);
             await this.createNextNode(context, nodeInstance, nextDef, currentToken);
           } else {
             const appInstances = this.featureService.getApplicationIdsByFeatures(features);
@@ -455,13 +452,12 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               // TODO
               // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for
               // first "registration" of compatible (feature-matching) application instance
-              debugErr(`can not route to next node key '${nextDef.key }', features: ${JSON.stringify(features)}, no matching instance found`);
+              logger.warn(`can not continue with '${nextDef.key}', no known instance fulfills the required features`, features);
               throw new Error('can not route, no matching instance found');
             }
 
             const appInstanceId = appInstances[0];
-
-            debugInfo(`continue on application '${appInstanceId}' with next node key '${nextDef.key}', features: ${JSON.stringify(features)}`);
+            logger.verbose(`continue '${nextDef.key}' on '${appInstanceId}'`, features);
 
             // Todo: set correct message format
             const options: IDatastoreMessageOptions = {
@@ -496,7 +492,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
               const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
               await this.routingService.request(appInstanceId, message, adapterKey);
             } catch (err) {
-              debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
+              logger.error(`failed to delegate execution of '${nextDef.key}' to '${appInstanceId}'`, err);
 
               // look for boundary error event
 
@@ -636,7 +632,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         throw new Error('param is missing');
       }
     } catch (err) {
-      debugErr(err);
+      logger.error('failed to continue from remote', err);
       throw err;
     }
   }

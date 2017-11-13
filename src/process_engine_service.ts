@@ -25,11 +25,9 @@ import {
   IUserTaskMessageData,
 } from '@process-engine/process_engine_contracts';
 import {IFactoryAsync} from 'addict-ioc';
+import {Logger} from 'loggerhythm';
 
-import * as debug from 'debug';
-
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('service');
 
 export class ProcessEngineService implements IProcessEngineService {
 
@@ -149,7 +147,6 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _messageHandler(msg): Promise<void> {
-    debugInfo('we got a message: ', msg);
 
     await this.messageBusService.verifyMessage(msg);
 
@@ -182,7 +179,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
         break;
       default:
-        debugInfo('unhandled action: ', msg);
+        logger.warn('message not handled because of unknown message-action', msg);
         break;
     }
   }
@@ -195,12 +192,10 @@ export class ProcessEngineService implements IProcessEngineService {
       // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
         this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
-        debugInfo(`subscribed on Messagebus Master`);
       }
-
     } catch (err) {
-      debugErr('subscription failed on Messagebus', err.message);
-      throw new Error(err.message);
+      logger.error('failed to subscribe to messagebus', err);
+      throw err;
     }
   }
 
@@ -272,13 +267,11 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private async _continueOwnProcess(context: ExecutionContext, waitingNode: INodeInstanceEntity): Promise<any> {
 
-    debugInfo(`Checking, if node ${waitingNode.id} is abandoned`);
     if (await this._nodeAlreadyBelongsToOtherProcessEngine(context, waitingNode)) {
-      debugInfo(`node ${waitingNode.id} is not abandoned`);
-
       return;
     }
-    debugInfo(`node ${waitingNode.id} is indeed abandoned. Taking over responsibility`);
+
+    logger.verbose(`node ${waitingNode.id} is abandoned. Taking over responsibility`);
 
     const specificEntity: INodeInstanceEntity = await this._getSpecificEntityByNodeInstance(context, waitingNode);
     const processToContinue: IProcessEntity = await specificEntity.getProcess(context);
@@ -308,7 +301,6 @@ export class ProcessEngineService implements IProcessEngineService {
     };
 
     const allWaitingNodesCollection: IEntityCollection<INodeInstanceEntity> = await nodeInstanceEntityType.query(internalContext, waitingNodesQuery);
-    debugInfo(`There are ${allWaitingNodesCollection.length} potentially abandoned nodeInstances`);
     const allWaitingNodes: Array<INodeInstanceEntity> = [];
     await allWaitingNodesCollection.each(internalContext, (nodeInstance: INodeInstanceEntity) => {
       allWaitingNodes.push(nodeInstance);
@@ -376,7 +368,6 @@ export class ProcessEngineService implements IProcessEngineService {
     initSubscription.dispose();
 
     if (this.messageBusService.isMaster) {
-      debugInfo(`This instance is messagebus-master. Giving clients 15 seconds time to connect now.`);
       // give everyone some time to connect
       const defaultclientConnectTime: number = 15000;
       const clientConnectTime: number = this.config.messagebusClientConnectTime || defaultclientConnectTime;

@@ -11,11 +11,9 @@ import { IFlowDefEntity, ILaneEntity, INodeDefEntity, IParamStart, IParamUpdateD
   IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService, IProcessEntity, IProcessRepository, TimerDefinitionType } from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
-import * as debug from 'debug';
+import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
-
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+const logger: Logger = Logger.createLogger('processengine').createChildLogger('process_def');
 
 interface ICache<T> {
   [key: string]: T;
@@ -269,7 +267,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const features = this.features;
 
     if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
-      debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
+      logger.verbose(`start '${this.key}' on this instance`);
 
       const processEntityType = await (await this.getDatastoreService()).getEntityType('Process');
       const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
@@ -282,13 +280,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       const appInstances = this.featureService.getApplicationIdsByFeatures(features);
 
       if (appInstances.length === 0) {
-        debugErr(`can not start process key '${this.key}', features: ${JSON.stringify(features)}, no matching instance found`);
+        logger.warn(`can not start '${this.key}', no known instance fulfills the required features`, features);
         throw new Error('can not start, no matching instance found');
       }
 
       const appInstanceId = appInstances[0];
 
-      debugInfo(`start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)})`);
+      logger.verbose(`start '${this.key}' on '${appInstanceId}'`, features);
 
       // Todo: set correct message format
       const messageOptions: IDatastoreMessageOptions = {
@@ -305,7 +303,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
 
         return ref;
       } catch (err) {
-        debugErr(`can not start process on application '${appInstanceId}' (key '${this.key}', features: ${JSON.stringify(features)}), error: ${err.message}`);
+        logger.error(`failed to delegate the start of '${this.key}' to '${appInstanceId}'`, err);
       }
     }
 
