@@ -141,6 +141,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       processDefEntity.counter = processDefEntity.counter + 1;
 
       await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
+      await processDefEntity.save(context, {isNew: false});
+      await processDefEntity.publishDraft(context);
     }
   }
 
