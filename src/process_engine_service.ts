@@ -28,6 +28,7 @@ import {
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
+import * as uuid from 'uuid';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -388,8 +389,9 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any, version?: string): Promise<any> {
 
-    const subProcessEntityType: IEntityType<IEntity> = await this.datastoreService.getEntityType('SubprocessExternal');
-    const source: IEntity = await subProcessEntityType.createEntity(context, undefined, undefined);
+    const source: any = {
+      id: uuid.v4(),
+    };
 
     const params: IParamStart = {
       id: id,
