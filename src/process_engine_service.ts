@@ -1,15 +1,18 @@
 import {
   ExecutionContext,
+  IApplicationService,
   IEntity,
   IEntityReference,
   IIamService,
   IPrivateQueryOptions,
   IPublicGetOptions,
+  TokenType,
 } from '@essential-projects/core_contracts';
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
-import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
-import { IFeatureService } from '@essential-projects/feature_contracts';
-import { IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
+import { IDataEvent, IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
+import {IInvoker, InvocationType} from '@essential-projects/invocation_contracts';
+import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {
   IImportFromFileOptions,
   INodeDefEntity,
@@ -17,6 +20,7 @@ import {
   INodeInstanceEntityTypeService,
   IParamImportFromXml,
   IParamStart,
+  IProcessDefEntity,
   IProcessDefEntityTypeService,
   IProcessEngineService,
   IProcessEntity,
@@ -42,6 +46,8 @@ export class ProcessEngineService implements IProcessEngineService {
   private _datastoreService: IDatastoreService = undefined;
   private _nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService> = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
+  private _applicationService: IApplicationService = undefined;
+  private _invoker: IInvoker;
 
   private _internalContext: ExecutionContext;
   public config: any = undefined;
@@ -53,7 +59,9 @@ export class ProcessEngineService implements IProcessEngineService {
               iamService: IIamService,
               processRepository: IProcessRepository,
               datastoreService: IDatastoreService,
-              nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>) {
+              nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
+              applicationService: IApplicationService,
+              invoker: IInvoker) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -62,6 +70,8 @@ export class ProcessEngineService implements IProcessEngineService {
     this._processRepository = processRepository;
     this._datastoreService = datastoreService;
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
+    this._applicationService = applicationService;
+    this._invoker = invoker;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -98,6 +108,14 @@ export class ProcessEngineService implements IProcessEngineService {
     }
 
     return this._nodeInstanceEntityTypeService;
+  }
+
+  private get applicationService(): IApplicationService {
+    return this._applicationService;
+  }
+
+  private get invoker(): IInvoker {
+    return this._invoker;
   }
 
   private async _getInternalContext(): Promise<ExecutionContext> {
@@ -187,9 +205,28 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
+  private async handleProcessEngineMessage(message: IDataMessage): Promise<void> {
+    if (message.data.event === 'executeProcess') {
+      const responseChannel: string = message.metadata.response;
+      const context: ExecutionContext = await this.iamService.resolveExecutionContext(message.data.contextToken, TokenType.jwt);
+      const responseData: any = await this.executeProcess(await this.iamService.resolveExecutionContext(message.data.contextToken, TokenType.jwt),
+                                                          message.data.id,
+                                                          message.data.key,
+                                                          message.data.initialToken,
+                                                          message.data.version);
+
+      const responseMessage: IMessage = this.messageBusService.createDataMessage(responseData, context);
+      this.messageBusService.publish(responseChannel, responseMessage);
+    }
+  }
+
   private async _initializeMessageBus(): Promise<void> {
 
     try {
+
+      this.messageBusService.subscribe(`/processengine/${this.applicationService.id}`, (message: IDataMessage) => {
+        this.handleProcessEngineMessage(message);
+      });
 
       // Todo: we subscribe on the old channel to leave frontend intact
       // this is deprecated and should be replaced with the new datastore api
@@ -382,6 +419,81 @@ export class ProcessEngineService implements IProcessEngineService {
       const clientConnectTime: number = this.config.messagebusClientConnectTime || defaultclientConnectTime;
       await this._timeoutPromise(clientConnectTime);
     }
+  }
+
+  public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any, version?: string): Promise<any> {
+    if (id === undefined && key === undefined) {
+      throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
+    }
+
+    let processDefinition: IProcessDefEntity;
+    if (id !== undefined) {
+      processDefinition = await this.processDefEntityTypeService.getProcessDefinitionById(context, id, version);
+    } else {
+      processDefinition = await this.processDefEntityTypeService.getProcessDefinitionByKey(context, key, version);
+    }
+
+    if (!processDefinition) {
+      throw new Error(`couldn't execute process: no processDefinition with key ${key} or id ${id} was found`);
+    }
+
+    const requiredFeatures: Array<IFeature> = processDefinition.features;
+    const canStartProcessLocaly: boolean = requiredFeatures === undefined
+                               || requiredFeatures.length === 0
+                               || this.featureService.hasFeatures(requiredFeatures);
+
+    if (canStartProcessLocaly) {
+      return this.executeProcessLocaly(context, processDefinition, initialToken);
+    }
+
+    return this.executeProcessRemotely(context, requiredFeatures, id, key, initialToken, version);
+  }
+
+  private executeProcessLocaly(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
+    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
+
+      const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
+      const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
+      const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
+        if (message.data.event !== 'end') {
+          return;
+        }
+
+        resolve(message.data.token);
+        processEndSubscription.cancel();
+      });
+
+      await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
+        initialToken: initialToken,
+      });
+    });
+  }
+
+  private async executeProcessRemotely(context: ExecutionContext,
+                                       requiredFeatures: Array<IFeature>,
+                                       id: string,
+                                       key: string,
+                                       initialToken: any,
+                                       version?: string): Promise<any> {
+    const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
+    if (possibleRemoteTargets.length === 0) {
+      // tslint:disable-next-line:max-line-length
+      throw new Error(`couldn't execute process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
+    }
+
+    const executeProcessMessage: IDataMessage = this.messageBusService.createDataMessage({
+      event: 'executeProcess',
+      contextToken: context.encryptedToken,
+      id: id,
+      key: key,
+      initialToken: initialToken,
+      version: version,
+    }, context);
+
+    const targetChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
+    const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetChannel, executeProcessMessage);
+
+    return executeProcessResponse.data;
   }
 
 }

@@ -242,4 +242,73 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     return processDef.findOne(context, { query: queryObjectKeyOnly });
   }
+
+  public async getProcessDefinitionByKey(context: ExecutionContext,
+                                         processDefinitionKey: string,
+                                         version?: string,
+                                         versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
+    const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const processDefinitionByKeyQuery: IQueryClause = {
+      attribute: 'key',
+      operator: '=',
+      value: processDefinitionKey,
+    };
+    const processDefinitionByKeyAndVersionQuery: ICombinedQueryClause = this.getQueryForVersion(processDefinitionByKeyQuery, version);
+
+    let result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, {query: processDefinitionByKeyAndVersionQuery});
+    if ((result === undefined || result === null) && versionlessFallback) {
+      // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
+      result = await processDefinitionEntityType.findOne(context, {query: processDefinitionByKeyQuery});
+    }
+
+    return result;
+  }
+
+  public async getProcessDefinitionById(context: ExecutionContext,
+                                        processDefinitionId: string,
+                                        version?: string,
+                                        versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
+    const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const processDefinitionByIdQuery: IQueryClause = {
+      attribute: 'id',
+      operator: '=',
+      value: processDefinitionId,
+    };
+    const processDefinitionByIdAndVersionQuery: ICombinedQueryClause = this.getQueryForVersion(processDefinitionByIdQuery, version);
+
+    let result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, {query: processDefinitionByIdAndVersionQuery});
+    if ((result === undefined || result === null) && versionlessFallback) {
+      // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
+      result = await processDefinitionEntityType.findOne(context, {query: processDefinitionByIdQuery});
+    }
+
+    return result;
+}
+
+  private getQueryForVersion(inputQuery: IQueryClause, version?: string): ICombinedQueryClause {
+    const versionQuery: ICombinedQueryClause = {
+      operator: 'and',
+      queries: [
+        Object.assign({}, inputQuery),
+      ],
+    };
+
+    if (version === undefined) {
+      versionQuery.queries.push({
+        attribute: 'latest',
+        operator: '=',
+        value: true,
+      });
+    }
+
+    if (version !== undefined) {
+      versionQuery.queries.push({
+        attribute: 'version',
+        operator: '=',
+        value: version,
+      });
+    }
+
+    return versionQuery;
+  }
 }
