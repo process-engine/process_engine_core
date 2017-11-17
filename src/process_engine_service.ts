@@ -208,7 +208,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     const internalContext = await this.iamService.createInternalContext('processengine_system');
     const options: IImportFromFileOptions = {
-      overwriteExisting: false,
+      overwriteExisting: true,
     };
 
     const processes = this.processRepository.getProcessesByCategory('internal');
