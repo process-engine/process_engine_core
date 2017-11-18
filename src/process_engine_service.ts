@@ -9,7 +9,7 @@ import {
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
 import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
 import { IFeatureService } from '@essential-projects/feature_contracts';
-import { IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
+import { IDataMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {
   IImportFromFileOptions,
   INodeDefEntity,
@@ -21,12 +21,14 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessRepository,
+  ISubprocessExternalEntity,
   IUserTaskEntity,
   IUserTaskMessageData,
 } from '@process-engine/process_engine_contracts';
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
+import * as uuid from 'uuid';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -124,6 +126,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
     const processEntity: IEntityReference = await this.processDefEntityTypeService.start(context, params, options);
+
     return processEntity.id;
   }
 
@@ -322,7 +325,7 @@ export class ProcessEngineService implements IProcessEngineService {
       action: 'checkResponsibleInstance',
     };
 
-    const checkMessage: IMessage = this.messageBusService.createDataMessage(checkMessageData, context);
+    const checkMessage: IDataMessage = this.messageBusService.createDataMessage(checkMessageData, context);
 
     try {
       await this.messageBusService.request(`/processengine/node/${node.id}`, checkMessage);
@@ -363,7 +366,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private _timeoutPromise(milliseconds: number): Promise<void> {
-    return new Promise((resolve: any, reject: any) => {
+    return new Promise((resolve: Function, reject: Function): void => {
       setTimeout(() => {
         resolve();
       }, milliseconds);
@@ -384,4 +387,44 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
+  public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any, version?: string): Promise<any> {
+
+    const source: any = {
+      id: uuid.v4(),
+    };
+
+    const params: IParamStart = {
+      id: id,
+      key: key,
+      version: version,
+      source: source,
+      isSubProcess: true,
+      initialToken: initialToken,
+    };
+
+    return new Promise<IDataMessage>(async(resolve: Function, reject: Function): Promise<void> => {
+
+      const subscription: IMessageSubscription = await this.messageBusService.subscribe(`/processengine/node/${source.id}`,
+      async(msg: IDataMessage) => {
+        subscription.cancel();
+
+        await this.messageBusService.verifyMessage(msg);
+
+        const payload: any = (msg && msg.data) ? msg.data : null;
+        const action: string = (payload && payload.action) ? payload.action : null;
+
+        if (action === 'proceed') {
+          const newData: any = (payload && payload.token) ? payload.token : null;
+
+          return resolve(newData);
+        }
+      });
+
+      try {
+        await this.processDefEntityTypeService.start(context, params);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
 }

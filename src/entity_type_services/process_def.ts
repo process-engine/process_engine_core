@@ -187,9 +187,11 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       processDefEntity = await this._findByKeyOnly(context, processId, key);
     }
 
-    if (processDefEntity) {
-      return <Promise<IEntityReference>> this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
+    if (!processDefEntity) {
+      throw new Error(`process with key "${key}" and id "${processId}" not found.`);
     }
+
+    return <Promise<IEntityReference>>this.invoker.invoke(processDefEntity, 'start', undefined, context, context, params, options);
   }
 
   private async _findLatest(context: ExecutionContext, processId: string, key: string, version: string): Promise<IProcessDefEntity> {
