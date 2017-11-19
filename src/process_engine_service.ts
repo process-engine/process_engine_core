@@ -218,6 +218,14 @@ export class ProcessEngineService implements IProcessEngineService {
       const responseMessage: IMessage = this.messageBusService.createDataMessage(responseData, context);
       this.messageBusService.publish(responseChannel, responseMessage);
     }
+
+    if (message.data.event === 'getInstanceId') {
+      const responseChannel: string = message.metadata.response;
+      const responseMessage: IMessage = this.messageBusService.createDataMessage({
+        instanceId: this.applicationService.instanceId,
+      }, null);
+      this.messageBusService.publish(responseChannel, responseMessage);
+    }
   }
 
   private async _initializeMessageBus(): Promise<void> {
@@ -225,6 +233,10 @@ export class ProcessEngineService implements IProcessEngineService {
     try {
 
       this.messageBusService.subscribe(`/processengine/${this.applicationService.id}`, (message: IDataMessage) => {
+        this.handleProcessEngineMessage(message);
+      });
+
+      this.messageBusService.subscribe(`/processengine/${this.applicationService.instanceId}`, (message: IDataMessage) => {
         this.handleProcessEngineMessage(message);
       });
 
@@ -481,6 +493,10 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`couldn't execute process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
     }
 
+    const getInstaceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
+      event: 'getInstanceId',
+    }, null);
+
     const executeProcessMessage: IDataMessage = this.messageBusService.createDataMessage({
       event: 'executeProcess',
       contextToken: context.encryptedToken,
@@ -490,8 +506,10 @@ export class ProcessEngineService implements IProcessEngineService {
       version: version,
     }, context);
 
-    const targetChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
-    const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetChannel, executeProcessMessage);
+    const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
+    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstaceIdMessage);
+    const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
+    const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessMessage);
 
     return executeProcessResponse.data;
   }
