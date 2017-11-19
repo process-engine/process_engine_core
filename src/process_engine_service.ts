@@ -208,14 +208,14 @@ export class ProcessEngineService implements IProcessEngineService {
   private async handleProcessEngineMessage(message: IDataMessage): Promise<void> {
     if (message.data.event === 'executeProcess') {
       const responseChannel: string = message.metadata.response;
-      const context: ExecutionContext = await this.iamService.resolveExecutionContext(message.data.contextToken, TokenType.jwt);
-      const responseData: any = await this.executeProcess(await this.iamService.resolveExecutionContext(message.data.contextToken, TokenType.jwt),
+      await this.messageBusService.verifyMessage(message);
+      const responseData: any = await this.executeProcess(message.metadata.context,
                                                           message.data.id,
                                                           message.data.key,
                                                           message.data.initialToken,
                                                           message.data.version);
 
-      const responseMessage: IMessage = this.messageBusService.createDataMessage(responseData, context);
+      const responseMessage: IMessage = this.messageBusService.createDataMessage(responseData, message.metadata.context);
       this.messageBusService.publish(responseChannel, responseMessage);
     }
 
@@ -499,7 +499,6 @@ export class ProcessEngineService implements IProcessEngineService {
 
     const executeProcessMessage: IDataMessage = this.messageBusService.createDataMessage({
       event: 'executeProcess',
-      contextToken: context.encryptedToken,
       id: id,
       key: key,
       initialToken: initialToken,
