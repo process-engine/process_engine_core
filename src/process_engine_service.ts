@@ -450,18 +450,18 @@ export class ProcessEngineService implements IProcessEngineService {
     }
 
     const requiredFeatures: Array<IFeature> = processDefinition.features;
-    const canStartProcessLocaly: boolean = requiredFeatures === undefined
+    const canStartProcessLocally: boolean = requiredFeatures === undefined
                                || requiredFeatures.length === 0
                                || this.featureService.hasFeatures(requiredFeatures);
 
-    if (canStartProcessLocaly) {
-      return this.executeProcessLocaly(context, processDefinition, initialToken);
+    if (canStartProcessLocally) {
+      return this.executeProcessLocally(context, processDefinition, initialToken);
     }
 
     return this.executeProcessRemotely(context, requiredFeatures, id, key, initialToken, version);
   }
 
-  private executeProcessLocaly(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
+  private executeProcessLocally(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
