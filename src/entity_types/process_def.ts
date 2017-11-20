@@ -259,6 +259,18 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     return this._extractFeatures();
   }
 
+  public async createProcessInstance(context: ExecutionContext): Promise<IProcessEntity> {
+    const processData: any = {
+      key: this.key,
+      processDef: this,
+    };
+
+    const datastoreService: IDatastoreService = await this.getDatastoreService();
+    const processEntityType: IEntityType<IProcessEntity> = await datastoreService.getEntityType<IProcessEntity>('Process');
+
+    return processEntityType.createEntity(context, processData);
+  }
+
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
 
     const processData = {
@@ -271,8 +283,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     if (features === undefined || features.length === 0 || this.featureService.hasFeatures(features)) {
       debugInfo(`start process in same thread (key ${this.key}, features: ${JSON.stringify(features)})`);
 
-      const processEntityType = await (await this.getDatastoreService()).getEntityType('Process');
-      const processEntity: IProcessEntity = (await processEntityType.createEntity(context, processData)) as IProcessEntity;
+      const processEntity: IProcessEntity = await this.createProcessInstance(context);
 
       await this.invoker.invoke(processEntity, 'start', undefined, context, context, params, options);
       const ref = processEntity.getEntityReference();

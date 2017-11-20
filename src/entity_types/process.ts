@@ -1,6 +1,6 @@
 import {ExecutionContext, IEntity, IIamService, IInheritedSchema, IPublicGetOptions, SchemaAttributeType } from '@essential-projects/core_contracts';
 import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@essential-projects/data_model_contracts';
-import { IMessageBusService } from '@essential-projects/messagebus_contracts';
+import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
 import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
   IProcessEntity, IStartEventEntity } from '@process-engine/process_engine_contracts';
@@ -257,6 +257,13 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     }
 
+    const processEndMessageData: any = {
+      event: 'end',
+      token: processToken.data.current,
+    };
+
+    const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
+    this.messageBusService.publish(`/processengine/process/${this.id}`, processEndMessage);
   }
 
   public async error(context: ExecutionContext, error): Promise<void> {
