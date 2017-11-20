@@ -493,7 +493,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`couldn't execute process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
     }
 
-    const getInstaceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
+    const getInstanceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
       event: 'getInstanceId',
     }, null);
 
@@ -506,7 +506,7 @@ export class ProcessEngineService implements IProcessEngineService {
     }, context);
 
     const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
-    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstaceIdMessage);
+    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstanceIdMessage);
     const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
     const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessMessage);
 
