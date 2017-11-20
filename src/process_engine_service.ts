@@ -47,7 +47,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService> = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
-  private _invoker: IInvoker;
+  private _invoker: IInvoker = undefined;
 
   private _internalContext: ExecutionContext;
   public config: any = undefined;

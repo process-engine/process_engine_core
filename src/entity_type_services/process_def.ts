@@ -299,9 +299,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         operator: '=',
         value: true,
       });
-    }
-
-    if (version !== undefined) {
+    } else {
       versionQuery.queries.push({
         attribute: 'version',
         operator: '=',
