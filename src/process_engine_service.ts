@@ -472,7 +472,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._executeProcessRemotely(context, requiredFeatures, id, key, initialToken, version);
   }
 
-  public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, initialToken: any): Promise<any> {
+  public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, participantId: string, initialToken: any): Promise<any> {
     const processEntityType: IEntityType<IProcessEntity> = await this.datastoreService.getEntityType<IProcessEntity>('Process');
 
     const processInstance: IProcessEntity = await processEntityType.getById(processInstanceId, context);
@@ -484,10 +484,10 @@ export class ProcessEngineService implements IProcessEngineService {
                                 || this.featureService.hasFeatures(requiredFeatures);
 
     if (canStartProcessLocally) {
-      return this._executeProcessInstanceLocally(context, processInstance, initialToken);
+      return this._executeProcessInstanceLocally(context, processInstance, participantId, initialToken);
     }
 
-    return this._executeProcessInstanceRemotely(context, requiredFeatures, processInstanceId, initialToken);
+    return this._executeProcessInstanceRemotely(context, requiredFeatures, participantId, processInstanceId, initialToken);
   }
 
   public async createProcessInstance(context: ExecutionContext, processDefId: string, key: string, version?: string): Promise<string> {
@@ -540,7 +540,7 @@ export class ProcessEngineService implements IProcessEngineService {
     });
   }
 
-  private _executeProcessInstanceLocally(context: ExecutionContext, processInstance: IProcessEntity, initialToken: any): Promise<any> {
+  private _executeProcessInstanceLocally(context: ExecutionContext, processInstance: IProcessEntity, participantId: string, initialToken: any): Promise<any> {
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
@@ -555,6 +555,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
       await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
         initialToken: initialToken,
+        participant: participantId,
       });
     });
   }
