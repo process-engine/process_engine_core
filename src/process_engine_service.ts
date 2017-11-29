@@ -219,6 +219,17 @@ export class ProcessEngineService implements IProcessEngineService {
       this.messageBusService.publish(responseChannel, responseMessage);
     }
 
+    if (message.data.event === 'createProcessInstance') {
+      const responseChannel: string = message.metadata.response;
+      await this.messageBusService.verifyMessage(message);
+      const responseData: any = await this.createProcessInstance(message.metadata.context,
+                                                          message.data.id,
+                                                          message.data.key,
+                                                          message.data.version);
+
+      const responseMessage: IMessage = this.messageBusService.createDataMessage(responseData, message.metadata.context);
+      this.messageBusService.publish(responseChannel, responseMessage);
+    }
     if (message.data.event === 'getInstanceId') {
       const responseChannel: string = message.metadata.response;
       const responseMessage: IMessage = this.messageBusService.createDataMessage({
@@ -455,13 +466,61 @@ export class ProcessEngineService implements IProcessEngineService {
                                || this.featureService.hasFeatures(requiredFeatures);
 
     if (canStartProcessLocally) {
-      return this.executeProcessLocally(context, processDefinition, initialToken);
+      return this._executeProcessLocally(context, processDefinition, initialToken);
     }
 
-    return this.executeProcessRemotely(context, requiredFeatures, id, key, initialToken, version);
+    return this._executeProcessRemotely(context, requiredFeatures, id, key, initialToken, version);
   }
 
-  private executeProcessLocally(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
+  public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, initialToken: any): Promise<any> {
+    const processEntityType: IEntityType<IProcessEntity> = await this.datastoreService.getEntityType<IProcessEntity>('Process');
+
+    const processInstance: IProcessEntity = await processEntityType.getById(processInstanceId, context);
+    const processDefinition: IProcessDefEntity = await processInstance.getProcessDef(context);
+
+    const requiredFeatures: Array<IFeature> = processDefinition.features;
+    const canStartProcessLocally: boolean = requiredFeatures === undefined
+                                || requiredFeatures.length === 0
+                                || this.featureService.hasFeatures(requiredFeatures);
+
+    if (canStartProcessLocally) {
+      return this._executeProcessInstanceLocally(context, processInstance, initialToken);
+    }
+
+    return this._executeProcessInstanceRemotely(context, requiredFeatures, processInstanceId, initialToken);
+  }
+
+  public async createProcessInstance(context: ExecutionContext, processDefId: string, key: string, version?: string): Promise<string> {
+    if (processDefId === undefined && key === undefined) {
+      throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
+    }
+
+    let processDefinition: IProcessDefEntity;
+    if (processDefId !== undefined) {
+      processDefinition = await this.processDefEntityTypeService.getProcessDefinitionById(context, processDefId, version);
+    } else {
+      processDefinition = await this.processDefEntityTypeService.getProcessDefinitionByKey(context, key, version);
+    }
+
+    if (!processDefinition) {
+      throw new Error(`couldn't execute process: no processDefinition with key ${key} or id ${processDefId} was found`);
+    }
+
+    const requiredFeatures: Array<IFeature> = processDefinition.features;
+    const canStartProcessLocally: boolean = requiredFeatures === undefined
+                               || requiredFeatures.length === 0
+                               || this.featureService.hasFeatures(requiredFeatures);
+
+    if (canStartProcessLocally) {
+      const processInstanceId: IProcessEntity = await processDefinition.createProcessInstance(context);
+
+      return processInstanceId.id;
+    }
+
+    return this._createProcessInstanceRemotely(context, requiredFeatures, processDefId, key, version);
+  }
+
+  private _executeProcessLocally(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
@@ -481,7 +540,26 @@ export class ProcessEngineService implements IProcessEngineService {
     });
   }
 
-  private async executeProcessRemotely(context: ExecutionContext,
+  private _executeProcessInstanceLocally(context: ExecutionContext, processInstance: IProcessEntity, initialToken: any): Promise<any> {
+    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
+
+      const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
+      const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
+        if (message.data.event !== 'end') {
+          return;
+        }
+
+        resolve(message.data.token);
+        processEndSubscription.cancel();
+      });
+
+      await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
+        initialToken: initialToken,
+      });
+    });
+  }
+
+  private async _executeProcessRemotely(context: ExecutionContext,
                                        requiredFeatures: Array<IFeature>,
                                        id: string,
                                        key: string,
@@ -511,6 +589,64 @@ export class ProcessEngineService implements IProcessEngineService {
     const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessMessage);
 
     return executeProcessResponse.data;
+  }
+
+  private async _executeProcessInstanceRemotely(context: ExecutionContext,
+                                       requiredFeatures: Array<IFeature>,
+                                       processInstanceId: string,
+                                       initialToken: any): Promise<any> {
+    const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
+    if (possibleRemoteTargets.length === 0) {
+      // tslint:disable-next-line:max-line-length
+      throw new Error(`couldn't execute process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
+    }
+
+    const getInstanceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
+      event: 'getInstanceId',
+    }, null);
+
+    const executeProcessInstanceMessage: IDataMessage = this.messageBusService.createDataMessage({
+      event: 'executeProcessInstance',
+      processInstanceId: processInstanceId,
+      initialToken: initialToken,
+    }, context);
+
+    const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
+    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstanceIdMessage);
+    const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
+    const executeProcessInstanceResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessInstanceMessage);
+
+    return executeProcessInstanceResponse.data;
+  }
+
+  private async _createProcessInstanceRemotely(context: ExecutionContext,
+                                      requiredFeatures: Array<IFeature>,
+                                      id: string,
+                                      key: string,
+                                      version?: string): Promise<any> {
+    const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
+    if (possibleRemoteTargets.length === 0) {
+    // tslint:disable-next-line:max-line-length
+      throw new Error(`couldn't create process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
+    }
+
+    const getInstanceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
+      event: 'getInstanceId',
+    }, null);
+
+    const executeProcessMessage: IDataMessage = this.messageBusService.createDataMessage({
+      event: 'createProcess',
+      id: id,
+      key: key,
+      version: version,
+    }, context);
+
+    const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
+    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstanceIdMessage);
+    const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
+    const createProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessMessage);
+
+    return createProcessResponse.data;
   }
 
 }
