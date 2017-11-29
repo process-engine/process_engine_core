@@ -487,7 +487,7 @@ export class ProcessEngineService implements IProcessEngineService {
       return this._executeProcessInstanceLocally(context, processInstance, participantId, initialToken);
     }
 
-    return this._executeProcessInstanceRemotely(context, requiredFeatures, participantId, processInstanceId, initialToken);
+    return this._executeProcessInstanceRemotely(context, requiredFeatures, processInstanceId, participantId, initialToken);
   }
 
   public async createProcessInstance(context: ExecutionContext, processDefId: string, key: string, version?: string): Promise<string> {
@@ -595,6 +595,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private async _executeProcessInstanceRemotely(context: ExecutionContext,
                                        requiredFeatures: Array<IFeature>,
                                        processInstanceId: string,
+                                       participantId: string,
                                        initialToken: any): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
@@ -610,6 +611,7 @@ export class ProcessEngineService implements IProcessEngineService {
       event: 'executeProcessInstance',
       processInstanceId: processInstanceId,
       initialToken: initialToken,
+      participantId: participantId,
     }, context);
 
     const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
