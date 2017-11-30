@@ -512,9 +512,11 @@ export class ProcessEngineService implements IProcessEngineService {
                                || this.featureService.hasFeatures(requiredFeatures);
 
     if (canStartProcessLocally) {
-      const processInstanceId: IProcessEntity = await processDefinition.createProcessInstance(context);
+      const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
 
-      return processInstanceId.id;
+      await processInstance.save(context);
+
+      return processInstance.id;
     }
 
     return this._createProcessInstanceRemotely(context, requiredFeatures, processDefId, key, version);
