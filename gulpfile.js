@@ -5,6 +5,7 @@ const gulptraumTypescriptPlugin = require('gulptraum-typescript');
 const tsconfig = require('tsconfig');
 
 const buildSystemConfig = {
+  suppressErrorsForTasks: ['lint'],
 };
 
 const buildSystem = new gulptraum.BuildSystem(buildSystemConfig);
