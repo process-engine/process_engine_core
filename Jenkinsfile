@@ -51,5 +51,16 @@ pipeline {
         sh 'npm run test'
       }
     }
+    stage('publish') {
+      when {
+        branch 'master'
+      }
+      steps {
+        nodejs(configId: 'process-engine-ci-token', nodeJSInstallationName: 'node-lts') {
+          sh 'node --version'
+          sh 'npm publish --ignore-scripts'
+        }
+      }
+    }
   }
 }
