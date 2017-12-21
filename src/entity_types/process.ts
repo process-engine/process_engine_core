@@ -4,9 +4,11 @@ import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus
 import {schemaAttribute} from '@essential-projects/metadata';
 import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
   IProcessEntity, IStartEventEntity } from '@process-engine/process_engine_contracts';
+import {Logger} from 'loggerhythm';
 
 import * as debug from 'debug';
 const debugInfo = debug('processengine:info');
+const logger: Logger = Logger.createLogger('process_engine').createChildLogger('process_entity');
 
 export class ProcessEntity extends Entity implements IProcessEntity {
 
@@ -167,7 +169,6 @@ export class ProcessEntity extends Entity implements IProcessEntity {
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
-
     const source = params ? params.source : undefined;
     const isSubProcess = params ? params.isSubProcess : false;
     const initialToken = params ? params.initialToken : undefined;
@@ -198,6 +199,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     const startEventDef: INodeDefEntity = await this._getStartEvent();
 
     if (!startEventDef) {
+      logger.warn(`can't start process-instance ${this.id}: No start event found`);
       return;
     }
 

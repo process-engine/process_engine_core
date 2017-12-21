@@ -17,7 +17,7 @@ import * as moment from 'moment';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
-const logger: Logger = Logger.createLogger('processengine');
+const logger: Logger = Logger.createLogger('process_engine').createChildLogger('process_definition_entity');
 
 interface ICache<T> {
   [key: string]: T;
@@ -1102,6 +1102,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     }
 
     await draftEntity.save(context);
+    await draftEntity.updateDefinitions(context);
 
     if (latestEntity) {
       latestEntity.latest = false;
