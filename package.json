@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc3",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -14,18 +14,18 @@
     "Simon Reymann <simon.reymann@quantusflow.com>"
   ],
   "dependencies": {
-    "@essential-projects/core_contracts": "1.0.0-rc1",
-    "@essential-projects/data_model": "1.0.0-rc1",
-    "@essential-projects/data_model_contracts": "1.0.0-rc1",
-    "@essential-projects/event_aggregator_contracts": "1.0.0-rc1",
-    "@essential-projects/feature_contracts": "1.0.0-rc1",
-    "@essential-projects/invocation_contracts": "1.0.0-rc1",
-    "@essential-projects/messagebus_contracts": "1.0.0-rc1",
-    "@essential-projects/metadata": "1.0.0-rc1",
-    "@essential-projects/metadata_contracts": "1.0.0-rc1",
-    "@essential-projects/routing_contracts": "1.0.0-rc1",
-    "@essential-projects/timing_contracts": "1.0.0-rc1",
-    "@process-engine/process_engine_contracts": "1.0.0-rc1",
+    "@essential-projects/core_contracts": "1.0.0-rc3",
+    "@essential-projects/data_model": "1.0.0-rc3",
+    "@essential-projects/data_model_contracts": "1.0.0-rc3",
+    "@essential-projects/event_aggregator_contracts": "1.0.0-rc3",
+    "@essential-projects/feature_contracts": "1.0.0-rc3",
+    "@essential-projects/invocation_contracts": "1.0.0-rc3",
+    "@essential-projects/messagebus_contracts": "1.0.0-rc3",
+    "@essential-projects/metadata": "1.0.0-rc3",
+    "@essential-projects/metadata_contracts": "1.0.0-rc3",
+    "@process-engine/process_engine_contracts": "1.0.0-rc3",
+    "@essential-projects/routing_contracts": "1.0.0-rc3",
+    "@essential-projects/timing_contracts": "1.0.0-rc3",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",
@@ -34,12 +34,12 @@
     "moment": "2.18.1"
   },
   "devDependencies": {
-    "@essential-projects/tslint-config": "1.0.0-rc1",
+    "@essential-projects/tslint-config": "1.0.0-rc3",
     "@types/bluebird": "^3.5.8",
     "@types/node": "^8.0.27",
     "gulp": "^3.9.1",
-    "gulptraum": "^2.2.1",
-    "gulptraum-typescript": "^1.0.0",
+    "gulptraum": "^2.2.4",
+    "gulptraum-typescript": "^1.3.9",
     "tsconfig": "^7.0.0",
     "tslint": "^5.7.0",
     "typescript": "^2.5.2"
@@ -48,6 +48,8 @@
     "build": "gulp build",
     "prepare": "npm run build && npm run build-schemas && npm run build-doc",
     "build-doc": "gulp doc",
-    "build-schemas": "gulp typescript-schema"
+    "build-schemas": "gulp typescript-schema",
+    "lint": "gulp lint",
+    "test": "gulp test"
   }
 }
