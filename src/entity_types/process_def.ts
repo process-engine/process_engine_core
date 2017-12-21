@@ -1001,34 +1001,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     };
     const queryParams: IPrivateQueryOptions = { query: queryObjectDraft };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    let draftEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
+    const draftEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
 
-    if (draftEntity) {
-      return draftEntity;
+    if (!draftEntity) {
+      throw new Error(`process draft with key ${this.key} not found`);
     }
-
-    const processDefData: any = {
-      key: this.key,
-      defId: this.defId,
-      counter: 0,
-      draft: true,
-      name: this.name,
-      xml: this.xml,
-      internalName: this.internalName,
-      path: this.path,
-      category: this.category,
-      module: this.module,
-      readonly: this.readonly,
-      version: this.version,
-      latest: false,
-      extensions: this.extensions,
-      persist: this.persist,
-    };
-
-    draftEntity = await processDef.createEntity(context, processDefData);
-    await draftEntity.save(context);
-
-    await this.updateDefinitions(context);
 
     return draftEntity;
   }
@@ -1052,7 +1029,13 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
     const queryParams: IPrivateQueryOptions = { query: queryObjectLatest };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
-    return processDef.findOne(context, queryParams);
+    const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
+
+    if (!latestEntity) {
+      throw new Error(`latest process model with key ${this.key} not found`);
+    }
+
+    return latestEntity;
   }
 
   public async publishDraft(context: ExecutionContext): Promise<IProcessDefEntity> {
