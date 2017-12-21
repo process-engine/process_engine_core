@@ -9,6 +9,7 @@ import { IRoutingService } from '@essential-projects/routing_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
 import { IFlowDefEntity, ILaneEntity, INodeDefEntity, IParamStart, IParamUpdateDefs,
   IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineService, IProcessEntity, IProcessRepository, TimerDefinitionType } from '@process-engine/process_engine_contracts';
+import {Logger} from 'loggerhythm';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as debug from 'debug';
@@ -16,6 +17,7 @@ import * as moment from 'moment';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
+const logger: Logger = Logger.createLogger('processengine');
 
 interface ICache<T> {
   [key: string]: T;
@@ -1073,14 +1075,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       persist: this.persist,
     };
 
-    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const draftEntity: IProcessDefEntity = await processDef.createEntity(context, processDefData);
-    console.log(draftEntity.getProperty(draftEntity, 'latest'), draftEntity.getProperty(draftEntity, 'id'));
-    await draftEntity.save(context);
-
-    return draftEntity;
-
-    /*const queryObjectLatest: ICombinedQueryClause = {
+    const queryObjectLatest: ICombinedQueryClause = {
       operator: 'and',
       queries: [
         {
@@ -1093,16 +1088,20 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           operator: '=',
           value: true,
         },
-        {
-          attribute: 'id',
-          operator: '!=',
-          value: this.id,
-        },
       ],
     };
-    const queryParams: IPrivateQueryOptions = { query: queryObjectLatest };
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const queryParams: IPrivateQueryOptions = { query: queryObjectLatest };
     const latestEntity: IProcessDefEntity = await processDef.findOne(context, queryParams);
+    const draftEntity: IProcessDefEntity = await processDef.createEntity(context, processDefData);
+
+    if (latestEntity && latestEntity.equals(draftEntity)) {
+      logger.warn('Cant publish draft, it is identical to current latest');
+
+      return latestEntity;
+    }
+
+    await draftEntity.save(context);
 
     if (latestEntity) {
       latestEntity.latest = false;
@@ -1113,6 +1112,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       await this.processRepository.saveProcess(this.internalName, this.xml);
     }
 
-    return this;*/
+    return draftEntity;
   }
+
+  public equals(processDef: IProcessDefEntity): boolean {
+    return this.xml === processDef.xml;
+  }
+
 }

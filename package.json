@@ -23,13 +23,14 @@
     "@essential-projects/messagebus_contracts": "1.0.0-rc1",
     "@essential-projects/metadata": "1.0.0-rc1",
     "@essential-projects/metadata_contracts": "1.0.0-rc1",
-    "@process-engine/process_engine_contracts": "1.0.0-rc1",
     "@essential-projects/routing_contracts": "1.0.0-rc1",
     "@essential-projects/timing_contracts": "1.0.0-rc1",
+    "@process-engine/process_engine_contracts": "1.0.0-rc1",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.1",
+    "loggerhythm": "^3.0.3",
     "moment": "2.18.1"
   },
   "devDependencies": {
