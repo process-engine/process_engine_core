@@ -83,7 +83,7 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
           uiConfig = this.parseExtensionProperty(prop.value, token, context);
         }
         if (prop.name === 'uiData') {
-          parsedToken = this.parseExtensionProperty(prop.value, token, context);
+          const parsedToken = this.parseExtensionProperty(prop.value, token, context);
           // Force current only to be in uiData
           uiData = {
             current: parsedToken.current,
