@@ -64,10 +64,12 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
     const pojo = await this.toPojo(internalContext, {maxDepth: 1});
     let uiName;
     let uiConfig;
+    let uiData;
 
     const processToken = pojo.processToken;
-    const token = processToken.data || {};
-    let uiData = token;
+    const token = {
+      current: processToken.data.current,
+    };
 
     const nodeDef = this.nodeDef;
     const extensions = nodeDef.extensions || null;
@@ -81,10 +83,15 @@ export class UserTaskEntity extends NodeInstanceEntity implements IUserTaskEntit
           uiConfig = this.parseExtensionProperty(prop.value, token, context);
         }
         if (prop.name === 'uiData') {
-          uiData = this.parseExtensionProperty(prop.value, token, context);
+          const parsedToken = this.parseExtensionProperty(prop.value, token, context);
+          // Force current only to be in uiData
+          uiData = {
+            current: parsedToken.current,
+          };
         }
       });
     }
+    uiData = uiData || { current: token.current };
 
     const userTaskMessageData: IUserTaskMessageData = {
       userTaskEntity: pojo,
