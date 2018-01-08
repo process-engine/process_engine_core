@@ -30,6 +30,7 @@
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.1",
+    "loggerhythm": "^3.0.3",
     "moment": "2.18.1"
   },
   "devDependencies": {

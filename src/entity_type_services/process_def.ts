@@ -97,7 +97,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
             value: process.id,
           },
           {
-            attribute: 'latest',
+            attribute: 'draft',
             operator: '=',
             value: true,
           },
@@ -110,12 +110,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
       let canSave = false;
       if (!processDefEntity) {
-
         const processDefData = {
           key: process.id,
           defId: bpmnDiagram.definitions.id,
           counter: 0,
-          latest: true,
+          latest: false,
+          draft: true,
         };
 
         processDefEntity = await processDef.createEntity(context, processDefData);
@@ -141,7 +141,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       processDefEntity.counter = processDefEntity.counter + 1;
 
       await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
-      await processDefEntity.save(context, {isNew: false});
+      await processDefEntity.save(context, {isNew: false });
       await processDefEntity.publishDraft(context);
     }
   }
