@@ -23,7 +23,7 @@
     "@essential-projects/messagebus_contracts": "1.0.0-rc3",
     "@essential-projects/metadata": "1.0.0-rc3",
     "@essential-projects/metadata_contracts": "1.0.0-rc3",
-    "@process-engine/process_engine_contracts": "1.0.0-rc3",
+    "@process-engine/process_engine_contracts": "1.0.0-rc4",
     "@essential-projects/routing_contracts": "1.0.0-rc3",
     "@essential-projects/timing_contracts": "1.0.0-rc3",
     "addict-ioc": "^2.2.8",
