@@ -8,6 +8,8 @@ import { BpmnType, IBoundaryEventEntity, INodeDefEntity, INodeInstanceEntity, IN
   IProcessEngineService, IProcessEntity, IProcessTokenEntity } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
+import * as R from 'ramda';
+
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
 
@@ -396,8 +398,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const boundaryDef = eventEntity.nodeDef;
-    const processToken = await eventEntity.processToken;
-    const tokenData: any = processToken.data || {};
+    const eventProcessToken = eventEntity.processToken;
+    const eventTokenData: any = eventProcessToken.data || {};
+
+    const taskProcessToken = this.processToken;
+    const taskTokenData: any = taskProcessToken.data || {};
 
     if (boundaryDef) {
       switch (boundaryDef.eventType) {
@@ -412,8 +417,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
             data = { message: data.message, errorCode: errCode };
 
-            tokenData.current = data;
-            processToken.data = tokenData;
+            taskTokenData.current = data;
+            taskProcessToken.data = taskTokenData;
 
             await this._publishToApi(context, 'cancel', data);
             eventEntity.changeState(context, 'end', this);
@@ -436,10 +441,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           if (boundaryDef.cancelActivity) {
 
             // save new data in token
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            processToken.data = tokenData;
+            taskTokenData.current = data;
+            taskProcessToken.data = taskTokenData;
 
             eventEntity.changeState(context, 'end', this);
             this.cancel(context);
@@ -448,10 +451,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
             const newToken = <IProcessTokenEntity> await processTokenEntityType.createEntity(internalContext);
             newToken.process = this.process;
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            newToken.data = processToken.data;
+            const newTokenData = R.clone(taskProcessToken.data || {});
+            newTokenData.current = data;
+            newToken.data = newTokenData;
             this.processToken = newToken;
 
             await this._publishToApi(context, 'signal', data);
@@ -463,10 +465,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           if (boundaryDef.cancelActivity) {
 
             // save new data in token
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            processToken.data = tokenData;
+            taskTokenData.current = data;
+            taskProcessToken.data = taskTokenData;
 
             eventEntity.changeState(context, 'end', this);
             this.cancel(context);
@@ -475,15 +475,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
             const newToken = <IProcessTokenEntity> await processTokenEntityType.createEntity(internalContext);
             newToken.process = this.process;
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            newToken.data = processToken.data;
-            this.processToken = newToken;
-
-            if (this.nodeDef.processDef.persist) {
-              await newToken.save(internalContext, { reloadAfterSave: false });
-            }
+            const newTokenData = R.clone(taskProcessToken.data || {});
+            newTokenData.current = data;
+            newToken.data = newTokenData;
             this.processToken = newToken;
 
             await this._publishToApi(context, 'message', data);
@@ -501,17 +495,17 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           if (boundaryDef.condition) {
             const functionString = 'return ' + boundaryDef.condition;
             const evaluateFunction = new Function('token', functionString);
-            tokenData.current = data;
+            taskTokenData.current = data;
             let result;
             try {
-              result = evaluateFunction.call(tokenData, tokenData);
+              result = evaluateFunction.call(eventTokenData, eventTokenData);
             } catch (err) {
               debugErr(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
             }
             if (result) {
               if (boundaryDef.cancelActivity) {
 
-                processToken.data = tokenData;
+                taskProcessToken.data = taskTokenData;
 
                 eventEntity.changeState(context, 'end', this);
                 this.cancel(internalContext);
@@ -520,8 +514,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                 const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
                 const newToken = <IProcessTokenEntity> await processTokenEntityType.createEntity(internalContext);
                 newToken.process = this.process;
-
-                newToken.data = tokenData;
+                const newTokenData = R.clone(taskProcessToken.data || {});
+                newTokenData.current = data;
+                newToken.data = newTokenData;
                 this.processToken = newToken;
 
                 await this._publishToApi(context, 'conditional', data);

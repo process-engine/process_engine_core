@@ -103,6 +103,11 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const applicationId = (event && event.metadata && event.metadata.applicationId) ? event.metadata.applicationId : null;
     const participant = (event && event.metadata && event.metadata.options && event.metadata.options.participantId) ? event.metadata.options.participantId : null;
 
+    // reload binding.entity from datastore, if persisted
+    if (binding.entity.nodeDef.persist) {
+      await binding.entity.refresh(context);
+    }
+
     if (action === 'changeState') {
       const newState = (event && event.data && event.data.data) ? event.data.data : null;
 
@@ -155,6 +160,11 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     await binding.messagebusService.verifyMessage(msg);
 
     const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+
+    // reload binding.entity from datastore, if persisted
+    if (binding.entity.nodeDef.persist) {
+      await binding.entity.refresh(context);
+    }
 
     const sourceRef = (msg && msg.source) ? msg.source : null;
     let source = null;
