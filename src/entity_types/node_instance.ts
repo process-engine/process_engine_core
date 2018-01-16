@@ -339,6 +339,19 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     await this.messageBusService.publish('/processengine_api/event/' + this.id, msg);
   }
 
+  private async _publishToProcess(context, eventType, data): Promise<void> {
+
+    const payload = {
+      action: 'event',
+      event: eventType,
+      data: data,
+    };
+    const process = await this.getProcess(context);
+    const processInstanceChannel = `/processengine/process/${process.id}`;
+    const msg = this.messageBusService.createEntityMessage(payload, this, context);
+    await this.messageBusService.publish(processInstanceChannel, msg);
+  }
+
   public async event(context: ExecutionContext, eventType: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
     debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
 
@@ -369,9 +382,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       // error or cancel ends the node anyway
       if (eventType === 'error' || eventType === 'cancel') {
         if (eventType === 'error') {
+          // we lose the stack trace, but Faye seems to be unable to serialize the full error
           data = {message: data.message};
         }
         await this._publishToApi(context, eventType, data);
+        await this._publishToProcess(context, eventType, data);
         await this.end(context, true);
       }
     }

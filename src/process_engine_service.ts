@@ -9,7 +9,7 @@ import {
   TokenType,
 } from '@essential-projects/core_contracts';
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
-import { IDataEvent, IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IDataEvent, IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
 import {IInvoker, InvocationType} from '@essential-projects/invocation_contracts';
 import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
@@ -527,7 +527,26 @@ export class ProcessEngineService implements IProcessEngineService {
 
       const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
       const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
+
+      // const processErrorSubscription: ISubscription = this.eventAggregator.subscribe(processInstanceChannel, (message: any) => {
+
+      //   if (message.eventType === 'error') {
+      //       processEndSubscription.cancel();
+      //       processErrorSubscription.dispose();
+      //       reject(message.data);
+      //   }
+
+      // });
+
       const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
+
+        if (message.data.event === 'error') {
+          reject(message.data.data);
+          processEndSubscription.cancel();
+
+          return;
+        }
+
         if (message.data.event !== 'end') {
           return;
         }
@@ -563,11 +582,11 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _executeProcessRemotely(context: ExecutionContext,
-                                       requiredFeatures: Array<IFeature>,
-                                       id: string,
-                                       key: string,
-                                       initialToken: any,
-                                       version?: string): Promise<any> {
+                                        requiredFeatures: Array<IFeature>,
+                                        id: string,
+                                        key: string,
+                                        initialToken: any,
+                                        version?: string): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
       // tslint:disable-next-line:max-line-length
@@ -595,10 +614,10 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _executeProcessInstanceRemotely(context: ExecutionContext,
-                                       requiredFeatures: Array<IFeature>,
-                                       processInstanceId: string,
-                                       participantId: string,
-                                       initialToken: any): Promise<any> {
+                                                requiredFeatures: Array<IFeature>,
+                                                processInstanceId: string,
+                                                participantId: string,
+                                                initialToken: any): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
       // tslint:disable-next-line:max-line-length
@@ -625,10 +644,10 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _createProcessInstanceRemotely(context: ExecutionContext,
-                                      requiredFeatures: Array<IFeature>,
-                                      id: string,
-                                      key: string,
-                                      version?: string): Promise<any> {
+                                               requiredFeatures: Array<IFeature>,
+                                               id: string,
+                                               key: string,
+                                               version?: string): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
     // tslint:disable-next-line:max-line-length
