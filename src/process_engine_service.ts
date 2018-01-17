@@ -528,16 +528,6 @@ export class ProcessEngineService implements IProcessEngineService {
       const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
       const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
 
-      // const processErrorSubscription: ISubscription = this.eventAggregator.subscribe(processInstanceChannel, (message: any) => {
-
-      //   if (message.eventType === 'error') {
-      //       processEndSubscription.cancel();
-      //       processErrorSubscription.dispose();
-      //       reject(message.data);
-      //   }
-
-      // });
-
       const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
 
         if (message.data.event === 'error') {
