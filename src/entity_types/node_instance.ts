@@ -581,7 +581,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         tokenData.history[this.key] = arr;
       } else {
         if (!Array.isArray(tokenData.history[this.key])) {
-          tokenData.history[this.key] =[];
+          tokenData.history[this.key] = [];
         }
         tokenData.history[this.key].push(tokenData.current);
       }
