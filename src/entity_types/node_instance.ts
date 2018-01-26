@@ -339,7 +339,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     await this.messageBusService.publish('/processengine_api/event/' + this.id, msg);
   }
 
-  private async _publishToProcess(context, eventType, data): Promise<void> {
+  private async _informProcessSubscribers(context, eventType, data): Promise<void> {
 
     const payload = {
       action: 'event',
@@ -395,7 +395,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
          }
         }
         await this._publishToApi(context, eventType, data);
-        await this._publishToProcess(context, eventType, data);
+        await this._informProcessSubscribers(context, eventType, data);
         await this.end(context, true);
       }
     }
