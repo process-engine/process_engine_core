@@ -114,6 +114,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           key: process.id,
           defId: bpmnDiagram.definitions.id,
           counter: 0,
+          draft: true,
           latest: true,
         };
 
@@ -140,8 +141,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       processDefEntity.counter = processDefEntity.counter + 1;
 
       await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
-      await processDefEntity.save(context);
-      await processDefEntity.updateDefinitions(context);
+      await processDefEntity.save(context, {isNew: false});
     }
   }
 
