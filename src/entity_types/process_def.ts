@@ -325,18 +325,15 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
   }
 
   public async updateBpmn(context: ExecutionContext, xml: string): Promise<any> {
-
-    if (!this.draft) {
-      throw new Error('Process definition is not a draft!');
+    if (!xml) {
+      return null;
     }
 
-    if (xml) {
-      this.xml = xml;
-      this.counter = this.counter + 1;
-      await this.updateDefinitions(context);
+    this.xml = xml;
+    this.counter = this.counter + 1;
+    await this.updateDefinitions(context);
 
-      return { result: true };
-    }
+    return { result: true };
   }
 
   private _parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
