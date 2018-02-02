@@ -52,8 +52,15 @@ pipeline {
       }
     }
     stage('publish') {
+      // Check if the build is trigged by a new git commit;
+      // if this is a new commit, publish to NPM.
       when {
-        branch 'master'
+        allOf {
+          branch 'master'
+          expression {
+            env.GIT_PREVIOUS_COMMIT != env.GIT_COMMIT
+          }
+        }
       }
       steps {
         nodejs(configId: 'process-engine-ci-token', nodeJSInstallationName: 'node-lts') {
