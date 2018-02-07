@@ -384,13 +384,15 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         if (eventType === 'error') {
           // we lose the stack trace, but Faye seems to be unable to serialize the full error
           if (typeof data.serialize === 'function') {
-            data = data.serialize();
+            data = {
+              serializedError: data.serialize(),
+            };
           } else {
             data = {
-              message: data.message,
-              code: data.code,
-              subCode: data.subCode,
-              name: data.constructor.name,
+              error: {
+                message: data.message,
+                name: data.constructor.name,
+              },
             };
          }
         }
