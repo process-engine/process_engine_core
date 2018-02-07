@@ -143,7 +143,8 @@ export class ProcessEngineService implements IProcessEngineService {
       try {
         return ProcessEngineErrors.BaseError.deserialize(serializedError);
       } catch (error) {
-        return undefined;
+        debugErr('an error occured deserializing this error: ', serializedError);
+        throw new Error('an error occured during error deserialization');
       }
 
     };
