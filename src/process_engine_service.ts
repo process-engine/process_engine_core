@@ -9,11 +9,13 @@ import {
   TokenType,
 } from '@essential-projects/core_contracts';
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
-import { IDataEvent, IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import * as ProcessEngineErrors from '@essential-projects/errors_ts';
+import { IDataEvent, IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
 import {IInvoker, InvocationType} from '@essential-projects/invocation_contracts';
 import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {
+  IErrorDeserializer,
   IImportFromFileOptions,
   INodeDefEntity,
   INodeInstanceEntity,
@@ -48,6 +50,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
+  private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
   public config: any = undefined;
@@ -118,6 +121,10 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
+  private get errorDeserializer(): IErrorDeserializer {
+    return this._errorDeserializer;
+  }
+
   private async _getInternalContext(): Promise<ExecutionContext> {
     if (!this._internalContext) {
       this._internalContext = await this.iamService.createInternalContext('processengine_system');
@@ -126,7 +133,26 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._internalContext;
   }
 
+  private _initializeDefaultErrorDeserializer(): void {
+    const defaultDeserializer: IErrorDeserializer = (serializedError: string): Error => {
+
+      if (typeof serializedError !== 'string') {
+        return serializedError;
+      }
+
+      try {
+        return ProcessEngineErrors.BaseError.deserialize(serializedError);
+      } catch (error) {
+        debugErr('an error occured deserializing this error: ', serializedError);
+        throw new Error('an error occured during error deserialization');
+      }
+
+    };
+    this.setErrorDeserializer(defaultDeserializer);
+  }
+
   public async initialize(): Promise<void> {
+    this._initializeDefaultErrorDeserializer();
     await this._initializeMessageBus();
     await this._initializeProcesses();
     await this._startTimers();
@@ -522,12 +548,38 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._createProcessInstanceRemotely(context, requiredFeatures, processDefId, key, version);
   }
 
+  public setErrorDeserializer(deserializer: IErrorDeserializer): void {
+    this._errorDeserializer = deserializer;
+  }
+
   private _executeProcessLocally(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
       const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
+
       const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
+
+        if (message.data.event === 'error') {
+
+          if (!this.errorDeserializer) {
+            throw new Error('error deserializer not found.');
+          }
+
+          let finalError: any;
+
+          if (message.data.data.serializedError) {
+            finalError = this.errorDeserializer(message.data.data.serializedError);
+          } else {
+            finalError = message.data.data.error;
+          }
+
+          reject(finalError);
+          processEndSubscription.cancel();
+
+          return;
+        }
+
         if (message.data.event !== 'end') {
           return;
         }
@@ -547,6 +599,20 @@ export class ProcessEngineService implements IProcessEngineService {
 
       const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
       const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
+
+        if (message.data.event === 'error') {
+
+          if (!this.errorDeserializer) {
+            throw new Error('error deserializer not found.');
+          }
+
+          const deserializedError: Error = this.errorDeserializer(message.data.data);
+          reject(deserializedError);
+          processEndSubscription.cancel();
+
+          return;
+        }
+
         if (message.data.event !== 'end') {
           return;
         }
@@ -563,11 +629,11 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _executeProcessRemotely(context: ExecutionContext,
-                                       requiredFeatures: Array<IFeature>,
-                                       id: string,
-                                       key: string,
-                                       initialToken: any,
-                                       version?: string): Promise<any> {
+                                        requiredFeatures: Array<IFeature>,
+                                        id: string,
+                                        key: string,
+                                        initialToken: any,
+                                        version?: string): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
       // tslint:disable-next-line:max-line-length
@@ -595,10 +661,10 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _executeProcessInstanceRemotely(context: ExecutionContext,
-                                       requiredFeatures: Array<IFeature>,
-                                       processInstanceId: string,
-                                       participantId: string,
-                                       initialToken: any): Promise<any> {
+                                                requiredFeatures: Array<IFeature>,
+                                                processInstanceId: string,
+                                                participantId: string,
+                                                initialToken: any): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
       // tslint:disable-next-line:max-line-length
@@ -625,10 +691,10 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _createProcessInstanceRemotely(context: ExecutionContext,
-                                      requiredFeatures: Array<IFeature>,
-                                      id: string,
-                                      key: string,
-                                      version?: string): Promise<any> {
+                                               requiredFeatures: Array<IFeature>,
+                                               id: string,
+                                               key: string,
+                                               version?: string): Promise<any> {
     const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
     if (possibleRemoteTargets.length === 0) {
     // tslint:disable-next-line:max-line-length

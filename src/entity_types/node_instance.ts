@@ -339,6 +339,19 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     await this.messageBusService.publish('/processengine_api/event/' + this.id, msg);
   }
 
+  private async _informProcessSubscribers(context, eventType, data): Promise<void> {
+
+    const payload = {
+      action: 'event',
+      event: eventType,
+      data: data,
+    };
+    const process = await this.getProcess(context);
+    const processInstanceChannel = `/processengine/process/${process.id}`;
+    const msg = this.messageBusService.createEntityMessage(payload, this, context);
+    await this.messageBusService.publish(processInstanceChannel, msg);
+  }
+
   public async event(context: ExecutionContext, eventType: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
     debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
 
@@ -369,7 +382,22 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       // error or cancel ends the node anyway
       if (eventType === 'error' || eventType === 'cancel') {
         if (eventType === 'error') {
-          data = {message: data.message};
+          // we lose the stack trace, but Faye seems to be unable to serialize the full error
+          if (typeof data.serialize === 'function') {
+            data = {
+              serializedError: data.serialize(),
+            };
+          } else {
+            data = {
+              error: {
+                message: data.message,
+                name: data.constructor.name,
+              },
+            };
+          }
+          // if it's an error we have to notify the ProcessEngineService, so that the caller who started the process
+          // can get the promise he's waiting on rejected with the error we're providing here
+          await this._informProcessSubscribers(context, eventType, data);
         }
         await this._publishToApi(context, eventType, data);
         await this.end(context, true);
