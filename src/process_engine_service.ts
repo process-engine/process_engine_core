@@ -566,8 +566,15 @@ export class ProcessEngineService implements IProcessEngineService {
             throw new Error('error deserializer not found.');
           }
 
-          const deserializedError: Error = this.errorDeserializer(message.data.data);
-          reject(deserializedError);
+          let finalError: any;
+
+          if (message.data.data.serializedError) {
+            finalError = this.errorDeserializer(message.data.data);
+          } else {
+            finalError = message.data.data.error;
+          }
+
+          reject(finalError);
           processEndSubscription.cancel();
 
           return;
