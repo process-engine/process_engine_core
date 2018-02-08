@@ -395,6 +395,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
               },
             };
           }
+          // if it's an error we have to notify the ProcessEngineService, so that the caller who started the process
+          // can get the promise he's waiting on rejected with the error we're providing here
           await this._informProcessSubscribers(context, eventType, data);
         }
         await this._publishToApi(context, eventType, data);
