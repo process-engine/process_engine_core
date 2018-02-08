@@ -394,10 +394,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                 name: data.constructor.name,
               },
             };
-         }
+          }
+          await this._informProcessSubscribers(context, eventType, data);
         }
         await this._publishToApi(context, eventType, data);
-        await this._informProcessSubscribers(context, eventType, data);
         await this.end(context, true);
       }
     }
