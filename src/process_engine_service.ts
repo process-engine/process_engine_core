@@ -569,7 +569,7 @@ export class ProcessEngineService implements IProcessEngineService {
           let finalError: any;
 
           if (message.data.data.serializedError) {
-            finalError = this.errorDeserializer(message.data.data);
+            finalError = this.errorDeserializer(message.data.data.serializedError);
           } else {
             finalError = message.data.data.error;
           }
