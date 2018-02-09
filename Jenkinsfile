@@ -22,17 +22,23 @@ pipeline {
   tools {
     nodejs "node-lts"
   }
+  environment {
+    NPM_RC_FILE = 'process-engine-ci-token'
+    NODE_JS_VERSION = 'node-lts'
+  }
 
   stages {
     stage('prepare') {
       steps {
         script {
           rawPackageVersion = sh returnStdout: true, script: 'node --print --eval "require(\'./package.json\').version"'
-          PACKAGE_VERSION = rawPackageVersion.trim()
-          echo "Package version is '" + PACKAGE_VERSION + "'"
+          packageVersion = rawPackageVersion.trim()
+          echo "Package version is '" + packageVersion + "'"
         }
-        sh 'node --version'
-        sh 'npm install --ignore-scripts'
+        nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
+          sh 'node --version'
+          sh 'npm install --ignore-scripts'
+        }
       }
     }
     stage('lint') {
@@ -57,27 +63,43 @@ pipeline {
       }
     }
     stage('publish') {
-      // Check if the build is trigged by a new git commit;
-      // if this is a new commit, publish to NPM.
-      when {
-        allOf {
-          branch 'master'
-          expression {
-            env.GIT_PREVIOUS_COMMIT != env.GIT_COMMIT
-          }
-        }
-      }
       steps {
-        // let the build fail if the version does not match normal semver
         script {
-          def normalVersion = PACKAGE_VERSION =~ /\d+\.\d+\.\d+/
-          if (!normalVersion.matches()) {
-            error('Only non RC Versions are allowed in master')
+          def branch = env.BRANCH_NAME;
+          def branch_is_master = branch == 'master';
+          def new_commit = env.GIT_PREVIOUS_COMMIT != env.GIT_COMMIT;
+
+          if (branch_is_master) {
+            if (new_commit) {
+              script {
+                // let the build fail if the version does not match normal semver
+                def semver_matcher = packageVersion =~ /\d+\.\d+\.\d+/;
+                def is_version_not_semver = semver_matcher.matches() == false;
+                if (is_version_not_semver) {
+                  error('Only non RC Versions are allowed in master')
+                }
+              }
+
+              nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
+                sh 'node --version'
+                sh 'npm publish --ignore-scripts'
+              }
+            }
+
+          } else {
+            // when not on master, publish a prerelease based on the package version, the
+            // current git commit and the build number.
+            // the published version gets tagged as the branch name.
+            def first_seven_digits_of_git_hash = env.GIT_COMMIT.substring(0, 8);
+            def publish_version = "${packageVersion}-${first_seven_digits_of_git_hash}-b${env.BUILD_NUMBER}";
+            def publish_tag = branch.replace("/", "~");
+
+            nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
+              sh 'node --version'
+              sh "npm version ${publish_version} --no-git-tag-version --force"
+              sh "npm publish --tag ${publish_tag} --ignore-scripts"
+            }
           }
-        }
-        nodejs(configId: 'process-engine-ci-token', nodeJSInstallationName: 'node-lts') {
-          sh 'node --version'
-          sh 'npm publish --ignore-scripts'
         }
       }
     }

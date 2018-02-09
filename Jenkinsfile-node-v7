@@ -22,12 +22,18 @@ pipeline {
   tools {
     nodejs "node-v7"
   }
+  environment {
+    NPM_RC_FILE = 'process-engine-ci-token'
+    NODE_JS_VERSION = 'node-v7'
+  }
 
   stages {
     stage('prepare') {
       steps {
-        sh 'node --version'
-        sh 'npm install --ignore-scripts'
+        nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
+          sh 'node --version'
+          sh 'npm install --ignore-scripts'
+        }
       }
     }
     stage('lint') {
