@@ -1,22 +1,18 @@
 #!/usr/bin/env groovy
 
-/*
- * Template Jenkinsfile for process-engine projects.
- *
- * For this template to work you need some custom
- * scripts in your package.json. Below is a example
- * for those scripts:
- *  (...)
- *  "scripts": {
- *    "lint": "gulp lint",
- *    "build": "gulp build",
- *    "build-schemas": "gulp typescript-schema"
- *    "build-doc": "gulp doc",
- *    "test": "gulp test",
- *  },
- *  (...)
- *
- */
+def cleanup_workspace() {
+  cleanWs()
+  dir("${env.WORKSPACE}@tmp") {
+    deleteDir()
+  }
+  dir("${env.WORKSPACE}@script") {
+    deleteDir()
+  }
+  dir("${env.WORKSPACE}@script@tmp") {
+    deleteDir()
+  }
+}
+
 pipeline {
   agent any
   tools {
@@ -31,35 +27,35 @@ pipeline {
     stage('prepare') {
       steps {
         script {
-          rawPackageVersion = sh returnStdout: true, script: 'node --print --eval "require(\'./package.json\').version"'
-          packageVersion = rawPackageVersion.trim()
-          echo "Package version is '" + packageVersion + "'"
+          raw_package_version = sh(script: 'node --print --eval "require(\'./package.json\').version"', returnStdout: true)
+          package_version = raw_package_version.trim()
+          echo("Package version is '${package_version}'")
         }
         nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
-          sh 'node --version'
-          sh 'npm install --ignore-scripts'
+          sh('node --version')
+          sh('npm install --ignore-scripts')
         }
       }
     }
     stage('lint') {
       steps {
-        sh 'node --version'
+        sh('node --version')
         /* we do not want the linting to cause a failed build */
-        sh 'npm run lint || true'
+        sh('npm run lint || true')
       }
     }
     stage('build') {
       steps {
-        sh 'node --version'
-        sh 'npm run build'
-        sh 'npm run build-schemas'
-        sh 'npm run build-doc'
+        sh('node --version')
+        sh('npm run build')
+        sh('npm run build-schemas')
+        sh('npm run build-doc')
       }
     }
     stage('test') {
       steps {
-        sh 'node --version'
-        sh 'npm run test'
+        sh('node --version')
+        sh('npm run test')
       }
     }
     stage('publish') {
@@ -73,16 +69,24 @@ pipeline {
             if (new_commit) {
               script {
                 // let the build fail if the version does not match normal semver
-                def semver_matcher = packageVersion =~ /\d+\.\d+\.\d+/;
+                def semver_matcher = package_version =~ /\d+\.\d+\.\d+/;
                 def is_version_not_semver = semver_matcher.matches() == false;
                 if (is_version_not_semver) {
                   error('Only non RC Versions are allowed in master')
                 }
               }
 
-              nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
-                sh 'node --version'
-                sh 'npm publish --ignore-scripts'
+              def raw_package_name = sh(script: 'node --print --eval "require(\'./package.json\').name"', returnStdout: true)
+              def current_published_version = sh(script: "npm show ${raw_package_name} version", returnStdout: true).trim();
+              def version_has_changed = current_published_version != raw_package_version;
+
+              if (version_has_changed) {
+                nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
+                  sh('node --version')
+                  sh('npm publish --ignore-scripts')
+                }
+              } else {
+                println 'Skipping publish for this version. Version unchanged.'
               }
             }
 
@@ -91,16 +95,32 @@ pipeline {
             // current git commit and the build number.
             // the published version gets tagged as the branch name.
             def first_seven_digits_of_git_hash = env.GIT_COMMIT.substring(0, 8);
-            def publish_version = "${packageVersion}-${first_seven_digits_of_git_hash}-b${env.BUILD_NUMBER}";
+            def publish_version = "${package_version}-${first_seven_digits_of_git_hash}-b${env.BUILD_NUMBER}";
             def publish_tag = branch.replace("/", "~");
 
             nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
-              sh 'node --version'
-              sh "npm version ${publish_version} --no-git-tag-version --force"
-              sh "npm publish --tag ${publish_tag} --ignore-scripts"
+              sh('node --version')
+              sh("npm version ${publish_version} --no-git-tag-version --force")
+              sh("npm publish --tag ${publish_tag} --ignore-scripts")
             }
           }
         }
+      }
+    }
+    stage('cleanup') {
+      steps {
+        script {
+          // this stage just exists, so the cleanup-work that happens in the post-script
+          // will show up in its own stage in Blue Ocean
+          sh(script: ':', returnStdout: true);
+        }
+      }
+    }
+  }
+  post {
+    always {
+      script {
+        cleanup_workspace();
       }
     }
   }
