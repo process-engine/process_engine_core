@@ -159,8 +159,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const sourceRef = (msg && msg.source) ? msg.source : null;
     let source = null;
 
-    if (sourceRef) {
-
+    const canQuerySource: boolean = sourceRef && sourceRef._meta && sourceRef._meta.isNew === false;
+    
+    if (canQuerySource) {
       const entityType = await binding.datastoreService.getEntityType(sourceRef._meta.type);
       try {
         source = await entityType.getById(sourceRef.id, context);
