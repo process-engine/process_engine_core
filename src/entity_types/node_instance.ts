@@ -662,6 +662,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
         await boundaryEntity.end(context, true);
       }
+
+      // TODO: Terminate End Event (sm)
+      //  check if this is a TerminateEndEvent
+      //  this.nodeDef.eventType === 'bpmn:TerminateEventDefinition'
+      //  if that's the case, call end on all active instances
+      //  after there are no more active instances call process.end() like below
     }
 
     if (!isEndEvent && !cancelFlow) {
