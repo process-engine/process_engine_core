@@ -1,11 +1,11 @@
-import {Definitions, Model} from '@process-engine/process_engine_contracts';
+import {Definitions, IModelReader, Model} from '@process-engine/process_engine_contracts';
 
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
-export class DiagramConverterService {
+export class DiagramConverterService implements IModelReader {
 
-  public parseBpmnXml(xml: string): Promise<Definitions> {
+  public async read(xml: string): Promise<Definitions> {
 
     const moddle: BpmnModdle = BpmnModdle();
 
