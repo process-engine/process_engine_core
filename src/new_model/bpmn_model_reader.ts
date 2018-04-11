@@ -3,7 +3,7 @@ import {Definitions, IModelReader, Model} from '@process-engine/process_engine_c
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
-export class DiagramConverterService implements IModelReader {
+export class BpmnModelReader implements IModelReader {
 
   public async read(xml: string): Promise<Definitions> {
 
