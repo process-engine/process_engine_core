@@ -1,1 +1,1 @@
-export * from './bpmn_model_reader';
+export * from './bpmn_model_parser';
