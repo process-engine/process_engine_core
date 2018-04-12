@@ -192,6 +192,10 @@ export class ProcessEngineService implements IProcessEngineService {
     return userTask.getUserTaskData(context);
   }
 
+  public createBpmnFromXml(context: ExecutionContext, xml: string): Promise<IProcessDefEntity> {
+    throw new Error('Method not implemented.');
+  }
+
   private async _messageHandler(msg): Promise<void> {
     debugInfo('we got a message: ', msg);
 
