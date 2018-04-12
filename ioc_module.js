@@ -25,6 +25,7 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
+const BpmnModelParserService = require('./dist/commonjs/index').BpmnModelParserService;
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const schemasIocModule = require('./ioc.schemas');
 
@@ -35,6 +36,8 @@ function registerInContainer(container) {
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();
+
+  container.register('BpmnModelParserService');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
