@@ -10,6 +10,7 @@
   "typings": "dist/index.d.ts",
   "contributors": [
     "Sebastian Meier <sebastian.meier@5minds.de>",
+    "Christian Werner <christian.werner@5minds.de>",
     "Patrick Pötschke <patrick.poetschke@quantusflow.com>",
     "Simon Reymann <simon.reymann@quantusflow.com>"
   ],
