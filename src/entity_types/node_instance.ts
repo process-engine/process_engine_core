@@ -461,7 +461,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.cancel(context);
           } else {
 
-            if (this.processToken.data === undefined && this.processToken.data === null) {
+            if (this.processToken.data === undefined || this.processToken.data === null) {
               this.processToken.data = {};
             }
             this.processToken.data.current = data;
@@ -484,7 +484,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.cancel(context);
           } else {
 
-            if (this.processToken.data === undefined && this.processToken.data === null) {
+            if (this.processToken.data === undefined || this.processToken.data === null) {
               this.processToken.data = {};
             }
             this.processToken.data.current = data;
@@ -524,7 +524,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                 this.cancel(internalContext);
               } else {
 
-                if (this.processToken.data === undefined && this.processToken.data === null) {
+                if (this.processToken.data === undefined || this.processToken.data === null) {
                   this.processToken.data = {};
                 }
                 this.processToken.data.current = data;
