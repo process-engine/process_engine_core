@@ -48,7 +48,7 @@ export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
     const timestamp: number = Date.now();
     const tokenClone: IProcessTokenEntity = await this.entityType.createEntity(this.context);
 
-    // TODO: Create new token for this process instead of referencing it
+    // TODO: Create new process instead of referencing it
     tokenClone.process = this.process;
     tokenClone.data = runtime.cloneDeep(this.data);
 
