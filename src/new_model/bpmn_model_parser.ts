@@ -97,7 +97,7 @@ export class BpmnModelParser implements IModelParser {
 
     const convertedParticipants: Array<Model.Types.Participant> = [];
 
-    participantData.forEach((participant: any) => {
+    participantData.forEach((participant: any): void => {
         const participantObj: Model.Types.Participant = new Model.Types.Participant();
 
         participantObj.id = participant.id;
@@ -116,12 +116,12 @@ export class BpmnModelParser implements IModelParser {
 
   private _getProcesses(data: any): Array<Model.Types.Process> {
 
-    // NOTE: See above, this can be an object or an Array.
+    // NOTE: See above, this can be an Object or an Array.
     const processData: Array<any> = Array.isArray(data) ? data : [data];
 
     const processes: Array<Model.Types.Process> = [];
 
-    processData.forEach((processRaw: any) => {
+    processData.forEach((processRaw: any): void => {
 
       const processObj: Model.Types.Process = new Model.Types.Process();
 
@@ -133,13 +133,63 @@ export class BpmnModelParser implements IModelParser {
         processObj.documentation.push(processRaw['bpmn:documentation']);
       }
 
-      processObj.laneSets = []; // TODO
-      processObj.flowElements = []; // TODO
+      processObj.laneSet = this._getLaneSet(processRaw['bpmn:laneSet']);
+      processObj.flowSequences = this._getProcessFlowSequences(processRaw['bpmn:sequenceFlow']);
+      processObj.flowNodes = this._getProcessFlowNodes(processRaw);
 
       processes.push(processObj);
     });
 
     return processes;
+  }
+
+  private _getLaneSet(data: any): Model.Types.LaneSet {
+
+    const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
+
+    laneSet.id = data.id;
+    laneSet.name = data.name;
+
+    if (data['bpmn:documentation']) {
+      laneSet.documentation.push(data['bpmn:documentation']);
+    }
+
+    // NOTE: See above, this can be an Object or an Array.
+    const lanesRaw: Array<any> = Array.isArray(data['bpmn:lane']) ? data['bpmn:lane'] : [data['bpmn:lane']];
+
+    lanesRaw.forEach((lane: any): void => {
+      const laneObj: Model.Types.Lane = new Model.Types.Lane();
+
+      laneObj.id = lane.id;
+      laneObj.name = lane.name;
+      laneObj.items = lane['bpmn:flowNodeRef'];
+
+      if (data['bpmn:documentation']) {
+        laneObj.documentation.push(data['bpmn:documentation']);
+      }
+
+      if (lane['bpmn:childLaneSet']) {
+        laneObj.childLaneSet = this._getLaneSet(lane['bpmn:childLaneSet']);
+      }
+    });
+
+    return laneSet;
+  }
+
+  private _getProcessFlowSequences(data: any): Array<Model.Base.FlowSequence> {
+
+    // NOTE: See above, this can be an Object or an Array (Admittedly, this is somewhat unlikely for sequences, but not impossible).
+    const sequenceData: Array<any> = Array.isArray(data) ? data : [data];
+
+    return new Array<Model.Base.FlowSequence>();
+  }
+
+  private _getProcessFlowNodes(data: any): Array<Model.Base.FlowNode> {
+
+    // NOTE: See above, this can be an Object or an Array.
+    const nodeData: Array<any> = Array.isArray(data) ? data : [data];
+
+    return new Array<Model.Base.FlowNode>();
   }
 
 }
