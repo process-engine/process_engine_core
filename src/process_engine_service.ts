@@ -214,7 +214,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     const processDefEntity: IProcessDefEntity = await processDef.findOne(context, queryObject);
 
-    return await processDefEntity.toPojo(context);
+    return processDefEntity.toPojo(context);
   }
 
   private async _messageHandler(msg): Promise<void> {
