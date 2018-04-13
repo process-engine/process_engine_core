@@ -147,13 +147,6 @@ export class BpmnModelParser implements IModelParser {
 
     const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
 
-    laneSet.id = data.id;
-    laneSet.name = data.name;
-
-    if (data['bpmn:documentation']) {
-      laneSet.documentation.push(data['bpmn:documentation']);
-    }
-
     // NOTE: See above, this can be an Object or an Array.
     const lanesRaw: Array<any> = Array.isArray(data['bpmn:lane']) ? data['bpmn:lane'] : [data['bpmn:lane']];
 
@@ -162,7 +155,7 @@ export class BpmnModelParser implements IModelParser {
 
       laneObj.id = lane.id;
       laneObj.name = lane.name;
-      laneObj.items = lane['bpmn:flowNodeRef'];
+      laneObj.flowNodeReferences = lane['bpmn:flowNodeRef'];
 
       if (data['bpmn:documentation']) {
         laneObj.documentation.push(data['bpmn:documentation']);
@@ -171,6 +164,8 @@ export class BpmnModelParser implements IModelParser {
       if (lane['bpmn:childLaneSet']) {
         laneObj.childLaneSet = this._getLaneSet(lane['bpmn:childLaneSet']);
       }
+
+      laneSet.lanes.push(laneObj);
     });
 
     return laneSet;
