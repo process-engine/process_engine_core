@@ -205,6 +205,7 @@ export class BpmnModelParser implements IModelParser {
     return sequences;
   }
 
+  // TODO
   private _getProcessFlowNodes(data: any): Array<Model.Base.FlowNode> {
 
     // NOTE: See above, this can be an Object or an Array.
