@@ -30,7 +30,6 @@
     "@essential-projects/timing_contracts": "^1.0.0",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
-    "bpmn-moddle": "^2.0.0",
     "debug": "^2.6.1",
     "loggerhythm": "^3.0.3",
     "moment": "2.18.1"
