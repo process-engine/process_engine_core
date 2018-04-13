@@ -215,10 +215,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
 
-    if (this.process.processDef.persist) {
-      await currentToken.save(internalContext, { reloadAfterSave: false });
-    }
-
     const boundaryNodeCreatePromises = [];
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity> this.process.processDef.nodeDefCollection.data[i];
@@ -494,9 +490,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.processToken.data.current = data;
 
             if (this.nodeDef.processDef.persist) {
-              await newToken.save(internalContext, { reloadAfterSave: false });
+              await this.processToken.save(internalContext, { reloadAfterSave: false });
             }
-            this.processToken = newToken;
 
             await this._publishToApi(context, 'message', data);
             eventEntity.changeState(context, 'follow', this);

@@ -46,7 +46,7 @@ export class BoundaryEventEntity extends EventEntity implements IBoundaryEventEn
 
   public async proceed(context: ExecutionContext, data: any, source: INodeInstanceEntity, applicationId: string, participant: string): Promise<void> {
     const parent: INodeInstanceEntity = this.attachedToInstance;
-    this.processToken = this.processToken.clone();
+    this.processToken = await this.processToken.clone();
     await parent.triggerBoundaryEvent(context, this, data);
   }
 }
