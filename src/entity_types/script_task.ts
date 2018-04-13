@@ -34,6 +34,7 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
     const processToken = this.processToken;
 
     const tokenData = processToken.data || {};
+    let continueEnd = true;
     let result;
 
     // call service
@@ -47,6 +48,7 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
         result = await scriptFunction.call(this, tokenData, context);
       } catch (err) {
         result = err;
+        continueEnd = false;
         this.error(context, err);
       }
 
@@ -62,6 +64,9 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
       processToken.data = tokenData;
     }
 
-    this.changeState(context, 'end', this);
+    if (continueEnd) {
+      this.changeState(context, 'end', this);
+    }
+
   }
 }
