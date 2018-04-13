@@ -1,5 +1,6 @@
 import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@essential-projects/core_contracts';
 import {Entity, EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
+import {runtime} from '@essential-projects/foundation';
 import {schemaAttribute} from '@essential-projects/metadata';
 import {IProcessEntity, IProcessTokenEntity} from '@process-engine/process_engine_contracts';
 
@@ -26,6 +27,10 @@ export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
     this.setProperty(this, 'data', value);
   }
 
+  protected get entityType(): IEntityType<IProcessTokenEntity> {
+    return <IEntityType<IProcessTokenEntity>> super.entityType;
+  }
+
   @schemaAttribute({ type: 'Process' })
   public get process(): IProcessEntity {
     return this.getProperty(this, 'process');
@@ -37,6 +42,17 @@ export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
 
   public getProcess(context: ExecutionContext): Promise<IProcessEntity> {
     return this.getPropertyLazy(this, 'process', context);
+  }
+
+  public async clone(): Promise<IProcessTokenEntity> {
+    const timestamp: number = Date.now();
+    const tokenClone: IProcessTokenEntity = await this.entityType.createEntity(this.context);
+
+    // TODO: Create new token for this process instead of referencing it
+    tokenClone.process = this.process;
+    tokenClone.data = runtime.cloneDeep(this.data);
+
+    return tokenClone;
   }
 
 }
