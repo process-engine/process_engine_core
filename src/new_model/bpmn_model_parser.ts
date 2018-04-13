@@ -48,8 +48,8 @@ export class BpmnModelParser implements IModelParser {
 
     const definition: Definitions = this._createDefinitionBaseObject(parsedXml);
 
-    definition.collaboration = this._getCollaboration(parsedXml);
-    definition.processes = this._getProcesses(parsedXml);
+    definition.collaboration = this._getCollaboration(parsedXml['bpmn:collaboration']);
+    definition.processes = this._getProcesses(parsedXml['bpmn:process']);
 
     return definition;
   }
@@ -75,17 +75,15 @@ export class BpmnModelParser implements IModelParser {
     return basicDefinition;
   }
 
-  private _getCollaboration(parsedXml: any): Model.Types.Collaboration {
-
-    const collaborationXml: any = parsedXml['bpmn:collaboration'];
+  private _getCollaboration(data: any): Model.Types.Collaboration {
 
     const collaborationObj: Model.Types.Collaboration = new Model.Types.Collaboration();
 
-    collaborationObj.id = collaborationXml.id;
-    if (collaborationXml['bpmn:documentation']) {
-      collaborationObj.documentation.push(collaborationXml['bpmn:documentation']);
+    collaborationObj.id = data.id;
+    if (data['bpmn:documentation']) {
+      collaborationObj.documentation.push(data['bpmn:documentation']);
     }
-    collaborationObj.participants = this._getCollaborationParticipants(collaborationXml['bpmn:participant']);
+    collaborationObj.participants = this._getCollaborationParticipants(data['bpmn:participant']);
 
     return collaborationObj;
   }
@@ -101,12 +99,14 @@ export class BpmnModelParser implements IModelParser {
 
     participantData.forEach((participant: any) => {
         const participantObj: Model.Types.Participant = new Model.Types.Participant();
+
         participantObj.id = participant.id;
         participantObj.name = participant.name;
+        participantObj.processReference = participant.processRef;
+
         if (participant['bpmn:documentation']) {
           participantObj.documentation.push(participant['bpmn:documentation']);
         }
-        participantObj.processReference = participant.processRef;
 
         convertedParticipants.push(participantObj);
     });
@@ -114,21 +114,30 @@ export class BpmnModelParser implements IModelParser {
     return convertedParticipants;
   }
 
-  private _getProcesses(parsedXml: any): Array<Model.Types.Process> {
+  private _getProcesses(data: any): Array<Model.Types.Process> {
+
+    // NOTE: See above, this can be an object or an Array.
+    const processData: Array<any> = Array.isArray(data) ? data : [data];
 
     const processes: Array<Model.Types.Process> = [];
 
-    // parsedXml.rootElements.forEach((root: any) => {
+    processData.forEach((processRaw: any) => {
 
-    //   if (root.$type === 'bpmn:Process') {
-    //     const process: Model.Types.Process = new Model.Types.Process();
-    //     process.id = root.id;
-    //     process.name = root.name;
-    //     process.items = root.flowElements;
-    //     process.laneSets = [];
-    //     processes.push(root);
-    //   }
-    // });
+      const processObj: Model.Types.Process = new Model.Types.Process();
+
+      processObj.id = processRaw.id;
+      processObj.name = processRaw.name;
+      processObj.isExecutable = processRaw.isExecutable === 'true' ? true : false;
+
+      if (processRaw['bpmn:documentation']) {
+        processObj.documentation.push(processRaw['bpmn:documentation']);
+      }
+
+      processObj.laneSets = []; // TODO
+      processObj.flowElements = []; // TODO
+
+      processes.push(processObj);
+    });
 
     return processes;
   }
