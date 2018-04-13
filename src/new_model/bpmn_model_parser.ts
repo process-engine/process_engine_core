@@ -77,15 +77,15 @@ export class BpmnModelParser implements IModelParser {
 
   private _getCollaboration(data: any): Model.Types.Collaboration {
 
-    const collaborationObj: Model.Types.Collaboration = new Model.Types.Collaboration();
+    const collaboration: Model.Types.Collaboration = new Model.Types.Collaboration();
 
-    collaborationObj.id = data.id;
+    collaboration.id = data.id;
     if (data['bpmn:documentation']) {
-      collaborationObj.documentation.push(data['bpmn:documentation']);
+      collaboration.documentation.push(data['bpmn:documentation']);
     }
-    collaborationObj.participants = this._getCollaborationParticipants(data['bpmn:participant']);
+    collaboration.participants = this._getCollaborationParticipants(data['bpmn:participant']);
 
-    return collaborationObj;
+    return collaboration;
   }
 
   private _getCollaborationParticipants(data: any): Array<Model.Types.Participant> {
@@ -97,18 +97,18 @@ export class BpmnModelParser implements IModelParser {
 
     const convertedParticipants: Array<Model.Types.Participant> = [];
 
-    participantData.forEach((participant: any): void => {
-        const participantObj: Model.Types.Participant = new Model.Types.Participant();
+    participantData.forEach((participantRaw: any): void => {
+        const participant: Model.Types.Participant = new Model.Types.Participant();
 
-        participantObj.id = participant.id;
-        participantObj.name = participant.name;
-        participantObj.processReference = participant.processRef;
+        participant.id = participantRaw.id;
+        participant.name = participantRaw.name;
+        participant.processReference = participantRaw.processRef;
 
-        if (participant['bpmn:documentation']) {
-          participantObj.documentation.push(participant['bpmn:documentation']);
+        if (participantRaw['bpmn:documentation']) {
+          participant.documentation.push(participantRaw['bpmn:documentation']);
         }
 
-        convertedParticipants.push(participantObj);
+        convertedParticipants.push(participant);
     });
 
     return convertedParticipants;
@@ -123,49 +123,49 @@ export class BpmnModelParser implements IModelParser {
 
     processData.forEach((processRaw: any): void => {
 
-      const processObj: Model.Types.Process = new Model.Types.Process();
+      const process: Model.Types.Process = new Model.Types.Process();
 
-      processObj.id = processRaw.id;
-      processObj.name = processRaw.name;
-      processObj.isExecutable = processRaw.isExecutable === 'true' ? true : false;
+      process.id = processRaw.id;
+      process.name = processRaw.name;
+      process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
 
       if (processRaw['bpmn:documentation']) {
-        processObj.documentation.push(processRaw['bpmn:documentation']);
+        process.documentation.push(processRaw['bpmn:documentation']);
       }
 
-      processObj.laneSet = this._getLaneSet(processRaw['bpmn:laneSet']);
-      processObj.flowSequences = this._getProcessFlowSequences(processRaw['bpmn:sequenceFlow']);
-      processObj.flowNodes = this._getProcessFlowNodes(processRaw);
+      process.laneSet = this._getProcessLaneSet(processRaw['bpmn:laneSet']);
+      process.flowSequences = this._getProcessFlowSequences(processRaw['bpmn:sequenceFlow']);
+      process.flowNodes = this._getProcessFlowNodes(processRaw);
 
-      processes.push(processObj);
+      processes.push(process);
     });
 
     return processes;
   }
 
-  private _getLaneSet(data: any): Model.Types.LaneSet {
+  private _getProcessLaneSet(data: any): Model.Types.LaneSet {
 
     const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
 
     // NOTE: See above, this can be an Object or an Array.
     const lanesRaw: Array<any> = Array.isArray(data['bpmn:lane']) ? data['bpmn:lane'] : [data['bpmn:lane']];
 
-    lanesRaw.forEach((lane: any): void => {
-      const laneObj: Model.Types.Lane = new Model.Types.Lane();
+    lanesRaw.forEach((laneRaw: any): void => {
+      const lane: Model.Types.Lane = new Model.Types.Lane();
 
-      laneObj.id = lane.id;
-      laneObj.name = lane.name;
-      laneObj.flowNodeReferences = lane['bpmn:flowNodeRef'];
+      lane.id = laneRaw.id;
+      lane.name = laneRaw.name;
+      lane.flowNodeReferences = laneRaw['bpmn:flowNodeRef'];
 
       if (data['bpmn:documentation']) {
-        laneObj.documentation.push(data['bpmn:documentation']);
+        lane.documentation.push(data['bpmn:documentation']);
       }
 
-      if (lane['bpmn:childLaneSet']) {
-        laneObj.childLaneSet = this._getLaneSet(lane['bpmn:childLaneSet']);
+      if (laneRaw['bpmn:childLaneSet']) {
+        lane.childLaneSet = this._getProcessLaneSet(laneRaw['bpmn:childLaneSet']);
       }
 
-      laneSet.lanes.push(laneObj);
+      laneSet.lanes.push(lane);
     });
 
     return laneSet;
@@ -176,7 +176,33 @@ export class BpmnModelParser implements IModelParser {
     // NOTE: See above, this can be an Object or an Array (Admittedly, this is somewhat unlikely for sequences, but not impossible).
     const sequenceData: Array<any> = Array.isArray(data) ? data : [data];
 
-    return new Array<Model.Base.FlowSequence>();
+    const sequences: Array<Model.Base.FlowSequence> = [];
+
+    sequenceData.forEach((sequenceRaw: any): void => {
+
+      const flowSequence: Model.Base.FlowSequence = new Model.Base.FlowSequence();
+      flowSequence.id = sequenceRaw.id;
+      flowSequence.name = sequenceRaw.name;
+      flowSequence.sourceRef = sequenceRaw.sourceRef;
+      flowSequence.targetRef = sequenceRaw.targetRef;
+
+      if (data['bpmn:documentation']) {
+        flowSequence.documentation.push(data['bpmn:documentation']);
+      }
+
+      if (data['bpmn:conditionExpression']) {
+        const conditionData: any = data['bpmn:conditionExpression'];
+
+        flowSequence.conditionExpression = {
+          type: conditionData['xsi:type'],
+          expression: conditionData._,
+        };
+      }
+
+      sequences.push(flowSequence);
+    });
+
+    return sequences;
   }
 
   private _getProcessFlowNodes(data: any): Array<Model.Base.FlowNode> {
