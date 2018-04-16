@@ -6,18 +6,8 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import * as BluebirdPromise from 'bluebird';
-import * as BpmnModdle from 'bpmn-moddle';
 import {inspect} from 'util'; // For testing purposes; Remove after implementation is finished
 import * as xml2js from 'xml2js';
-
-function getModelPropertyAsArray(model: any, elementName: string): any {
-
-  if (!model[elementName]) {
-    return undefined;
-  }
-
-  return Array.isArray(model[elementName]) ? model[elementName] : [model[elementName]];
-}
 
 export class BpmnModelParser implements IModelParser {
 
@@ -93,12 +83,7 @@ export class BpmnModelParser implements IModelParser {
 
     const collaborationData: any = data[BpmnTags.RootElement.Collaboration];
 
-    const collaboration: Model.Types.Collaboration = new Model.Types.Collaboration();
-
-    collaboration.id = collaborationData.id;
-    if (collaborationData[BpmnTags.FlowElementProperty.Documentation]) {
-      collaboration.documentation.push(collaborationData[BpmnTags.FlowElementProperty.Documentation]);
-    }
+    const collaboration: Model.Types.Collaboration = this._createObjectWithBaseProperties<Model.Types.Collaboration>(data);
 
     collaboration.participants = this._getCollaborationParticipants(collaborationData);
 
@@ -110,20 +95,15 @@ export class BpmnModelParser implements IModelParser {
     // NOTE: Depending on how the 'bpmn:participant' tag has been formatted and the number of stored participants,
     // this can be either an Array or an Object. For easy usability, we'll always convert this to an Array, since this
     // is what our object model expects.
-    const participantData: Array<any> = getModelPropertyAsArray(collaborationData, BpmnTags.RootElement.Participant);
+    const participantData: Array<any> = this._getModelPropertyAsArray(collaborationData, BpmnTags.RootElement.Participant);
 
     const convertedParticipants: Array<Model.Types.Participant> = [];
 
     participantData.forEach((participantRaw: any): void => {
-        const participant: Model.Types.Participant = new Model.Types.Participant();
+        const participant: Model.Types.Participant = this._createObjectWithBaseProperties<Model.Types.Participant>(participantRaw);
 
-        participant.id = participantRaw.id;
         participant.name = participantRaw.name;
         participant.processReference = participantRaw.processRef;
-
-        if (participantRaw[BpmnTags.FlowElementProperty.Documentation]) {
-          participant.documentation.push(participantRaw[BpmnTags.FlowElementProperty.Documentation]);
-        }
 
         convertedParticipants.push(participant);
     });
@@ -134,24 +114,19 @@ export class BpmnModelParser implements IModelParser {
   private _getProcesses(data: any): Array<Model.Types.Process> {
 
     // NOTE: See above, this can be an Object or an Array.
-    const processData: Array<any> = getModelPropertyAsArray(data, BpmnTags.RootElement.Process);
+    const processData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.RootElement.Process);
 
     const processes: Array<Model.Types.Process> = [];
 
     processData.forEach((processRaw: any): void => {
 
-      const process: Model.Types.Process = new Model.Types.Process();
+      const process: Model.Types.Process = this._createObjectWithBaseProperties<Model.Types.Process>(processRaw);
 
-      process.id = processRaw.id;
       process.name = processRaw.name;
       process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
 
-      if (processRaw[BpmnTags.FlowElementProperty.Documentation]) {
-        process.documentation.push(processRaw[BpmnTags.FlowElementProperty.Documentation]);
-      }
-
       process.laneSet = this._getProcessLaneSet(processRaw);
-      process.flowSequences = this._getProcessFlowSequences(processRaw);
+      process.sequenceFlows = this._getProcessFlowSequences(processRaw);
       process.flowNodes = this._getProcessFlowNodes(processRaw);
 
       processes.push(process);
@@ -165,20 +140,15 @@ export class BpmnModelParser implements IModelParser {
     const laneSetData: any = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
 
     // NOTE: See above, this can be an Object or an Array.
-    const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
+    const lanesRaw: Array<any> = this._getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
     const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
 
     lanesRaw.forEach((laneRaw: any): void => {
-      const lane: Model.Types.Lane = new Model.Types.Lane();
+      const lane: Model.Types.Lane = this._createObjectWithBaseProperties<Model.Types.Lane>(laneRaw);
 
-      lane.id = laneRaw.id;
       lane.name = laneRaw.name;
       lane.flowNodeReferences = laneRaw[BpmnTags.LaneProperty.FlowNodeRef];
-
-      if (laneSetData[BpmnTags.FlowElementProperty.Documentation]) {
-        lane.documentation.push(data[BpmnTags.FlowElementProperty.Documentation]);
-      }
 
       if (laneRaw[BpmnTags.LaneProperty.ChildLaneSet]) {
         lane.childLaneSet = this._getProcessLaneSet(laneRaw);
@@ -190,35 +160,31 @@ export class BpmnModelParser implements IModelParser {
     return laneSet;
   }
 
-  private _getProcessFlowSequences(data: any): Array<Model.Base.FlowSequence> {
+  private _getProcessFlowSequences(data: any): Array<Model.Types.SequenceFlow> {
 
-    // NOTE: See above, this can be an Object or an Array (Admittedly, this is somewhat unlikely for sequences, but not impossible).
-    const sequenceData: Array<any> = getModelPropertyAsArray(data, BpmnTags.FlowElement.SequenceFlow);
+    // NOTE: See above, this can be an Object or an Array (Admittedly, the first is somewhat unlikely here, but not impossible).
+    const sequenceData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.RootElement.SequenceFlow);
 
-    const sequences: Array<Model.Base.FlowSequence> = [];
+    const sequences: Array<Model.Types.SequenceFlow> = [];
 
     sequenceData.forEach((sequenceRaw: any): void => {
 
-      const flowSequence: Model.Base.FlowSequence = new Model.Base.FlowSequence();
-      flowSequence.id = sequenceRaw.id;
-      flowSequence.name = sequenceRaw.name;
-      flowSequence.sourceRef = sequenceRaw.sourceRef;
-      flowSequence.targetRef = sequenceRaw.targetRef;
+      const sequenceFlow: Model.Types.SequenceFlow = this._createObjectWithBaseProperties<Model.Types.SequenceFlow>(sequenceRaw);
 
-      if (data[BpmnTags.FlowElementProperty.Documentation]) {
-        flowSequence.documentation.push(data[BpmnTags.FlowElementProperty.Documentation]);
-      }
+      sequenceFlow.name = sequenceRaw.name;
+      sequenceFlow.sourceRef = sequenceRaw.sourceRef;
+      sequenceFlow.targetRef = sequenceRaw.targetRef;
 
       if (data[BpmnTags.FlowElementProperty.ConditionExpression]) {
         const conditionData: any = data[BpmnTags.FlowElementProperty.ConditionExpression];
 
-        flowSequence.conditionExpression = {
+        sequenceFlow.conditionExpression = {
           type: conditionData[BpmnTags.FlowElementProperty.XsiType],
           expression: conditionData._,
         };
       }
 
-      sequences.push(flowSequence);
+      sequences.push(sequenceFlow);
     });
 
     return sequences;
@@ -231,6 +197,42 @@ export class BpmnModelParser implements IModelParser {
     const nodeData: Array<any> = Array.isArray(data) ? data : [data];
 
     return new Array<Model.Base.FlowNode>();
+  }
+
+  private _getModelPropertyAsArray(model: any, elementName: string): any {
+
+    if (!model[elementName]) {
+      return undefined;
+    }
+
+    return Array.isArray(model[elementName]) ? model[elementName] : [model[elementName]];
+  }
+
+  private _createObjectWithBaseProperties<T extends Model.Base.BaseElement>(data: any): T {
+
+    const obj: Model.Base.BaseElement = {
+      id: data.id,
+    };
+
+    if (data[BpmnTags.FlowElementProperty.Documentation]) {
+      obj.documentation = [data[BpmnTags.FlowElementProperty.Documentation]];
+    }
+
+    if (data[BpmnTags.FlowElementProperty.ExtensionElements]) {
+
+      const extensionData: any = data[BpmnTags.FlowElementProperty.ExtensionElements];
+
+      obj.extensionElements = new Model.Base.ExtensionElements();
+      obj.extensionElements.camundaExecutionListener = extensionData[BpmnTags.FlowElementProperty.CamundaExecutionListener];
+
+      // NOTE: The extension property collection is wrapped in a property named "camunda:property",
+      // which in turn is located in "camunda:properties".
+      const propertyCollection: any = extensionData[BpmnTags.FlowElementProperty.CamundaProperties];
+      obj.extensionElements.camundaExtensionProperties =
+        this._getModelPropertyAsArray(propertyCollection, BpmnTags.FlowElementProperty.CamundaProperty);
+    }
+
+    return <T> obj;
   }
 
 }
