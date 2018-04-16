@@ -102,13 +102,13 @@ export class BpmnDiagram implements IBpmnDiagram {
     const nodes: Array<any> = [];
 
     const flowElements: Array<any> = this._getNodesOfElement(process);
-    nodes.push(flowElements);
+    Array.prototype.push.apply(nodes, flowElements);
 
     for (const flowElement of flowElements) {
       // don't parse sub processes recursively for now to avoid potential errors
       if (flowElement.$type === 'bpmn:SubProcess') {
         const subProcessFlowElements: Array<any> = this._getNodesOfElement(flowElement);
-        nodes.push(subProcessFlowElements);
+        Array.prototype.push.apply(nodes, subProcessFlowElements);
       }
     }
 
@@ -118,13 +118,13 @@ export class BpmnDiagram implements IBpmnDiagram {
 
   private _getNodesOfElement(element: any): Array<any> {
 
-    if (element && element.flowElements) {
-      return element.flowElements.filter((flowElement) => {
-        return flowElement.$type !== 'bpmn:SequenceFlow';
-      });
+    if (!element || !element.flowElements) {
+      return [];
     }
 
-    return [];
+    return element.flowElements.filter((flowElement) => {
+      return flowElement.$type !== 'bpmn:SequenceFlow';
+    });
   }
 
   public getFlows(processId: string): any {
@@ -136,32 +136,34 @@ export class BpmnDiagram implements IBpmnDiagram {
     //  nodes - this shouldn't be a problem since the nodes are only retrieved
     //  for execution via flows having them as a target
 
-    const nodes: Array<any> = [];
+    const flows: Array<any> = [];
 
     const flowElements: Array<any> = this._getFlowsOfElement(process);
-    nodes.push(flowElements);
+    Array.prototype.push.apply(flows, flowElements);
 
     for (const flowElement of flowElements) {
+      if (!flowElement.targetRef) {
+        continue;
+      }
       // don't parse sub processes recursively for now to avoid potential errors
-      if (flowElement.$type === 'bpmn:SubProcess') {
-        const subProcessFlowElements: Array<any> = this._getFlowsOfElement(flowElement);
-        nodes.push(subProcessFlowElements);
+      if (flowElement.targetRef.$type === 'bpmn:SubProcess') {
+        const subProcessFlowElements: Array<any> = this._getFlowsOfElement(flowElement.targetRef);
+        Array.prototype.push.apply(flows, subProcessFlowElements);
       }
     }
 
-
-    return nodes;
+    return flows;
   }
 
   private _getFlowsOfElement(element: any): Array<any> {
 
-    if (element && element.flowElements) {
-      return element.flowElements.filter((flowElement) => {
-        return flowElement.$type === 'bpmn:SequenceFlow';
-      });
+    if (!element || !element.flowElements) {
+      return [];
     }
 
-    return [];
+    return element.flowElements.filter((flowElement) => {
+      return flowElement.$type === 'bpmn:SequenceFlow';
+    });
   }
 
   private _getProcessById(processId: string): any {

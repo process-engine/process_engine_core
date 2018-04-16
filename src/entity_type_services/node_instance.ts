@@ -340,20 +340,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-
-    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
-
-    const nodeInstance = <any> source;
-    const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
-
-    const nextDefs = [];
-
-    const nodeDef = nodeInstance.nodeDef;
-
-    const processDef = (<INodeInstanceEntity> source).process.processDef;
-
+  private _getContinueExecutionFlowsOut(nodeInstance: any, processDef: any, nodeDef: any): Array<IFlowDefEntity> {
     const flowsOut = [];
 
     if (nodeInstance.follow) {
@@ -376,6 +363,26 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         }
       }
     }
+
+    return flowsOut;
+  }
+
+  public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+
+    const nodeInstance = <any> source;
+    const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
+
+    const nextDefs = [];
+
+    const nodeDef = nodeInstance.nodeDef;
+
+    const processDef = (<INodeInstanceEntity> source).process.processDef;
+
+    const flowsOut = this._getContinueExecutionFlowsOut(nodeInstance, processDef, nodeDef);
+
     if (flowsOut && flowsOut.length > 0) {
       const ids: Array<string> = [];
       const mappers: Array<any> = [];

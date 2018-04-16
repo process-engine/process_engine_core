@@ -592,14 +592,11 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           }
           break;
 
-        case 'bpmn:SubProcess':
-
-          // const subElements = node.flowElements ? node.flowElements : [];
-
-          // const subNodes = subElements.filter((element) => element.$type !== 'bpmn:SequenceFlow');
-          // const subFlows = subElements.filter((element) => element.$type === 'bpmn:SequenceFlow');
-
-          break;
+        case 'bpmn:StartEvent':
+          if (node.$parent && node.$parent.$type === 'bpmn:SubProcess') {
+            nodeDefEntity.subProcessKey = node.$parent.id;
+          }
+        break;
 
         default:
       }
@@ -658,7 +655,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       if (laneId) {
         nodeDefEntity.lane = laneCache[laneId];
       }
-
+ƒ
       await nodeDefEntity.save(context, { reloadAfterSave: false });
 
       nodeCache[node.id] = nodeDefEntity;
