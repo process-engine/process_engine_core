@@ -1,7 +1,14 @@
-import {ExecutionContext, IEntity, IInheritedSchema, SchemaAttributeType} from '@essential-projects/core_contracts';
+import {ExecutionContext, IEntity, IInheritedSchema, IPrivateSaveOptions, SchemaAttributeType} from '@essential-projects/core_contracts';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
-import {IFlowDefEntity, INodeDefEntity, INodeInstanceEntity, IParallelGatewayEntity} from '@process-engine/process_engine_contracts';
+import {
+  IFlowDefEntity,
+  INodeDefEntity,
+  INodeInstanceEntity,
+  IParallelGatewayEntity,
+  IProcessTokenEntity,
+} from '@process-engine/process_engine_contracts';
+import { sortAndDeduplicateDiagnostics } from 'typescript';
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 export class ParallelGatewayEntity extends NodeInstanceEntity implements IParallelGatewayEntity {
@@ -75,61 +82,75 @@ export class ParallelGatewayEntity extends NodeInstanceEntity implements IParall
 
   }
 
-  public async proceed(context: ExecutionContext, newData: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
-    // check if all tokens are there
-
-    const nodeDef = this.nodeDef;
-    const processDef = this.process.processDef;
-
-    const prevDefsKeys: Array<string> = [];
-
-    for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
-      const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
-      if (flowDef.target.id === nodeDef.id) {
-        const sourceDefId = flowDef.source.id;
-
-        for (let j = 0; j < processDef.nodeDefCollection.data.length; j++) {
-          const sourceDef = <INodeDefEntity> processDef.nodeDefCollection.data[j];
-          if (sourceDef.id === sourceDefId) {
-            prevDefsKeys.push(sourceDef.key);
-          }
-        }
-      }
+  public proceed(context: ExecutionContext, newData: any, source: INodeInstanceEntity, applicationId: string, participant: string): Promise<void> {
+    if (source === undefined) {
+      return;
     }
 
-    if (prevDefsKeys.length > 0) {
-      if (source) {
+    this._mergeTokenHistory(source.processToken);
 
-        const token = await (<INodeInstanceEntity> source).processToken;
+    const allPathsArrived: boolean = this._checkAllPathsArrived();
+    if (!allPathsArrived) {
+      return this._persistTokenIfNecessary();
+    }
 
-        let allthere = true;
+    this.changeState(context, 'end', this);
+  }
 
-        const processToken = this.processToken;
-        const tokenData = processToken.data || {};
-        tokenData.history = tokenData.history || {};
+  private _getKeysOfPreviousNodeDefinitions(): Array<string> {
+    const allFlowsOfModel: Array<IFlowDefEntity> = this.process.processDef.flowDefCollection.data;
+    const allNodesOfModel: Array<INodeDefEntity> = this.process.processDef.nodeDefCollection.data;
 
-        // merge tokens
-        const merged = { ...tokenData.history, ...token.data.history };
-        tokenData.history = merged;
-
-        processToken.data = tokenData;
-
-        prevDefsKeys.forEach((key) => {
-          if (!tokenData.history.hasOwnProperty(key)) {
-            allthere = false;
-          }
+    const prevNodeDefinitionKeys: Array<string> = allNodesOfModel
+      .filter((nodeDefinition: INodeDefEntity) => {
+        const flowFromNodeToGatewayExists: boolean = allFlowsOfModel.some((flowDefinition: IFlowDefEntity) => {
+          return flowDefinition.source.id === nodeDefinition.id && flowDefinition.target.id === this.nodeDef.id;
         });
-        if (allthere) {
-          // end
-          this.changeState(context, 'end', this);
-        } else {
-          if (this.process.processDef.persist) {
-            const internalContext = await this.iamService.createInternalContext('processengine_system');
-            await processToken.save(internalContext, { reloadAfterSave: false });
-          }
-        }
-      }
 
+        return flowFromNodeToGatewayExists;
+      })
+      .map((nodeDefinition: INodeDefEntity) => {
+        return nodeDefinition.key;
+      });
+
+    return prevNodeDefinitionKeys;
+  }
+
+  private _mergeTokenHistory(tokenWithHistoryToMerge: IProcessTokenEntity): void {
+    const gatewayToken: IProcessTokenEntity = this.processToken;
+    if (gatewayToken.data === undefined) {
+      gatewayToken.data = {};
     }
+
+    if (gatewayToken.data.history === undefined) {
+      gatewayToken.data.history = {};
+    }
+
+    gatewayToken.data.history = {
+      ...gatewayToken.data.history,
+      ...tokenWithHistoryToMerge.data.history,
+    };
+  }
+
+  private _checkAllPathsArrived(): boolean {
+    const prevNodeDefinitionKeys: Array<string> = this._getKeysOfPreviousNodeDefinitions();
+    const arrivedPaths: Array<string> = Object.keys(this.processToken.data.history);
+
+    const allPathsArrived: boolean = prevNodeDefinitionKeys.every((previousNodeDefinitionKey: string) => {
+      return arrivedPaths.includes(previousNodeDefinitionKey);
+    });
+
+    return allPathsArrived;
+  }
+
+  private async _persistTokenIfNecessary(): Promise<void> {
+    if (!this.process.processDef.persist) {
+      return;
+    }
+
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+    const saveOptions: IPrivateSaveOptions = {reloadAfterSave: false};
+
+    return <Promise<any>> this.processToken.save(internalContext, saveOptions);
   }
 }
