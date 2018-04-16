@@ -139,10 +139,18 @@ export class BpmnModelParser implements IModelParser {
 
     const laneSetData: any = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
 
+    if (!laneSetData) {
+      return undefined;
+    }
+
     // NOTE: See above, this can be an Object or an Array.
     const lanesRaw: Array<any> = this._getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
     const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
+
+    if (!lanesRaw) {
+      return laneSet;
+    }
 
     lanesRaw.forEach((laneRaw: any): void => {
       const lane: Model.Types.Lane = this._createObjectWithBaseProperties<Model.Types.Lane>(laneRaw);
@@ -221,18 +229,23 @@ export class BpmnModelParser implements IModelParser {
     return Array.prototype.concat(parallelGateways, exclusiveGateways, inclusiveGateways, complexGateways);
   }
 
-  private _parseGatewaysByType<GT extends Model.Gateways.Gateway>(processData: Array<any>, gatewayType: BpmnTags.GatewayElement): Array<GT> {
+  // NOTE: We can use one converter method for all Gateway types, because they all use the exact same properties.
+  // Unfortunately, however, this does not work for activities and events.
+  private _parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
+    processData: Array<any>,
+    gatewayType: BpmnTags.GatewayElement,
+  ): Array<TGateway> {
 
-    const gateways: Array<GT> = [];
+    const gateways: Array<TGateway> = [];
 
-    const gatewaysRaw: Array<GT> = this._getModelPropertyAsArray(processData, gatewayType);
+    const gatewaysRaw: Array<TGateway> = this._getModelPropertyAsArray(processData, gatewayType);
 
     if (!gatewaysRaw || gatewaysRaw.length === 0) {
       return [];
     }
 
     gatewaysRaw.forEach((gatewayRaw: any): void => {
-      const gateway: GT = this._createObjectWithBaseProperties<GT>(gatewayRaw);
+      const gateway: TGateway = this._createObjectWithBaseProperties<TGateway>(gatewayRaw);
       gateway.incoming = this._getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
       gateway.outgoing = this._getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
       gateways.push(gateway);
