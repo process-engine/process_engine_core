@@ -33,6 +33,8 @@ import {
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
+import { IExecuteProcessService } from './execution';
+import { ExecuteProcessService, FlowNodeHandlerFactory } from './execution';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -42,6 +44,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _messageBusService: IMessageBusService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
+  private _executeProcessService: IExecuteProcessService = undefined;
   private _featureService: IFeatureService = undefined;
   private _iamService: IIamService = undefined;
   private _processRepository: IProcessRepository = undefined;
@@ -58,6 +61,7 @@ export class ProcessEngineService implements IProcessEngineService {
   constructor(messageBusService: IMessageBusService,
               eventAggregator: IEventAggregator,
               processDefEntityTypeService: IProcessDefEntityTypeService,
+              executeProcessService: IExecuteProcessService,
               featureService: IFeatureService,
               iamService: IIamService,
               processRepository: IProcessRepository,
@@ -68,6 +72,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
+    this._executeProcessService = executeProcessService;
     this._featureService = featureService;
     this._iamService = iamService;
     this._processRepository = processRepository;
@@ -588,11 +593,13 @@ export class ProcessEngineService implements IProcessEngineService {
         processEndSubscription.cancel();
       });
 
-      await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
-        initialToken: initialToken,
-      });
+      // await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
+      //   initialToken: initialToken,
+      // });
+      await this._executeProcessService.start(context, processDefinition, processInstance);
     });
   }
+
 
   private _executeProcessInstanceLocally(context: ExecutionContext, processInstance: IProcessEntity, participantId: string, initialToken: any): Promise<any> {
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {

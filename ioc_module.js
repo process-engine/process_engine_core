@@ -25,16 +25,25 @@ const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefE
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
+const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
+const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();
+
+  container.register('ExecuteProcessService', ExecuteProcessService)
+    .dependencies('FlowNodeHandlerFactory', 'DatastoreService','MessageBusService');
+
+  container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
+    .dependencies('container', 'Invoker');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
