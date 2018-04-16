@@ -49,7 +49,9 @@ export class BpmnDiagram implements IBpmnDiagram {
 
       process.laneSets.forEach((laneSet) => {
 
-        lanes = lanes.concat(laneSet.lanes);
+        if (laneSet.lanes !== undefined) {
+          lanes = lanes.concat(laneSet.lanes);
+        }
       });
     }
 

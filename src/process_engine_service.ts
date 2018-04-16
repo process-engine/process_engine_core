@@ -15,6 +15,7 @@ import { IFeature, IFeatureService } from '@essential-projects/feature_contracts
 import {IInvoker, InvocationType} from '@essential-projects/invocation_contracts';
 import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {
+  IBpmnDiagram,
   IErrorDeserializer,
   IImportFromFileOptions,
   INodeDefEntity,
@@ -190,6 +191,30 @@ export class ProcessEngineService implements IProcessEngineService {
     const userTask: IUserTaskEntity = await userTaskEntityType.getById(userTaskId, context, userTaskEntityQueryOptions);
 
     return userTask.getUserTaskData(context);
+  }
+
+  public async createBpmnFromXml(context: ExecutionContext, xml: string): Promise<IProcessDefEntity> {
+    const bpmnDiagram: IBpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const processes: Array<any> = bpmnDiagram.getProcesses();
+
+    if (processes.length === 0) {
+      throw new Error('Model must contain a process');
+    }
+
+    await this.processDefEntityTypeService.importBpmnFromXml(context, {xml: xml});
+
+    const queryObject: IPrivateQueryOptions = {
+      query: {
+        attribute: 'key',
+        operator: '=',
+        value: processes[0].id,
+      },
+    };
+
+    const processDefEntity: IProcessDefEntity = await processDef.findOne(context, queryObject);
+
+    return processDefEntity.toPojo(context);
   }
 
   private async _messageHandler(msg): Promise<void> {
