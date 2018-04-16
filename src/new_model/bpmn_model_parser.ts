@@ -41,11 +41,11 @@ export class BpmnModelParser implements IModelParser {
       maxArrayLength: 100,
     };
     console.log('-----------------------------------------------------------');
-    console.log(inspect(definitions[BpmnTags.RootElement.Definitions], inspectOptions));
+    console.log(inspect(definitions[BpmnTags.CommonElement.Definitions], inspectOptions));
     console.log('-----------------------------------------------------------');
     // ----
 
-    return this._convertToInternalObjectModel(definitions[BpmnTags.RootElement.Definitions]);
+    return this._convertToInternalObjectModel(definitions[BpmnTags.CommonElement.Definitions]);
   }
 
   private _convertToInternalObjectModel(parsedXml: any): Definitions {
@@ -81,7 +81,7 @@ export class BpmnModelParser implements IModelParser {
 
   private _getCollaboration(data: any): Model.Types.Collaboration {
 
-    const collaborationData: any = data[BpmnTags.RootElement.Collaboration];
+    const collaborationData: any = data[BpmnTags.CommonElement.Collaboration];
 
     const collaboration: Model.Types.Collaboration = this._createObjectWithBaseProperties<Model.Types.Collaboration>(data);
 
@@ -95,7 +95,7 @@ export class BpmnModelParser implements IModelParser {
     // NOTE: Depending on how the 'bpmn:participant' tag has been formatted and the number of stored participants,
     // this can be either an Array or an Object. For easy usability, we'll always convert this to an Array, since this
     // is what our object model expects.
-    const participantData: Array<any> = this._getModelPropertyAsArray(collaborationData, BpmnTags.RootElement.Participant);
+    const participantData: Array<any> = this._getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
 
     const convertedParticipants: Array<Model.Types.Participant> = [];
 
@@ -114,7 +114,7 @@ export class BpmnModelParser implements IModelParser {
   private _getProcesses(data: any): Array<Model.Types.Process> {
 
     // NOTE: See above, this can be an Object or an Array.
-    const processData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.RootElement.Process);
+    const processData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.CommonElement.Process);
 
     const processes: Array<Model.Types.Process> = [];
 
@@ -163,7 +163,7 @@ export class BpmnModelParser implements IModelParser {
   private _getProcessFlowSequences(data: any): Array<Model.Types.SequenceFlow> {
 
     // NOTE: See above, this can be an Object or an Array (Admittedly, the first is somewhat unlikely here, but not impossible).
-    const sequenceData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.RootElement.SequenceFlow);
+    const sequenceData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.CommonElement.SequenceFlow);
 
     const sequences: Array<Model.Types.SequenceFlow> = [];
 
@@ -191,12 +191,62 @@ export class BpmnModelParser implements IModelParser {
   }
 
   // TODO
-  private _getProcessFlowNodes(data: any): Array<Model.Base.FlowNode> {
+  private _getProcessFlowNodes(processData: any): Array<Model.Base.FlowNode> {
 
-    // NOTE: See above, this can be an Object or an Array.
-    const nodeData: Array<any> = Array.isArray(data) ? data : [data];
+    let nodes: Array<Model.Base.FlowNode> = [];
 
-    return new Array<Model.Base.FlowNode>();
+    const gateways: Array<Model.Gateways.Gateway> = this._getGateways(processData);
+    const tasks: Array<Model.Activities.Activity> = this._getActivities(processData);
+    const events: Array<Model.Events.Event> = this._getEvents(processData);
+
+    nodes = nodes.concat(gateways, tasks, events);
+
+    return nodes;
+  }
+
+  private _getGateways(processData: any): Array<Model.Gateways.Gateway> {
+
+    const exclusiveGateways: Array<Model.Gateways.ExclusiveGateway> =
+      this._parseGatewaysByType<Model.Gateways.ExclusiveGateway>(processData, BpmnTags.GatewayElement.ExclusiveGateway);
+
+    const parallelGateways: Array<Model.Gateways.ParallelGateway> =
+      this._parseGatewaysByType<Model.Gateways.ParallelGateway>(processData, BpmnTags.GatewayElement.ParallelGateway);
+
+    const inclusiveGateways: Array<Model.Gateways.InclusiveGateway> =
+      this._parseGatewaysByType<Model.Gateways.InclusiveGateway>(processData, BpmnTags.GatewayElement.InclusiveGateway);
+
+    const complexGateways: Array<Model.Gateways.ComplexGateway> =
+      this._parseGatewaysByType<Model.Gateways.ComplexGateway>(processData, BpmnTags.GatewayElement.ComplexGateway);
+
+    return Array.prototype.concat(parallelGateways, exclusiveGateways, inclusiveGateways, complexGateways);
+  }
+
+  private _parseGatewaysByType<GT extends Model.Gateways.Gateway>(processData: Array<any>, gatewayType: BpmnTags.GatewayElement): Array<GT> {
+
+    const gateways: Array<GT> = [];
+
+    const gatewaysRaw: Array<GT> = this._getModelPropertyAsArray(processData, gatewayType);
+
+    if (!gatewaysRaw || gatewaysRaw.length === 0) {
+      return [];
+    }
+
+    gatewaysRaw.forEach((gatewayRaw: any): void => {
+      const gateway: GT = this._createObjectWithBaseProperties<GT>(gatewayRaw);
+      gateway.incoming = this._getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      gateway.outgoing = this._getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+      gateways.push(gateway);
+    });
+
+    return gateways;
+  }
+
+  private _getActivities(processData: any): Array<Model.Activities.Activity> {
+    return new Array<Model.Activities.Activity>();
+  }
+
+  private _getEvents(processData: any): Array<Model.Events.Event> {
+    return new Array<Model.Events.Event>();
   }
 
   private _getModelPropertyAsArray(model: any, elementName: string): any {
@@ -228,6 +278,8 @@ export class BpmnModelParser implements IModelParser {
       // NOTE: The extension property collection is wrapped in a property named "camunda:property",
       // which in turn is located in "camunda:properties".
       const propertyCollection: any = extensionData[BpmnTags.FlowElementProperty.CamundaProperties];
+
+      // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
       obj.extensionElements.camundaExtensionProperties =
         this._getModelPropertyAsArray(propertyCollection, BpmnTags.FlowElementProperty.CamundaProperty);
     }
