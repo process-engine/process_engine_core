@@ -259,7 +259,37 @@ export class BpmnModelParser implements IModelParser {
   }
 
   private _getEvents(processData: any): Array<Model.Events.Event> {
-    return new Array<Model.Events.Event>();
+
+    const startEvents: Array<Model.Events.StartEvent>
+      = this._parseRegularEvents<Model.Events.StartEvent>(processData, BpmnTags.EventElement.StartEvent);
+
+    const endEvents: Array<Model.Events.EndEvent>
+      = this._parseRegularEvents<Model.Events.EndEvent>(processData, BpmnTags.EventElement.EndEvent);
+
+    return Array.prototype.concat(startEvents, endEvents);
+  }
+
+  private _parseRegularEvents<TEvent extends Model.Events.Event>(data: any, eventType: BpmnTags.EventElement): Array<TEvent> {
+
+    const events: Array<TEvent> = [];
+
+    const eventsRaw: Array<TEvent> = this._getModelPropertyAsArray(data, eventType);
+
+    if (!eventsRaw || eventsRaw.length === 0) {
+      return [];
+    }
+
+    eventsRaw.forEach((startEventRaw: any): void => {
+      const event: TEvent = this._createObjectWithBaseProperties<TEvent>(startEventRaw);
+      event.incoming = this._getModelPropertyAsArray(startEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      events.push(event);
+    });
+
+    return events;
+  }
+
+  private _parseEndEvents(data: any): Array<Model.Events.EndEvent> {
+    return new Array<Model.Events.EndEvent>();
   }
 
   private _getModelPropertyAsArray(model: any, elementName: string): any {
