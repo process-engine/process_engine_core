@@ -5,19 +5,14 @@ import { ExecutionContext, IToPojoOptions } from "@essential-projects/core_contr
 
 export class ScriptTaskHandler extends FlowNodeHandler {
     
-    protected async executeIntern(scriptTask: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
+    protected async executeIntern(scriptTask: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo> {
         const tokenData = processToken.data || {};
         let result;
         const script = scriptTask.script;
 
         if (script) {
-            try {
-                const scriptFunction = new Function('token', 'context', script);
-                result = await scriptFunction.call(this, tokenData, context);
-            } catch (err) {
-                result = err;
-                //this.error(context, err);
-            }
+            const scriptFunction = new Function('token', 'context', script);
+            result = await scriptFunction.call(this, tokenData, context);
 
             let finalResult = result;
             const toPojoOptions: IToPojoOptions = { skipCalculation: true };
@@ -29,6 +24,8 @@ export class ScriptTaskHandler extends FlowNodeHandler {
 
             tokenData.current = finalResult;
             processToken.data = tokenData;
+
+            return new NextFlowNodeInfo(await this.getNextFlowNodeFor(scriptTask, context), processToken);
         }
     }
 }

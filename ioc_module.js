@@ -43,7 +43,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeHandlerFactory', 'DatastoreService','MessageBusService');
 
   container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
-    .dependencies('container', 'Invoker');
+    .dependencies('container', 'Invoker', 'DatastoreService');
 
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');

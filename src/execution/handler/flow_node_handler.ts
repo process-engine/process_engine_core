@@ -5,26 +5,14 @@ import { NextFlowNodeInfo } from "..";
 
 export abstract class FlowNodeHandler implements IFlowNodeHandler {
 
-    public async execute(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
-        await this.executeIntern(flowNode, processToken, context);
+    public async execute(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo> {
+        const nextFlowNode = await this.executeIntern(flowNode, processToken, context);
         await this.afterExecute(flowNode, processToken, context);
-    }
-    
-    public async getNextFlowNodeInfos(flowNode: INodeDefEntity, context: ExecutionContext): Promise<NextFlowNodeInfo[]> {
-        const nextFlowNode = await this.getNextFlowNodeFor(flowNode, context);
 
-        if (nextFlowNode === undefined) {
-            return [];
-        }
-
-        const nextFlowNodeInfo = new NextFlowNodeInfo();
-        nextFlowNodeInfo.flowNode = nextFlowNode;
-        nextFlowNodeInfo.shouldCreateNewToken = false;
-
-        return [nextFlowNodeInfo];
+        return nextFlowNode;
     }
 
-    protected async abstract executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void>;
+    protected async abstract executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo>;
 
     protected async getNextFlowNodeFor(flowNode: INodeDefEntity, context: ExecutionContext): Promise<INodeDefEntity> {
         const processDefinition: IProcessDefEntity = await flowNode.getProcessDef(context);

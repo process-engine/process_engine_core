@@ -5,34 +5,20 @@ import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { GatewayHandler } from "./gateway_handler";
 
 export class ExclusiveGatewayHandler extends GatewayHandler {
-    private nextFlowNode: INodeDefEntity = undefined;
-    
-    public async getNextFlowNodeInfos(flowNode: INodeDefEntity, context: ExecutionContext): Promise<NextFlowNodeInfo[]> {
 
-        if (this.nextFlowNode === undefined) {
-            return [];
-        }
-
-        const nextFlowNodeInfo = new NextFlowNodeInfo();
-        nextFlowNodeInfo.flowNode = this.nextFlowNode;
-        nextFlowNodeInfo.shouldCreateNewToken = false;
-
-        return [nextFlowNodeInfo];
-    }
-
-    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void>  {
+    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo>  {
         const processDefinition: IProcessDefEntity = await flowNode.getProcessDef(context);
         const incomingSequenceFlows: IFlowDefEntity[] = this.getIncomingSequenceFlowsFor(flowNode.id, processDefinition);
         const outgoingSequenceFlows: IFlowDefEntity[] = this.getOutgoingSequenceFlowsFor(flowNode.id, processDefinition);
 
         if (incomingSequenceFlows.length > outgoingSequenceFlows.length) {
-            this.nextFlowNode = this.getFlowNodeById(outgoingSequenceFlows[0].target.id, processDefinition);
+            return new NextFlowNodeInfo(this.getFlowNodeById(outgoingSequenceFlows[0].target.id, processDefinition), processToken);
         } else {
             const sequenceFlow = outgoingSequenceFlows.find(sequenceFlow => {
                 return this.executeCondition(sequenceFlow.condition, processToken);
             });
 
-            this.nextFlowNode = this.getFlowNodeById(sequenceFlow.target.id, processDefinition);
+            return new NextFlowNodeInfo(this.getFlowNodeById(sequenceFlow.target.id, processDefinition), processToken);
         }
     }
 

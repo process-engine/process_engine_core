@@ -3,6 +3,5 @@ import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
 
 export interface IFlowNodeHandler {
-    execute(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): void;
-    getNextFlowNodeInfos(flowNode: INodeDefEntity, context: ExecutionContext): Promise<NextFlowNodeInfo[]>;
+    execute(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo>;
 }

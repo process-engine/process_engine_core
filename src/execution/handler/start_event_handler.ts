@@ -5,7 +5,7 @@ import { ExecutionContext } from "@essential-projects/core_contracts";
 
 export class StartEventHandler extends FlowNodeHandler {
     
-    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
-        
+    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo> {
+        return new NextFlowNodeInfo(await this.getNextFlowNodeFor(flowNode, context), processToken);
     }
 }

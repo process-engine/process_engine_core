@@ -40,23 +40,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
     private async executeFlowNode(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
         const flowNodeHandler = this.flowNodeHandlerFactory.create(flowNode.type);
 
-        await flowNodeHandler.execute(flowNode, processToken, context);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, context);
 
-        const nextFlowNodeInfos: NextFlowNodeInfo[] = await flowNodeHandler.getNextFlowNodeInfos(flowNode, context);
-
-        const promises = [];
-
-        for (const nextFlowNodeInfo of nextFlowNodeInfos) {
-            var processTokenForNextFlowNode: IProcessTokenEntity = processToken;
-
-            if (nextFlowNodeInfo.shouldCreateNewToken) {
-                processTokenForNextFlowNode = await this.createProcessToken(context);;
-            }
-
-            promises.push(this.executeFlowNode(nextFlowNodeInfo.flowNode, processTokenForNextFlowNode, context));
+        if (nextFlowNodeInfo.flowNode !== null) {
+            await this.executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, context);
         }
-
-        await Promise.all(promises);
     }
 
     private async end(processInstance: IProcessEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {

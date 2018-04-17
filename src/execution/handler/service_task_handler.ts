@@ -4,6 +4,7 @@ import { INodeDefEntity, IProcessTokenEntity } from "@process-engine/process_eng
 import { ExecutionContext, IToPojoOptions } from "@essential-projects/core_contracts";
 import { Container, IInstanceWrapper } from 'addict-ioc';
 import { IInvoker } from "@essential-projects/invocation_contracts";
+import { NextFlowNodeInfo } from "..";
 
 export class ServiceTaskHandler extends FlowNodeHandler {
     private container: Container<IInstanceWrapper<any>>;
@@ -16,7 +17,7 @@ export class ServiceTaskHandler extends FlowNodeHandler {
         this.invoker = invoker;
     }
 
-    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
+    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo> {
         const tokenData = processToken.data || {};
         const serviceTaskExtensions = new ServiceTaskExtensions(flowNode.extensions);
 
@@ -49,6 +50,8 @@ export class ServiceTaskHandler extends FlowNodeHandler {
 
             tokenData.current = finalResult;
             processToken.data = tokenData;
+
+            return new NextFlowNodeInfo(await this.getNextFlowNodeFor(flowNode, context), processToken);
         }
     }
 }
