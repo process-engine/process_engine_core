@@ -251,6 +251,7 @@ export class BpmnModelParser implements IModelParser {
     gatewaysRaw.forEach((gatewayRaw: any): void => {
       let gateway: TGateway = new type();
       gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
+      gateway.name = gatewayRaw.name;
       gateway.incoming = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
       gateway.outgoing = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
       gateways.push(gateway);
@@ -266,15 +267,44 @@ export class BpmnModelParser implements IModelParser {
   private _getEvents(processData: any): Array<Model.Events.Event> {
 
     const startEvents: Array<Model.Events.StartEvent>
-      = this._parseRegularEvents(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
+      = this._parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
+
+    const boundaryEvents: Array<Model.Events.BoundaryEvent> = this._parseBoundaryEvents(processData);
 
     const endEvents: Array<Model.Events.EndEvent>
-      = this._parseRegularEvents(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
+      = this._parseEventsByType(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
 
-    return Array.prototype.concat(startEvents, endEvents);
+    return Array.prototype.concat(startEvents, boundaryEvents, endEvents);
   }
 
-  private _parseRegularEvents<TEvent extends Model.Events.Event>(
+  private _parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
+
+    const events: Array<Model.Events.BoundaryEvent> = [];
+
+    const eventsRaw: Array<Model.Events.BoundaryEvent> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
+
+    if (!eventsRaw || eventsRaw.length === 0) {
+      return [];
+    }
+
+    eventsRaw.forEach((boundaryEventRaw: any): void => {
+      const event: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
+
+      event.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      event.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+      event.name = boundaryEventRaw.name;
+      event.attachedToRef = boundaryEventRaw.attachedToRef;
+      event.cancelActivity = boundaryEventRaw.cancelActivity || true;
+      event.errorEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
+
+      events.push(event);
+    });
+
+    return events;
+  }
+
+  private _parseEventsByType<TEvent extends Model.Events.Event>(
     data: any,
     eventType: BpmnTags.EventElement,
     type: Model.Base.IConstructor<TEvent>,
@@ -288,11 +318,13 @@ export class BpmnModelParser implements IModelParser {
       return [];
     }
 
-    eventsRaw.forEach((startEventRaw: any): void => {
+    eventsRaw.forEach((eventRaw: any): void => {
       let event: TEvent = new type();
-      event = <TEvent> setCommonObjectPropertiesFromData(startEventRaw, event);
-      event.incoming = getModelPropertyAsArray(startEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-      event.outgoing = getModelPropertyAsArray(startEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+      event = <TEvent> setCommonObjectPropertiesFromData(eventRaw, event);
+      event.name = eventRaw.name;
+      event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
       events.push(event);
     });
 
