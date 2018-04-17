@@ -13,7 +13,6 @@ import {
 } from './type_factory';
 
 import * as BluebirdPromise from 'bluebird';
-import {inspect} from 'util'; // For testing purposes; Remove after implementation is finished
 import * as xml2js from 'xml2js';
 
 export class BpmnModelParser implements IModelParser {
@@ -39,18 +38,6 @@ export class BpmnModelParser implements IModelParser {
   public async parseXmlToObjectModel(xml: string): Promise<Definitions> {
 
     const definitions: any = await this._xmlParserFunc(xml);
-
-    // ----For testing purposes; Remove after implementation is finished
-    // tslint:disable:no-console
-    const inspectOptions: any = {
-      showHidden: false,
-      depth: 9,
-      maxArrayLength: 100,
-    };
-    console.log('-----------------------------------------------------------');
-    console.log(inspect(definitions[BpmnTags.CommonElement.Definitions], inspectOptions));
-    console.log('-----------------------------------------------------------');
-    // ----
 
     return this._convertToInternalObjectModel(definitions[BpmnTags.CommonElement.Definitions]);
   }
