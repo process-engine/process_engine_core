@@ -6,6 +6,8 @@ import {
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
+import * as moment from 'moment';
+
 export function parseActivitiesFromProcessData(processData: any): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
@@ -40,6 +42,46 @@ function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> 
   return manualTasks;
 }
 
+function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
+
+  const userTasks: Array<Model.Activities.UserTask> = [];
+
+  const userTasksRaw: Array<Model.Activities.UserTask> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
+
+  if (!userTasksRaw || userTasksRaw.length === 0) {
+    return [];
+  }
+
+  function parseDate(value: string): Date {
+
+    if (!value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid()) {
+      return undefined;
+    }
+
+    const dateObj: moment.Moment = moment(value);
+
+    return dateObj.toDate();
+  }
+
+  userTasksRaw.forEach((userTaskRaw: any): void => {
+    const userTask: Model.Activities.UserTask = createObjectWithCommonProperties(userTaskRaw, Model.Activities.UserTask);
+
+    userTask.incoming = getModelPropertyAsArray(userTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    userTask.outgoing = getModelPropertyAsArray(userTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    userTask.name = userTaskRaw.name;
+    userTask.assignee = userTaskRaw[BpmnTags.CamundaProperty.Assignee];
+    userTask.candidateUsers = userTaskRaw[BpmnTags.CamundaProperty.CandidateUsers];
+    userTask.candidateGroups = userTaskRaw[BpmnTags.CamundaProperty.CandidateGroups];
+    userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
+    userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
+
+    userTasks.push(userTask);
+  });
+
+  return userTasks;
+}
+
 function parseScriptTasks(processData: any): Array<Model.Activities.ScriptTask> {
 
   const scriptTasks: Array<Model.Activities.ScriptTask> = [];
@@ -59,7 +101,7 @@ function parseScriptTasks(processData: any): Array<Model.Activities.ScriptTask> 
     scriptTask.name = scriptTaskRaw.name;
     scriptTask.scriptFormat = scriptTaskRaw.scriptFormat;
     scriptTask.script = scriptTaskRaw[BpmnTags.FlowElementProperty.BpmnScript];
-    scriptTask.resultVariable = scriptTaskRaw[BpmnTags.FlowElementProperty.CamundaResultVariable];
+    scriptTask.resultVariable = scriptTaskRaw[BpmnTags.CamundaProperty.ResultVariable];
 
     scriptTasks.push(scriptTask);
   });
@@ -85,12 +127,16 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
 
     serviceTask.name = serviceTaskRaw.name;
 
-    // Indicates a module/method/params extension
+    // Check if the extension properties contain invocations.
     if (serviceTask.extensionElements &&
         serviceTask.extensionElements.camundaExtensionProperties &&
         serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-      serviceTask.invocation = getInvocationForServiceTask(serviceTask);
+      const invocation: Model.Activities.Invocation = getInvocationForServiceTask(serviceTask);
+
+      if (invocation) {
+        serviceTask.invocation = getInvocationForServiceTask(serviceTask);
+      }
     }
 
     serviceTasks.push(serviceTask);
@@ -155,9 +201,4 @@ function findExtensionPropertyByName(
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
   });
-}
-
-function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
-
-  return new Array<Model.Activities.UserTask>();
 }

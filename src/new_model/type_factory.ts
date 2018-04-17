@@ -31,15 +31,15 @@ export function setCommonObjectPropertiesFromData(data: any, instance: Model.Bas
     const extensionData: any = data[BpmnTags.FlowElementProperty.ExtensionElements];
 
     instance.extensionElements = new Model.Base.ExtensionElements();
-    instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.FlowElementProperty.CamundaExecutionListener];
+    instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.CamundaProperty.ExecutionListener];
 
     // NOTE: The extension property collection is wrapped in a property named "camunda:property",
     // which in turn is located in "camunda:properties".
-    const propertyCollection: any = extensionData[BpmnTags.FlowElementProperty.CamundaProperties];
+    const propertyCollection: any = extensionData[BpmnTags.CamundaProperty.Properties];
 
     // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
     instance.extensionElements.camundaExtensionProperties =
-      getModelPropertyAsArray(propertyCollection, BpmnTags.FlowElementProperty.CamundaProperty);
+      getModelPropertyAsArray(propertyCollection, BpmnTags.CamundaProperty.Property);
   }
 
   return instance;
