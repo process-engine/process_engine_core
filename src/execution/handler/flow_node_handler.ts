@@ -30,8 +30,12 @@ export abstract class FlowNodeHandler implements IFlowNodeHandler {
         const processDefinition: IProcessDefEntity = await flowNode.getProcessDef(context);
         const nextFlowNodeId: string = await this.getNextFlowNodeId(flowNode.id, processDefinition, context);
 
+        return this.getFlowNodeById(nextFlowNodeId, processDefinition);
+    }
+
+    protected getFlowNodeById(flowNodeId: string, processDefinition: IProcessDefEntity): INodeDefEntity {
         const nextFlowNode: INodeDefEntity = processDefinition.nodeDefCollection.data.find((currentFlowNode: INodeDefEntity) => {
-            return currentFlowNode.id === nextFlowNodeId;
+            return currentFlowNode.id === flowNodeId;
         });
 
         return nextFlowNode;

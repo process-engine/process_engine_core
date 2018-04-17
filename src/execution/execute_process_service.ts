@@ -44,6 +44,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
         const nextFlowNodeInfos: NextFlowNodeInfo[] = await flowNodeHandler.getNextFlowNodeInfos(flowNode, context);
 
+        const promises = [];
+
         for (const nextFlowNodeInfo of nextFlowNodeInfos) {
             var processTokenForNextFlowNode: IProcessTokenEntity = processToken;
 
@@ -51,8 +53,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
                 processTokenForNextFlowNode = await this.createProcessToken(context);;
             }
 
-            await this.executeFlowNode(nextFlowNodeInfo.flowNode, processToken, context);
+            promises.push(this.executeFlowNode(nextFlowNodeInfo.flowNode, processTokenForNextFlowNode, context));
         }
+
+        await Promise.all(promises);
     }
 
     private async end(processInstance: IProcessEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {

@@ -2,8 +2,9 @@ import { FlowNodeHandler } from "./flow_node_handler";
 import { INodeDefEntity, IProcessTokenEntity, IFlowDefEntity, IProcessDefEntity } from "@process-engine/process_engine_contracts";
 import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
+import { GatewayHandler } from "./gateway_handler";
 
-export class ExclusiveGatewayHandler extends FlowNodeHandler {
+export class ExclusiveGatewayHandler extends GatewayHandler {
     private nextFlowNode: INodeDefEntity = undefined;
     
     public async getNextFlowNodeInfos(flowNode: INodeDefEntity, context: ExecutionContext): Promise<NextFlowNodeInfo[]> {
@@ -35,30 +36,6 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler {
         }
     }
 
-    private getIncomingSequenceFlowsFor(flowNodeId: string, processDefinition: IProcessDefEntity): IFlowDefEntity[] {
-        const result: IFlowDefEntity[] = [];
-
-        processDefinition.flowDefCollection.data.forEach((sequenceFlow) => {
-            if (sequenceFlow.target.id === flowNodeId) {
-                result.push(sequenceFlow);
-            }
-        });
-
-        return result;
-    }
-
-    private getOutgoingSequenceFlowsFor(flowNodeId: string, processDefinition: IProcessDefEntity): IFlowDefEntity[] {
-        const result: IFlowDefEntity[] = [];
-
-        processDefinition.flowDefCollection.data.forEach((sequenceFlow) => {
-            if (sequenceFlow.source.id === flowNodeId) {
-                result.push(sequenceFlow);
-            }
-        });
-
-        return result;
-    }
-
     private executeCondition(condition: string, processToken: IProcessTokenEntity): boolean {
         const tokenData = processToken.data || {};
 
@@ -71,13 +48,5 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler {
         } catch (err) {
             return false;
         }
-    }
-
-    private getFlowNodeById(flowNodeId: string, processDefinition: IProcessDefEntity): INodeDefEntity {
-        const nextFlowNode: INodeDefEntity = processDefinition.nodeDefCollection.data.find((currentFlowNode: INodeDefEntity) => {
-            return currentFlowNode.id === flowNodeId;
-        });
-
-        return nextFlowNode;
     }
 }
