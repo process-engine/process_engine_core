@@ -10,7 +10,9 @@ export function getModelPropertyAsArray(model: any, elementName: string): any {
 }
 
 export function createObjectWithCommonProperties<TTargetType extends Model.Base.BaseElement>(
-    data: any, type: Model.Base.IConstructor<TTargetType>): TTargetType {
+    data: any,
+    type: Model.Base.IConstructor<TTargetType>,
+  ): TTargetType {
 
     let instance: TTargetType = new type();
     instance = <TTargetType> setCommonObjectPropertiesFromData(data, instance);

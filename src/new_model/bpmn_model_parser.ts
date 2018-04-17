@@ -178,7 +178,7 @@ export class BpmnModelParser implements IModelParser {
   private _getProcessFlowSequences(data: any): Array<Model.Types.SequenceFlow> {
 
     // NOTE: See above, this can be an Object or an Array (Admittedly, the first is somewhat unlikely here, but not impossible).
-    const sequenceData: Array<any> = getModelPropertyAsArray(data, BpmnTags.CommonElement.SequenceFlow);
+    const sequenceData: Array<any> = getModelPropertyAsArray(data, BpmnTags.OtherElements.SequenceFlow);
 
     const sequences: Array<Model.Types.SequenceFlow> = [];
 
@@ -205,6 +205,11 @@ export class BpmnModelParser implements IModelParser {
     return sequences;
   }
 
+  // TODO: The following elements are not supported yet:
+  // - Text annotations
+  // - Associations
+  // - Intermediate Catch- & Throw- Events of any kind
+  // - Subprocess
   private _getProcessFlowNodes(processData: any): Array<Model.Base.FlowNode> {
 
     let nodes: Array<Model.Base.FlowNode> = [];

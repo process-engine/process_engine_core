@@ -14,8 +14,9 @@ export function parseActivitiesFromProcessData(processData: any): Array<Model.Ac
   const scriptTasks: Array<Model.Activities.ScriptTask> = parseScriptTasks(processData);
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
+  const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
 
-  return Array.prototype.concat(manualTasks, scriptTasks, serviceTasks, userTasks);
+  return Array.prototype.concat(manualTasks, scriptTasks, serviceTasks, userTasks, callActivities);
 }
 
 function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
@@ -29,13 +30,7 @@ function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> 
   }
 
   manualTasksRaw.forEach((manualTaskRaw: any): void => {
-    const manualTask: Model.Activities.ManualTask = createObjectWithCommonProperties(manualTaskRaw, Model.Activities.ManualTask);
-
-    manualTask.incoming = getModelPropertyAsArray(manualTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    manualTask.outgoing = getModelPropertyAsArray(manualTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    manualTask.name = manualTaskRaw.name;
-
+    const manualTask: Model.Activities.ManualTask = createActivityInstance(manualTaskRaw, Model.Activities.ManualTask);
     manualTasks.push(manualTask);
   });
 
@@ -64,12 +59,8 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
   }
 
   userTasksRaw.forEach((userTaskRaw: any): void => {
-    const userTask: Model.Activities.UserTask = createObjectWithCommonProperties(userTaskRaw, Model.Activities.UserTask);
+    const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
 
-    userTask.incoming = getModelPropertyAsArray(userTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    userTask.outgoing = getModelPropertyAsArray(userTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    userTask.name = userTaskRaw.name;
     userTask.assignee = userTaskRaw[BpmnTags.CamundaProperty.Assignee];
     userTask.candidateUsers = userTaskRaw[BpmnTags.CamundaProperty.CandidateUsers];
     userTask.candidateGroups = userTaskRaw[BpmnTags.CamundaProperty.CandidateGroups];
@@ -93,12 +84,8 @@ function parseScriptTasks(processData: any): Array<Model.Activities.ScriptTask> 
   }
 
   scriptTasksRaw.forEach((scriptTaskRaw: any): void => {
-    const scriptTask: Model.Activities.ScriptTask = createObjectWithCommonProperties(scriptTaskRaw, Model.Activities.ScriptTask);
+    const scriptTask: Model.Activities.ScriptTask = createActivityInstance(scriptTaskRaw, Model.Activities.ScriptTask);
 
-    scriptTask.incoming = getModelPropertyAsArray(scriptTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    scriptTask.outgoing = getModelPropertyAsArray(scriptTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    scriptTask.name = scriptTaskRaw.name;
     scriptTask.scriptFormat = scriptTaskRaw.scriptFormat;
     scriptTask.script = scriptTaskRaw[BpmnTags.FlowElementProperty.BpmnScript];
     scriptTask.resultVariable = scriptTaskRaw[BpmnTags.CamundaProperty.ResultVariable];
@@ -120,12 +107,7 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   }
 
   serviceTasksRaw.forEach((serviceTaskRaw: any): void => {
-    const serviceTask: Model.Activities.ServiceTask = createObjectWithCommonProperties(serviceTaskRaw, Model.Activities.ServiceTask);
-
-    serviceTask.incoming = getModelPropertyAsArray(serviceTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    serviceTask.outgoing = getModelPropertyAsArray(serviceTaskRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    serviceTask.name = serviceTaskRaw.name;
+    const serviceTask: Model.Activities.ServiceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
 
     // Check if the extension properties contain invocations.
     if (serviceTask.extensionElements &&
@@ -201,4 +183,72 @@ function findExtensionPropertyByName(
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
   });
+}
+
+function parseCallActivities(processData: any): Array<Model.Activities.CallActivity> {
+
+  const callActivities: Array<Model.Activities.CallActivity> = [];
+
+  const callActivitiesRaw: Array<Model.Activities.CallActivity> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
+
+  if (!callActivitiesRaw || callActivitiesRaw.length === 0) {
+    return [];
+  }
+
+  callActivitiesRaw.forEach((callActivityRaw: any): void => {
+    let callActivity: Model.Activities.CallActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
+
+    if (callActivityRaw.calledElement) {
+      // NOTE: There is also a CMMN type, which is not supported yet.
+      callActivity.type = Model.Activities.CallActivityType.BPMN;
+      callActivity.calledReference = callActivityRaw.calledElement;
+      callActivity.bindingType = <Model.Activities.CallActivityBindingType> callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
+
+      if (callActivity.bindingType === Model.Activities.CallActivityBindingType.version) {
+        callActivity.calledElementVersion = callActivityRaw[BpmnTags.CamundaProperty.CalledElementVersion];
+      }
+      callActivity.calledElementTenantId = callActivityRaw[BpmnTags.CamundaProperty.CalledElementTenantId];
+
+      callActivity = determineCallActivityMappingType(callActivity, callActivityRaw);
+    }
+
+    callActivities.push(callActivity);
+  });
+
+  return callActivities;
+}
+
+function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {
+
+  if (data[BpmnTags.CamundaProperty.VariableMappingClass]) {
+
+    callActivity.delegateVariableMapping = Model.Activities.CallActivityDelegateVariableMapping.variableMappingClass;
+    callActivity.variableMappingValue = data[BpmnTags.CamundaProperty.VariableMappingClass];
+
+  } else if (data[BpmnTags.CamundaProperty.VariableMappingDelegateExpression]) {
+
+    callActivity.delegateVariableMapping = Model.Activities.CallActivityDelegateVariableMapping.variableMappingDelegateExpression;
+    callActivity.variableMappingValue = data[BpmnTags.CamundaProperty.VariableMappingDelegateExpression];
+
+  } else {
+    callActivity.delegateVariableMapping = Model.Activities.CallActivityDelegateVariableMapping.Unspecified;
+  }
+
+  return callActivity;
+}
+
+function createActivityInstance<TActivity extends Model.Activities.Activity>(
+  data: any,
+  type: Model.Base.IConstructor<TActivity>,
+): TActivity {
+
+  let instance: TActivity = new type();
+  instance = <TActivity> setCommonObjectPropertiesFromData(data, instance);
+
+  instance.incoming = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowIncoming) || [];
+  instance.outgoing = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowOutgoing) || [];
+
+  instance.name = data.name;
+
+  return instance;
 }
