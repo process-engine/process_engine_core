@@ -72,3 +72,35 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
   return events;
 }
+
+function getEventDefinitionsForEvent(event: Model.Events.Event, modelData: any): Model.Events.Event {
+
+  if (modelData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
+    const errorEventDefinition: Model.EventDefinitions.ErrorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
+    errorEventDefinition.errorReference = modelData[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+
+    event.errorEventDefinition = errorEventDefinition;
+  }
+
+  if (modelData[BpmnTags.FlowElementProperty.MessageEventDefinition]) {
+    const messageEventDefinition: Model.EventDefinitions.MessageEventDefinition = new Model.EventDefinitions.MessageEventDefinition();
+    messageEventDefinition.messageReference = modelData[BpmnTags.FlowElementProperty.MessageEventDefinition].messageRef;
+
+    event.messageEventDefinition = messageEventDefinition;
+  }
+
+  if (modelData[BpmnTags.FlowElementProperty.SignalEventDefinition]) {
+    const signalEventDefinition: Model.EventDefinitions.SignalEventDefinition = new Model.EventDefinitions.SignalEventDefinition();
+    signalEventDefinition.signalReference = modelData[BpmnTags.FlowElementProperty.SignalEventDefinition].signalRef;
+
+    event.signalEventDefinition = signalEventDefinition;
+  }
+
+  if (modelData[BpmnTags.FlowElementProperty.TerminateEventDefinition]) {
+    const terminateEventDefinition: Model.EventDefinitions.TerminateEventDefinition = new Model.EventDefinitions.TerminateEventDefinition();
+
+    event.terminateEventDefinition = terminateEventDefinition;
+  }
+
+  return event;
+}
