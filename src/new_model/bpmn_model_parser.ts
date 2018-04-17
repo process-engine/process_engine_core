@@ -5,10 +5,11 @@ import {
   Model,
 } from '@process-engine/process_engine_contracts';
 
+import * as FlowNodeParser from './parser';
+
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-  setCommonObjectPropertiesFromData,
 } from './type_factory';
 
 import * as BluebirdPromise from 'bluebird';
@@ -208,127 +209,13 @@ export class BpmnModelParser implements IModelParser {
 
     let nodes: Array<Model.Base.FlowNode> = [];
 
-    const gateways: Array<Model.Gateways.Gateway> = this._getGateways(processData);
-    const tasks: Array<Model.Activities.Activity> = this._getActivities(processData);
-    const events: Array<Model.Events.Event> = this._getEvents(processData);
+    const events: Array<Model.Events.Event> = FlowNodeParser.parseEventsFromProcessData(processData);
+    const gateways: Array<Model.Gateways.Gateway> = FlowNodeParser.parseGatewaysFromProcessData(processData);
+    const tasks: Array<Model.Activities.Activity> = FlowNodeParser.parseActivitiesFromProcessData(processData);
 
     nodes = nodes.concat(gateways, tasks, events);
 
     return nodes;
-  }
-
-  private _getGateways(processData: any): Array<Model.Gateways.Gateway> {
-
-    const exclusiveGateways: Array<Model.Gateways.ExclusiveGateway> =
-      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.ExclusiveGateway, Model.Gateways.ExclusiveGateway);
-
-    const parallelGateways: Array<Model.Gateways.ParallelGateway> =
-      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.ParallelGateway, Model.Gateways.ParallelGateway);
-
-    const inclusiveGateways: Array<Model.Gateways.InclusiveGateway> =
-      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.InclusiveGateway, Model.Gateways.InclusiveGateway);
-
-    const complexGateways: Array<Model.Gateways.ComplexGateway> =
-      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.ComplexGateway, Model.Gateways.ComplexGateway);
-
-    return Array.prototype.concat(parallelGateways, exclusiveGateways, inclusiveGateways, complexGateways);
-  }
-
-  private _parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
-    processData: Array<any>,
-    gatewayType: BpmnTags.GatewayElement,
-    type: Model.Base.IConstructor<TGateway>,
-  ): Array<TGateway> {
-
-    const gateways: Array<TGateway> = [];
-
-    const gatewaysRaw: Array<TGateway> = getModelPropertyAsArray(processData, gatewayType);
-
-    if (!gatewaysRaw || gatewaysRaw.length === 0) {
-      return [];
-    }
-
-    gatewaysRaw.forEach((gatewayRaw: any): void => {
-      let gateway: TGateway = new type();
-      gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
-      gateway.name = gatewayRaw.name;
-      gateway.incoming = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-      gateway.outgoing = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-      gateways.push(gateway);
-    });
-
-    return gateways;
-  }
-
-  private _getActivities(processData: any): Array<Model.Activities.Activity> {
-    return new Array<Model.Activities.Activity>();
-  }
-
-  private _getEvents(processData: any): Array<Model.Events.Event> {
-
-    const startEvents: Array<Model.Events.StartEvent>
-      = this._parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
-
-    const boundaryEvents: Array<Model.Events.BoundaryEvent> = this._parseBoundaryEvents(processData);
-
-    const endEvents: Array<Model.Events.EndEvent>
-      = this._parseEventsByType(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
-
-    return Array.prototype.concat(startEvents, boundaryEvents, endEvents);
-  }
-
-  private _parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
-
-    const events: Array<Model.Events.BoundaryEvent> = [];
-
-    const eventsRaw: Array<Model.Events.BoundaryEvent> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
-
-    if (!eventsRaw || eventsRaw.length === 0) {
-      return [];
-    }
-
-    eventsRaw.forEach((boundaryEventRaw: any): void => {
-      const event: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
-
-      event.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-      event.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-      event.name = boundaryEventRaw.name;
-      event.attachedToRef = boundaryEventRaw.attachedToRef;
-      event.cancelActivity = boundaryEventRaw.cancelActivity || true;
-      event.errorEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
-
-      events.push(event);
-    });
-
-    return events;
-  }
-
-  private _parseEventsByType<TEvent extends Model.Events.Event>(
-    data: any,
-    eventType: BpmnTags.EventElement,
-    type: Model.Base.IConstructor<TEvent>,
-  ): Array<TEvent> {
-
-    const events: Array<TEvent> = [];
-
-    const eventsRaw: Array<TEvent> = getModelPropertyAsArray(data, eventType);
-
-    if (!eventsRaw || eventsRaw.length === 0) {
-      return [];
-    }
-
-    eventsRaw.forEach((eventRaw: any): void => {
-      let event: TEvent = new type();
-      event = <TEvent> setCommonObjectPropertiesFromData(eventRaw, event);
-      event.name = eventRaw.name;
-      event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-      event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-      events.push(event);
-    });
-
-    return events;
   }
 
 }
