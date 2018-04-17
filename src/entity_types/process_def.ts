@@ -581,6 +581,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         nodeDefEntity = await nodeDef.createEntity(context, nodeDefData);
       }
 
+      if (node.$parent && node.$parent.$type === 'bpmn:SubProcess') {
+        nodeDefEntity.belongsToSubProcessKey = node.$parent.id;
+      }
+
       switch (node.$type) {
         case 'bpmn:ScriptTask':
           nodeDefEntity.script = node.script || null;
@@ -592,13 +596,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           }
           break;
 
-        case 'bpmn:StartEvent':
-          if (node.$parent && node.$parent.$type === 'bpmn:SubProcess') {
-            nodeDefEntity.subProcessKey = node.$parent.id;
-          }
-        break;
-
         default:
+          break;
       }
 
       const eventType = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;
@@ -655,7 +654,7 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
       if (laneId) {
         nodeDefEntity.lane = laneCache[laneId];
       }
-ƒ
+
       await nodeDefEntity.save(context, { reloadAfterSave: false });
 
       nodeCache[node.id] = nodeDefEntity;
