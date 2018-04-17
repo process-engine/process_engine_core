@@ -102,5 +102,7 @@ function getEventDefinitionsForEvent(event: Model.Events.Event, modelData: any):
     event.terminateEventDefinition = terminateEventDefinition;
   }
 
+  // TODO: TimingEvents are declared as IntermediateCatchEvents, wich are not implemented yet.
+
   return event;
 }
