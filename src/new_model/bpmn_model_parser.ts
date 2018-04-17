@@ -5,6 +5,12 @@ import {
   Model,
 } from '@process-engine/process_engine_contracts';
 
+import {
+  createObjectWithCommonProperties,
+  getModelPropertyAsArray,
+  setCommonObjectPropertiesFromData,
+} from './type_factory';
+
 import * as BluebirdPromise from 'bluebird';
 import {inspect} from 'util'; // For testing purposes; Remove after implementation is finished
 import * as xml2js from 'xml2js';
@@ -83,7 +89,7 @@ export class BpmnModelParser implements IModelParser {
 
     const collaborationData: any = data[BpmnTags.CommonElement.Collaboration];
 
-    const collaboration: Model.Types.Collaboration = this._createObjectWithBaseProperties<Model.Types.Collaboration>(data);
+    const collaboration: Model.Types.Collaboration = createObjectWithCommonProperties(data, Model.Types.Collaboration);
 
     collaboration.participants = this._getCollaborationParticipants(collaborationData);
 
@@ -95,12 +101,12 @@ export class BpmnModelParser implements IModelParser {
     // NOTE: Depending on how the 'bpmn:participant' tag has been formatted and the number of stored participants,
     // this can be either an Array or an Object. For easy usability, we'll always convert this to an Array, since this
     // is what our object model expects.
-    const participantData: Array<any> = this._getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
+    const participantData: Array<any> = getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
 
     const convertedParticipants: Array<Model.Types.Participant> = [];
 
     participantData.forEach((participantRaw: any): void => {
-        const participant: Model.Types.Participant = this._createObjectWithBaseProperties<Model.Types.Participant>(participantRaw);
+        const participant: Model.Types.Participant = createObjectWithCommonProperties(participantRaw, Model.Types.Participant);
 
         participant.name = participantRaw.name;
         participant.processReference = participantRaw.processRef;
@@ -114,13 +120,13 @@ export class BpmnModelParser implements IModelParser {
   private _getProcesses(data: any): Array<Model.Types.Process> {
 
     // NOTE: See above, this can be an Object or an Array.
-    const processData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.CommonElement.Process);
+    const processData: Array<any> = getModelPropertyAsArray(data, BpmnTags.CommonElement.Process);
 
     const processes: Array<Model.Types.Process> = [];
 
     processData.forEach((processRaw: any): void => {
 
-      const process: Model.Types.Process = this._createObjectWithBaseProperties<Model.Types.Process>(processRaw);
+      const process: Model.Types.Process = createObjectWithCommonProperties(processRaw, Model.Types.Process);
 
       process.name = processRaw.name;
       process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
@@ -144,7 +150,7 @@ export class BpmnModelParser implements IModelParser {
     }
 
     // NOTE: See above, this can be an Object or an Array.
-    const lanesRaw: Array<any> = this._getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
+    const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
     const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
 
@@ -153,7 +159,7 @@ export class BpmnModelParser implements IModelParser {
     }
 
     lanesRaw.forEach((laneRaw: any): void => {
-      const lane: Model.Types.Lane = this._createObjectWithBaseProperties<Model.Types.Lane>(laneRaw);
+      const lane: Model.Types.Lane = createObjectWithCommonProperties(laneRaw, Model.Types.Lane);
 
       lane.name = laneRaw.name;
       lane.flowNodeReferences = laneRaw[BpmnTags.LaneProperty.FlowNodeRef];
@@ -171,13 +177,13 @@ export class BpmnModelParser implements IModelParser {
   private _getProcessFlowSequences(data: any): Array<Model.Types.SequenceFlow> {
 
     // NOTE: See above, this can be an Object or an Array (Admittedly, the first is somewhat unlikely here, but not impossible).
-    const sequenceData: Array<any> = this._getModelPropertyAsArray(data, BpmnTags.CommonElement.SequenceFlow);
+    const sequenceData: Array<any> = getModelPropertyAsArray(data, BpmnTags.CommonElement.SequenceFlow);
 
     const sequences: Array<Model.Types.SequenceFlow> = [];
 
     sequenceData.forEach((sequenceRaw: any): void => {
 
-      const sequenceFlow: Model.Types.SequenceFlow = this._createObjectWithBaseProperties<Model.Types.SequenceFlow>(sequenceRaw);
+      const sequenceFlow: Model.Types.SequenceFlow = createObjectWithCommonProperties(sequenceRaw, Model.Types.SequenceFlow);
 
       sequenceFlow.name = sequenceRaw.name;
       sequenceFlow.sourceRef = sequenceRaw.sourceRef;
@@ -198,7 +204,6 @@ export class BpmnModelParser implements IModelParser {
     return sequences;
   }
 
-  // TODO
   private _getProcessFlowNodes(processData: any): Array<Model.Base.FlowNode> {
 
     let nodes: Array<Model.Base.FlowNode> = [];
@@ -215,39 +220,39 @@ export class BpmnModelParser implements IModelParser {
   private _getGateways(processData: any): Array<Model.Gateways.Gateway> {
 
     const exclusiveGateways: Array<Model.Gateways.ExclusiveGateway> =
-      this._parseGatewaysByType<Model.Gateways.ExclusiveGateway>(processData, BpmnTags.GatewayElement.ExclusiveGateway);
+      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.ExclusiveGateway, Model.Gateways.ExclusiveGateway);
 
     const parallelGateways: Array<Model.Gateways.ParallelGateway> =
-      this._parseGatewaysByType<Model.Gateways.ParallelGateway>(processData, BpmnTags.GatewayElement.ParallelGateway);
+      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.ParallelGateway, Model.Gateways.ParallelGateway);
 
     const inclusiveGateways: Array<Model.Gateways.InclusiveGateway> =
-      this._parseGatewaysByType<Model.Gateways.InclusiveGateway>(processData, BpmnTags.GatewayElement.InclusiveGateway);
+      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.InclusiveGateway, Model.Gateways.InclusiveGateway);
 
     const complexGateways: Array<Model.Gateways.ComplexGateway> =
-      this._parseGatewaysByType<Model.Gateways.ComplexGateway>(processData, BpmnTags.GatewayElement.ComplexGateway);
+      this._parseGatewaysByType(processData, BpmnTags.GatewayElement.ComplexGateway, Model.Gateways.ComplexGateway);
 
     return Array.prototype.concat(parallelGateways, exclusiveGateways, inclusiveGateways, complexGateways);
   }
 
-  // NOTE: We can use one converter method for all Gateway types, because they all use the exact same properties.
-  // Unfortunately, however, this does not work for activities and events.
   private _parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
     processData: Array<any>,
     gatewayType: BpmnTags.GatewayElement,
+    type: Model.Base.IConstructor<TGateway>,
   ): Array<TGateway> {
 
     const gateways: Array<TGateway> = [];
 
-    const gatewaysRaw: Array<TGateway> = this._getModelPropertyAsArray(processData, gatewayType);
+    const gatewaysRaw: Array<TGateway> = getModelPropertyAsArray(processData, gatewayType);
 
     if (!gatewaysRaw || gatewaysRaw.length === 0) {
       return [];
     }
 
     gatewaysRaw.forEach((gatewayRaw: any): void => {
-      const gateway: TGateway = this._createObjectWithBaseProperties<TGateway>(gatewayRaw);
-      gateway.incoming = this._getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-      gateway.outgoing = this._getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+      let gateway: TGateway = new type();
+      gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
+      gateway.incoming = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      gateway.outgoing = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
       gateways.push(gateway);
     });
 
@@ -261,73 +266,37 @@ export class BpmnModelParser implements IModelParser {
   private _getEvents(processData: any): Array<Model.Events.Event> {
 
     const startEvents: Array<Model.Events.StartEvent>
-      = this._parseRegularEvents<Model.Events.StartEvent>(processData, BpmnTags.EventElement.StartEvent);
+      = this._parseRegularEvents(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
 
     const endEvents: Array<Model.Events.EndEvent>
-      = this._parseRegularEvents<Model.Events.EndEvent>(processData, BpmnTags.EventElement.EndEvent);
+      = this._parseRegularEvents(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
 
     return Array.prototype.concat(startEvents, endEvents);
   }
 
-  private _parseRegularEvents<TEvent extends Model.Events.Event>(data: any, eventType: BpmnTags.EventElement): Array<TEvent> {
+  private _parseRegularEvents<TEvent extends Model.Events.Event>(
+    data: any,
+    eventType: BpmnTags.EventElement,
+    type: Model.Base.IConstructor<TEvent>,
+  ): Array<TEvent> {
 
     const events: Array<TEvent> = [];
 
-    const eventsRaw: Array<TEvent> = this._getModelPropertyAsArray(data, eventType);
+    const eventsRaw: Array<TEvent> = getModelPropertyAsArray(data, eventType);
 
     if (!eventsRaw || eventsRaw.length === 0) {
       return [];
     }
 
     eventsRaw.forEach((startEventRaw: any): void => {
-      const event: TEvent = this._createObjectWithBaseProperties<TEvent>(startEventRaw);
-      event.incoming = this._getModelPropertyAsArray(startEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      let event: TEvent = new type();
+      event = <TEvent> setCommonObjectPropertiesFromData(startEventRaw, event);
+      event.incoming = getModelPropertyAsArray(startEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+      event.outgoing = getModelPropertyAsArray(startEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
       events.push(event);
     });
 
     return events;
-  }
-
-  private _parseEndEvents(data: any): Array<Model.Events.EndEvent> {
-    return new Array<Model.Events.EndEvent>();
-  }
-
-  private _getModelPropertyAsArray(model: any, elementName: string): any {
-
-    if (!model[elementName]) {
-      return undefined;
-    }
-
-    return Array.isArray(model[elementName]) ? model[elementName] : [model[elementName]];
-  }
-
-  private _createObjectWithBaseProperties<T extends Model.Base.BaseElement>(data: any): T {
-
-    const obj: Model.Base.BaseElement = {
-      id: data.id,
-    };
-
-    if (data[BpmnTags.FlowElementProperty.Documentation]) {
-      obj.documentation = [data[BpmnTags.FlowElementProperty.Documentation]];
-    }
-
-    if (data[BpmnTags.FlowElementProperty.ExtensionElements]) {
-
-      const extensionData: any = data[BpmnTags.FlowElementProperty.ExtensionElements];
-
-      obj.extensionElements = new Model.Base.ExtensionElements();
-      obj.extensionElements.camundaExecutionListener = extensionData[BpmnTags.FlowElementProperty.CamundaExecutionListener];
-
-      // NOTE: The extension property collection is wrapped in a property named "camunda:property",
-      // which in turn is located in "camunda:properties".
-      const propertyCollection: any = extensionData[BpmnTags.FlowElementProperty.CamundaProperties];
-
-      // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
-      obj.extensionElements.camundaExtensionProperties =
-        this._getModelPropertyAsArray(propertyCollection, BpmnTags.FlowElementProperty.CamundaProperty);
-    }
-
-    return <T> obj;
   }
 
 }
