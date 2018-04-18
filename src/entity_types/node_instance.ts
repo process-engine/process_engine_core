@@ -215,23 +215,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
 
-    const processToken = this.processToken;
-    const processDef = this.process.processDef;
-
-    // create new process token entity to split flow at boundary
-    const currentToken = <any> await processTokenEntityType.createEntity(internalContext);
-    currentToken.process = processToken.process;
-    currentToken.data = processToken.data;
-
-    if (processDef.persist) {
-      await currentToken.save(internalContext, { reloadAfterSave: false });
-    }
-
     const boundaryNodeCreatePromises = [];
     for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
       const boundary = <INodeDefEntity> this.process.processDef.nodeDefCollection.data[i];
       if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
-        boundaryNodeCreatePromises.push(this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, currentToken));
+        boundaryNodeCreatePromises.push(this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, this.processToken));
       }
     }
 
@@ -473,14 +461,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.cancel(context);
           } else {
 
-            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
-            const newToken = <IProcessTokenEntity> await processTokenEntityType.createEntity(internalContext);
-            newToken.process = this.process;
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            newToken.data = processToken.data;
-            this.processToken = newToken;
+            if (this.processToken.data === undefined || this.processToken.data === null) {
+              this.processToken.data = {};
+            }
+            this.processToken.data.current = data;
 
             await this._publishToApi(context, 'signal', data);
             eventEntity.changeState(context, 'follow', this);
@@ -500,19 +484,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             this.cancel(context);
           } else {
 
-            const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
-            const newToken = <IProcessTokenEntity> await processTokenEntityType.createEntity(internalContext);
-            newToken.process = this.process;
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            newToken.data = processToken.data;
-            this.processToken = newToken;
+            if (this.processToken.data === undefined || this.processToken.data === null) {
+              this.processToken.data = {};
+            }
+            this.processToken.data.current = data;
 
             if (this.nodeDef.processDef.persist) {
-              await newToken.save(internalContext, { reloadAfterSave: false });
+              await this.processToken.save(internalContext, { reloadAfterSave: false });
             }
-            this.processToken = newToken;
 
             await this._publishToApi(context, 'message', data);
             eventEntity.changeState(context, 'follow', this);
@@ -545,12 +524,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                 this.cancel(internalContext);
               } else {
 
-                const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
-                const newToken = <IProcessTokenEntity> await processTokenEntityType.createEntity(internalContext);
-                newToken.process = this.process;
-
-                newToken.data = tokenData;
-                this.processToken = newToken;
+                if (this.processToken.data === undefined || this.processToken.data === null) {
+                  this.processToken.data = {};
+                }
+                this.processToken.data.current = data;
 
                 await this._publishToApi(context, 'conditional', data);
                 eventEntity.changeState(context, 'follow', this);

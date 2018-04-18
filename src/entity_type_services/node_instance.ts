@@ -418,9 +418,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           }
 
           if (splitToken && i > 0) {
-            currentToken = await processTokenEntityType.createEntity(internalContext);
-            currentToken.process = processToken.process;
-            currentToken.data = processToken.data;
+            currentToken = await processToken.clone();
 
             if (processDef.persist) {
               await currentToken.save(internalContext, { reloadAfterSave: false });
