@@ -1,15 +1,34 @@
-import {ExecutionContext, IEntity, IIamService, IInheritedSchema, IPublicGetOptions, SchemaAttributeType } from '@essential-projects/core_contracts';
+import {
+  ExecutionContext,
+  IEntity,
+  IIamService,
+  IInheritedSchema,
+  IPublicGetOptions,
+  SchemaAttributeType,
+} from '@essential-projects/core_contracts';
 import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@essential-projects/data_model_contracts';
-import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
+import { IDataMessage, IEntityMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
-import { IFlowDefEntity, ILaneEntity, INodeDefEntity, INodeInstanceEntityTypeService, IParamStart, IProcessDefEntity, IProcessEngineService,
-  IProcessEntity, IStartEventEntity } from '@process-engine/process_engine_contracts';
+import {
+  IFlowDefEntity,
+  ILaneEntity,
+  INodeDefEntity,
+  INodeInstanceEntity,
+  INodeInstanceEntityTypeService,
+  IParamStart,
+  IProcessDefEntity,
+  IProcessEngineService,
+  IProcessEntity,
+  IProcessTokenEntity,
+  IStartEventEntity,
+} from '@process-engine/process_engine_contracts';
 import {Logger} from 'loggerhythm';
 
 import * as debug from 'debug';
-const debugInfo = debug('processengine:info');
+const debugInfo: debug.IDebugger = debug('processengine:info');
 const logger: Logger = Logger.createLogger('process_engine').createChildLogger('process_entity');
 
+  // tslint:disable:cyclomatic-complexity
 export class ProcessEntity extends Entity implements IProcessEntity {
 
   private _iamService: IIamService = undefined;
@@ -168,6 +187,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     return startEventDef;
   }
 
+  // tslint:disable:cyclomatic-complexity
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
     const source = params ? params.source : undefined;
     const isSubProcess = params ? params.isSubProcess : false;
@@ -200,6 +220,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     if (!startEventDef) {
       logger.warn(`can't start process-instance ${this.id}: No start event found`);
+
       return;
     }
 
@@ -243,18 +264,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     }
 
     if (this.isSubProcess) {
-      const callerId = this.callerId;
-
-      const source = this;
       const tokenData: any = processToken.data || {};
       const currentToken: any = tokenData.current;
 
-      const data = {
+      const data: any = {
         action: 'proceed',
         token: currentToken,
       };
-      const msg = this.messageBusService.createEntityMessage(data, source, context);
-      const channel = '/processengine/node/' + callerId;
+      const msg: IEntityMessage = this.messageBusService.createEntityMessage(data, this, context);
+      const channel: string = `/processengine/node/${this.callerId}`;
       await this.messageBusService.publish(channel, msg);
 
     }
@@ -268,19 +286,43 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.messageBusService.publish(`/processengine/process/${this.id}`, processEndMessage);
   }
 
-  public async error(context: ExecutionContext, error): Promise<void> {
-    const processToken = null;
-    if (this.isSubProcess) {
-      const callerId = this.callerId;
+  public async terminate(context: ExecutionContext, processToken: any): Promise<void> {
 
-      const source = this;
-      const data = {
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+
+    if (this.processDef.persist) {
+      this.status = 'terminate';
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
+
+    const processTerminateMessage: any = {
+      event: 'terminate',
+      token: processToken.data.current,
+    };
+
+    const activeInstancesKeys: Array<string> = Object.keys(this.activeInstances);
+
+    if (activeInstancesKeys.length > 0) {
+      for (const instanceKey of activeInstancesKeys) {
+        const instance: INodeInstanceEntity = <INodeInstanceEntity> this.activeInstances[instanceKey];
+        await instance.terminate(context);
+      }
+    }
+
+    const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processTerminateMessage, context);
+    this.messageBusService.publish(`/processengine/process/${this.id}`, processEndMessage);
+  }
+
+  public async error(context: ExecutionContext, error: Error): Promise<void> {
+    const processToken: IProcessTokenEntity = null;
+    if (this.isSubProcess) {
+      const data: any = {
         action: 'event',
         event: 'error',
         data: error,
       };
-      const msg = this.messageBusService.createEntityMessage(data, source, context);
-      const channel = '/processengine/node/' + callerId;
+      const msg: IEntityMessage = this.messageBusService.createEntityMessage(data, this, context);
+      const channel: string = `/processengine/node/${this.callerId}`;
       await this.messageBusService.publish(channel, msg);
 
     }

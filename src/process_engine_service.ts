@@ -217,6 +217,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return processDefEntity.toPojo(context);
   }
 
+  // tslint:disable-next-line:cyclomatic-complexity
   private async _messageHandler(msg): Promise<void> {
     debugInfo('we got a message: ', msg);
 
@@ -605,7 +606,7 @@ export class ProcessEngineService implements IProcessEngineService {
           return;
         }
 
-        if (message.data.event !== 'end') {
+        if (!(message.data.event === 'terminate' || message.data.event === 'end')) {
           return;
         }
 
@@ -638,7 +639,7 @@ export class ProcessEngineService implements IProcessEngineService {
           return;
         }
 
-        if (message.data.event !== 'end') {
+        if (!(message.data.event === 'terminate' || message.data.event === 'end')) {
           return;
         }
 

@@ -608,19 +608,20 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
 
-    debugInfo(`end node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    const isEndEvent: boolean = this.type === BpmnType.endEvent;
+    const isTerminateEndEvent: boolean = this.nodeDef.eventType === 'bpmn:TerminateEventDefinition';
+
+    this.state = isTerminateEndEvent ? 'terminate' : 'end';
+
+    debugInfo(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
-
-    this.state = 'end';
 
     this.process.removeActiveInstance(this);
 
     if (this.process.processDef.persist) {
       await this.save(internalContext, { reloadAfterSave: false });
     }
-
-    const isEndEvent: boolean = this.type === BpmnType.endEvent;
 
     await this._updateToken(internalContext);
     const processToken: IProcessTokenEntity = this.processToken;
@@ -635,32 +636,56 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       (<any> this)._subscription.dispose();
     }
 
-    const isTerminateEndEvent: boolean = this.nodeDef.eventType === 'bpmn:TerminateEventDefinition';
+    if (!isTerminateEndEvent) {
+      // dispose boundary events
+      const activeInstancesKeys: Array<string> = Object.keys(this.process.activeInstances);
+      for (const instanceKey of activeInstancesKeys) {
+        const boundaryEntity: IBoundaryEventEntity = <IBoundaryEventEntity> this.process.activeInstances[instanceKey];
 
-    // dispose boundary events
-    const activeInstancesKeys: Array<string> = Object.keys(this.process.activeInstances);
-    for (const i of activeInstancesKeys) {
-
-      const boundaryEntity: IBoundaryEventEntity = <IBoundaryEventEntity> this.process.activeInstances[i];
-
-      if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
-        await boundaryEntity.end(context, true);
-      } else if (isTerminateEndEvent) {
-        this.process.activeInstances[i].end();
+        if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
+          await boundaryEntity.end(context, true);
+        }
       }
     }
 
-    if (!isEndEvent && !cancelFlow) {
+    if (!(isEndEvent || cancelFlow)) {
       try {
-      await this.nodeInstanceEntityTypeService.continueExecution(context, this);
+        await this.nodeInstanceEntityTypeService.continueExecution(context, this);
       } catch (err) {
         // we can't continue, handle error in process
-        const process: IProcessEntity = await this.getProcess(internalContext);
-        process.error(context, err);
+        this.process.error(context, err);
       }
+    } else if (isTerminateEndEvent) {
+      await this.process.terminate(context, processToken);
     } else {
-      const process: IProcessEntity = await this.getProcess(internalContext);
-      await process.end(context, processToken);
+      await this.process.end(context, processToken);
+    }
+  }
+
+  public async terminate(context: ExecutionContext): Promise<void> {
+    this.state = 'terminate';
+
+    debugInfo(`terminate node, id ${this.id}, key ${this.key}, type ${this.type}`);
+
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+
+    this.process.removeActiveInstance(this);
+
+    if (this.process.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
+
+    await this._updateToken(internalContext);
+    const processToken: IProcessTokenEntity = this.processToken;
+
+    // cancel subscriptions
+    this.eventAggregatorSubscription.dispose();
+    const messagebusSubscription: IMessageSubscription = await this.messagebusSubscription;
+    messagebusSubscription.cancel();
+
+    // if event entity dispose subscriptions for timers, messages & signals
+    if ((<any> this)._subscription) {
+      (<any> this)._subscription.dispose();
     }
   }
 
