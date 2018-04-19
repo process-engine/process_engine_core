@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -31,7 +31,7 @@
     "@essential-projects/foundation": "^1.0.0",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
-    "bpmn-moddle":"^5.1.1",
+    "bpmn-moddle":"^0.14.0",
     "debug": "^2.6.1",
     "loggerhythm": "^3.0.3",
     "moment":"^2.22.1",
