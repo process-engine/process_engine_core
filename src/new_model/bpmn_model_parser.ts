@@ -93,14 +93,14 @@ export class BpmnModelParser implements IModelParser {
 
     const convertedParticipants: Array<Model.Types.Participant> = [];
 
-    participantData.forEach((participantRaw: any): void => {
-        const participant: Model.Types.Participant = createObjectWithCommonProperties(participantRaw, Model.Types.Participant);
+    for (const participantRaw of participantData) {
+      const participant: Model.Types.Participant = createObjectWithCommonProperties(participantRaw, Model.Types.Participant);
 
-        participant.name = participantRaw.name;
-        participant.processReference = participantRaw.processRef;
+      participant.name = participantRaw.name;
+      participant.processReference = participantRaw.processRef;
 
-        convertedParticipants.push(participant);
-    });
+      convertedParticipants.push(participant);
+    }
 
     return convertedParticipants;
   }
@@ -112,7 +112,7 @@ export class BpmnModelParser implements IModelParser {
 
     const processes: Array<Model.Types.Process> = [];
 
-    processData.forEach((processRaw: any): void => {
+    for (const processRaw of processData) {
 
       const process: Model.Types.Process = createObjectWithCommonProperties(processRaw, Model.Types.Process);
 
@@ -124,7 +124,7 @@ export class BpmnModelParser implements IModelParser {
       process.flowNodes = this._getProcessFlowNodes(processRaw);
 
       processes.push(process);
-    });
+    }
 
     return processes;
   }
@@ -146,7 +146,7 @@ export class BpmnModelParser implements IModelParser {
       return laneSet;
     }
 
-    lanesRaw.forEach((laneRaw: any): void => {
+    for (const laneRaw of lanesRaw) {
       const lane: Model.Types.Lane = createObjectWithCommonProperties(laneRaw, Model.Types.Lane);
 
       lane.name = laneRaw.name;
@@ -157,7 +157,7 @@ export class BpmnModelParser implements IModelParser {
       }
 
       laneSet.lanes.push(lane);
-    });
+    }
 
     return laneSet;
   }
@@ -169,7 +169,7 @@ export class BpmnModelParser implements IModelParser {
 
     const sequences: Array<Model.Types.SequenceFlow> = [];
 
-    sequenceData.forEach((sequenceRaw: any): void => {
+    for (const sequenceRaw of sequenceData) {
 
       const sequenceFlow: Model.Types.SequenceFlow = createObjectWithCommonProperties(sequenceRaw, Model.Types.SequenceFlow);
 
@@ -187,7 +187,7 @@ export class BpmnModelParser implements IModelParser {
       }
 
       sequences.push(sequenceFlow);
-    });
+    }
 
     return sequences;
   }

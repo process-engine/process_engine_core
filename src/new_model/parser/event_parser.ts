@@ -23,13 +23,13 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
   const events: Array<Model.Events.BoundaryEvent> = [];
 
-  const eventsRaw: Array<Model.Events.BoundaryEvent> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
+  const boundaryEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
 
-  if (!eventsRaw || eventsRaw.length === 0) {
+  if (!boundaryEventsRaw || boundaryEventsRaw.length === 0) {
     return [];
   }
 
-  eventsRaw.forEach((boundaryEventRaw: any): void => {
+  for (const boundaryEventRaw of boundaryEventsRaw) {
     const event: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
 
     event.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
@@ -41,7 +41,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     event.errorEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
 
     events.push(event);
-  });
+  }
 
   return events;
 }
@@ -54,13 +54,13 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
   const events: Array<TEvent> = [];
 
-  const eventsRaw: Array<TEvent> = getModelPropertyAsArray(data, eventType);
+  const eventsRaw: Array<any> = getModelPropertyAsArray(data, eventType);
 
   if (!eventsRaw || eventsRaw.length === 0) {
     return [];
   }
 
-  eventsRaw.forEach((eventRaw: any): void => {
+  for (const eventRaw of eventsRaw) {
     let event: TEvent = new type();
     event = <TEvent> setCommonObjectPropertiesFromData(eventRaw, event);
     event.name = eventRaw.name;
@@ -68,7 +68,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
     events.push(event);
-  });
+  }
 
   return events;
 }

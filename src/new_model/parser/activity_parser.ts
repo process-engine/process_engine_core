@@ -23,16 +23,16 @@ function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> 
 
   const manualTasks: Array<Model.Activities.ManualTask> = [];
 
-  const manualTasksRaw: Array<Model.Activities.ManualTask> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ManualTask);
+  const manualTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ManualTask);
 
   if (!manualTasksRaw || manualTasksRaw.length === 0) {
     return [];
   }
 
-  manualTasksRaw.forEach((manualTaskRaw: any): void => {
+  for (const manualTaskRaw of manualTasksRaw) {
     const manualTask: Model.Activities.ManualTask = createActivityInstance(manualTaskRaw, Model.Activities.ManualTask);
     manualTasks.push(manualTask);
-  });
+  }
 
   return manualTasks;
 }
@@ -41,7 +41,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
 
   const userTasks: Array<Model.Activities.UserTask> = [];
 
-  const userTasksRaw: Array<Model.Activities.UserTask> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
+  const userTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
 
   if (!userTasksRaw || userTasksRaw.length === 0) {
     return [];
@@ -58,7 +58,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return dateObj.toDate();
   }
 
-  userTasksRaw.forEach((userTaskRaw: any): void => {
+  for (const userTaskRaw of userTasksRaw) {
     const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
 
     userTask.assignee = userTaskRaw[BpmnTags.CamundaProperty.Assignee];
@@ -68,7 +68,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
 
     userTasks.push(userTask);
-  });
+  }
 
   return userTasks;
 }
@@ -77,13 +77,13 @@ function parseScriptTasks(processData: any): Array<Model.Activities.ScriptTask> 
 
   const scriptTasks: Array<Model.Activities.ScriptTask> = [];
 
-  const scriptTasksRaw: Array<Model.Activities.ScriptTask> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ScriptTask);
+  const scriptTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ScriptTask);
 
   if (!scriptTasksRaw || scriptTasksRaw.length === 0) {
     return [];
   }
 
-  scriptTasksRaw.forEach((scriptTaskRaw: any): void => {
+  for (const scriptTaskRaw of scriptTasksRaw) {
     const scriptTask: Model.Activities.ScriptTask = createActivityInstance(scriptTaskRaw, Model.Activities.ScriptTask);
 
     scriptTask.scriptFormat = scriptTaskRaw.scriptFormat;
@@ -91,7 +91,7 @@ function parseScriptTasks(processData: any): Array<Model.Activities.ScriptTask> 
     scriptTask.resultVariable = scriptTaskRaw[BpmnTags.CamundaProperty.ResultVariable];
 
     scriptTasks.push(scriptTask);
-  });
+  }
 
   return scriptTasks;
 }
@@ -100,13 +100,13 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
 
   const serviceTasks: Array<Model.Activities.ServiceTask> = [];
 
-  const serviceTasksRaw: Array<Model.Activities.ServiceTask> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ServiceTask);
+  const serviceTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ServiceTask);
 
   if (!serviceTasksRaw || serviceTasksRaw.length === 0) {
     return [];
   }
 
-  serviceTasksRaw.forEach((serviceTaskRaw: any): void => {
+  for (const serviceTaskRaw of serviceTasksRaw) {
     const serviceTask: Model.Activities.ServiceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
 
     // Check if the extension properties contain invocations.
@@ -122,7 +122,7 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
     }
 
     serviceTasks.push(serviceTask);
-  });
+  }
 
   return serviceTasks;
 }
@@ -189,13 +189,13 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
 
   const callActivities: Array<Model.Activities.CallActivity> = [];
 
-  const callActivitiesRaw: Array<Model.Activities.CallActivity> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
+  const callActivitiesRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
 
   if (!callActivitiesRaw || callActivitiesRaw.length === 0) {
     return [];
   }
 
-  callActivitiesRaw.forEach((callActivityRaw: any): void => {
+  for (const callActivityRaw of callActivitiesRaw) {
     let callActivity: Model.Activities.CallActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
 
     if (callActivityRaw.calledElement) {
@@ -213,7 +213,7 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
     }
 
     callActivities.push(callActivity);
-  });
+  }
 
   return callActivities;
 }

@@ -30,20 +30,20 @@ function parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
 
   const gateways: Array<TGateway> = [];
 
-  const gatewaysRaw: Array<TGateway> = getModelPropertyAsArray(processData, gatewayType);
+  const gatewaysRaw: Array<any> = getModelPropertyAsArray(processData, gatewayType);
 
   if (!gatewaysRaw || gatewaysRaw.length === 0) {
     return [];
   }
 
-  gatewaysRaw.forEach((gatewayRaw: any): void => {
+  for (const gatewayRaw of gatewaysRaw) {
     let gateway: TGateway = new type();
     gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
     gateway.name = gatewayRaw.name;
     gateway.incoming = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     gateway.outgoing = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
     gateways.push(gateway);
-  });
+  }
 
   return gateways;
 }
