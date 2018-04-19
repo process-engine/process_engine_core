@@ -651,7 +651,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     } else {
       const process = await this.getProcess(internalContext);
-      await process.end(context, processToken);
+      await process.end(context, processToken, this.key);
     }
   }
 
