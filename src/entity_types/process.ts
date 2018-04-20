@@ -231,7 +231,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     startEvent.changeState(laneContext, 'start', this);
   }
 
-  public async end(context: ExecutionContext, processToken: any): Promise<void> {
+  public async end(context: ExecutionContext, processToken: any, endEventKey?: string): Promise<void> {
 
     // Todo: end active node instances
 
@@ -256,11 +256,11 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       const msg = this.messageBusService.createEntityMessage(data, source, context);
       const channel = '/processengine/node/' + callerId;
       await this.messageBusService.publish(channel, msg);
-
     }
 
     const processEndMessageData: any = {
       event: 'end',
+      endEventKey: endEventKey,
       token: processToken.data.current,
     };
 
