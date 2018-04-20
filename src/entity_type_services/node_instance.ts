@@ -391,12 +391,12 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
-  public async continueExecution(context: ExecutionContext, source: any): Promise<void> {
+  public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
 
-    const nodeInstance: INodeInstanceEntity = source;
+    const nodeInstance: any = source;
     const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
 
     const nextDefs = [];
