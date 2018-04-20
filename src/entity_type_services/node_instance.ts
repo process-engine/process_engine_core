@@ -420,9 +420,9 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       mappers.push(flow.mapper);
     }
 
-    if (source.type === 'bpmn:SubProcess') {
+    if ((<INodeInstanceEntity> source).type === 'bpmn:SubProcess') {
 
-      await source.process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
+      await (<INodeInstanceEntity> source).process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
 
         const isStartEvent: boolean = nodeDefEntity.type === 'bpmn:StartEvent';
 
@@ -430,7 +430,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           return;
         }
 
-        const belongsToThisSubProcess: boolean = nodeDefEntity.belongsToSubProcessKey === source.nodeDef.key;
+        const belongsToThisSubProcess: boolean = nodeDefEntity.belongsToSubProcessKey === (<INodeInstanceEntity> source).nodeDef.key;
 
         if (!belongsToThisSubProcess) {
           return;
@@ -441,7 +441,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     } else {
 
-      await source.process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
+      await (<INodeInstanceEntity> source).process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
         if (ids.indexOf(nodeDefEntity.id) !== -1 && nodeDefEntity.processDef.id === processDef.id) {
           nextDefs.push(nodeDefEntity);
         }
