@@ -340,7 +340,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  private _getContinueExecutionFlowsOut(nodeInstance: any, processDef: any, nodeDef: any): Array<IFlowDefEntity> {
+  private _getContinueExecutionFlowsOut(nodeInstance: any, processDef: any, nodeDef: any): Array<any> {
     const flowsOut = [];
 
     const isSubProcessEndEvent: boolean = (nodeDef.type === 'bpmn:EndEvent' && !!nodeDef.belongsToSubProcessKey);
@@ -391,7 +391,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
-  public async continueExecution(context: ExecutionContext, source: INodeInstanceEntity): Promise<void> {
+  public async continueExecution(context: ExecutionContext, source: any): Promise<void> {
     const internalContext = await this.iamService.createInternalContext('processengine_system');
 
     const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
@@ -454,6 +454,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
     const processToken = nodeInstance.processToken;
 
+    let isFirstNextDef: boolean = true;
+
     for (const nextDef of nextDefs) {
 
       let currentToken;
@@ -473,7 +475,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         }
       }
 
-      if (splitToken && i > 0) {
+      if (splitToken && !isFirstNextDef) {
         currentToken = await processToken.clone();
 
         if (processDef.persist) {
@@ -482,6 +484,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
 
       } else {
         currentToken = processToken;
+        isFirstNextDef = false;
       }
 
       const laneRef = await nextDef.lane;

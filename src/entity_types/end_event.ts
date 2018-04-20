@@ -23,7 +23,7 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
   public async execute(context: ExecutionContext): Promise<void> {
 
     if (this.nodeDef.belongsToSubProcessKey !== undefined) {
-      return super.execute();
+      return super.execute(context);
     }
 
     this.state = 'progress';

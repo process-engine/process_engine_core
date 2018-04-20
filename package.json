@@ -25,7 +25,7 @@
     "@essential-projects/messagebus_contracts": "^1.0.0",
     "@essential-projects/metadata": "^1.0.0",
     "@essential-projects/metadata_contracts": "^1.0.0",
-    "@process-engine/process_engine_contracts": "^3.2.0",
+    "@process-engine/process_engine_contracts": "feature~implement_subprocess",
     "@essential-projects/routing_contracts": "^1.0.0",
     "@essential-projects/timing_contracts": "^1.0.0",
     "@essential-projects/foundation": "^1.0.0",
