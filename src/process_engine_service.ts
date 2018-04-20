@@ -475,7 +475,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private _timeoutPromise(milliseconds: number): Promise<void> {
-    return new Promise((resolve: any, reject: any) => {
+    return new Promise((resolve: Function, reject: Function): void => {
       setTimeout(() => {
         resolve();
       }, milliseconds);
@@ -606,7 +606,13 @@ export class ProcessEngineService implements IProcessEngineService {
           return;
         }
 
-        if (!(message.data.event === 'terminate' || message.data.event === 'end')) {
+        if (message.data.event === 'terminate') {
+          debugErr(`Unexpected process termination through TerminationEndEvent '${message.data.endEventKey}'!`);
+
+          return reject(new Error(`The process was terminated through the '${message.data.endEventKey}' TerminationEndEvent!`));
+        }
+
+        if (message.data.event !== 'end') {
           return;
         }
 
@@ -620,7 +626,11 @@ export class ProcessEngineService implements IProcessEngineService {
     });
   }
 
-  private _executeProcessInstanceLocally(context: ExecutionContext, processInstance: IProcessEntity, participantId: string, initialToken: any): Promise<any> {
+  private _executeProcessInstanceLocally(context: ExecutionContext,
+                                         processInstance: IProcessEntity,
+                                         participantId: string,
+                                         initialToken: any): Promise<any> {
+
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
@@ -639,7 +649,13 @@ export class ProcessEngineService implements IProcessEngineService {
           return;
         }
 
-        if (!(message.data.event === 'terminate' || message.data.event === 'end')) {
+        if (message.data.event === 'terminate') {
+          debugErr(`Unexpected process termination through TerminationEndEvent '${message.data.endEventKey}'!`);
+
+          return reject(new Error(`The process was terminated through the '${message.data.endEventKey}' TerminationEndEvent!`));
+        }
+
+        if (message.data.event !== 'end') {
           return;
         }
 
@@ -711,7 +727,8 @@ export class ProcessEngineService implements IProcessEngineService {
     const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
     const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstanceIdMessage);
     const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
-    const executeProcessInstanceResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessInstanceMessage);
+    const executeProcessInstanceResponse: IDataMessage =
+      <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessInstanceMessage);
 
     return executeProcessInstanceResponse.data;
   }
