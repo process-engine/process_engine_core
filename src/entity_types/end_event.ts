@@ -46,8 +46,6 @@ export class EndEventEntity extends EventEntity implements IEndEventEntity {
         await this.messageBusService.publish(`/role/${flatRole}`, msg);
       }
     }
-    // Required for the consumer api: Inform subscribers that this end event has been reached.
-    await this.messageBusService.publish(`/processengine/process/${this.process.id}`, msg);
     this.changeState(context, 'end', this);
   }
 }
