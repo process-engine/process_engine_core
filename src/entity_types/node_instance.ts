@@ -8,9 +8,13 @@ import { BpmnType, IBoundaryEventEntity, INodeDefEntity, INodeInstanceEntity, IN
   IProcessEngineService, IProcessEntity, IProcessTokenEntity } from '@process-engine/process_engine_contracts';
 
 import * as debug from 'debug';
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+const debugInfo: debug.IDebugger = debug('processengine:info');
+const debugErr: debug.IDebugger = debug('processengine:error');
 
+// TODO: Refactor this the remove these REALLY annoying errors!
+// tslint:disable:cyclomatic-complexity
+// tslint:disable:max-classes-per-file
+// tslint:disable:max-file-line-count
 export class NodeInstanceEntityDependencyHelper {
 
   public messageBusService: IMessageBusService = undefined;
@@ -604,11 +608,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
 
-    debugInfo(`end node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    const isEndEvent: boolean = this.type === BpmnType.endEvent;
+    const isTerminateEndEvent: boolean = this.nodeDef.eventType === 'bpmn:TerminateEventDefinition';
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    this.state = isTerminateEndEvent ? 'terminate' : 'end';
 
-    this.state = 'end';
+    debugInfo(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
+
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
     this.process.removeActiveInstance(this);
 
@@ -616,15 +623,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       await this.save(internalContext, { reloadAfterSave: false });
     }
 
-    const nodeInstance = this as any;
-    const isEndEvent = (nodeInstance.type === 'bpmn:EndEvent');
-
     await this._updateToken(internalContext);
-    const processToken = this.processToken;
+    const processToken: IProcessTokenEntity = this.processToken;
 
     // cancel subscriptions
-    nodeInstance.eventAggregatorSubscription.dispose();
-    const messagebusSubscription = await nodeInstance.messagebusSubscription;
+    this.eventAggregatorSubscription.dispose();
+    const messagebusSubscription: IMessageSubscription = await this.messagebusSubscription;
     messagebusSubscription.cancel();
 
     // if event entity dispose subscriptions for timers, messages & signals
@@ -632,40 +636,71 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       (<any> this)._subscription.dispose();
     }
 
-    // dispose boundary events
-    const activeInstancesKeys = Object.keys(this.process.activeInstances);
-    for (let i = 0; i < activeInstancesKeys.length; i++) {
-      const boundaryEntity = <IBoundaryEventEntity> this.process.activeInstances[activeInstancesKeys[i]];
-      if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
-        await boundaryEntity.end(context, true);
+    if (!isTerminateEndEvent) {
+      // dispose boundary events
+      const activeInstancesKeys: Array<string> = Object.keys(this.process.activeInstances);
+      for (const instanceKey of activeInstancesKeys) {
+        const boundaryEntity: IBoundaryEventEntity = <IBoundaryEventEntity> this.process.activeInstances[instanceKey];
+
+        if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id)) {
+          await boundaryEntity.end(context, true);
+        }
       }
     }
 
-    if (!isEndEvent && !cancelFlow) {
+    if (!(isEndEvent || cancelFlow)) {
       try {
-      await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+        await this.nodeInstanceEntityTypeService.continueExecution(context, this);
       } catch (err) {
         // we can't continue, handle error in process
-        const process = await this.getProcess(internalContext);
-        process.error(context, err);
+        this.process.error(context, err);
       }
+    } else if (isTerminateEndEvent) {
+      await this.process.terminate(context, processToken);
     } else {
-      const process = await this.getProcess(internalContext);
-      await process.end(context, processToken, this.key);
+      await this.process.end(context, processToken);
+    }
+  }
+
+  public async terminate(context: ExecutionContext): Promise<void> {
+    this.state = 'terminate';
+
+    debugInfo(`terminate node, id ${this.id}, key ${this.key}, type ${this.type}`);
+
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+
+    this.process.removeActiveInstance(this);
+
+    if (this.process.processDef.persist) {
+      await this.save(internalContext, { reloadAfterSave: false });
+    }
+
+    await this._updateToken(internalContext);
+    const processToken: IProcessTokenEntity = this.processToken;
+
+    // cancel subscriptions
+    this.eventAggregatorSubscription.dispose();
+    const messagebusSubscription: IMessageSubscription = await this.messagebusSubscription;
+    messagebusSubscription.cancel();
+
+    // if event entity dispose subscriptions for timers, messages & signals
+    if ((<any> this)._subscription) {
+      (<any> this)._subscription.dispose();
     }
   }
 
   public parseExtensionProperty(propertyString: string, token: any, context: ExecutionContext): any {
     if (typeof propertyString === 'string' && propertyString.length > 1 && propertyString.charAt(0) === '$') {
 
-      const functionString = 'return ' + propertyString.substr(1);
-      const evaluateFunction = new Function('token', 'context', functionString);
-      let result;
+      const functionString: string = `return ${propertyString.substr(1)}`;
+      const evaluateFunction: Function = new Function('token', 'context', functionString);
+      let result: any;
       try {
         result = evaluateFunction.call(undefined, token, context);
       } catch (err) {
         throw new Error ('parsing extension property failed');
       }
+
       return result;
     } else {
       return propertyString;
