@@ -569,23 +569,26 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       tokenData.current = newCurrent;
     }
 
+    const isSubProcessEndEvent: boolean = (this.type === 'bpmn:EndEvent' && !!nodeDef.belongsToSubProcessKey);
+    const tokenKey: string = isSubProcessEndEvent ? nodeDef.belongsToSubProcessKey : this.key;
+
     tokenData.history = tokenData.history || {};
 
-    if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
+    if (tokenData.history.hasOwnProperty(tokenKey) || this.instanceCounter > 0) {
       if (this.instanceCounter === 1) {
         const arr = [];
-        arr.push(tokenData.history[this.key]);
+        arr.push(tokenData.history[tokenKey]);
         arr.push(tokenData.current);
-        tokenData.history[this.key] = arr;
+        tokenData.history[tokenKey] = arr;
       } else {
-        if (!Array.isArray(tokenData.history[this.key])) {
-          tokenData.history[this.key] = [];
+        if (!Array.isArray(tokenData.history[tokenKey])) {
+          tokenData.history[tokenKey] = [];
         }
-        tokenData.history[this.key].push(tokenData.current);
+        tokenData.history[tokenKey].push(tokenData.current);
       }
 
     } else {
-      tokenData.history[this.key] = tokenData.current;
+      tokenData.history[tokenKey] = tokenData.current;
     }
 
     processToken.data = tokenData;
