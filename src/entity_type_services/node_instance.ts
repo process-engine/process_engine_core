@@ -482,6 +482,15 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           await currentToken.save(internalContext, { reloadAfterSave: false });
         }
 
+      } else if (nextDef.type === 'bpmn:SubProcess') {
+        // If this is a subprocess, create a new process token instead of
+        // cloning to remove the history
+        const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
+        const processToken: any = await processTokenType.createEntity(internalContext);
+        processToken.process = this;
+        processToken.data = {
+          current: processToken.current,
+        };
       } else {
         currentToken = processToken;
         isFirstNextDef = false;
