@@ -557,6 +557,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   private async _updateToken(context: ExecutionContext) {
+
+    if (this.type === 'bpmn:SubProcess') {
+      return;
+    }
+
     const processToken = this.processToken;
 
     const tokenData = processToken.data || {};
@@ -576,7 +581,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     if (tokenData.history.hasOwnProperty(tokenKey) || this.instanceCounter > 0) {
       if (this.instanceCounter === 1) {
-        const arr = [];
+        const arr: Array<any> = [];
         arr.push(tokenData.history[tokenKey]);
         arr.push(tokenData.current);
         tokenData.history[tokenKey] = arr;
@@ -596,6 +601,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     if (this.process.processDef.persist) {
       await processToken.save(context, { reloadAfterSave: false });
     }
+
   }
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
