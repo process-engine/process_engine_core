@@ -656,7 +656,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         this.process.error(context, err);
       }
     } else if (isTerminateEndEvent) {
-      await this.process.terminate(context, processToken);
+      await this.process.terminate(context, processToken, this.key);
     } else {
       await this.process.end(context, processToken, this.key);
     }
