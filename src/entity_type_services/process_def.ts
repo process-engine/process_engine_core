@@ -223,11 +223,11 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
                                          version?: string,
                                          versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
 
-    let result: IProcessDefEntity;
-
-    if (version) {
-      result = await this._getByAttributeAndVersion(context, 'key', processDefinitionKey, version);
+    if (!version) {
+      return this._getByAttribute(context, 'key', processDefinitionKey);
     }
+
+    let result: IProcessDefEntity = await this._getByAttributeAndVersion(context, 'key', processDefinitionKey, version);
 
     if (!result && versionlessFallback) {
       // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
@@ -242,11 +242,11 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
                                         version?: string,
                                         versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
 
-    let result: IProcessDefEntity;
-
-    if (version) {
-      result = await this._getByAttributeAndVersion(context, 'id', processDefinitionId, version);
+    if (!version) {
+      return this._getByAttribute(context, 'id', processDefinitionId);
     }
+
+    let result: IProcessDefEntity = await this._getByAttributeAndVersion(context, 'id', processDefinitionId, version);
 
     if (!result && versionlessFallback) {
       // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
@@ -263,24 +263,23 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       version: string,
     ): Promise<IProcessDefEntity> {
 
-    const query: ICombinedQueryClause = {
-      operator: 'and',
-      queries: [{
-        attribute: attributeName,
-        operator: '=',
-        value: attributeValue,
-      }],
+    const query: IPrivateQueryOptions = {
+      query: {
+        operator: 'and',
+        queries: [{
+          attribute: attributeName,
+          operator: '=',
+          value: attributeValue,
+        }, {
+          attribute: 'version',
+          operator: '=',
+          value: version,
+        }],
+      },
     };
 
-    if (version !== undefined) {
-      query.queries.push({
-        attribute: 'version',
-        operator: '=',
-        value: version,
-      });
-    }
     const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, {query: query});
+    const result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, query);
 
     return result;
   }
@@ -296,7 +295,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     };
 
     const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, {query: query});
+    const result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, query);
 
     return result;
   }
