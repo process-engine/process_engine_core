@@ -90,17 +90,6 @@ export class BpmnDiagram implements IBpmnDiagram {
 
     const process = this._getProcessById(processId);
 
-    // TODO: implement subprocess (sm)
-    //  also parse flow elements of subprocesses and return them as regular
-    //  nodes - this shouldn't be a problem since the nodes are only retrieved
-    //  for execution via flows having them as a target
-    //
-    //  if we want to support nested subprocesses this needs to be recursive
-    //
-    //  it would be much cleaner if there was a private method that returned all
-    //  flow elements regardless of their hierarchy layer and run the filter
-    //  method on the whole collection of all elements
-
     const nodes: Array<any> = [];
 
     const flowElements: Array<any> = this._getNodesOfElement(process);
@@ -113,7 +102,6 @@ export class BpmnDiagram implements IBpmnDiagram {
         Array.prototype.push.apply(nodes, subProcessFlowElements);
       }
     }
-
 
     return nodes;
   }
@@ -132,11 +120,6 @@ export class BpmnDiagram implements IBpmnDiagram {
   public getFlows(processId: string): any {
 
     const process = this._getProcessById(processId);
-
-    // TODO: implement subprocess (sm)
-    //  also parse flow elements of subprocesses and return them as regular
-    //  nodes - this shouldn't be a problem since the nodes are only retrieved
-    //  for execution via flows having them as a target
 
     const flows: Array<any> = [];
 
