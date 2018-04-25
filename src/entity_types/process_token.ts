@@ -44,6 +44,19 @@ export class ProcessTokenEntity extends Entity implements IProcessTokenEntity {
     return this.getPropertyLazy(this, 'process', context);
   }
 
+  @schemaAttribute({ type: 'ProcessToken' })
+  public get parentProcessToken(): IProcessTokenEntity {
+    return this.getProperty(this, 'parentProcessToken');
+  }
+
+  public set parentProcessToken(value: IProcessTokenEntity) {
+    this.setProperty(this, 'parentProcessToken', value);
+  }
+
+  public getParentProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity> {
+    return this.getPropertyLazy(this, 'parentProcessToken', context);
+  }
+
   public async clone(): Promise<IProcessTokenEntity> {
     const timestamp: number = Date.now();
     const tokenClone: IProcessTokenEntity = await this.entityType.createEntity(this.context);
