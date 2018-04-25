@@ -286,7 +286,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.messageBusService.publish(`/processengine/process/${this.id}`, processEndMessage);
   }
 
-  public async terminate(context: ExecutionContext, processToken: any): Promise<void> {
+  public async terminate(context: ExecutionContext, processToken: any, endEventKey?: string): Promise<void> {
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -297,6 +297,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
     const processTerminateMessage: any = {
       event: 'terminate',
+      endEventKey: endEventKey,
       token: processToken.data.current,
     };
 

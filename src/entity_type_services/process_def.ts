@@ -6,7 +6,7 @@ import {
   IPublicGetOptions,
   IQueryClause,
 } from '@essential-projects/core_contracts';
-import { IDatastoreService, IEntityType } from '@essential-projects/data_model_contracts';
+import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
 import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   IImportFromFileOptions, IImportFromXmlOptions, IParamImportFromFile,
@@ -18,6 +18,7 @@ import { BpmnDiagram } from '../bpmn_diagram';
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
+// tslint:disable:cyclomatic-complexity
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
@@ -45,19 +46,20 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
 
-    const pathString = params && params.file ? params.file : null;
-    if (pathString) {
+    const path: string = params && params.file ? params.file : null;
+    if (path) {
 
-      const xmlString = await this.processRepository.getXmlFromFile(pathString);
-      const name = pathString.split('/').pop();
+      const xml: string = await this.processRepository.getXmlFromFile(path);
+      const name: string = path.split('/').pop();
       await this.importBpmnFromXml(
         context,
         {
-          xml: xmlString,
-          path: pathString,
+          xml: xml,
+          path: path,
           internalName: name,
         },
         options);
+
       return { result: true };
 
     }
@@ -80,42 +82,30 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       return;
     }
 
-    const bpmnDiagram = await this.parseBpmnXml(xml);
-    const processDef = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const processes = bpmnDiagram.getProcesses();
+    const bpmnDiagram: BpmnDiagram = await this.parseBpmnXml(xml);
+    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const processes: any = bpmnDiagram.getProcesses();
 
-    for (let i = 0; i < processes.length; i++) {
-      const process = processes[i];
+    for (const process of processes) {
 
       // query with key
-      const queryObject: ICombinedQueryClause = {
-        operator: 'and',
-        queries: [
-          {
-            attribute: 'key',
-            operator: '=',
-            value: process.id,
-          },
-          {
-            attribute: 'draft',
-            operator: '=',
-            value: true,
-          },
-        ],
+      const queryParams: IPrivateQueryOptions = {
+        query: {
+          attribute: 'key',
+          operator: '=',
+          value: process.id,
+        },
       };
-      const queryParams: IPrivateQueryOptions = { query: queryObject };
-      const processDefColl = await processDef.query(context, queryParams);
+      const processDefColl: IEntityCollection<IProcessDefEntity> = await processDef.query(context, queryParams);
 
       let processDefEntity: IProcessDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] as IProcessDefEntity : null;
 
-      let canSave = false;
+      let canSave: boolean = false;
       if (!processDefEntity) {
-        const processDefData = {
+        const processDefData: any = {
           key: process.id,
           defId: bpmnDiagram.definitions.id,
           counter: 0,
-          draft: true,
-          latest: true,
         };
 
         processDefEntity = await processDef.createEntity(context, processDefData);
@@ -147,16 +137,16 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public parseBpmnXml(xml: string): Promise<BpmnDiagram> {
 
-    const moddle = BpmnModdle();
+    const moddle: BpmnModdle = BpmnModdle();
 
-    return <any> (new BluebirdPromise<BpmnDiagram>((resolve, reject) => {
+    return <any> (new BluebirdPromise<BpmnDiagram>((resolve: Function, reject: Function): void => {
 
-      moddle.fromXML(xml, (error, definitions) => {
+      moddle.fromXML(xml, (error: Error, definitions: any) => {
         if (error) {
           reject(error);
         } else {
 
-          const bpmnDiagram = new BpmnDiagram(definitions);
+          const bpmnDiagram: BpmnDiagram = new BpmnDiagram(definitions);
           resolve(bpmnDiagram);
         }
       });
@@ -179,10 +169,10 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     let processDefEntity: IProcessDefEntity;
 
-    processDefEntity = await this._findLatest(context, processId, key, version);
+    processDefEntity = await this._find(context, processId, key, version);
 
     if (!processDefEntity) {
-      // no process def with flag latest is found, for backwards compability we only query with key
+      // Backwards compatibility
       processDefEntity = await this._findByKeyOnly(context, processId, key);
     }
 
@@ -191,44 +181,30 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     }
   }
 
-  private async _findLatest(context: ExecutionContext, processId: string, key: string, version: string): Promise<IProcessDefEntity> {
+  private async _find(context: ExecutionContext, processId: string, key: string, version: string): Promise<IProcessDefEntity> {
 
-    let attributeName: string = 'key';
-    let attributeValue: string = key;
-
-    if (processId) {
-      attributeName = 'id';
-      attributeValue = processId;
-    }
-
-    const queryObjectLatestVersion: ICombinedQueryClause = {
+    const queryObject: ICombinedQueryClause = {
       operator: 'and',
       queries: [
         {
-          attribute: attributeName,
+          attribute: processId ? 'id' : 'key',
           operator: '=',
-          value: attributeValue,
+          value: processId || key,
         },
       ],
     };
 
     if (version) {
-      queryObjectLatestVersion.queries.push({
+      queryObject.queries.push({
         attribute: 'version',
         operator: '=',
         value: version,
-      });
-    } else {
-      queryObjectLatestVersion.queries.push({
-        attribute: 'latest',
-        operator: '=',
-        value: true,
       });
     }
 
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
 
-    return processDef.findOne(context, { query: queryObjectLatestVersion });
+    return processDef.findOne(context, { query: queryObject });
   }
 
   private async _findByKeyOnly(context: ExecutionContext, processId: string, key: string): Promise<IProcessDefEntity> {
@@ -246,18 +222,16 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
                                          processDefinitionKey: string,
                                          version?: string,
                                          versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
-    const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const processDefinitionByKeyQuery: IQueryClause = {
-      attribute: 'key',
-      operator: '=',
-      value: processDefinitionKey,
-    };
-    const processDefinitionByKeyAndVersionQuery: ICombinedQueryClause = this.getQueryForVersion(processDefinitionByKeyQuery, version);
 
-    let result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, {query: processDefinitionByKeyAndVersionQuery});
-    if ((result === undefined || result === null) && versionlessFallback) {
+    if (!version) {
+      return this._getByAttribute(context, 'key', processDefinitionKey);
+    }
+
+    let result: IProcessDefEntity = await this._getByAttributeAndVersion(context, 'key', processDefinitionKey, version);
+
+    if (!result && versionlessFallback) {
       // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
-      result = await processDefinitionEntityType.findOne(context, {query: processDefinitionByKeyQuery});
+      result = await this._getByAttribute(context, 'key', processDefinitionKey);
     }
 
     return result;
@@ -267,45 +241,62 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
                                         processDefinitionId: string,
                                         version?: string,
                                         versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
-    const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const processDefinitionByIdQuery: IQueryClause = {
-      attribute: 'id',
-      operator: '=',
-      value: processDefinitionId,
-    };
-    const processDefinitionByIdAndVersionQuery: ICombinedQueryClause = this.getQueryForVersion(processDefinitionByIdQuery, version);
 
-    let result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, {query: processDefinitionByIdAndVersionQuery});
-    if ((result === undefined || result === null) && versionlessFallback) {
+    if (!version) {
+      return this._getByAttribute(context, 'id', processDefinitionId);
+    }
+
+    let result: IProcessDefEntity = await this._getByAttributeAndVersion(context, 'id', processDefinitionId, version);
+
+    if (!result && versionlessFallback) {
       // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
-      result = await processDefinitionEntityType.findOne(context, {query: processDefinitionByIdQuery});
+      result = await this._getByAttribute(context, 'id', processDefinitionId);
     }
 
     return result;
-}
+  }
 
-  private getQueryForVersion(inputQuery: IQueryClause, version?: string): ICombinedQueryClause {
-    const versionQuery: ICombinedQueryClause = {
-      operator: 'and',
-      queries: [
-        Object.assign({}, inputQuery),
-      ],
+  private async _getByAttributeAndVersion(
+      context: ExecutionContext,
+      attributeName: string,
+      attributeValue: any,
+      version: string,
+    ): Promise<IProcessDefEntity> {
+
+    const query: IPrivateQueryOptions = {
+      query: {
+        operator: 'and',
+        queries: [{
+          attribute: attributeName,
+          operator: '=',
+          value: attributeValue,
+        }, {
+          attribute: 'version',
+          operator: '=',
+          value: version,
+        }],
+      },
     };
 
-    if (version === undefined) {
-      versionQuery.queries.push({
-        attribute: 'latest',
-        operator: '=',
-        value: true,
-      });
-    } else {
-      versionQuery.queries.push({
-        attribute: 'version',
-        operator: '=',
-        value: version,
-      });
-    }
+    const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, query);
 
-    return versionQuery;
+    return result;
+  }
+
+  private async _getByAttribute(context: ExecutionContext, attributeName: string, attributeValue: any): Promise<IProcessDefEntity> {
+
+    const query: IPrivateQueryOptions = {
+      query: {
+        attribute: attributeName,
+        operator: '=',
+        value: attributeValue,
+      },
+    };
+
+    const processDefinitionEntityType: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
+    const result: IProcessDefEntity = await processDefinitionEntityType.findOne(context, query);
+
+    return result;
   }
 }
