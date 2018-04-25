@@ -475,6 +475,8 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         }
       }
 
+      const isSubProcessEndEvent: boolean = (nextDef.type === 'bpmn:EndEvent' && !!nextDef.belongsToSubProcessKey);
+      
       if (splitToken && !isFirstNextDef) {
         currentToken = await processToken.clone();
 
@@ -486,11 +488,20 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         // If this is a subprocess, create a new process token instead of
         // cloning to remove the history
         const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
-        const processToken: any = await processTokenType.createEntity(internalContext);
-        processToken.process = this;
-        processToken.data = {
-          current: processToken.current,
+        const newProcessToken: any = await processTokenType.createEntity(internalContext);
+        newProcessToken.process = processToken.process;
+        newProcessToken.data = {
+          current: undefined,
+          history: {},
         };
+        newProcessToken.parentProcessToken = processToken;
+        currentToken = newProcessToken;
+      } else if (isSubProcessEndEvent) {
+        const tokenToBeUpdated: any = await processToken.getParentProcessToken(context);
+        const newHistoryEntry: any = processToken.data.current;
+        const subProcessKey: string = nextDef.belongsToSubProcessKey;
+        tokenToBeUpdated.data.current = newHistoryEntry;
+        currentToken = tokenToBeUpdated;
       } else {
         currentToken = processToken;
         isFirstNextDef = false;
