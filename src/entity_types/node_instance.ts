@@ -198,17 +198,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
-    // check if context matches to lane
-    const role = await this.nodeDef.lane.role;
-    if (role !== null) {
-      // Todo: refactor check if user has lane role
-
-      // const permissions = {
-      //   'execute': [role]
-      // };
-      // await context.checkPermissions(this.id + '.execute', permissions);
-    }
-
     if (!this.state) {
       this.state = 'start';
     }
@@ -568,6 +557,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   private async _updateToken(context: ExecutionContext) {
+
+    if (this.type === 'bpmn:SubProcess') {
+      return;
+    }
+
     const processToken = this.processToken;
 
     const tokenData = processToken.data || {};
@@ -580,23 +574,26 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       tokenData.current = newCurrent;
     }
 
+    const isSubProcessEndEvent: boolean = (this.type === 'bpmn:EndEvent' && !!nodeDef.belongsToSubProcessKey);
+    const tokenKey: string = isSubProcessEndEvent ? nodeDef.belongsToSubProcessKey : this.key;
+
     tokenData.history = tokenData.history || {};
 
-    if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
+    if (tokenData.history.hasOwnProperty(tokenKey) || this.instanceCounter > 0) {
       if (this.instanceCounter === 1) {
-        const arr = [];
-        arr.push(tokenData.history[this.key]);
+        const arr: Array<any> = [];
+        arr.push(tokenData.history[tokenKey]);
         arr.push(tokenData.current);
-        tokenData.history[this.key] = arr;
+        tokenData.history[tokenKey] = arr;
       } else {
-        if (!Array.isArray(tokenData.history[this.key])) {
-          tokenData.history[this.key] = [];
+        if (!Array.isArray(tokenData.history[tokenKey])) {
+          tokenData.history[tokenKey] = [];
         }
-        tokenData.history[this.key].push(tokenData.current);
+        tokenData.history[tokenKey].push(tokenData.current);
       }
 
     } else {
-      tokenData.history[this.key] = tokenData.current;
+      tokenData.history[tokenKey] = tokenData.current;
     }
 
     processToken.data = tokenData;
@@ -604,6 +601,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     if (this.process.processDef.persist) {
       await processToken.save(context, { reloadAfterSave: false });
     }
+
   }
 
   public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
@@ -648,7 +646,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     }
 
-    if (!(isEndEvent || cancelFlow)) {
+    if ((!isEndEvent || (isEndEvent && !!this.nodeDef.belongsToSubProcessKey)) && !cancelFlow) {
       try {
         await this.nodeInstanceEntityTypeService.continueExecution(context, this);
       } catch (err) {
