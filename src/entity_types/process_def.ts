@@ -604,6 +604,10 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
         nodeDefEntity = await nodeDef.createEntity(context, nodeDefData);
       }
 
+      if (node.$parent && node.$parent.$type === 'bpmn:SubProcess') {
+        nodeDefEntity.belongsToSubProcessKey = node.$parent.id;
+      }
+
       switch (node.$type) {
         case 'bpmn:ScriptTask':
           nodeDefEntity.script = node.script || null;
@@ -615,16 +619,8 @@ export class ProcessDefEntity extends Entity implements IProcessDefEntity {
           }
           break;
 
-        case 'bpmn:SubProcess':
-
-          // const subElements = node.flowElements ? node.flowElements : [];
-
-          // const subNodes = subElements.filter((element) => element.$type !== 'bpmn:SequenceFlow');
-          // const subFlows = subElements.filter((element) => element.$type === 'bpmn:SequenceFlow');
-
-          break;
-
         default:
+          break;
       }
 
       const eventType: any = (node.eventDefinitions && node.eventDefinitions.length > 0) ? node.eventDefinitions[0].$type : null;

@@ -340,21 +340,10 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     }
   }
 
-  public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
-
-    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
-
-    const nodeInstance = <any> source;
-    const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
-
-    const nextDefs = [];
-
-    const nodeDef = nodeInstance.nodeDef;
-
-    const processDef = (<INodeInstanceEntity> source).process.processDef;
-
+  private _getContinueExecutionFlowsOut(nodeInstance: any, processDef: any, nodeDef: any): Array<any> {
     const flowsOut = [];
+
+    const isSubProcessEndEvent: boolean = (nodeDef.type === 'bpmn:EndEvent' && !!nodeDef.belongsToSubProcessKey);
 
     if (nodeInstance.follow) {
       // we have already a list of flows to follow
@@ -367,6 +356,27 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
           }
         }
       }
+    } else if (isSubProcessEndEvent) {
+
+      let subProcessNodeDef;
+
+      for (const processNodeDef of processDef.nodeDefCollection.data) {
+        if (processNodeDef.key === nodeDef.belongsToSubProcessKey) {
+          subProcessNodeDef = processNodeDef;
+          break;
+        }
+      }
+
+      if (!subProcessNodeDef) {
+        throw new Error('subprocess node not found');
+      }
+
+      for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
+        const flowDef = <IFlowDefEntity> processDef.flowDefCollection.data[i];
+        if (flowDef.source.id === subProcessNodeDef.id) {
+          flowsOut.push(flowDef);
+        }
+      }
     } else {
 
       for (let i = 0; i < processDef.flowDefCollection.data.length; i++) {
@@ -376,149 +386,215 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
         }
       }
     }
-    if (flowsOut && flowsOut.length > 0) {
-      const ids: Array<string> = [];
-      const mappers: Array<any> = [];
 
-      for (let i = 0; i < flowsOut.length; i++) {
-        const flow = flowsOut[i];
-        const target = flow.target;
-        ids.push(target.id);
-        mappers.push(flow.mapper);
-      }
+    return flowsOut;
+  }
+
+  // tslint:disable-next-line:cyclomatic-complexity
+  public async continueExecution(context: ExecutionContext, source: IEntity): Promise<void> {
+    const internalContext = await this.iamService.createInternalContext('processengine_system');
+
+    const processTokenEntityType = await this.datastoreService.getEntityType('ProcessToken');
+
+    const nodeInstance: any = source;
+    const splitToken = (nodeInstance.type === 'bpmn:ParallelGateway' && nodeInstance.parallelType === 'split') ? true : false;
+
+    const nextDefs = [];
+
+    const nodeDef = nodeInstance.nodeDef;
+
+    const processDef = (<INodeInstanceEntity> source).process.processDef;
+
+    const flowsOut = this._getContinueExecutionFlowsOut(nodeInstance, processDef, nodeDef);
+
+    if (!flowsOut || flowsOut.length === 0) {
+      return;
+    }
+
+    const ids: Array<string> = [];
+    const mappers: Array<any> = [];
+
+    for (const flow of flowsOut) {
+      const target = flow.target;
+      ids.push(target.id);
+      mappers.push(flow.mapper);
+    }
+
+    if ((<INodeInstanceEntity> source).type === 'bpmn:SubProcess') {
+
+      await (<INodeInstanceEntity> source).process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
+
+        const isStartEvent: boolean = nodeDefEntity.type === 'bpmn:StartEvent';
+
+        if (!isStartEvent) {
+          return;
+        }
+
+        const belongsToThisSubProcess: boolean = nodeDefEntity.belongsToSubProcessKey === (<INodeInstanceEntity> source).nodeDef.key;
+
+        if (!belongsToThisSubProcess) {
+          return;
+        }
+
+        nextDefs.push(nodeDefEntity);
+      });
+
+    } else {
 
       await (<INodeInstanceEntity> source).process.processDef.nodeDefCollection.each(internalContext, async(nodeDefEntity) => {
         if (ids.indexOf(nodeDefEntity.id) !== -1 && nodeDefEntity.processDef.id === processDef.id) {
           nextDefs.push(nodeDefEntity);
         }
       });
+    }
 
-      if (nextDefs.length > 0) {
+    if (nextDefs.length === 0) {
+      return;
+    }
 
-        const processToken = nodeInstance.processToken;
+    const processToken = nodeInstance.processToken;
 
-        for (let i = 0; i < nextDefs.length; i++) {
-          const nextDef = nextDefs[i];
+    let isFirstNextDef: boolean = true;
 
-          let currentToken;
+    for (const nextDef of nextDefs) {
 
-          const index = ids.indexOf(nextDef.id);
-          const mapper = (index !== -1) ? mappers[index] : undefined;
+      let currentToken;
 
-          if (mapper !== undefined) {
-            const tokenData = processToken.data || {};
+      const index = ids.indexOf(nextDef.id);
+      const mapper = (index !== -1) ? mappers[index] : undefined;
 
-            const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
-            tokenData.current = newCurrent;
-            processToken.data = tokenData;
+      if (mapper !== undefined) {
+        const tokenData = processToken.data || {};
 
-            if (processDef.persist) {
-              await processToken.save(internalContext, { reloadAfterSave: false });
+        const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+        tokenData.current = newCurrent;
+        processToken.data = tokenData;
+
+        if (processDef.persist) {
+          await processToken.save(internalContext, { reloadAfterSave: false });
+        }
+      }
+
+      const isSubProcessEndEvent: boolean = (nextDef.type === 'bpmn:EndEvent' && !!nextDef.belongsToSubProcessKey);
+      
+      if (splitToken && !isFirstNextDef) {
+        currentToken = await processToken.clone();
+
+        if (processDef.persist) {
+          await currentToken.save(internalContext, { reloadAfterSave: false });
+        }
+
+      } else if (nextDef.type === 'bpmn:SubProcess') {
+        // If this is a subprocess, create a new process token instead of
+        // cloning to remove the history
+        const processTokenType = await this.datastoreService.getEntityType('ProcessToken');
+        const newProcessToken: any = await processTokenType.createEntity(internalContext);
+        newProcessToken.process = processToken.process;
+        newProcessToken.data = {
+          current: undefined,
+          history: {},
+        };
+        newProcessToken.parentProcessToken = processToken;
+        currentToken = newProcessToken;
+      } else if (isSubProcessEndEvent) {
+        const tokenToBeUpdated: any = await processToken.getParentProcessToken(context);
+        const newHistoryEntry: any = processToken.data.current;
+        const subProcessKey: string = nextDef.belongsToSubProcessKey;
+        tokenToBeUpdated.data.current = newHistoryEntry;
+        currentToken = tokenToBeUpdated;
+      } else {
+        currentToken = processToken;
+        isFirstNextDef = false;
+      }
+
+      const laneRef = await nextDef.lane;
+      const laneId = laneRef ? laneRef.id : undefined;
+      let laneFeatures;
+      for (const lane of processDef.laneCollection.data) {
+        if (lane.id === laneId) {
+          laneFeatures = lane.features;
+        }
+      }
+
+      const nodeFeatures = nextDef.features;
+      const processFeatures = processDef.features;
+
+      const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
+
+      if (features.length === 0 || this.featureService.hasFeatures(features)) {
+        debugInfo(`continue in same thread with next node key ${nextDef.key}, features: ${JSON.stringify(features)}`);
+        await this.createNextNode(context, nodeInstance, nextDef, currentToken);
+      } else {
+        const appInstances = this.featureService.getApplicationIdsByFeatures(features);
+
+        if (appInstances.length === 0) {
+          // TODO
+          // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for
+          // first "registration" of compatible (feature-matching) application instance
+          debugErr(`can not route to next node key '${nextDef.key }', features: ${JSON.stringify(features)}, no matching instance found`);
+          throw new Error('can not route, no matching instance found');
+        }
+
+        const appInstanceId = appInstances[0];
+
+        debugInfo(`continue on application '${appInstanceId}' with next node key '${nextDef.key}', features: ${JSON.stringify(features)}`);
+
+        // Todo: set correct message format
+        const options: IDatastoreMessageOptions = {
+          action: 'POST',
+          typeName: 'NodeInstance',
+          method: 'continueFromRemote',
+        };
+
+        let data;
+        if (processDef.persist) {
+          data = [
+            null,
+            {
+              source: nodeInstance.getEntityReference().toPojo(),
+              nextDef: nextDef.getEntityReference().toPojo(),
+              token: currentToken.getEntityReference().toPojo(),
+            },
+          ];
+        } else {
+          data = [
+            null,
+            {
+              source: await nodeInstance.toPojo(internalContext, { maxDepth: 1 }),
+              nextDef: nextDef.getEntityReference().toPojo(),
+              token: await currentToken.toPojo(internalContext, { maxDepth: 1 }),
+            },
+          ];
+        }
+
+        const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
+        try {
+          const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
+          await this.routingService.request(appInstanceId, message, adapterKey);
+        } catch (err) {
+          debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
+
+          // look for boundary error event
+
+          if (nextDef && nextDef.events) {
+
+            const event = nextDef.events.find((el) => {
+              return el.type === 'error';
+            });
+
+            if (event) {
+              const boundaryDefId = event.boundary;
+
+              const boundaryEntity = nodeInstance.process.processDef.nodeDefCollection.data.find((el) => {
+                return el.id === boundaryDefId;
+              });
+
+              // continue with boundary
+              await this.createNextNode(context, nodeInstance, boundaryEntity, currentToken);
             }
-          }
-
-          if (splitToken && i > 0) {
-            currentToken = await processToken.clone();
-
-            if (processDef.persist) {
-              await currentToken.save(internalContext, { reloadAfterSave: false });
-            }
-
           } else {
-            currentToken = processToken;
-          }
-
-          const laneRef = await nextDef.lane;
-          const laneId = laneRef ? laneRef.id : undefined;
-          let laneFeatures;
-          for (let j = 0; j < processDef.laneCollection.data.length; j++) {
-            const lane = <ILaneEntity> processDef.laneCollection.data[j];
-            if (lane.id === laneId) {
-              laneFeatures = lane.features;
-            }
-          }
-
-          const nodeFeatures = nextDef.features;
-          const processFeatures = processDef.features;
-
-          const features = this.featureService.mergeFeatures(nodeFeatures, laneFeatures, processFeatures);
-
-          if (features.length === 0 || this.featureService.hasFeatures(features)) {
-            debugInfo(`continue in same thread with next node key ${nextDef.key}, features: ${JSON.stringify(features)}`);
-            await this.createNextNode(context, nodeInstance, nextDef, currentToken);
-          } else {
-            const appInstances = this.featureService.getApplicationIdsByFeatures(features);
-
-            if (appInstances.length === 0) {
-              // TODO
-              // if no application instance found, instatiate activtity anyway being in state beforeStart and wait for
-              // first "registration" of compatible (feature-matching) application instance
-              debugErr(`can not route to next node key '${nextDef.key }', features: ${JSON.stringify(features)}, no matching instance found`);
-              throw new Error('can not route, no matching instance found');
-            }
-
-            const appInstanceId = appInstances[0];
-
-            debugInfo(`continue on application '${appInstanceId}' with next node key '${nextDef.key}', features: ${JSON.stringify(features)}`);
-
-            // Todo: set correct message format
-            const options: IDatastoreMessageOptions = {
-              action: 'POST',
-              typeName: 'NodeInstance',
-              method: 'continueFromRemote',
-            };
-
-            let data;
-            if (processDef.persist) {
-              data = [
-                null,
-                {
-                  source: nodeInstance.getEntityReference().toPojo(),
-                  nextDef: nextDef.getEntityReference().toPojo(),
-                  token: currentToken.getEntityReference().toPojo(),
-                },
-              ];
-            } else {
-              data = [
-                null,
-                {
-                  source: await nodeInstance.toPojo(internalContext, { maxDepth: 1 }),
-                  nextDef: nextDef.getEntityReference().toPojo(),
-                  token: await currentToken.toPojo(internalContext, { maxDepth: 1 }),
-                },
-              ];
-            }
-
-            const message: IDatastoreMessage = this.messagebusService.createDatastoreMessage(options, context, data);
-            try {
-              const adapterKey = this.featureService.getRoutingAdapterKeyByApplicationId(appInstanceId);
-              await this.routingService.request(appInstanceId, message, adapterKey);
-            } catch (err) {
-              debugErr(`can not route to next node key '${nextDef.key}', features: ${JSON.stringify(features)}, error: ${err.message}`);
-
-              // look for boundary error event
-
-              if (nextDef && nextDef.events) {
-
-                const event = nextDef.events.find((el) => {
-                  return el.type === 'error';
-                });
-
-                if (event) {
-                  const boundaryDefId = event.boundary;
-
-                  const boundaryEntity = nodeInstance.process.processDef.nodeDefCollection.data.find((el) => {
-                    return el.id === boundaryDefId;
-                  });
-
-                  // continue with boundary
-                  await this.createNextNode(context, nodeInstance, boundaryEntity, currentToken);
-                }
-              } else {
-                // bubble error
-                throw err;
-              }
-            }
+            // bubble error
+            throw err;
           }
         }
       }

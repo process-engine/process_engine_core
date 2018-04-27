@@ -181,7 +181,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
 
     const startEventDef: INodeDefEntity = processDef.nodeDefCollection.data.find((nodeDef: INodeDefEntity) => {
-      return nodeDef.type === 'bpmn:StartEvent';
+      return nodeDef.type === 'bpmn:StartEvent' && !nodeDef.belongsToSubProcessKey;
     });
 
     return startEventDef;
