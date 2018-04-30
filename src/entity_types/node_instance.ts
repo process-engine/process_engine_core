@@ -630,6 +630,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const isEndEvent: boolean = this.type === BpmnType.endEvent;
     const isTerminateEndEvent: boolean = this.nodeDef.eventType === 'bpmn:TerminateEventDefinition';
 
+    const isBoundaryEvent: boolean = this.type === BpmnType.boundaryEvent;
+    const isBoundaryCancelEvent: boolean = isBoundaryEvent && this.nodeDef.eventType === 'bpmn:CancelEventDefinition';
+
     this.state = isTerminateEndEvent ? 'terminate' : 'end';
 
     logger.verbose(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
@@ -667,7 +670,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     }
 
-    if (!(isEndEvent || cancelFlow)) {
+    const continueFlowExecution: boolean = !(isEndEvent || cancelFlow || isTerminateEndEvent || isBoundaryCancelEvent);
+
+    if (continueFlowExecution) {
       try {
         await this.nodeInstanceEntityTypeService.continueExecution(context, this);
       } catch (err) {
@@ -676,7 +681,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     } else if (isTerminateEndEvent) {
       await this.process.terminate(context, processToken, this.key);
-    } else {
+    } else if (isEndEvent) {
       await this.process.end(context, processToken, this.key);
     }
   }
