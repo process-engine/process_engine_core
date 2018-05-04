@@ -152,6 +152,15 @@ export class NodeDefEntity extends Entity implements INodeDefEntity {
     this.setProperty(this, 'subProcessKey', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get belongsToSubProcessKey(): string {
+    return this.getProperty(this, 'belongsToSubProcessKey');
+  }
+
+  public set belongsToSubProcessKey(value: string) {
+    this.setProperty(this, 'belongsToSubProcessKey', value);
+  }
+
   @schemaAttribute({ type: 'NodeDef' })
   public get subProcessDef(): INodeDefEntity {
     return this.getProperty(this, 'subProcessDef');

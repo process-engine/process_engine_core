@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "the core components for the process engine",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -25,10 +25,10 @@
     "@essential-projects/messagebus_contracts": "^1.0.0",
     "@essential-projects/metadata": "^1.0.0",
     "@essential-projects/metadata_contracts": "^1.0.0",
+    "@process-engine/process_engine_contracts": "^5.0.0",
     "@essential-projects/routing_contracts": "^1.0.0",
     "@essential-projects/timing_contracts": "^1.0.0",
     "@essential-projects/foundation": "^1.0.0",
-    "@process-engine/process_engine_contracts": "4.0.1",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
     "bpmn-moddle":"^0.14.0",
@@ -40,7 +40,7 @@
   "devDependencies": {
     "@essential-projects/tslint-config": "^1.0.0",
     "@types/bluebird": "^3.5.8",
-    "@types/node": "^8.0.27",
+    "@types/node": "^8.10.10",
     "gulp": "^3.9.1",
     "gulptraum": "^2.2.4",
     "gulptraum-typescript": "^1.3.9",

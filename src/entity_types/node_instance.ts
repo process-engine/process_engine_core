@@ -1,17 +1,16 @@
 import { ExecutionContext, IEntity, IIamService, IInheritedSchema, SchemaAttributeType} from '@essential-projects/core_contracts';
 import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@essential-projects/data_model_contracts';
-import { IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
-import { IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
+import { IEvent, IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
+import { IEntityMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import { schemaAttribute, schemaClass } from '@essential-projects/metadata';
 import { ITimingService } from '@essential-projects/timing_contracts';
 import { BpmnType, IBoundaryEventEntity, INodeDefEntity, INodeInstanceEntity, INodeInstanceEntityTypeService,
   IProcessEngineService, IProcessEntity, IProcessTokenEntity } from '@process-engine/process_engine_contracts';
 
-import * as debug from 'debug';
-const debugInfo: debug.IDebugger = debug('processengine:info');
-const debugErr: debug.IDebugger = debug('processengine:error');
+import {Logger} from 'loggerhythm';
 
-// TODO: Refactor this the remove these REALLY annoying errors!
+const logger: Logger = Logger.createLogger('processengine:node_instance_entity');
+
 // tslint:disable:cyclomatic-complexity
 // tslint:disable:max-classes-per-file
 // tslint:disable:max-file-line-count
@@ -189,25 +188,14 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async getLaneRole(context: ExecutionContext): Promise<string> {
-    const nodeDef = this.nodeDef;
-    const role = await nodeDef.getLaneRole(context);
+    const role: string = await this.nodeDef.getLaneRole(context);
+
     return role;
   }
 
   public async start(context: ExecutionContext, source: IEntity): Promise<void> {
 
-    debugInfo(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
-
-    // check if context matches to lane
-    const role = await this.nodeDef.lane.role;
-    if (role !== null) {
-      // Todo: refactor check if user has lane role
-
-      // const permissions = {
-      //   'execute': [role]
-      // };
-      // await context.checkPermissions(this.id + '.execute', permissions);
-    }
+    logger.verbose(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     if (!this.state) {
       this.state = 'start';
@@ -215,16 +203,19 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     this.process.addActiveInstance(this);
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
-    const processTokenEntityType = await (await this.getDatastoreService()).getEntityType('ProcessToken');
+    const processTokenEntityType: IEntityType<IProcessTokenEntity> =
+      await (await this.getDatastoreService()).getEntityType<IProcessTokenEntity>('ProcessToken');
 
-    const boundaryNodeCreatePromises = [];
-    for (let i = 0; i < this.process.processDef.nodeDefCollection.data.length; i++) {
-      const boundary = <INodeDefEntity> this.process.processDef.nodeDefCollection.data[i];
+    const boundaryNodeCreatePromises: Array<Promise<any>> = [];
+    for (const nodeDef of this.process.processDef.nodeDefCollection.data) {
+
+      const boundary: INodeDefEntity = <INodeDefEntity> nodeDef;
       if (boundary.attachedToNode && boundary.attachedToNode.id === this.nodeDef.id) {
         boundaryNodeCreatePromises.push(this.nodeInstanceEntityTypeService.createNextNode(context, this, boundary, this.processToken));
       }
+
     }
 
     await this._waitForBoundaryNodesToIdle(boundaryNodeCreatePromises);
@@ -268,25 +259,28 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void {
 
-    debugInfo(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
+    logger.verbose(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
 
-    const data = {
+    const data: any = {
       action: 'changeState',
       data: newState,
     };
 
-    const event = this.eventAggregator.createEntityEvent(data, source, context, (source && ('participant' in source) ? { participantId: source.participant } : null ));
-    this.eventAggregator.publish('/processengine/node/' + this.id, event);
+    const event: IEvent =
+      this.eventAggregator.createEntityEvent(data, source, context,
+                                             (source && ('participant' in source) ? { participantId: source.participant } : null ));
+
+    this.eventAggregator.publish(`/processengine/node/${this.id}`, event);
   }
 
   public error(context: ExecutionContext, error: any): void {
-    debugErr(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
+    logger.error(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
     this.triggerEvent(context, 'error', error);
   }
 
   public async wait(context: ExecutionContext): Promise<void> {
-    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'wait';
 
@@ -298,7 +292,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
-    debugInfo(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     this.state = 'progress';
 
@@ -310,65 +304,79 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public triggerEvent(context: ExecutionContext, eventType: string, data: any): void {
-    const payload = {
+    const payload: {[key: string]: string} = {
       action: 'event',
       eventType: eventType,
+      eventKey: this.key,
       data: data,
     };
 
-    const entityEvent = this.eventAggregator.createEntityEvent(payload, this, context, (('participant' in this) ? { participantId: this.participant } : null));
-    this.eventAggregator.publish('/processengine/node/' + this.id, entityEvent);
+    const entityEvent: IEvent =
+      this.eventAggregator.createEntityEvent(payload, this, context, (('participant' in this) ? { participantId: this.participant } : null));
+    this.eventAggregator.publish(`/processengine/node/${this.id}`, entityEvent);
   }
 
   private async _publishToApi(context: ExecutionContext, eventType: string, data?: any): Promise<void> {
-    const payload = {
+    const payload: {[key: string]: string} = {
       action: 'event',
       eventType: eventType,
+      eventKey: this.key,
       data: data,
     };
 
-    const msg = this.messageBusService.createEntityMessage(payload, this, context);
-    await this.messageBusService.publish('/processengine_api/event/' + this.id, msg);
+    const msg: IEntityMessage = this.messageBusService.createEntityMessage(payload, this, context);
+
+    await this.messageBusService.publish(`/processengine_api/event/${this.id}`, msg);
   }
 
-  private async _informProcessSubscribers(context, eventType, data): Promise<void> {
+  private async _informProcessSubscribers(context: ExecutionContext, eventType: string, data: any): Promise<void> {
 
-    const payload = {
+    const payload: {[key: string]: string} = {
       action: 'event',
       event: eventType,
+      eventKey: this.key,
       data: data,
     };
-    const process = await this.getProcess(context);
-    const processInstanceChannel = `/processengine/process/${process.id}`;
-    const msg = this.messageBusService.createEntityMessage(payload, this, context);
+    const process: IProcessEntity = await this.getProcess(context);
+    const processInstanceChannel: string = `/processengine/process/${process.id}`;
+    const msg: IEntityMessage = this.messageBusService.createEntityMessage(payload, this, context);
     await this.messageBusService.publish(processInstanceChannel, msg);
   }
 
-  public async event(context: ExecutionContext, eventType: string, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
-    debugInfo(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
+  public async event(context: ExecutionContext,
+                     eventType: string,
+                     data: any,
+                     source: IEntity,
+                     applicationId: string,
+                     participant: string): Promise<void> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    logger.verbose(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
 
-    const map = new Map();
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
+
+    const map: Map<string, string> = new Map();
     map.set('error', 'bpmn:ErrorEventDefinition');
     map.set('cancel', 'bpmn:CancelEventDefinition');
     map.set('data', 'bpmn:ConditionalEventDefinition');
-    const bpmnType = map.get(eventType);
+    const bpmnType: string = map.get(eventType);
 
     // get boundary event instance and handle event
-    const activeInstancesKeys = Object.keys(this.process.activeInstances);
-    const boundaries = [];
-    for (let i = 0; i < activeInstancesKeys.length; i++) {
-      const boundaryEntity = <IBoundaryEventEntity> this.process.activeInstances[activeInstancesKeys[i]];
-      if (boundaryEntity.attachedToInstance && (boundaryEntity.attachedToInstance.id === this.id) && (boundaryEntity.nodeDef.eventType === bpmnType)) {
+    const activeInstancesKeys: Array<string> = Object.keys(this.process.activeInstances);
+    const boundaries: Array<IBoundaryEventEntity> = [];
+    for (const activeInstanceKey of activeInstancesKeys) {
+      const boundaryEntity: IBoundaryEventEntity = <IBoundaryEventEntity> this.process.activeInstances[activeInstanceKey];
+      if (boundaryEntity.attachedToInstance &&
+        (boundaryEntity.attachedToInstance.id === this.id) &&
+        (boundaryEntity.nodeDef.eventType === bpmnType)) {
+
         boundaries.push(boundaryEntity);
       }
     }
 
     if (boundaries.length > 0) {
       // we have 1 or more boundaries, let it handle the event
-      for (let i = 0; i < boundaries.length; i++) {
-        await this.boundaryEvent(context, boundaries[i], data, source, applicationId, participant);
+      for (const boundary of boundaries) {
+        await this.boundaryEvent(context, boundary, data, source, applicationId, participant);
       }
     } else {
       // error or cancel ends the node anyway
@@ -398,56 +406,61 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   }
 
-  public triggerBoundaryEvent(context: ExecutionContext, eventEntity: IBoundaryEventEntity, data: any): void {
-    const payload = {
+  public triggerBoundaryEvent(context: ExecutionContext, eventEntity: IBoundaryEventEntity, eventData: any): void {
+    const payload: {[key: string]: string | object} = {
       action: 'boundary',
       eventEntity: eventEntity,
-      data: data,
+      data: eventData,
     };
 
-    const entityEvent = this.eventAggregator.createEntityEvent(payload, this, context, (('participant' in this) ? { participantId: this.participant } : null));
-    this.eventAggregator.publish('/processengine/node/' + this.id, entityEvent);
+    const entityEvent: IEvent =
+      this.eventAggregator.createEntityEvent(payload, this, context, (('participant' in this) ? { participantId: this.participant } : null));
+    this.eventAggregator.publish(`/processengine/node/${this.id}`, entityEvent);
   }
 
-  public async boundaryEvent(context: ExecutionContext, eventEntity: IBoundaryEventEntity, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
+  public async boundaryEvent(context: ExecutionContext,
+                             eventEntity: IBoundaryEventEntity,
+                             eventData: any,
+                             source: IEntity,
+                             applicationId: string,
+                             participant: string): Promise<void> {
 
-    debugInfo(`node boundary event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventEntity.type}`);
+    logger.verbose(`node boundary event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventEntity.type}`);
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
-    const boundaryDef = eventEntity.nodeDef;
-    const processToken = await eventEntity.processToken;
-    const tokenData: any = processToken.data || {};
+    const boundaryDef: INodeDefEntity = eventEntity.nodeDef;
 
     if (boundaryDef) {
       switch (boundaryDef.eventType) {
         case 'bpmn:ErrorEventDefinition':
 
-          const errCode = data.number || data.code || data.errorCode || undefined;
+          const errCode: number = eventData.number || eventData.code || eventData.errorCode || undefined;
           if ((boundaryDef.errorCode && errCode && boundaryDef.errorCode === errCode.toString()) || !boundaryDef.errorCode) {
 
             // save new data in token
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
+            const processTokenData: any = this.processToken.data || {};
 
-            data = { message: data.message, errorCode: errCode };
+            const currentToken: any = {
+              message: eventData.message,
+              errorCode: errCode,
+            };
 
-            tokenData.current = data;
-            processToken.data = tokenData;
+            processTokenData.current = currentToken;
+            this.processToken.data = processTokenData;
 
-            await this._publishToApi(context, 'cancel', data);
+            await this._publishToApi(context, 'cancel', eventData);
             eventEntity.changeState(context, 'end', this);
             await this.end(context, true);
           }
           break;
-
         case 'bpmn:TimerEventDefinition':
 
           if (boundaryDef.cancelActivity) {
             eventEntity.changeState(context, 'end', this);
             this.cancel(internalContext);
           } else {
-            await this._publishToApi(context, 'timer', data);
+            await this._publishToApi(context, 'timer', eventData);
             eventEntity.changeState(context, 'follow', this);
           }
           break;
@@ -456,10 +469,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           if (boundaryDef.cancelActivity) {
 
             // save new data in token
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            processToken.data = tokenData;
+            this.processToken.data = this.processToken.data || {};
+            this.processToken.data.current = eventData;
 
             eventEntity.changeState(context, 'end', this);
             this.cancel(context);
@@ -468,9 +479,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             if (this.processToken.data === undefined || this.processToken.data === null) {
               this.processToken.data = {};
             }
-            this.processToken.data.current = data;
+            this.processToken.data.current = eventData;
 
-            await this._publishToApi(context, 'signal', data);
+            await this._publishToApi(context, 'signal', eventData);
             eventEntity.changeState(context, 'follow', this);
           }
           break;
@@ -479,10 +490,8 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           if (boundaryDef.cancelActivity) {
 
             // save new data in token
-            const processToken = this.processToken;
-            const tokenData = processToken.data || {};
-            tokenData.current = data;
-            processToken.data = tokenData;
+            this.processToken.data = this.processToken.data || {};
+            this.processToken.data.current = eventData;
 
             eventEntity.changeState(context, 'end', this);
             this.cancel(context);
@@ -491,33 +500,37 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
             if (this.processToken.data === undefined || this.processToken.data === null) {
               this.processToken.data = {};
             }
-            this.processToken.data.current = data;
+            this.processToken.data.current = eventData;
 
             if (this.nodeDef.processDef.persist) {
               await this.processToken.save(internalContext, { reloadAfterSave: false });
             }
 
-            await this._publishToApi(context, 'message', data);
+            await this._publishToApi(context, 'message', eventData);
             eventEntity.changeState(context, 'follow', this);
           }
           break;
 
         case 'bpmn:CancelEventDefinition':
-          await this._publishToApi(context, 'cancel', data);
+          await this._publishToApi(context, 'cancel', eventData);
           eventEntity.changeState(context, 'end', this);
           await this.end(context, true);
           break;
 
         case 'bpmn:ConditionalEventDefinition':
+
+          const processToken: IProcessTokenEntity = await eventEntity.processToken;
+          const tokenData: any = processToken.data || {};
+
           if (boundaryDef.condition) {
-            const functionString = 'return ' + boundaryDef.condition;
-            const evaluateFunction = new Function('token', functionString);
-            tokenData.current = data;
-            let result;
+            const functionString: string = `return ${boundaryDef.condition}`;
+            const evaluateFunction: Function = new Function('token', functionString);
+            tokenData.current = eventData;
+            let result: any;
             try {
               result = evaluateFunction.call(tokenData, tokenData);
             } catch (err) {
-              debugErr(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
+              logger.error(`error evaluating condition '${boundaryDef.condition}', key ${boundaryDef.key}`);
             }
             if (result) {
               if (boundaryDef.cancelActivity) {
@@ -531,9 +544,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                 if (this.processToken.data === undefined || this.processToken.data === null) {
                   this.processToken.data = {};
                 }
-                this.processToken.data.current = data;
+                this.processToken.data.current = eventData;
 
-                await this._publishToApi(context, 'conditional', data);
+                await this._publishToApi(context, 'conditional', eventData);
                 eventEntity.changeState(context, 'follow', this);
               }
             }
@@ -543,40 +556,35 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
         default:
       }
     }
-
   }
 
   public cancel(context: ExecutionContext): void {
-    debugInfo(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
     this.triggerEvent(context, 'cancel', null);
   }
 
   // follow next flow, but not end current node (non interrupting boundaries)
   public async followBoundary(context: ExecutionContext): Promise<void> {
-    debugInfo(`follow boundary, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`follow boundary, id ${this.id}, key ${this.key}, type ${this.type}`);
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     await this._updateToken(internalContext);
-    const nodeInstance = this as any;
+
     try {
-      await this.nodeInstanceEntityTypeService.continueExecution(context, nodeInstance);
+      await this.nodeInstanceEntityTypeService.continueExecution(context, this);
     } catch (err) {
       // we can't continue, handle error in process
-      const process = await this.getProcess(internalContext);
+      const process: IProcessEntity = await this.getProcess(internalContext);
       process.error(context, err);
     }
   }
 
-  private async _updateToken(context: ExecutionContext) {
-    const processToken = this.processToken;
+  private async _updateToken(context: ExecutionContext): Promise<void> {
 
-    const tokenData = processToken.data || {};
+    const tokenData: any = this.processToken.data || {};
 
-    const nodeDef = this.nodeDef;
-    const mapper = nodeDef.mapper;
-
-    if (mapper !== undefined) {
-      const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+    if (this.nodeDef.mapper) {
+      const newCurrent: Function = (new Function('token', `return ${this.nodeDef.mapper}`)).call(tokenData, tokenData);
       tokenData.current = newCurrent;
     }
 
@@ -584,7 +592,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     if (tokenData.history.hasOwnProperty(this.key) || this.instanceCounter > 0) {
       if (this.instanceCounter === 1) {
-        const arr = [];
+        const arr: Array<any> = [];
         arr.push(tokenData.history[this.key]);
         arr.push(tokenData.current);
         tokenData.history[this.key] = arr;
@@ -599,10 +607,10 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       tokenData.history[this.key] = tokenData.current;
     }
 
-    processToken.data = tokenData;
+    this.processToken.data = tokenData;
 
     if (this.process.processDef.persist) {
-      await processToken.save(context, { reloadAfterSave: false });
+      await this.processToken.save(context, { reloadAfterSave: false });
     }
   }
 
@@ -611,9 +619,12 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     const isEndEvent: boolean = this.type === BpmnType.endEvent;
     const isTerminateEndEvent: boolean = this.nodeDef.eventType === 'bpmn:TerminateEventDefinition';
 
+    const isBoundaryEvent: boolean = this.type === BpmnType.boundaryEvent;
+    const isBoundaryCancelEvent: boolean = isBoundaryEvent && this.nodeDef.eventType === 'bpmn:CancelEventDefinition';
+
     this.state = isTerminateEndEvent ? 'terminate' : 'end';
 
-    debugInfo(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -648,7 +659,9 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     }
 
-    if (!(isEndEvent || cancelFlow)) {
+    const continueFlowExecution: boolean = !(isEndEvent || cancelFlow || isTerminateEndEvent || isBoundaryCancelEvent);
+
+    if (continueFlowExecution) {
       try {
         await this.nodeInstanceEntityTypeService.continueExecution(context, this);
       } catch (err) {
@@ -657,7 +670,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     } else if (isTerminateEndEvent) {
       await this.process.terminate(context, processToken, this.key);
-    } else {
+    } else if (isEndEvent) {
       await this.process.end(context, processToken, this.key);
     }
   }
@@ -665,7 +678,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   public async terminate(context: ExecutionContext): Promise<void> {
     this.state = 'terminate';
 
-    debugInfo(`terminate node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    logger.verbose(`terminate node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 

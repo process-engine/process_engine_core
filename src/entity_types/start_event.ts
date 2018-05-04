@@ -18,4 +18,13 @@ export class StartEventEntity extends EventEntity implements IStartEventEntity {
   public async initialize(): Promise<void> {
     await super.initialize(this);
   }
+
+  public async execute(context: ExecutionContext): Promise<void> {
+
+    if (!!this.nodeDef.belongsToSubProcessKey) {
+      this.processToken.data.current = this.processToken.parentProcessToken.data.current;
+    }
+
+    await super.execute(context);
+  }
 }

@@ -24,8 +24,6 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Logger} from 'loggerhythm';
 
-import * as debug from 'debug';
-const debugInfo: debug.IDebugger = debug('processengine:info');
 const logger: Logger = Logger.createLogger('process_engine').createChildLogger('process_entity');
 
   // tslint:disable:cyclomatic-complexity
@@ -181,7 +179,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
 
     const startEventDef: INodeDefEntity = processDef.nodeDefCollection.data.find((nodeDef: INodeDefEntity) => {
-      return nodeDef.type === 'bpmn:StartEvent';
+      return nodeDef.type === 'bpmn:StartEvent' && !nodeDef.belongsToSubProcessKey;
     });
 
     return startEventDef;
@@ -237,7 +235,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       await processToken.save(internalContext, { reloadAfterSave: false });
     }
 
-    debugInfo(`process id ${this.id} started: `);
+    logger.verbose(`process id ${this.id} started: `);
 
     const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
     startEvent.name = startEventDef.name;
