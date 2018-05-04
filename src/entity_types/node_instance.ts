@@ -197,17 +197,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     logger.verbose(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
-    // check if context matches to lane
-    const role: string = await this.nodeDef.lane ? this.nodeDef.lane.role : undefined;
-    if (role !== null) {
-      // Todo: refactor check if user has lane role
-
-      // const permissions = {
-      //   'execute': [role]
-      // };
-      // await context.checkPermissions(this.id + '.execute', permissions);
-    }
-
     if (!this.state) {
       this.state = 'start';
     }
