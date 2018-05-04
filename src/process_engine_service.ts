@@ -203,7 +203,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error('Model must contain a process');
     }
 
-    const existingProcessDef: any = await this.processDefEntityTypeService.getProcessDefinitionByName(context, processes[0].id);
+    const existingProcessDef: IProcessDefEntity = await this.processDefEntityTypeService.getProcessDefinitionByName(context, processes[0].id);
     if (existingProcessDef !== null) {
       throw new ConflictError('A process with that name already exists');
     }
