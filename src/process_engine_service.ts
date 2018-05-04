@@ -33,6 +33,7 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {IFactoryAsync} from 'addict-ioc';
 
+import { ConflictError } from '@essential-projects/errors_ts';
 import * as debug from 'debug';
 
 const debugInfo = debug('processengine:info');
@@ -200,6 +201,11 @@ export class ProcessEngineService implements IProcessEngineService {
 
     if (processes.length === 0) {
       throw new Error('Model must contain a process');
+    }
+
+    const existingProcessDef: IProcessDefEntity = await this.processDefEntityTypeService.getProcessDefinitionByName(context, processes[0].id);
+    if (existingProcessDef !== null) {
+      throw new ConflictError('A process with that name already exists');
     }
 
     await this.processDefEntityTypeService.importBpmnFromXml(context, {xml: xml});
