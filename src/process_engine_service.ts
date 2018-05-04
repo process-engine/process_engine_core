@@ -202,6 +202,11 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error('Model must contain a process');
     }
 
+    const existingProcessDef = await this.processDefEntityTypeService.getProcessDefinitionByName(context, processes[0].id);
+    if(existingProcessDef !== null){
+      return;
+    }
+
     await this.processDefEntityTypeService.importBpmnFromXml(context, {xml: xml});
 
     const queryObject: IPrivateQueryOptions = {
