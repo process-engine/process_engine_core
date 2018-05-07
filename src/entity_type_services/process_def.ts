@@ -262,25 +262,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return result;
   }
 
-  public async getProcessDefinitionByName(context: ExecutionContext,
-                                          processDefinitionName: string,
-                                          version?: string,
-                                          versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
-
-    if (!version) {
-      return this._getByAttribute(context, 'name', processDefinitionName);
-    }
-
-    let result: IProcessDefEntity = await this._getByAttributeAndVersion(context, 'name', processDefinitionName, version);
-
-    if (!result && versionlessFallback) {
-      // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
-      result = await this._getByAttribute(context, 'name', processDefinitionName);
-    }
-
-    return result;
-  }
-
   private async _getByAttributeAndVersion(
       context: ExecutionContext,
       attributeName: string,
