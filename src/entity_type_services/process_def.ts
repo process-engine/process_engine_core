@@ -72,13 +72,13 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
-    const name = params && params.name ? params.name : null;
-    const xml = params && params.xml ? params.xml : null;
-    const internalName = params && params.internalName ? params.internalName : null;
-    const pathString = params && params.path ? params.path : null;
-    const category = params && params.category ? params.category : null;
-    const module = params && params.module ? params.module : null;
-    const readonly = params && params.readonly ? params.readonly : null;
+    const name: string = params && params.name ? params.name : null;
+    const xml: string = params && params.xml ? params.xml : null;
+    const internalName: string = params && params.internalName ? params.internalName : null;
+    const pathString: string = params && params.path ? params.path : null;
+    const category: string = params && params.category ? params.category : null;
+    const module: string = params && params.module ? params.module : null;
+    const readonly: boolean = params && params.readonly ? params.readonly : null;
 
     if (!xml) {
       return;
