@@ -90,8 +90,10 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     for (const process of processes) {
       let processName: string = name;
-      if (processName === null) {
-        processName = process.id;
+      let processId: string = name;
+      if (name === undefined || name === null) {
+        processName = process.name;
+        processId = process.id;
       }
 
       // query with key
@@ -109,7 +111,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       let canSave: boolean = false;
       if (!processDefEntity) {
         const processDefData: any = {
-          key: processName,
+          key: processId,
           defId: bpmnDiagram.definitions.id,
           counter: 0,
         };
@@ -127,7 +129,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         continue;
       }
 
-      processDefEntity.name = name;
+      processDefEntity.name = processName;
       processDefEntity.xml = xml;
       processDefEntity.internalName = internalName;
       processDefEntity.path = pathString;
