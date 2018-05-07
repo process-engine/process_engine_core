@@ -101,7 +101,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         query: {
           attribute: 'key',
           operator: '=',
-          value: processName,
+          value: processId,
         },
       };
       const processDefColl: IEntityCollection<IProcessDefEntity> = await processDef.query(context, queryParams);
