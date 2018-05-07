@@ -54,6 +54,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       await this.importBpmnFromXml(
         context,
         {
+          name: name,
           xml: xml,
           path: path,
           internalName: name,
@@ -71,6 +72,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
+    const name = params && params.name ? params.name : null;
     const xml = params && params.xml ? params.xml : null;
     const internalName = params && params.internalName ? params.internalName : null;
     const pathString = params && params.path ? params.path : null;
@@ -87,13 +89,17 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const processes: any = bpmnDiagram.getProcesses();
 
     for (const process of processes) {
+      let processName: string = name;
+      if (processName === null) {
+        processName = process.id;
+      }
 
       // query with key
       const queryParams: IPrivateQueryOptions = {
         query: {
           attribute: 'key',
           operator: '=',
-          value: process.id,
+          value: processName,
         },
       };
       const processDefColl: IEntityCollection<IProcessDefEntity> = await processDef.query(context, queryParams);
@@ -103,7 +109,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       let canSave: boolean = false;
       if (!processDefEntity) {
         const processDefData: any = {
-          key: process.id,
+          key: processName,
           defId: bpmnDiagram.definitions.id,
           counter: 0,
         };
@@ -121,7 +127,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
         continue;
       }
 
-      processDefEntity.name = process.name;
+      processDefEntity.name = name;
       processDefEntity.xml = xml;
       processDefEntity.internalName = internalName;
       processDefEntity.path = pathString;
@@ -251,6 +257,25 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     if (!result && versionlessFallback) {
       // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
       result = await this._getByAttribute(context, 'id', processDefinitionId);
+    }
+
+    return result;
+  }
+
+  public async getProcessDefinitionByName(context: ExecutionContext,
+                                          processDefinitionName: string,
+                                          version?: string,
+                                          versionlessFallback: boolean = false): Promise<IProcessDefEntity> {
+
+    if (!version) {
+      return this._getByAttribute(context, 'name', processDefinitionName);
+    }
+
+    let result: IProcessDefEntity = await this._getByAttributeAndVersion(context, 'name', processDefinitionName, version);
+
+    if (!result && versionlessFallback) {
+      // We didn't find any versionized processDefinition, but versionlessFallback is true, so try getting one without a version
+      result = await this._getByAttribute(context, 'name', processDefinitionName);
     }
 
     return result;

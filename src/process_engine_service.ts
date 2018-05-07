@@ -193,7 +193,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return userTask.getUserTaskData(context);
   }
 
-  public async createBpmnFromXml(context: ExecutionContext, xml: string): Promise<IProcessDefEntity> {
+  public async createBpmnFromXml(context: ExecutionContext, name: string, xml: string): Promise<IProcessDefEntity> {
     const bpmnDiagram: IBpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     const processes: Array<any> = bpmnDiagram.getProcesses();
@@ -202,13 +202,20 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error('Model must contain a process');
     }
 
-    await this.processDefEntityTypeService.importBpmnFromXml(context, {xml: xml});
+    let diagrammName: string = name;
+    if (diagrammName === null) {
+      diagrammName = processes[0].name;
+    } else {
+      xml = xml.replace(`id="${processes[0].id}"`, `id="${diagrammName}"`);
+      xml = xml.replace(`processRef="${processes[0].id}"`, `processRef="${diagrammName}"`);
+    }
 
+    await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagrammName, xml: xml});
     const queryObject: IPrivateQueryOptions = {
       query: {
         attribute: 'key',
         operator: '=',
-        value: processes[0].id,
+        value: diagrammName,
       },
     };
 
