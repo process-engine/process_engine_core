@@ -203,8 +203,10 @@ export class ProcessEngineService implements IProcessEngineService {
     }
 
     let diagrammName: string = name;
-    if (diagrammName === null) {
+    let diagrammKey: string = name;
+    if (diagrammName === null || diagrammName === undefined) {
       diagrammName = processes[0].name;
+      diagrammKey = processes[0].id;
     } else {
       xml = xml.replace(`id="${processes[0].id}"`, `id="${diagrammName}"`);
       xml = xml.replace(`processRef="${processes[0].id}"`, `processRef="${diagrammName}"`);
@@ -215,7 +217,7 @@ export class ProcessEngineService implements IProcessEngineService {
       query: {
         attribute: 'key',
         operator: '=',
-        value: diagrammName,
+        value: diagrammKey,
       },
     };
 
