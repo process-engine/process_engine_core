@@ -1,10 +1,13 @@
-import { ExecutionContext } from "@essential-projects/core_contracts";
-import { IProcessDefEntity, INodeDefEntity, BpmnType, IProcessTokenEntity, IProcessEntity } from '@process-engine/process_engine_contracts';
-import { IExecuteProcessService } from "./iexecute_process_service";
-import { IFlowNodeHandlerFactory } from "./handler/iflow_node_handler_factory";
-import { NextFlowNodeInfo } from "./next_flow_node_info";
-import { IDatastoreService } from "@essential-projects/data_model_contracts";
-import { IDataMessage, IMessageBusService } from "@essential-projects/messagebus_contracts";
+import { ExecutionContext } from '@essential-projects/core_contracts';
+import { IDatastoreService } from '@essential-projects/data_model_contracts';
+import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
+import { Model, Runtime } from '@process-engine/process_engine_contracts';
+import { IFlowNodeHandler } from '.';
+import { IFlowNodeHandlerFactory } from './handler/iflow_node_handler_factory';
+import { IExecuteProcessService } from './iexecute_process_service';
+import { NextFlowNodeInfo } from './next_flow_node_info';
+
+import * as uuid from 'uuid';
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
@@ -18,49 +21,54 @@ export class ExecuteProcessService implements IExecuteProcessService {
         this.messageBusService = messageBusService;
     }
 
-    public async start(context: ExecutionContext, processDefinition: IProcessDefEntity, processInstance: IProcessEntity): Promise<void> {
-        await processInstance.initializeProcess();
-        const startEvent: INodeDefEntity = await this.getStartEventDef(context, processDefinition);
+    public async start(context: ExecutionContext, processDefinition: Model.Types.Process): Promise<void> {
 
-        const processToken: IProcessTokenEntity = await this.createProcessToken(context);
-        await this.executeFlowNode(startEvent, processToken, context);
+        const startEvent: Model.Events.StartEvent = await this._getStartEventDef(context, processDefinition);
 
-        await this.end(processInstance, processToken, context);
+        const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(processDefinition);
+
+        const processToken: Runtime.Types.ProcessToken = await this._createProcessToken(context);
+        await this._executeFlowNode(startEvent, processToken, context);
+
+        await this._end(processInstance, processToken, context);
     }
 
-    private async getStartEventDef(context: ExecutionContext, processDefinition: IProcessDefEntity): Promise<INodeDefEntity> {
+    private _createProcessInstance(processDefinition: Model.Types.Process): Runtime.Types.ProcessInstance {
+        const processInstance: Runtime.Types.ProcessInstance = new Runtime.Types.ProcessInstance();
+        processInstance.processInstanceId = uuid.v4();
+        return processInstance;
+    }
 
-        const startEventDef: INodeDefEntity = processDefinition.nodeDefCollection.data.find((nodeDef: INodeDefEntity) => {
-            return nodeDef.type === BpmnType.startEvent;
+    private _getStartEventDef(context: ExecutionContext, processDefinition: Model.Types.Process): Promise<Model.Events.StartEvent> {
+
+        const startEventDef: Model.Base.FlowNode = processDefinition.flowNodes.find((nodeDef: Model.Base.FlowNode) => {
+            return nodeDef.constructor.name === 'StartEvent';
         });
-  
-        return startEventDef;
+
+        return startEventDef as Model.Events.StartEvent;
     }
 
-    private async executeFlowNode(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
-        const flowNodeHandler = this.flowNodeHandlerFactory.create(flowNode.type);
+    private async _executeFlowNode(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, context: ExecutionContext): Promise<void> {
+        const flowNodeHandler: IFlowNodeHandler = this.flowNodeHandlerFactory.create(flowNode.type);
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, context);
 
         if (nextFlowNodeInfo.flowNode !== null) {
-            await this.executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, context);
+            await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, context);
         }
     }
 
-    private async end(processInstance: IProcessEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<void> {
+    private async _end(processInstance: Runtime.Types.ProcessInstance, processToken: Runtime.Types.ProcessToken, context: ExecutionContext): Promise<void> {
         const processEndMessageData: any = {
             event: 'end',
             token: processToken.data.current,
         };
-    
+
         const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
-        this.messageBusService.publish(`/processengine/process/${processInstance.id}`, processEndMessage);
+        this.messageBusService.publish(`/processengine/process/${processInstance.processInstanceId}`, processEndMessage);
     }
 
-    private async createProcessToken(context: ExecutionContext): Promise<IProcessTokenEntity> {
-        
-        const processTokenType = await this.datastoreService.getEntityType<IProcessTokenEntity>('ProcessToken');
-        
-        return processTokenType.createEntity(context);
+    private async _createProcessToken(context: ExecutionContext): Promise<Runtime.Types.ProcessToken> {
+        return new Runtime.Types.ProcessToken();
     }
 }
