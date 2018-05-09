@@ -202,22 +202,22 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error('Model must contain a process');
     }
 
-    let diagrammName: string = name;
-    let diagrammKey: string = name;
-    if (diagrammName === null || diagrammName === undefined) {
-      diagrammName = processes[0].name;
-      diagrammKey = processes[0].id;
+    let diagramName: string = name;
+    let diagramKey: string = name;
+    if (diagramName === null || diagramName === undefined) {
+      diagramName = processes[0].name;
+      diagramKey = processes[0].id;
     } else {
-      xml = xml.replace(`id="${processes[0].id}"`, `id="${diagrammName}"`);
-      xml = xml.replace(`processRef="${processes[0].id}"`, `processRef="${diagrammName}"`);
+      xml = xml.replace(`id="${processes[0].id}"`, `id="${diagramName}"`);
+      xml = xml.replace(`processRef="${processes[0].id}"`, `processRef="${diagramName}"`);
     }
 
-    await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagrammName, xml: xml});
+    await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xml});
     const queryObject: IPrivateQueryOptions = {
       query: {
         attribute: 'key',
         operator: '=',
-        value: diagrammKey,
+        value: diagramKey,
       },
     };
 
