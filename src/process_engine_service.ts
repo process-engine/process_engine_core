@@ -30,12 +30,13 @@ import {
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
+  Model
 } from '@process-engine/process_engine_contracts';
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
-import { IExecuteProcessService } from './execution';
-import { ExecuteProcessService, FlowNodeHandlerFactory } from './execution';
+import { IExecuteProcessService, FlowNodeHandlerFactory } from './execution';
+import { IProcessEngineStorageService } from './index';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
@@ -54,6 +55,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
+  private _processEngineStorageService: IProcessEngineStorageService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
@@ -69,7 +71,8 @@ export class ProcessEngineService implements IProcessEngineService {
               datastoreService: IDatastoreService,
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
-              invoker: IInvoker) {
+              invoker: IInvoker,
+              processEngineStorageService: IProcessEngineStorageService) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -81,6 +84,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
     this._applicationService = applicationService;
     this._invoker = invoker;
+    this._processEngineStorageService = processEngineStorageService;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -125,6 +129,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get invoker(): IInvoker {
     return this._invoker;
+  }
+
+  private get processEngineStorageService(): IProcessEngineStorageService {
+    return this._processEngineStorageService;
   }
 
   private get errorDeserializer(): IErrorDeserializer {
@@ -506,27 +514,13 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    let processDefinition: IProcessDefEntity;
-    if (id !== undefined) {
-      processDefinition = await this.processDefEntityTypeService.getProcessDefinitionById(context, id, version);
-    } else {
-      processDefinition = await this.processDefEntityTypeService.getProcessDefinitionByKey(context, key, version);
+    const process: Model.Types.Process = await this.processEngineStorageService.getProcess(id);
+
+    if (!process) {
+      throw new Error(`couldn't execute process: no process with id "${id}" was found`);
     }
 
-    if (!processDefinition) {
-      throw new Error(`couldn't execute process: no processDefinition with key ${key} or id ${id} was found`);
-    }
-
-    const requiredFeatures: Array<IFeature> = processDefinition.features;
-    const canStartProcessLocally: boolean = requiredFeatures === undefined
-                               || requiredFeatures.length === 0
-                               || this.featureService.hasFeatures(requiredFeatures);
-
-    if (canStartProcessLocally) {
-      return this._executeProcessLocally(context, processDefinition, initialToken);
-    }
-
-    return this._executeProcessRemotely(context, requiredFeatures, id, key, initialToken, version);
+    return this._executeProcessLocally(context, process, initialToken);
   }
 
   public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, participantId: string, initialToken: any): Promise<any> {
@@ -583,52 +577,52 @@ export class ProcessEngineService implements IProcessEngineService {
     this._errorDeserializer = deserializer;
   }
 
-  private _executeProcessLocally(context: ExecutionContext, processDefinition: IProcessDefEntity, initialToken: any): Promise<any> {
+  private _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any): Promise<any> {
     return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
-      const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
+      // const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
+      // const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
 
-      const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
+      // const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
 
-        if (message.data.event === 'error') {
+      //   if (message.data.event === 'error') {
 
-          if (!this.errorDeserializer) {
-            throw new Error('error deserializer not found.');
-          }
+      //     if (!this.errorDeserializer) {
+      //       throw new Error('error deserializer not found.');
+      //     }
 
-          let finalError: any;
+      //     let finalError: any;
 
-          if (message.data.data.serializedError) {
-            finalError = this.errorDeserializer(message.data.data.serializedError);
-          } else {
-            finalError = message.data.data.error;
-          }
+      //     if (message.data.data.serializedError) {
+      //       finalError = this.errorDeserializer(message.data.data.serializedError);
+      //     } else {
+      //       finalError = message.data.data.error;
+      //     }
 
-          reject(finalError);
-          processEndSubscription.cancel();
+      //     reject(finalError);
+      //     processEndSubscription.cancel();
 
-          return;
-        }
+      //     return;
+      //   }
 
-        if (message.data.event === 'terminate') {
-          debugErr(`Unexpected process termination through TerminationEndEvent '${message.data.endEventKey}'!`);
+      //   if (message.data.event === 'terminate') {
+      //     debugErr(`Unexpected process termination through TerminationEndEvent '${message.data.endEventKey}'!`);
 
-          return reject(new Error(`The process was terminated through the '${message.data.endEventKey}' TerminationEndEvent!`));
-        }
+      //     return reject(new Error(`The process was terminated through the '${message.data.endEventKey}' TerminationEndEvent!`));
+      //   }
 
-        if (message.data.event !== 'end') {
-          return;
-        }
+      //   if (message.data.event !== 'end') {
+      //     return;
+      //   }
 
-        resolve(message.data.token);
-        processEndSubscription.cancel();
-      });
+      //   resolve(message.data.token);
+      //   processEndSubscription.cancel();
+      // });
 
       // await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
       //   initialToken: initialToken,
       // });
-      await this._executeProcessService.start(context, processDefinition, processInstance);
+      await this._executeProcessService.start(context, process);
     });
   }
 
