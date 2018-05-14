@@ -24,6 +24,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
                 return this.container.resolveAsync('ErrorBoundaryEventHandler');
             case BpmnType.intermediateCatchEvent:
                 return this.container.resolveAsync('IntermediateCatchEventHandler');
+            case BpmnType.intermediateThrowEvent:
+                return this.container.resolveAsync('IntermediateThrowEventHandler');
             case BpmnType.endEvent:
                 return this.container.resolveAsync('EndEventHandler');
             default:

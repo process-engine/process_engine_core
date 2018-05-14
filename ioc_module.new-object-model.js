@@ -12,6 +12,7 @@ const ParallelGatewayHandler = require('./dist/commonjs/index').ParallelGatewayH
 const ServiceTaskHandler = require('./dist/commonjs/index').ServiceTaskHandler;
 const ErrorBoundaryEventHandler = require('./dist/commonjs/index').ErrorBoundaryEventHandler;
 const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
+const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 
 
@@ -28,6 +29,7 @@ function registerInContainer(container) {
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
     .dependencies('ScriptTaskHandler');
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler);
+  container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler);
   container.register('EndEventHandler', EndEventHandler);
   container.register('EndEventHandler', EndEventHandler);
 

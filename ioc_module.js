@@ -32,6 +32,7 @@ const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerF
 const ProcessEntity = require('./dist/commonjs/index').ProcessEntity;
 
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
+const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-model');
 const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
@@ -144,6 +145,7 @@ function registerInContainer(container) {
 
   processEngineContractsIocModule.registerInContainer(container);
   schemasIocModule.registerInContainer(container);
+  processEngineNewObjectModelIocModule.registerInContainer(container);
 }
 
 module.exports.registerInContainer = registerInContainer;
