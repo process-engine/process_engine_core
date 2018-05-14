@@ -26,13 +26,19 @@ const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityD
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
 const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
+const ProcessEngineStorageService = require('./dist/commonjs/index').ProcessEngineStorageService;
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+const ProcessEntity = require('./dist/commonjs/index').ProcessEntity;
 
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
+
+  container.register('ProcessEntity', ProcessEntity)
+    .dependencies('NodeInstanceEntityDependencyHelper')
+    .tags(entityDiscoveryTag);
 
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
@@ -41,6 +47,8 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('BpmnModelParser', BpmnModelParser);
+  
+  container.register('ProcessEngineStorageService', ProcessEngineStorageService);
 
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'DatastoreService','MessageBusService');
@@ -52,7 +60,7 @@ function registerInContainer(container) {
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('DatastoreService', 'ProcessRepository', 'Invoker');
+    .dependencies('DatastoreService', 'ProcessRepository', 'Invoker', 'BpmnModelParser', 'ProcessEngineStorageService');
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
     .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')
