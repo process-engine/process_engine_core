@@ -193,7 +193,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return userTask.getUserTaskData(context);
   }
 
-  public async createBpmnFromXml(context: ExecutionContext, name: string, xml: string): Promise<IProcessDefEntity> {
+  public async createBpmnFromXml(context: ExecutionContext, xml: string, name: string): Promise<IProcessDefEntity> {
     const bpmnDiagram: IBpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     const processes: Array<any> = bpmnDiagram.getProcesses();
