@@ -202,8 +202,9 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error('Model must contain a process');
     }
 
-    const diagramName: string = (name === undefined) ? processes[0].name : name;
-    const diagramKey: string = (name === undefined) ? processes[0].id : name;
+    const nameIsInvalid: boolean = (name === undefined);
+    const diagramName: string = nameIsInvalid ? processes[0].name : name;
+    const diagramKey: string = nameIsInvalid ? processes[0].id : name;
 
     if (name !== undefined) {
         xml = xml.replace(`id="${processes[0].id}"`, `id="${name}"`)
