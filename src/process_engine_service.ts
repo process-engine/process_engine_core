@@ -204,12 +204,12 @@ export class ProcessEngineService implements IProcessEngineService {
 
     let diagramName: string = name;
     let diagramKey: string = name;
-    if (diagramName === null || diagramName === undefined) {
+    if (name === null || name === undefined) {
       diagramName = processes[0].name;
       diagramKey = processes[0].id;
     } else {
-      xml = xml.replace(`id="${processes[0].id}"`, `id="${diagramName}"`);
-      xml = xml.replace(`processRef="${processes[0].id}"`, `processRef="${diagramName}"`);
+      xml = xml.replace(`id="${processes[0].id}"`, `id="${name}"`)
+        .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
     }
 
     await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xml});
