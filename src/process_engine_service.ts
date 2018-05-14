@@ -202,14 +202,12 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error('Model must contain a process');
     }
 
-    let diagramName: string = name;
-    let diagramKey: string = name;
-    if (name === null || name === undefined) {
-      diagramName = processes[0].name;
-      diagramKey = processes[0].id;
-    } else {
-      xml = xml.replace(`id="${processes[0].id}"`, `id="${name}"`)
-        .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
+    const diagramName: string = (name === undefined) ? processes[0].name : name;
+    const diagramKey: string = (name === undefined) ? processes[0].id : name;
+
+    if (name !== undefined) {
+        xml = xml.replace(`id="${processes[0].id}"`, `id="${name}"`)
+         .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
     }
 
     await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xml});
