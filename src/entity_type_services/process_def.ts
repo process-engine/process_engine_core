@@ -89,12 +89,10 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const processes: any = bpmnDiagram.getProcesses();
 
     for (const process of processes) {
-      let processName: string = name;
-      let processId: string = name;
-      if (name === undefined || name === null) {
-        processName = process.name;
-        processId = process.id;
-      }
+      const nameIsInvalid: boolean = (name === undefined || name === null);
+
+      const processName: string = nameIsInvalid ? process.name : name;
+      const processId: string = nameIsInvalid ? process.id : name;
 
       // query with key
       const queryParams: IPrivateQueryOptions = {
