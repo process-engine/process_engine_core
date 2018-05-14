@@ -8,6 +8,7 @@ import { IExecuteProcessService } from './iexecute_process_service';
 import { NextFlowNodeInfo } from './next_flow_node_info';
 
 import * as uuid from 'uuid';
+import { IProcessModelFascade, ProcessModelFascade } from './process_model_fascade';
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
@@ -21,11 +22,13 @@ export class ExecuteProcessService implements IExecuteProcessService {
         this.messageBusService = messageBusService;
     }
 
-    public async start(context: ExecutionContext, processDefinition: Model.Types.Process): Promise<void> {
+    public async start(context: ExecutionContext, process: Model.Types.Process): Promise<void> {
+        
+        const processModelFascade: IProcessModelFascade = new ProcessModelFascade(process);
 
-        const startEvent: Model.Events.StartEvent = await this._getStartEventDef(context, processDefinition);
+        const startEvent: Model.Events.StartEvent = processModelFascade.getStartEvent();
 
-        const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(processDefinition);
+        const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
 
         const processToken: Runtime.Types.ProcessToken = await this._createProcessToken(context);
         await this._executeFlowNode(startEvent, processToken, context);
@@ -39,17 +42,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
         return processInstance;
     }
 
-    private _getStartEventDef(context: ExecutionContext, processDefinition: Model.Types.Process): Promise<Model.Events.StartEvent> {
-
-        const startEventDef: Model.Base.FlowNode = processDefinition.flowNodes.find((nodeDef: Model.Base.FlowNode) => {
-            return nodeDef.constructor.name === 'StartEvent';
-        });
-
-        return startEventDef as Model.Events.StartEvent;
-    }
-
     private async _executeFlowNode(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, context: ExecutionContext): Promise<void> {
-        const flowNodeHandler: IFlowNodeHandler = this.flowNodeHandlerFactory.create(flowNode.type);
+        
+        const flowNodeHandler: IFlowNodeHandler = await this.flowNodeHandlerFactory.create(flowNode.type);
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, context);
 

@@ -2,6 +2,7 @@ import { FlowNodeHandler } from "./flow_node_handler";
 import { INodeDefEntity, IProcessTokenEntity, IBoundaryEventEntity } from "@process-engine/process_engine_contracts";
 import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
+import { Model, Runtime } from '@process-engine/process_engine_contracts';
 
 export class ErrorBoundaryEventHandler extends FlowNodeHandler {
     private activityHandler: FlowNodeHandler;
@@ -11,7 +12,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler {
         this.activityHandler = activityHandler;
     }
 
-    protected async executeIntern(flowNode: INodeDefEntity, processToken: IProcessTokenEntity, context: ExecutionContext): Promise<NextFlowNodeInfo> {
+    protected async executeIntern(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, context: ExecutionContext): Promise<NextFlowNodeInfo> {
         try
         {
             const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processToken, context);

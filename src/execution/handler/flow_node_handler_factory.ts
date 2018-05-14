@@ -1,42 +1,31 @@
-import { IFlowNodeHandlerFactory, IFlowNodeHandler, ScriptTaskHandler, IntermedtiateCatchEventHandler } from ".";
+import { IFlowNodeHandlerFactory, IFlowNodeHandler } from ".";
 import { BpmnType } from "@process-engine/process_engine_contracts";
-import { StartEventHandler } from "./start_event_handler";
-import { EndEventHandler } from "./end_event_handler";
-import { ExclusiveGatewayHandler } from "./exlusive_gateway_handler";
-import { ServiceTaskHandler } from "./service_task_handler";
-import { Container, IInstanceWrapper } from "addict-ioc";
-import { IInvoker } from "@essential-projects/invocation_contracts";
-import { ParallelGatewayHandler } from "./parallel_gateway_handler";
-import { IDatastoreService } from "@essential-projects/data_model_contracts";
-import { ErrorBoundaryEventHandler } from "./error_boundary_event_handler";
+import { IContainer } from "addict-ioc";
 
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
-    private container: Container<IInstanceWrapper<any>>;
-    private invoker: IInvoker;
-    private datastoreService: IDatastoreService;
 
-    constructor(container: Container<IInstanceWrapper<any>>, invoker: IInvoker, datastoreService: IDatastoreService) {
+    private container: IContainer;
+
+    constructor(container: IContainer) {
         this.container = container;
-        this.invoker = invoker;
-        this.datastoreService = datastoreService;
     }
 
-    public create(flowNodeTypeName: BpmnType): IFlowNodeHandler {
+    public create(flowNodeTypeName: BpmnType): Promise<IFlowNodeHandler> {
         switch (flowNodeTypeName) {
             case BpmnType.startEvent:
-                return new StartEventHandler();
+                return this.container.resolveAsync('StartEventHandler');
             case BpmnType.exclusiveGateway:
-                return new ExclusiveGatewayHandler();
+                return this.container.resolveAsync('ExclusiveGatewayHandler');
             case BpmnType.parallelGateway:
-                return new ParallelGatewayHandler(this, this.datastoreService);
+                return this.container.resolveAsync('ParallelGatewayHandler');
             case BpmnType.serviceTask:
-                return new ServiceTaskHandler(this.container, this.invoker);
+                return this.container.resolveAsync('ServiceTaskHandler');
             case BpmnType.scriptTask:
-                return new ErrorBoundaryEventHandler(new ScriptTaskHandler());
+                return this.container.resolveAsync('ErrorBoundaryEventHandler');
             case BpmnType.intermediateCatchEvent:
-                return new IntermedtiateCatchEventHandler();
+                return this.container.resolveAsync('IntermediateCatchEventHandler');
             case BpmnType.endEvent:
-                return new EndEventHandler();
+                return this.container.resolveAsync('EndEventHandler');
             default:
                 throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${flowNodeTypeName} gefunden werden.`);
         }
