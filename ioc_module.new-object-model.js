@@ -15,8 +15,14 @@ const IntermediateCatchEventHandler = require('./dist/commonjs/index').Intermedi
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 
+const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
+const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
 
 function registerInContainer(container) {
+
+  container.register('BpmnProcessEntity', BpmnProcessEntity)
+    .dependencies('NodeInstanceEntityDependencyHelper')
+    .tags(entityDiscoveryTag);
 
   container.register('ScriptTaskHandler', ScriptTaskHandler);
 

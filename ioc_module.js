@@ -37,10 +37,6 @@ const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
 
-  container.register('ProcessEntity', ProcessEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
-
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
     .injectPromiseLazy('NodeInstanceEntityTypeService')
