@@ -23,7 +23,8 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
 
   public async saveDefinitions(definitions: Definitions): Promise<void> {
 
-    const processEntityType = await this.datastoreService.getEntityType('Process');
+    // TODO: rename this - ProcessEntity is already present in the old model
+    const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
     const context = await this.iamService.createInternalContext('process_engine');
     
     for (const process of definitions.processes) {
@@ -43,7 +44,8 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
 
   public async getProcess(processId: string): Promise<Model.Types.Process> {
 
-    const processEntityType = await this.datastoreService.getEntityType('Process');
+    // TODO: rename this - ProcessEntity is already present in the old model
+    const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
     const context = await this.iamService.createInternalContext('process_engine');
     
     const processEntity = await processEntityType.getById(processId, context);

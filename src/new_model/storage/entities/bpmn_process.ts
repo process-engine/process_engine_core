@@ -11,7 +11,8 @@ import {schemaAttribute} from '@essential-projects/metadata';
 import {
 } from '@process-engine/process_engine_contracts';
 
-export class ProcessEntity extends Entity {
+// TODO: rename this - ProcessEntity is already present in the old model
+export class BpmnProcessEntity extends Entity {
 
   constructor(entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,

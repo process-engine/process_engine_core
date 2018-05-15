@@ -1,1 +1,1 @@
-export * from './process';
+export * from './bpmn_process';
