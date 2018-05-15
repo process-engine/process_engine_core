@@ -1,12 +1,12 @@
 import { Runtime, Model, Definitions } from '@process-engine/process_engine_contracts';
-import { IDatastoreService } from '@process-engine/data_model_contracts';
+import { IDatastoreService } from '@essential-projects/data_model_contracts';
 import {IProcessEngineStorageService} from './index';
 import { IIamService } from '@essential-projects/core_contracts';
 
 export class ProcessEngineStorageService implements IProcessEngineStorageService {
   
   private _datastoreService: IDatastoreService = undefined;
-  private _iamService: IDatastoreService = undefined;
+  private _iamService: IIamService = undefined;
 
   constructor(datastoreService: IDatastoreService, iamService: IIamService) {
     this._datastoreService = datastoreService;
@@ -48,7 +48,7 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
     const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
     const context = await this.iamService.createInternalContext('process_engine');
     
-    const processEntity = await processEntityType.getById(processId, context);
+    const processEntity: any = await processEntityType.getById(processId, context);
 
     return processEntity.process;
   }
