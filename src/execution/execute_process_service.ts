@@ -31,7 +31,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
 
         const processToken: Runtime.Types.ProcessToken = await this._createProcessToken(context);
-        await this._executeFlowNode(startEvent, processToken, context);
+        await this._executeFlowNode(startEvent, processToken, processModelFascade);
 
         await this._end(processInstance, processToken, context);
     }
@@ -42,14 +42,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
         return processInstance;
     }
 
-    private async _executeFlowNode(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, context: ExecutionContext): Promise<void> {
+    private async _executeFlowNode(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<void> {
         
-        const flowNodeHandler: IFlowNodeHandler = await this.flowNodeHandlerFactory.create(flowNode.type);
+        const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode.bpmnType);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, context);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, processModelFascade);
 
         if (nextFlowNodeInfo.flowNode !== null) {
-            await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, context);
+            await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, processModelFascade);
         }
     }
 

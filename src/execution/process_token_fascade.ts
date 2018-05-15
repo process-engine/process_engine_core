@@ -1,11 +1,15 @@
 export interface IProcessTokenFascade {
   addResultForFlowNode(flowNodeId: string, result: any): Promise<void>;
-  getResultForFlowNode(flowNodeId: string): Promise<any>;
-  getAllResultsForFlowNode(flowNodeId: string): Promise<Array<any>>;
+  getResultForFlowNode(flowNodeId: string): Promise<IProcessTokenResult>;
+  getAllResultsForFlowNode(flowNodeId: string): Promise<Array<IProcessTokenResult>>;
+
 }
 
-export class ProcessTokenFascade {
-  public async addResultForFlowNode(flowNodeId: string, result: any): Promise<void> {
+export interface IProcessTokenResult {
+  flowNodeId: string;
+  result: any;
+}
 
-  }
+export class ProcessTokenFascade implements IProcessTokenFascade {
+
 }
