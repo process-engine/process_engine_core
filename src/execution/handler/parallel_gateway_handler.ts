@@ -41,7 +41,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     }
 
     private async _executeBranchToJoinGateway(flowNode: Model.Base.FlowNode, joinGateway: Model.Gateways.ParallelGateway, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
-        const flowNodeHandler = await this.flowNodeHandlerFactory.create(flowNode.bpmnType);
+        const flowNodeHandler = await this.flowNodeHandlerFactory.create(flowNode);
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
         
