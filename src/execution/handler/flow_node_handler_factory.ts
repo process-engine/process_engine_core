@@ -10,8 +10,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         this.container = container;
     }
 
-    public create(flowNodeTypeName: BpmnType): Promise<IFlowNodeHandler<Model.Base.FlowNode>> {
-        switch (flowNodeTypeName) {
+    public create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode): Promise<IFlowNodeHandler<TFlowNode>> {
+        switch (flowNode.bpmnType) {
             case BpmnType.startEvent:
                 return this.container.resolveAsync('StartEventHandler');
             case BpmnType.exclusiveGateway:
@@ -21,7 +21,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
             case BpmnType.serviceTask:
                 return this.container.resolveAsync('ServiceTaskHandler');
             case BpmnType.scriptTask:
-                return this.container.resolveAsync('ErrorBoundaryEventHandler');
+                return this.container.resolveAsync('ErrorBoundaryEventHandler', [flowNode]);
             case BpmnType.intermediateCatchEvent:
                 return this.container.resolveAsync('IntermediateCatchEventHandler');
             case BpmnType.intermediateThrowEvent:
@@ -29,7 +29,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
             case BpmnType.endEvent:
                 return this.container.resolveAsync('EndEventHandler');
             default:
-                throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${flowNodeTypeName} gefunden werden.`);
+                throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${flowNode.bpmnType} gefunden werden.`);
         }
     }
 }

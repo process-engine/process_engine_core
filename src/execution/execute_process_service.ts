@@ -46,7 +46,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     private async _executeFlowNode(flowNode: Model.Base.FlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
         
-        const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode.bpmnType);
+        const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode);
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
