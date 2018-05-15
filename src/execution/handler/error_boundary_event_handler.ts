@@ -3,25 +3,27 @@ import { INodeDefEntity, IProcessTokenEntity, IBoundaryEventEntity } from "@proc
 import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
+import { IProcessModelFascade, IProcessTokenFascade } from '../index';
 
-export class ErrorBoundaryEventHandler extends FlowNodeHandler {
-    private activityHandler: FlowNodeHandler;
+export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
+    private activityHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-    constructor(activityHandler: FlowNodeHandler) {
+    constructor(activityHandler: FlowNodeHandler<Model.Base.FlowNode>) {
         super();
         this.activityHandler = activityHandler;
     }
 
-    protected async executeIntern(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, context: ExecutionContext): Promise<NextFlowNodeInfo> {
+    protected async executeIntern(flowNode: Model.Events.BoundaryEvent, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
         try
         {
-            const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processToken, context);
+            const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
             return nextFlowNodeInfo;
         } catch (err) {
-            const boundaryEvent: IBoundaryEventEntity = flowNode.getBoundaryEvents(context)[0];
+            const boundaryEvent: Model.Events.BoundaryEvent = processModelFascade.getBoundaryEventsFor(flowNode)[0];
 
-            return new NextFlowNodeInfo(await this.getNextFlowNodeFor(boundaryEvent.nodeDef, context), processToken); 
+            const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(flowNode);
+            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade); 
         }
     }
 }

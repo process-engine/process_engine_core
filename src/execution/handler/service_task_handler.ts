@@ -1,56 +1,56 @@
-import { FlowNodeHandler, NextFlowNodeInfo, IProcessModelFascade, IProcessEngineStorageService } from './../index';
+import { FlowNodeHandler, NextFlowNodeInfo, IProcessModelFascade, IProcessTokenFascade } from './../index';
 import { ServiceTaskExtensions } from "./service_task_extensions"
 import { Model, Runtime } from "@process-engine/process_engine_contracts";
 import { ExecutionContext, IToPojoOptions } from "@essential-projects/core_contracts";
-import { Container, IInstanceWrapper } from 'addict-ioc';
+import { IContainer } from 'addict-ioc';
 import { IInvoker } from "@essential-projects/invocation_contracts";
 
-export class ServiceTaskHandler extends FlowNodeHandler {
-    private container: Container<IInstanceWrapper<any>>;
+export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
+    private container: IContainer;
     private invoker: IInvoker;
 
-    constructor(container: Container<IInstanceWrapper<any>>, invoker: IInvoker) {
+    constructor(container: IContainer, invoker: IInvoker) {
         super();
 
         this.container = container;
         this.invoker = invoker;
     }
 
-    protected async executeIntern(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
-        const tokenData = processToken.data || {};
-        const serviceTaskExtensions = new ServiceTaskExtensions(flowNode.extensions);
+    protected async executeIntern(serviceTaskNode: Model.Activities.ServiceTask, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+        
+        const context = undefined; // TODO: context needed
+        const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
+        const tokenData: any = processTokenFascade.getOldTokenFormat();
 
-        if (serviceTaskExtensions.isValid) {
+        if (isMethodInvocation) {
 
-            const serviceInstance = await this.container.resolveAsync(serviceTaskExtensions.module);
+            const invocation: Model.Activities.MethodInvocation = serviceTaskNode.invocation as Model.Activities.MethodInvocation;
 
+            const serviceInstance = await this.container.resolveAsync(invocation.module);
+            
             let result;
 
             try {
-                const self = this;                
+                const namespace: any = undefined; // TODO: SM: I think we agreed, that the namespace feature should be removed in the future
                 
-                const cb = function(data) {
-                };
-
-                const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + serviceTaskExtensions.parameter)).call(tokenData, context, tokenData, cb) || [];
-                result = await this.invoker.invoke(serviceInstance, serviceTaskExtensions.method, serviceTaskExtensions.namspace, context, ...argumentsToPassThrough);
-
-            } catch (err) {
-                result = err;
+                const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + invocation.params)).call(tokenData, context, tokenData) || [];
+                result = await this.invoker.invoke(serviceInstance, invocation.method, undefined, namespace, ...argumentsToPassThrough);
+                
+            } catch (error) {
+                
+                result = error;
             }
 
-            let finalResult = result;
-            const toPojoOptions: IToPojoOptions = { skipCalculation: true };
-            if (result && typeof result.toPojos === 'function') {
-                finalResult = await result.toPojos(context, toPojoOptions);
-            } else if (result && typeof result.toPojo === 'function') {
-                finalResult = await result.toPojo(context, toPojoOptions);
-            }
+            processTokenFascade.addResultForFlowNode(serviceTaskNode.id, result);
+            
+            const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(serviceTaskNode);
+            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+            
+        } else {
 
-            tokenData.current = finalResult;
-            processToken.data = tokenData;
-
-            return new NextFlowNodeInfo(await this.getNextFlowNodeFor(flowNode, context), processToken);
+            // TODO: implement call to webservice, which is the default in the
+            // BPMN spec
         }
+
     }
 }

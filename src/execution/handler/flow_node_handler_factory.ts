@@ -1,5 +1,5 @@
 import { IFlowNodeHandlerFactory, IFlowNodeHandler } from ".";
-import { BpmnType } from "@process-engine/process_engine_contracts";
+import { Model, BpmnType } from "@process-engine/process_engine_contracts";
 import { IContainer } from "addict-ioc";
 
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
@@ -10,7 +10,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         this.container = container;
     }
 
-    public create(flowNodeTypeName: BpmnType): Promise<IFlowNodeHandler> {
+    public create(flowNodeTypeName: BpmnType): Promise<IFlowNodeHandler<Model.Base.FlowNode>> {
         switch (flowNodeTypeName) {
             case BpmnType.startEvent:
                 return this.container.resolveAsync('StartEventHandler');

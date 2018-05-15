@@ -1,98 +1,55 @@
+import {FlowNodeHandler} from './flow_node_handler'
 import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { IFlowNodeHandlerFactory } from "./iflow_node_handler_factory";
 import { IDatastoreService } from "@essential-projects/data_model_contracts";
 import { Model, Runtime, BpmnType } from '@process-engine/process_engine_contracts';
-import {IProcessModelFascade} from './../index';
+import { IProcessModelFascade, IProcessTokenFascade } from '../index';
 
-export class ParallelGatewayHandler {
+export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
     private flowNodeHandlerFactory: IFlowNodeHandlerFactory
     private datastoreService: IDatastoreService;
 
-    constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, datastoreService: IDatastoreService) {
-        this.flowNodeHandlerFactory = flowNodeHandlerFactory;
-        this.datastoreService = datastoreService;
-    }
-
-    protected async executeIntern(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade, context: ExecutionContext): Promise<NextFlowNodeInfo>  {
+    protected async executeIntern(flowNode: Model.Gateways.ParallelGateway, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>  {
 
         const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
         const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
 
         // TODO: Robin: is this comparison really appropriate?
         if (incomingSequenceFlows.length < outgoingSequenceFlows.length) {
-            const joinGateway: Model.Base.FlowNode = await this._findJoinGateway(flowNode, processModelFascade);
+            const joinGateway: Model.Gateways.ParallelGateway = processModelFascade.getJoinGatewayFor(flowNode);
 
             const promises: Array<Promise<NextFlowNodeInfo>> = outgoingSequenceFlows.map(async (outgoingSequenceFlow: Model.Types.SequenceFlow) => {
 
-                const processTokenForBranch = await this._createProcessTokenForParallelBranch(context);
+                const processTokenForBranch = await processTokenFascade.getProcessTokenFascadeForParallelBranch();
                 const nextFlowNodeInBranch = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
-                return await this._executeBranchToJoinGateway(nextFlowNodeInBranch, processTokenForBranch, context, joinGateway);
+                return await this._executeBranchToJoinGateway(nextFlowNodeInBranch, joinGateway, processTokenForBranch, processModelFascade);
             });
-
 
             const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(promises);
             for (const nextFlowNodeInfo of nextFlowNodeInfos) {
-                this._mergeTokenHistory(processToken, nextFlowNodeInfo.processToken);
+                processTokenFascade.mergeTokenHistory(nextFlowNodeInfo.processTokenFascade);
             }
 
             const nextFlowNode: Model.Base.FlowNode = await processModelFascade.getNextFlowNodeFor(joinGateway);
 
-            return new NextFlowNodeInfo(nextFlowNode, processToken);
+            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
         } else {
             return null;
         }
     }
 
-    // TODO: support of new Split Gateway in Branch
-    private async _findJoinGateway(flowNode: Model.Base.FlowNode, processModelFascade: IProcessModelFascade): Promise<Model.Base.FlowNode> {
-        
-        const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
-        const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
-        
-        const isFlowNodeParallelGateway: boolean = flowNode instanceof Model.Gateways.ParallelGateway;
+    private async _executeBranchToJoinGateway(flowNode: Model.Base.FlowNode, joinGateway: Model.Gateways.ParallelGateway, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+        const flowNodeHandler = await this.flowNodeHandlerFactory.create(flowNode.bpmnType);
 
-        if (isFlowNodeParallelGateway && incomingSequenceFlows.length > outgoingSequenceFlows.length) {
-            return flowNode;
-        } else {
-            const nextFlowNode: Model.Base.FlowNode = await processModelFascade.getNextFlowNodeFor(flowNode);
-            return this._findJoinGateway(nextFlowNode, processModelFascade);
-        }
-    }
-
-    private async _executeBranchToJoinGateway(flowNode: Model.Base.FlowNode, processToken: IProcessTokenEntity, context: ExecutionContext, joinGateway: INodeDefEntity): Promise<NextFlowNodeInfo> {
-        const flowNodeHandler = this.flowNodeHandlerFactory.create(flowNode.type);
-
-        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, context);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
         
         if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
-            return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, context, joinGateway);
+            return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode, joinGateway, nextFlowNodeInfo.processTokenFascade, processModelFascade);
         }
 
-        return new NextFlowNodeInfo(joinGateway, processToken);
+        return new NextFlowNodeInfo(joinGateway, processTokenFascade);
     }
 
-    private async _createProcessTokenForParallelBranch(context: ExecutionContext): Promise<IProcessTokenEntity> {
-        
-        const processTokenType = await this.datastoreService.getEntityType<IProcessTokenEntity>('ProcessToken');
-        
-        return processTokenType.createEntity(context);
-    }
-    
-    private async _mergeTokenHistory(processToken: IProcessTokenEntity, tokenWithHistoryToMerge: IProcessTokenEntity): void {
-        const gatewayToken: IProcessTokenEntity = processToken;
-        if (gatewayToken.data === undefined) {
-          gatewayToken.data = {};
-        }
-    
-        if (gatewayToken.data.history === undefined) {
-          gatewayToken.data.history = {};
-        }
-    
-        gatewayToken.data.history = {
-          ...gatewayToken.data.history,
-          ...tokenWithHistoryToMerge.data.history,
-        };
-      }
 }

@@ -3,11 +3,11 @@ import { INodeDefEntity, IProcessTokenEntity, IFlowDefEntity, IProcessDefEntity,
 import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import {IProcessModelFascade} from './../index';
+import {IProcessModelFascade, IProcessTokenFascade} from './../index';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-    protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>  {
+    protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>  {
 
         const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
         const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
@@ -16,11 +16,15 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
         if (incomingSequenceFlows.length > outgoingSequenceFlows.length) {
 
             const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
-            return new NextFlowNodeInfo(nextFlowNode, processToken);
+            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
 
         } else {
-            const nextSequenceFlow = outgoingSequenceFlows.find(sequenceFlow => {
-                return this.executeCondition(sequenceFlow.condition, processToken);
+            const nextSequenceFlow: Model.Types.SequenceFlow = outgoingSequenceFlows.find(sequenceFlow => {
+                
+                if (!sequenceFlow.conditionExpression) {
+                    return false;
+                }
+                return this.executeCondition(sequenceFlow.conditionExpression.expression, processTokenFascade);
             });
 
             if (!nextSequenceFlow) {
@@ -28,12 +32,12 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
             }
 
             const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(nextSequenceFlow.targetRef);
-            return new NextFlowNodeInfo(nextFlowNode, processToken);
+            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
         }
     }
 
-    private executeCondition(condition: string, processToken: IProcessTokenEntity): boolean {
-        const tokenData = processToken.data || {};
+    private executeCondition(condition: string, processTokenFascade: IProcessTokenFascade): boolean {
+        const tokenData = processTokenFascade.getOldTokenFormat();
 
         try {
             const functionString = 'return ' + condition;
