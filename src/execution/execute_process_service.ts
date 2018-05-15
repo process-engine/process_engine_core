@@ -2,13 +2,13 @@ import { ExecutionContext } from '@essential-projects/core_contracts';
 import { IDatastoreService } from '@essential-projects/data_model_contracts';
 import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IFlowNodeHandler } from '.';
+import { IFlowNodeHandler, ProcessTokenFascade } from '.';
 import { IFlowNodeHandlerFactory } from './handler/iflow_node_handler_factory';
 import { IExecuteProcessService } from './iexecute_process_service';
 import { NextFlowNodeInfo } from './next_flow_node_info';
 
 import * as uuid from 'uuid';
-import { IProcessModelFascade, ProcessModelFascade } from './process_model_fascade';
+import { IProcessModelFascade, ProcessModelFascade, IProcessTokenFascade } from './index';
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
@@ -31,7 +31,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
         const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
 
         const processToken: Runtime.Types.ProcessToken = await this._createProcessToken(context);
-        await this._executeFlowNode(startEvent, processToken, processModelFascade);
+        const processTokenFascade: IProcessTokenFascade = new ProcessTokenFascade(processToken);
+        
+        await this._executeFlowNode(startEvent, processTokenFascade, processModelFascade);
 
         await this._end(processInstance, processToken, context);
     }
@@ -42,14 +44,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
         return processInstance;
     }
 
-    private async _executeFlowNode(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<void> {
+    private async _executeFlowNode(flowNode: Model.Base.FlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
         
         const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode.bpmnType);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processToken, processModelFascade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
         if (nextFlowNodeInfo.flowNode !== null) {
-            await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processToken, processModelFascade);
+            await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFascade, processModelFascade);
         }
     }
 
