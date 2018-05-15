@@ -29,11 +29,10 @@ function registerInContainer(container) {
   container.register('StartEventHandler', StartEventHandler);
   container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler);
   container.register('ParallelGatewayHandler', ParallelGatewayHandler)
-    .dependencies('FlowNodeHandlerFactory', 'DatastoreService');
+    .dependencies('FlowNodeHandlerFactory');
   container.register('ServiceTaskHandler', ServiceTaskHandler)
     .dependencies('container', 'Invoker');
-  container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
-    .dependencies('ScriptTaskHandler');
+  container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler);
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler);
   container.register('EndEventHandler', EndEventHandler);
@@ -51,7 +50,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeHandlerFactory', 'DatastoreService','MessageBusService');
 
   container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
-    .dependencies('container', 'Invoker', 'DatastoreService');
+    .dependencies('container');
 }
 
 module.exports.registerInContainer = registerInContainer;

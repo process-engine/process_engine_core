@@ -7,8 +7,17 @@ import { Model, Runtime, BpmnType } from '@process-engine/process_engine_contrac
 import { IProcessModelFascade, IProcessTokenFascade } from '../index';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
-    private flowNodeHandlerFactory: IFlowNodeHandlerFactory
-    private datastoreService: IDatastoreService;
+    
+    private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+
+    constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory) {
+        super();
+        this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    }
+
+    private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
+        return this._flowNodeHandlerFactory;
+    }
 
     protected async executeIntern(flowNode: Model.Gateways.ParallelGateway, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>  {
 
