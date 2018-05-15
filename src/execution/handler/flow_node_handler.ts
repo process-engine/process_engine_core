@@ -1,23 +1,21 @@
-import { IFlowNodeHandler, NextFlowNodeInfo, IProcessModelFascade, IProcessEngineStorageService } from './../index';
-import { Model, Runtime } from "@process-engine/process_engine_contracts";
+import { IFlowNodeHandler, NextFlowNodeInfo, IProcessModelFascade, IProcessEngineStorageService, IFlowNodeHandlerFactory } from './../index';
+import { Model, Runtime, BpmnType } from "@process-engine/process_engine_contracts";
 import { ExecutionContext } from "@essential-projects/core_contracts";
+import { IProcessTokenFascade } from '../process_token_fascade';
 
-export abstract class FlowNodeHandler implements IFlowNodeHandler {
+export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-    private processEngineStorageService: IProcessEngineStorageService;
-
-    constructor(processEngineStorageService: IProcessEngineStorageService) {
-        this.processEngineStorageService = processEngineStorageService;
+    constructor() {
     }
 
-    public async execute(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
-        const nextFlowNode = await this.executeIntern(flowNode, processToken, processModelFascade);
-        await this.afterExecute(flowNode, processToken, processModelFascade);
+    public async execute(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+        const nextFlowNode = await this.executeIntern(flowNode, processTokenFascade, processModelFascade);
+        await this.afterExecute(flowNode, processTokenFascade, processModelFascade);
 
         return nextFlowNode;
     }
 
-    protected async abstract executeIntern(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>;
+    protected async abstract executeIntern(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>;
 
     // protected async getNextFlowNodeFor(flowNode: Model.Base.FlowNode, context: ExecutionContext): Promise<Model.Base.FlowNode> {
         
@@ -49,29 +47,32 @@ export abstract class FlowNodeHandler implements IFlowNodeHandler {
     //     return flow.target.id;
     // }
 
-    private async afterExecute(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<void> {
-        const tokenData = processToken.data || {};
-        const mapper: string = (flowNode as any).mapper;
-    
-        if (mapper !== undefined) {
-            const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
-            tokenData.current = newCurrent;
-        }
-    
-        tokenData.history = tokenData.history || {};
+    private async afterExecute(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
+        
+        // processTokenFascade.resolveMapper()
 
-        if (!tokenData.history[flowNode.id]) {
-            tokenData.history[flowNode.id] = tokenData.current;
-        } else {
-            if (!Array.isArray(tokenData.history[flowNode.id])) {
-                tokenData.history[flowNode.id] = [tokenData.history[flowNode.id]];
-            } 
-
-            tokenData.history[flowNode.id].push(tokenData.current);
-        }
+        // const tokenData = processToken.data || {};
+        // const mapper: string = (flowNode as any).mapper;
     
-        processToken.data = tokenData;
+        // if (mapper !== undefined) {
+        //     const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+        //     tokenData.current = newCurrent;
+        // }
+    
+        // tokenData.history = tokenData.history || {};
 
-        await this.processEngineStorageService.saveProcessToken(processToken);
+        // if (!tokenData.history[flowNode.id]) {
+        //     tokenData.history[flowNode.id] = tokenData.current;
+        // } else {
+        //     if (!Array.isArray(tokenData.history[flowNode.id])) {
+        //         tokenData.history[flowNode.id] = [tokenData.history[flowNode.id]];
+        //     } 
+
+        //     tokenData.history[flowNode.id].push(tokenData.current);
+        // }
+    
+        // processToken.data = tokenData;
+
+        // await this.processEngineStorageService.saveProcessToken(processToken);
     }
 }

@@ -1,13 +1,13 @@
 import { FlowNodeHandler } from "./flow_node_handler";
-import { INodeDefEntity, IProcessTokenEntity, IFlowDefEntity, IProcessDefEntity } from "@process-engine/process_engine_contracts";
+import { INodeDefEntity, IProcessTokenEntity, IFlowDefEntity, IProcessDefEntity, BpmnType } from "@process-engine/process_engine_contracts";
 import { ExecutionContext } from "@essential-projects/core_contracts";
 import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
 import {IProcessModelFascade} from './../index';
 
-export class ExclusiveGatewayHandler extends FlowNodeHandler {
+export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-    protected async executeIntern(flowNode: Model.Base.FlowNode, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade, context: ExecutionContext): Promise<NextFlowNodeInfo>  {
+    protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway, processToken: Runtime.Types.ProcessToken, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>  {
 
         const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
         const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
