@@ -17,7 +17,7 @@
   "dependencies": {
     "@essential-projects/core_contracts": "^1.0.0",
     "@essential-projects/data_model": "^1.0.0",
-    "@essential-projects/data_model_contracts": "^1.0.0",
+    "@essential-projects/data_model_contracts": "^2.0.0",
     "@essential-projects/errors_ts": "^1.0.0",
     "@essential-projects/event_aggregator_contracts": "^1.0.0",
     "@essential-projects/feature_contracts": "^1.0.0",
