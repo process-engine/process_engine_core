@@ -31,7 +31,6 @@ function registerInContainer(container) {
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler);
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler);
   container.register('EndEventHandler', EndEventHandler);
-  container.register('EndEventHandler', EndEventHandler);
 
 
   container.register('ProcessEngineService', ProcessEngineService)
