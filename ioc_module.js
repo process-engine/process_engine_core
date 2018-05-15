@@ -29,7 +29,6 @@ const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 const ProcessEngineStorageService = require('./dist/commonjs/index').ProcessEngineStorageService;
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
-const ProcessEntity = require('./dist/commonjs/index').ProcessEntity;
 
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-model');
