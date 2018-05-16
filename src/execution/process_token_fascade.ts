@@ -1,5 +1,5 @@
-import { ProcessToken } from "@process-engine/process_engine_contracts/dist/new_model/domains/runtime/types";
-import { Model, Runtime, BpmnType } from '@process-engine/process_engine_contracts';
+import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
+import { ProcessToken } from '@process-engine/process_engine_contracts/dist/new_model/domains/runtime/types';
 
 export interface IProcessTokenFascade {
   addResultForFlowNode(flowNodeId: string, result: any): Promise<void>;
@@ -35,10 +35,10 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     this.processTokenResults.push(processTokenResult);
   }
   public async getResultForFlowNode(flowNodeId: string): Promise<IProcessTokenResult> {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
-  public async getAllResultsForFlowNode(flowNodeId: string): Promise<IProcessTokenResult[]> {
-    throw new Error("Method not implemented.");
+  public async getAllResultsForFlowNode(flowNodeId: string): Promise<Array<IProcessTokenResult>> {
+    throw new Error('Method not implemented.');
   }
   public async getProcessTokenFascadeForParallelBranch(): Promise<IProcessTokenFascade> {
     const processToken: any = new Runtime.Types.ProcessToken();
@@ -67,16 +67,28 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
   public async getOldTokenFormat(): Promise<any> {
 
     const tokenResults: Array<IProcessTokenResult> = await this.getAllResults();
-    const tokenData: any = {
-      data: {
+
+    if (tokenResults.length === 0) {
+      return {
         history: {},
         current: undefined,
-      },
+      };
+    }
+
+    const copiedResults: Array<IProcessTokenResult> = [];
+    Array.prototype.push.apply(copiedResults, tokenResults);
+    const currentResult: any = copiedResults.pop();
+
+    const tokenData: any = {
+      history: {},
+      current: currentResult ? currentResult.result : undefined,
     };
 
-    for (const tokenResult of tokenResults) {
-      tokenData.data.history[tokenResult.flowNodeId] = tokenResult.result;
+    for (const tokenResult of copiedResults) {
+      tokenData.history[tokenResult.flowNodeId] = tokenResult.result;
     }
+
+    tokenData.history[currentResult.flowNodeId] = currentResult.result;
 
     return tokenData;
   }

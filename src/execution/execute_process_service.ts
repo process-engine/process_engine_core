@@ -37,7 +37,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
         const resultToken: any = await processTokenFascade.getOldTokenFormat();
 
-        return resultToken;
+        return resultToken.current;
         // await this._end(processInstance, resultToken, context);
     }
 
