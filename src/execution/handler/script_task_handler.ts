@@ -6,6 +6,7 @@ import {
 } from './../../index';
 import { IFlowNodeHandlerFactory } from './iflow_node_handler_factory';
 import { FlowNodeHandler } from './index';
+import { IToPojoOptions } from '@essential-projects/core_contracts';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
