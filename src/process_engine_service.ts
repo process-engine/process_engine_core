@@ -218,13 +218,17 @@ export class ProcessEngineService implements IProcessEngineService {
     const diagramName: string = nameIsInvalid ? processes[0].name : name;
     const diagramKey: string = nameIsInvalid ? processes[0].id : name;
 
-    if (name !== undefined) {
-      xml = xml
-              .replace(`id="${processes[0].id}"`, `id="${name}"`)
-              .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
+    if (nameIsInvalid) {
+      const xmlWithCorrectName: string = xml
+                                          .replace(`id="${processes[0].id}"`, `id="${name}"`)
+                                          .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
+
+      await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xmlWithCorrectName});
+    } else {
+      await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xml});
     }
 
-    await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xml});
+    //  TODO: Refactor into private method {{{ //
     const queryObject: IPrivateQueryOptions = {
       query: {
         attribute: 'key',
@@ -234,6 +238,7 @@ export class ProcessEngineService implements IProcessEngineService {
     };
 
     const processDefEntity: IProcessDefEntity = await processDef.findOne(context, queryObject);
+    //  }}} TODO: Refactor into private method //
 
     return processDefEntity.toPojo(context);
   }
