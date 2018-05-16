@@ -1,9 +1,10 @@
-import { FlowNodeHandler } from "./flow_node_handler";
-import { INodeDefEntity, IProcessTokenEntity, IBoundaryEventEntity } from "@process-engine/process_engine_contracts";
-import { ExecutionContext } from "@essential-projects/core_contracts";
-import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IProcessModelFascade, IProcessTokenFascade } from '../index';
+import {
+  IProcessModelFascade,
+  IProcessTokenFascade,
+  NextFlowNodeInfo,
+} from './../../index';
+import { FlowNodeHandler } from './index';
 
 export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
     private activityHandler: FlowNodeHandler<Model.Base.FlowNode>;
@@ -14,8 +15,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     }
 
     protected async executeIntern(flowNode: Model.Events.BoundaryEvent, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
-        try
-        {
+        try {
             const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
             return nextFlowNodeInfo;
@@ -23,7 +23,8 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
             const boundaryEvent: Model.Events.BoundaryEvent = processModelFascade.getBoundaryEventsFor(flowNode)[0];
 
             const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(flowNode);
-            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade); 
+
+            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
         }
     }
 }

@@ -1,10 +1,10 @@
-import { Runtime, Model, Definitions } from '@process-engine/process_engine_contracts';
-import { IDatastoreService } from '@essential-projects/data_model_contracts';
-import {IProcessEngineStorageService} from './index';
 import { IIamService } from '@essential-projects/core_contracts';
+import { IDatastoreService } from '@essential-projects/data_model_contracts';
+import { Definitions, Model, Runtime } from '@process-engine/process_engine_contracts';
+import {IProcessEngineStorageService} from './index';
 
 export class ProcessEngineStorageService implements IProcessEngineStorageService {
-  
+
   private _datastoreService: IDatastoreService = undefined;
   private _iamService: IIamService = undefined;
 
@@ -25,8 +25,8 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
 
     // TODO: rename this - ProcessEntity is already present in the old model
     const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
-    const context = await this.iamService.createInternalContext('process_engine');
-    
+    const context = await this.iamService.createInternalContext('processengine_system');
+
     for (const process of definitions.processes) {
 
       const processData: any = {
@@ -47,7 +47,7 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
     // TODO: rename this - ProcessEntity is already present in the old model
     const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
     const context = await this.iamService.createInternalContext('process_engine');
-    
+
     const processEntity: any = await processEntityType.getById(processId, context);
 
     return processEntity.process;

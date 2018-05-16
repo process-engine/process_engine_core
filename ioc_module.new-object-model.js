@@ -2,8 +2,6 @@
 
 const ProcessEngineService = require('./dist/commonjs/index').ProcessEngineService;
 const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
-const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
-const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
 
 const ScriptTaskHandler = require('./dist/commonjs/index').ScriptTaskHandler;
 const StartEventHandler = require('./dist/commonjs/index').StartEventHandler;
@@ -15,10 +13,22 @@ const IntermediateCatchEventHandler = require('./dist/commonjs/index').Intermedi
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 
+const ProcessEngineStorageService = require('./dist/commonjs/index').ProcessEngineStorageService;
+const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
+const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
 
 function registerInContainer(container) {
+
+  container.register('ExecuteProcessService', ExecuteProcessService)
+    .dependencies('FlowNodeHandlerFactory', 'DatastoreService', 'MessageBusService');
+
+  container.register('BpmnModelParser', BpmnModelParser);
+
+  container.register('ProcessEngineStorageService', ProcessEngineStorageService)
+    .dependencies('DatastoreService', 'IamService');
 
   container.register('BpmnProcessEntity', BpmnProcessEntity)
     .dependencies('NodeInstanceEntityDependencyHelper')
@@ -37,17 +47,11 @@ function registerInContainer(container) {
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler);
   container.register('EndEventHandler', EndEventHandler);
 
-
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();
-
-  container.register('BpmnModelParser', BpmnModelParser);
-
-  container.register('ExecuteProcessService', ExecuteProcessService)
-    .dependencies('FlowNodeHandlerFactory', 'DatastoreService','MessageBusService');
 
   container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
     .dependencies('container');

@@ -1,9 +1,10 @@
-import { FlowNodeHandler } from "./flow_node_handler";
-import { INodeDefEntity, IProcessTokenEntity, IFlowDefEntity, IProcessDefEntity, BpmnType } from "@process-engine/process_engine_contracts";
-import { ExecutionContext } from "@essential-projects/core_contracts";
-import { NextFlowNodeInfo } from "../next_flow_node_info";
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import {IProcessModelFascade, IProcessTokenFascade} from './../index';
+import {
+  IProcessModelFascade,
+  IProcessTokenFascade,
+  NextFlowNodeInfo,
+} from './../../index';
+import { FlowNodeHandler } from './flow_node_handler';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
@@ -16,11 +17,12 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
         if (incomingSequenceFlows.length > outgoingSequenceFlows.length) {
 
             const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
+
             return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
 
         } else {
-            const nextSequenceFlow: Model.Types.SequenceFlow = outgoingSequenceFlows.find(sequenceFlow => {
-                
+            const nextSequenceFlow: Model.Types.SequenceFlow = outgoingSequenceFlows.find((sequenceFlow) => {
+
                 if (!sequenceFlow.conditionExpression) {
                     return false;
                 }
@@ -32,6 +34,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
             }
 
             const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(nextSequenceFlow.targetRef);
+
             return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
         }
     }
