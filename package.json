@@ -3,8 +3,8 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "2.2.0",
-  "description": "the core components for the process engine",
+  "version": "3.0.1",
+  "description": "The ProcessEngine core package. ProcessEngine is a tool to bring BPMN diagrams to life in JS.",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
   "typings": "dist/index.d.ts",
@@ -25,16 +25,16 @@
     "@essential-projects/messagebus_contracts": "^1.0.0",
     "@essential-projects/metadata": "^1.0.0",
     "@essential-projects/metadata_contracts": "^1.0.0",
-    "@process-engine/process_engine_contracts": "^5.0.0",
+    "@process-engine/process_engine_contracts": "^6.0.0",
     "@essential-projects/routing_contracts": "^1.0.0",
     "@essential-projects/timing_contracts": "^1.0.0",
     "@essential-projects/foundation": "^1.0.0",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
-    "bpmn-moddle":"^0.14.0",
+    "bpmn-moddle": "^0.14.0",
     "debug": "^2.6.1",
     "loggerhythm": "^3.0.3",
-    "moment":"^2.22.1",
+    "moment": "^2.22.1",
     "xml2js": "^0.4.19"
   },
   "devDependencies": {
@@ -50,10 +50,10 @@
   },
   "scripts": {
     "build": "gulp build",
-    "prepare": "npm run build && npm run build-schemas && npm run build-doc",
     "build-doc": "gulp doc",
     "build-schemas": "gulp typescript-schema",
     "lint": "gulp lint",
+    "prepare": "npm run build && npm run build-schemas && npm run build-doc",
     "test": "gulp test"
   }
 }
