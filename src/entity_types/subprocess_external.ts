@@ -1,3 +1,4 @@
+import {IConsumerApiService} from '@process-engine/consumer_api_contracts';
 import {ExecutionContext, IEntity, IInheritedSchema} from '@essential-projects/core_contracts';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
 import {IParamStart, IProcessDefEntityTypeService, ISubprocessExternalEntity} from '@process-engine/process_engine_contracts';
