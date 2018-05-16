@@ -218,7 +218,7 @@ export class ProcessEngineService implements IProcessEngineService {
     const diagramName: string = nameIsInvalid ? processes[0].name : name;
     const diagramKey: string = nameIsInvalid ? processes[0].id : name;
 
-    if (nameIsInvalid) {
+    if (!nameIsInvalid) {
       const xmlWithCorrectName: string = xml
                                           .replace(`id="${processes[0].id}"`, `id="${name}"`)
                                           .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
