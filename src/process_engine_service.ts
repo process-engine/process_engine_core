@@ -193,6 +193,16 @@ export class ProcessEngineService implements IProcessEngineService {
     return userTask.getUserTaskData(context);
   }
 
+  /*
+   * This creates an entry in the database for the XML of a BPMN diagram.
+   * Checks if the creation was successfull; returns a ProcessDefEntity on success.
+   *
+   * @param context Execution Context for the request.
+   * @param xml The XML body of the BPMN diagram.
+   * @param name The name for the diagram that will be saved.
+   *
+   * @return Promise<IProcessDefEntity> on success; Error if no processes given in XML.
+   */
   public async createBpmnFromXml(context: ExecutionContext, xml: string, name: string): Promise<IProcessDefEntity> {
     const bpmnDiagram: IBpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
