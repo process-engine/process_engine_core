@@ -41,6 +41,7 @@
   "devDependencies": {
     "@essential-projects/tslint-config": "^1.0.0",
     "@types/bluebird": "^3.5.8",
+    "@types/express": "^4.11.0",
     "@types/node": "^8.10.10",
     "gulp": "^3.9.1",
     "gulptraum": "^2.2.4",
