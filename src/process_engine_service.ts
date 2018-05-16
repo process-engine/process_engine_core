@@ -198,8 +198,10 @@ export class ProcessEngineService implements IProcessEngineService {
     const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
     const processes: Array<any> = bpmnDiagram.getProcesses();
 
-    if (processes.length === 0) {
-      throw new Error('Model must contain a process');
+    const noProccessFound: boolean = (processes.length === 0);
+    if (noProccessFound) {
+      // TODO: We need an specific Error type here.
+      throw new Error('Model must contain a process.');
     }
 
     const nameIsInvalid: boolean = (name === undefined);
@@ -316,11 +318,11 @@ export class ProcessEngineService implements IProcessEngineService {
       // this is deprecated and should be replaced with the new datastore api
       if (this.messageBusService.isMaster) {
         this.messageBusService.subscribe(`/processengine`, this._messageHandler.bind(this));
-        debugInfo(`subscribed on Messagebus Master`);
+        debugInfo(`subscribed on Messagebus Master.`);
       }
 
     } catch (err) {
-      debugErr('subscription failed on Messagebus', err.message);
+      debugErr('subscription failed on Messagebus.', err.message);
       throw new Error(err.message);
     }
   }
