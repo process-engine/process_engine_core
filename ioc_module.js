@@ -118,7 +118,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('SubprocessExternalEntity', SubprocessExternalEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper', 'ProcessDefEntityTypeService')
+    .dependencies('NodeInstanceEntityDependencyHelper', 'ProcessDefEntityTypeService', 'ConsumerApiService')
     .tags(entityDiscoveryTag);
 
   container.register('UserTaskEntity', UserTaskEntity)
