@@ -28,10 +28,10 @@ function registerInContainer(container) {
   container.register('BpmnModelParser', BpmnModelParser);
 
   container.register('ProcessEngineStorageService', ProcessEngineStorageService)
-    .dependencies('DatastoreService', 'IamService');
+    .dependencies('DatastoreService', 'IamService')
+    .singleton();
 
   container.register('BpmnProcessEntity', BpmnProcessEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
   container.register('ScriptTaskHandler', ScriptTaskHandler);
@@ -48,7 +48,7 @@ function registerInContainer(container) {
   container.register('EndEventHandler', EndEventHandler);
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker', 'ProcessEngineStorageService')
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();

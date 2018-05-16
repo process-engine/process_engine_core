@@ -28,7 +28,11 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     return Promise.resolve(this.processTokenResults);
   }
   public async addResultForFlowNode(flowNodeId: string, result: any): Promise<void> {
-    throw new Error("Method not implemented.");
+    const processTokenResult: IProcessTokenResult = {
+      flowNodeId: flowNodeId,
+      result: result,
+    };
+    this.processTokenResults.push(processTokenResult);
   }
   public async getResultForFlowNode(flowNodeId: string): Promise<IProcessTokenResult> {
     throw new Error("Method not implemented.");
@@ -38,10 +42,11 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
   }
   public async getProcessTokenFascadeForParallelBranch(): Promise<IProcessTokenFascade> {
     const processToken: any = new Runtime.Types.ProcessToken();
+
     return Promise.resolve(new ProcessTokenFascade(processToken));
   }
   public async mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void> {
-    
+
     if (this.processToken.data === undefined) {
       this.processToken.data = {};
     }
@@ -62,10 +67,15 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
   public async getOldTokenFormat(): Promise<any> {
 
     const tokenResults: Array<IProcessTokenResult> = await this.getAllResults();
-    const tokenData: any = {};
+    const tokenData: any = {
+      data: {
+        history: {},
+        current: undefined,
+      },
+    };
 
     for (const tokenResult of tokenResults) {
-      tokenData[tokenResult.flowNodeId] = tokenResult.result;
+      tokenData.data.history[tokenResult.flowNodeId] = tokenResult.result;
     }
 
     return tokenData;

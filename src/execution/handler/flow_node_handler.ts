@@ -18,7 +18,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     protected async abstract executeIntern(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>;
 
     // protected async getNextFlowNodeFor(flowNode: Model.Base.FlowNode, context: ExecutionContext): Promise<Model.Base.FlowNode> {
-        
+
 
     //     const processDefinition: Model.Types.Process = await flowNode.getProcessDef(context);
     //     const nextFlowNodeId: string = await this.getNextFlowNodeId(flowNode.id, processDefinition, context);
@@ -48,17 +48,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     // }
 
     private async afterExecute(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
-        
+
         // processTokenFascade.resolveMapper()
 
         // const tokenData = processToken.data || {};
         // const mapper: string = (flowNode as any).mapper;
-    
+
         // if (mapper !== undefined) {
         //     const newCurrent = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
         //     tokenData.current = newCurrent;
         // }
-    
+
         // tokenData.history = tokenData.history || {};
 
         // if (!tokenData.history[flowNode.id]) {
@@ -66,11 +66,11 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         // } else {
         //     if (!Array.isArray(tokenData.history[flowNode.id])) {
         //         tokenData.history[flowNode.id] = [tokenData.history[flowNode.id]];
-        //     } 
+        //     }
 
         //     tokenData.history[flowNode.id].push(tokenData.current);
         // }
-    
+
         // processToken.data = tokenData;
 
         // await this.processEngineStorageService.saveProcessToken(processToken);

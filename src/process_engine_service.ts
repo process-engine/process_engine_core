@@ -30,12 +30,12 @@ import {
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
-  Model
+  Model,
 } from '@process-engine/process_engine_contracts';
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
-import { IExecuteProcessService, FlowNodeHandlerFactory } from './execution';
+import { FlowNodeHandlerFactory, IExecuteProcessService } from './execution';
 import { IProcessEngineStorageService } from './index';
 
 const debugInfo = debug('processengine:info');
@@ -514,7 +514,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    const process: Model.Types.Process = await this.processEngineStorageService.getProcess(id);
+    const process: Model.Types.Process = await this.processEngineStorageService.getProcess(key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${id}" was found`);
@@ -577,8 +577,8 @@ export class ProcessEngineService implements IProcessEngineService {
     this._errorDeserializer = deserializer;
   }
 
-  private _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any): Promise<any> {
-    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
+  private async _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any): Promise<any> {
+    // return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       // const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
       // const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
@@ -622,8 +622,10 @@ export class ProcessEngineService implements IProcessEngineService {
       // await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
       //   initialToken: initialToken,
       // });
-      await this._executeProcessService.start(context, process);
-    });
+      const tokenResult: any = await this._executeProcessService.start(context, process);
+
+      return tokenResult;
+    // });
   }
 
   private _executeProcessInstanceLocally(context: ExecutionContext,

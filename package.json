@@ -17,7 +17,7 @@
   "dependencies": {
     "@essential-projects/core_contracts": "^1.0.0",
     "@essential-projects/data_model": "^1.0.0",
-    "@essential-projects/data_model_contracts": "^2.0.0",
+    "@essential-projects/data_model_contracts": "^1.0.0",
     "@essential-projects/errors_ts": "^1.0.0",
     "@essential-projects/event_aggregator_contracts": "^1.0.0",
     "@essential-projects/feature_contracts": "^1.0.0",
@@ -25,7 +25,7 @@
     "@essential-projects/messagebus_contracts": "^1.0.0",
     "@essential-projects/metadata": "^1.0.0",
     "@essential-projects/metadata_contracts": "^1.0.0",
-    "@process-engine/process_engine_contracts": "feature~execution_refactoring_poc_new_object_model",
+    "@process-engine/process_engine_contracts": "^6.0.0",
     "@essential-projects/routing_contracts": "^1.0.0",
     "@essential-projects/timing_contracts": "^1.0.0",
     "@essential-projects/foundation": "^1.0.0",
@@ -50,7 +50,7 @@
   },
   "scripts": {
     "build": "gulp build",
-    "prepare": "npm run build && npm run build-doc",
+    "prepare": "npm run build && npm run build-schemas && npm run build-doc",
     "build-doc": "gulp doc",
     "build-schemas": "gulp typescript-schema",
     "lint": "gulp lint",

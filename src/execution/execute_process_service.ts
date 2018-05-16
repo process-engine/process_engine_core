@@ -8,7 +8,7 @@ import { IExecuteProcessService } from './iexecute_process_service';
 import { NextFlowNodeInfo } from './next_flow_node_info';
 
 import * as uuid from 'uuid';
-import { IProcessModelFascade, ProcessModelFascade, IProcessTokenFascade } from './index';
+import { IProcessModelFascade, IProcessTokenFascade, ProcessModelFascade } from './index';
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
@@ -22,8 +22,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         this.messageBusService = messageBusService;
     }
 
-    public async start(context: ExecutionContext, process: Model.Types.Process): Promise<void> {
-        
+    public async start(context: ExecutionContext, process: Model.Types.Process): Promise<any> {
+
         const processModelFascade: IProcessModelFascade = new ProcessModelFascade(process);
 
         const startEvent: Model.Events.StartEvent = processModelFascade.getStartEvent();
@@ -32,10 +32,13 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
         const processToken: Runtime.Types.ProcessToken = this._createProcessToken(context);
         const processTokenFascade: IProcessTokenFascade = new ProcessTokenFascade(processToken);
-        
+
         await this._executeFlowNode(startEvent, processTokenFascade, processModelFascade);
 
-        await this._end(processInstance, processToken, context);
+        const resultToken: any = await processTokenFascade.getOldTokenFormat();
+
+        return resultToken;
+        // await this._end(processInstance, resultToken, context);
     }
 
     private _createProcessInstance(processDefinition: Model.Types.Process): Runtime.Types.ProcessInstance {
@@ -45,7 +48,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     }
 
     private async _executeFlowNode(flowNode: Model.Base.FlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
-        
+
         const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode);
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
