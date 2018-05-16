@@ -50,10 +50,10 @@
   },
   "scripts": {
     "build": "gulp build",
-    "prepare": "npm run build && npm run build-schemas && npm run build-doc",
     "build-doc": "gulp doc",
     "build-schemas": "gulp typescript-schema",
     "lint": "gulp lint",
+    "prepare": "npm run build && npm run build-schemas && npm run build-doc",
     "test": "gulp test"
   }
 }
