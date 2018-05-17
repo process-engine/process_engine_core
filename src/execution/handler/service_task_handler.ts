@@ -18,9 +18,9 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     protected async executeIntern(serviceTaskNode: Model.Activities.ServiceTask, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
 
-        const context = undefined; // TODO: context needed
+        const context = {}; // TODO: context needed
         const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
-        const tokenData: any = processTokenFascade.getOldTokenFormat();
+        const tokenData: any = await processTokenFascade.getOldTokenFormat();
 
         if (isMethodInvocation) {
 
@@ -30,16 +30,18 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
             let result;
 
-            try {
-                const namespace: any = undefined; // TODO: SM: I think we agreed, that the namespace feature should be removed in the future
+                // const namespace: any = undefined; // TODO: SM: I think we agreed, that the namespace feature should be removed in the future
 
-                const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + invocation.params)).call(tokenData, context, tokenData) || [];
-                result = await this.invoker.invoke(serviceInstance, invocation.method, undefined, namespace, ...argumentsToPassThrough);
+            const argumentsToPassThrough = (new Function('context', 'token', 'return ' + invocation.params)).call(tokenData, context, tokenData) || [];
+                // result = await this.invoker.invoke(serviceInstance, invocation.method, namespace, context, ...argumentsToPassThrough);
 
-            } catch (error) {
+            const serviceMethod: Function = serviceInstance[invocation.method];
 
-                result = error;
-            }
+            if (!serviceMethod) {
+                    throw new Error(`method "${invocation.method}" is missing`);
+                }
+
+            result = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
             processTokenFascade.addResultForFlowNode(serviceTaskNode.id, result);
 
