@@ -23,6 +23,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
         let result;
 
         const scriptFunction = new Function('token', 'context', script);
+
         result = await scriptFunction.call(this, tokenData, context);
 
         let finalResult = result;

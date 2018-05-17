@@ -22,7 +22,11 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
         } catch (err) {
             const boundaryEvent: Model.Events.BoundaryEvent = processModelFascade.getBoundaryEventsFor(flowNode)[0];
 
-            const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(flowNode);
+            if (!boundaryEvent) {
+                throw err;
+            }
+
+            const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
 
             return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
         }
