@@ -177,8 +177,8 @@ export class BpmnModelParser implements IModelParser {
       sequenceFlow.sourceRef = sequenceRaw.sourceRef;
       sequenceFlow.targetRef = sequenceRaw.targetRef;
 
-      if (data[BpmnTags.FlowElementProperty.ConditionExpression]) {
-        const conditionData: any = data[BpmnTags.FlowElementProperty.ConditionExpression];
+      if (sequenceRaw[BpmnTags.FlowElementProperty.ConditionExpression]) {
+        const conditionData: any = sequenceRaw[BpmnTags.FlowElementProperty.ConditionExpression];
 
         sequenceFlow.conditionExpression = {
           type: conditionData[BpmnTags.FlowElementProperty.XsiType],
