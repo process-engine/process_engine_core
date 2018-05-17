@@ -26,26 +26,22 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
             const invocation: Model.Activities.MethodInvocation = serviceTaskNode.invocation as Model.Activities.MethodInvocation;
 
-            const serviceInstance = await this.container.resolveAsync(invocation.module);
+            const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
-            let result;
-
-                // const namespace: any = undefined; // TODO: SM: I think we agreed, that the namespace feature should be removed in the future
-
-            const argumentsToPassThrough = (new Function('context', 'token', 'return ' + invocation.params)).call(tokenData, context, tokenData) || [];
-                // result = await this.invoker.invoke(serviceInstance, invocation.method, namespace, context, ...argumentsToPassThrough);
+            const argumentsToPassThrough: Array<any> = (new Function('context', 'token', 'return ' + invocation.params)).call(tokenData, context, tokenData) || [];
 
             const serviceMethod: Function = serviceInstance[invocation.method];
 
             if (!serviceMethod) {
-                    throw new Error(`method "${invocation.method}" is missing`);
-                }
+                throw new Error(`method "${invocation.method}" is missing`);
+            }
 
-            result = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
+            const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
             processTokenFascade.addResultForFlowNode(serviceTaskNode.id, result);
 
             const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(serviceTaskNode);
+
             return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
 
         } else {
