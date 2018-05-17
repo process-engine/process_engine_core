@@ -272,7 +272,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     });
 
     let count = 0;
-    if (token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
+    if (token && token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
       if (Array.isArray(token.data.history[nextDef.key])) {
         count = token.data.history[nextDef.key].length;
       } else {

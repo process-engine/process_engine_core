@@ -7,14 +7,15 @@ import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_ins
 import * as debug from 'debug';
 
 const debugInfo = debug('processengine:info');
-// const debugErr = debug('processengine:error');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
+  private _consumerApiService: IConsumerApiService = undefined;
 
   constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               processDefEntityTypeService: IProcessDefEntityTypeService,
+              consumerApiService: IConsumerApiService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
@@ -23,6 +24,11 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
 
     this._processDefEntityTypeService = processDefEntityTypeService;
+    this._consumerApiService = consumerApiService;
+  }
+
+  private get consumerApiService(): IConsumerApiService {
+    return this._consumerApiService;
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -41,22 +47,25 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
       await this.save(internalContext, { reloadAfterSave: false });
     }
 
-    const processToken = this.processToken;
-    const tokenData: any = processToken.data || {};
-    const currentToken: any = tokenData.current;
-
     // call sub process
-    const nodeDef = this.nodeDef;
-    const subProcessKey = nodeDef.subProcessKey || null;
+    const subProcessKey = this.nodeDef.subProcessKey || null;
     if (subProcessKey) {
+      debugInfo(`Executing Call activity with process model key '${this.key}'`);
+
+      let initialToken: any;
+  
+      if (this.processToken && this.processToken.data) {
+        initialToken = this.processToken.data.current || {};
+      }
 
       const params: IParamStart = {
         key: subProcessKey,
         source: this,
         isSubProcess: true,
-        initialToken: currentToken,
+        initialToken: initialToken,
         participant: this.participant,
       };
+
       const subProcessRef = await this.processDefEntityTypeService.start(context, params);
       this.process.boundProcesses[subProcessRef.id] = subProcessRef;
 
