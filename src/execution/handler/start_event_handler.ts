@@ -6,7 +6,6 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     protected async executeIntern(flowNode: Model.Events.StartEvent, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
         const nextFlowNode: Model.Base.FlowNode = await processModelFascade.getNextFlowNodeFor(flowNode);
-        processTokenFascade.addResultForFlowNode(flowNode.id, {});
 
         return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
     }

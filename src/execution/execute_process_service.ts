@@ -22,7 +22,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         this.messageBusService = messageBusService;
     }
 
-    public async start(context: ExecutionContext, process: Model.Types.Process): Promise<any> {
+    public async start(context: ExecutionContext, process: Model.Types.Process, initialToken?: any): Promise<any> {
 
         const processModelFascade: IProcessModelFascade = new ProcessModelFascade(process);
 
@@ -32,6 +32,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
         const processToken: Runtime.Types.ProcessToken = this._createProcessToken(context);
         const processTokenFascade: IProcessTokenFascade = new ProcessTokenFascade(processToken);
+
+        processTokenFascade.addResultForFlowNode(startEvent.id, initialToken);
 
         await this._executeFlowNode(startEvent, processTokenFascade, processModelFascade);
 

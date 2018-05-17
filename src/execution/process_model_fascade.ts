@@ -1,4 +1,4 @@
-import { Model, Runtime, BpmnType } from '@process-engine/process_engine_contracts';
+import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
 
 export interface IPredicate<T> {
   (item: T): boolean;
@@ -12,7 +12,8 @@ export interface IProcessModelFascade {
   getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode;
   getBoundaryEventsFor(flowNode: Model.Base.FlowNode): Array<Model.Events.BoundaryEvent>;
   getJoinGatewayFor(parallelGatewayNode: Model.Gateways.ParallelGateway): Model.Gateways.ParallelGateway;
-} 
+  getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow;
+}
 
 export class ProcessModelFascade implements IProcessModelFascade {
 
@@ -20,6 +21,34 @@ export class ProcessModelFascade implements IProcessModelFascade {
 
   constructor(processDefinition: Model.Types.Process) {
     this.processDefinition = processDefinition;
+  }
+
+  public getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow {
+
+    if (!nextFlowNode) {
+      return undefined;
+    }
+
+    const sequenceFlowsTargetingNextFlowNode: Array<Model.Types.SequenceFlow>
+      = this.processDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+      return sequenceFlow.targetRef === nextFlowNode.id;
+    });
+
+    for (const sequenceFlow of sequenceFlowsTargetingNextFlowNode) {
+      if (sequenceFlow.sourceRef === flowNode.id) {
+        return sequenceFlow;
+      }
+
+      const sourceNode: Model.Base.FlowNode = this.getFlowNodeById(sequenceFlow.sourceRef);
+
+      if (sourceNode.bpmnType === BpmnType.boundaryEvent) {
+        const isBoundaryEventAttachedToSourceNode: boolean = (sourceNode as Model.Events.BoundaryEvent).attachedToRef === flowNode.id;
+
+        if (isBoundaryEventAttachedToSourceNode) {
+          return sequenceFlow;
+        }
+      }
+    }
   }
 
   public getStartEvent(): Model.Events.StartEvent {
@@ -45,10 +74,10 @@ export class ProcessModelFascade implements IProcessModelFascade {
 
   // TODO: support of new Split Gateway in Branch
   public getJoinGatewayFor(parallelGatewayNode: Model.Gateways.ParallelGateway): Model.Gateways.ParallelGateway {
-    
+
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getIncomingSequenceFlowsFor(parallelGatewayNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getOutgoingSequenceFlowsFor(parallelGatewayNode.id);
-    
+
     const isFlowNodeParallelGateway: boolean = parallelGatewayNode.bpmnType === BpmnType.parallelGateway;
 
     if (isFlowNodeParallelGateway && incomingSequenceFlows.length > outgoingSequenceFlows.length) {
@@ -69,14 +98,14 @@ export class ProcessModelFascade implements IProcessModelFascade {
   }
 
   public getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode {
-    
+
     const flow: Model.Types.SequenceFlow = this.processDefinition.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.sourceRef === flowNode.id;
     });
 
     if (!flow) {
       return null;
-    } 
+    }
 
     const nextFlowNode: Model.Base.FlowNode = this.processDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
       return flowNode.id === flow.targetRef;

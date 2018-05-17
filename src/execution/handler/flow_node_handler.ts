@@ -1,7 +1,7 @@
-import { IFlowNodeHandler, NextFlowNodeInfo, IProcessModelFascade, IFlowNodeHandlerFactory } from './../index';
-import { Model, Runtime, BpmnType } from "@process-engine/process_engine_contracts";
-import { ExecutionContext } from "@essential-projects/core_contracts";
+import { ExecutionContext } from '@essential-projects/core_contracts';
+import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
 import { IProcessTokenFascade } from '../index';
+import { IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, NextFlowNodeInfo } from './../index';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
@@ -9,8 +9,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     }
 
     public async execute(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
-        const nextFlowNode = await this.executeIntern(flowNode, processTokenFascade, processModelFascade);
-        await this.afterExecute(flowNode, processTokenFascade, processModelFascade);
+
+        let nextFlowNode: NextFlowNodeInfo;
+
+        try {
+            nextFlowNode = await this.executeIntern(flowNode, processTokenFascade, processModelFascade);
+        } catch (error) {
+            // TODO: (SM) this is only to support the old implementation
+            //            I would like to set no token result or further specify it to be an error to avoid confusion
+            await processTokenFascade.addResultForFlowNode(flowNode.id, error);
+        }
+
+        await this.afterExecute(flowNode, nextFlowNode.flowNode, processTokenFascade, processModelFascade);
 
         return nextFlowNode;
     }
@@ -18,7 +28,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     protected async abstract executeIntern(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>;
 
     // protected async getNextFlowNodeFor(flowNode: Model.Base.FlowNode, context: ExecutionContext): Promise<Model.Base.FlowNode> {
-
 
     //     const processDefinition: Model.Types.Process = await flowNode.getProcessDef(context);
     //     const nextFlowNodeId: string = await this.getNextFlowNodeId(flowNode.id, processDefinition, context);
@@ -47,11 +56,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     //     return flow.target.id;
     // }
 
-    private async afterExecute(flowNode: TFlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
+    private async afterExecute(flowNode: TFlowNode, nextFlowNode: Model.Base.FlowNode, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<void> {
 
-        // processTokenFascade.resolveMapper()
+        const nextSequenceFlow: Model.Types.SequenceFlow = processModelFascade.getSequenceFlowBetween(flowNode, nextFlowNode);
 
-        // const tokenData = processToken.data || {};
+        if (!nextSequenceFlow) {
+            return;
+        }
+
+        await processTokenFascade.evaluateMapper(nextSequenceFlow);
+        // const tokenData: any = await processTokenFascade.getOldTokenFormat();
+
         // const mapper: string = (flowNode as any).mapper;
 
         // if (mapper !== undefined) {

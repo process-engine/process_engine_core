@@ -622,7 +622,7 @@ export class ProcessEngineService implements IProcessEngineService {
       // await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
       //   initialToken: initialToken,
       // });
-      const tokenResult: any = await this._executeProcessService.start(context, process);
+      const tokenResult: any = await this._executeProcessService.start(context, process, initialToken);
 
       return tokenResult;
     // });
