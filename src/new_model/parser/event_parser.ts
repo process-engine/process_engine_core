@@ -69,6 +69,10 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     event.attachedToRef = boundaryEventRaw.attachedToRef;
     event.cancelActivity = boundaryEventRaw.cancelActivity || true;
     event.errorEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
+    event.timerEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
+    event.terminateEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition];
+    event.messageEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
+    event.signalEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
 
     events.push(event);
   }
@@ -130,6 +134,12 @@ function getEventDefinitionsForEvent(event: Model.Events.Event, modelData: any):
     const terminateEventDefinition: Model.EventDefinitions.TerminateEventDefinition = new Model.EventDefinitions.TerminateEventDefinition();
 
     event.terminateEventDefinition = terminateEventDefinition;
+  }
+
+  if (modelData[BpmnTags.FlowElementProperty.TimerEventDefinition]) {
+    const timerEventDefinition: Model.EventDefinitions.TimerEventDefinition = new Model.EventDefinitions.TimerEventDefinition();
+
+    event.timerEventDefinition = timerEventDefinition;
   }
 
   // TODO: TimingEvents are declared as IntermediateCatchEvents, wich are not implemented yet.
