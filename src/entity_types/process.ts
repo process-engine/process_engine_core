@@ -141,6 +141,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'callerId', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get correlationId(): string {
+    return this.getProperty(this, 'correlationId');
+  }
+
+  public set correlationId(value: string) {
+    this.setProperty(this, 'correlationId', value);
+  }
+
   public async initializeProcess(): Promise<void> {
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
