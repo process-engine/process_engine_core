@@ -9,7 +9,8 @@ export interface IProcessTokenFascade {
   mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void>;
   getAllResults(): Promise<Array<IProcessTokenResult>>;
   getOldTokenFormat(): Promise<any>;
-  evaluateMapper(sequenceFlow: Model.Types.SequenceFlow): Promise<void>;
+  evaluateMapperForSequenceFlow(sequenceFlow: Model.Types.SequenceFlow): Promise<void>;
+  evaluateMapperForFlowNode(flowNode: Model.Base.FlowNode): Promise<void>;
 }
 
 export interface IProcessTokenResult {
@@ -41,28 +42,37 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
   public async getAllResultsForFlowNode(flowNodeId: string): Promise<Array<IProcessTokenResult>> {
     throw new Error('Method not implemented.');
   }
+  protected async importResults(processTokenResults: Array<IProcessTokenResult>): Promise<void> {
+    Array.prototype.push.apply(this.processTokenResults, processTokenResults);
+  }
   public async getProcessTokenFascadeForParallelBranch(): Promise<IProcessTokenFascade> {
     const processToken: any = new Runtime.Types.ProcessToken();
 
-    return Promise.resolve(new ProcessTokenFascade(processToken));
+    const processTokenFascade: any = new ProcessTokenFascade(processToken);
+    const allResults: Array<IProcessTokenResult> = await this.getAllResults();
+    await processTokenFascade.importResults(allResults);
+
+    return processTokenFascade;
   }
   public async mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void> {
 
-    if (this.processToken.data === undefined) {
-      this.processToken.data = {};
-    }
+    // if (this.processToken.data === undefined) {
+    //   this.processToken.data = {};
+    // }
 
-    if (this.processToken.data.history === undefined) {
-      this.processToken.data.history = {};
-    }
+    // if (this.processToken.data.history === undefined) {
+    //   this.processToken.data.history = {};
+    // }
 
-    const tokenDataToMerge: any = await processTokenToMerge.getOldTokenFormat();
+    // const tokenDataToMerge: any = await processTokenToMerge.getOldTokenFormat();
 
-    this.processToken.data.history = {
-      ...this.processToken.data.history,
-      ...tokenDataToMerge,
-    };
+    // this.processToken.data.history = {
+    //   ...this.processToken.data.history,
+    //   ...tokenDataToMerge,
+    // };
 
+    const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
+    Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
 
   public async getOldTokenFormat(): Promise<any> {
@@ -94,7 +104,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     return tokenData;
   }
 
-  public async evaluateMapper(sequenceFlow: Model.Types.SequenceFlow): Promise<void> {
+  public async evaluateMapperForSequenceFlow(sequenceFlow: Model.Types.SequenceFlow): Promise<void> {
 
     const tokenData: any = await this.getOldTokenFormat();
 
@@ -110,16 +120,36 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     }
   }
 
-  private _getMapper(sequenceFlow: Model.Types.SequenceFlow): string {
-    if (!sequenceFlow.extensionElements
-      || !sequenceFlow.extensionElements.camundaExtensionProperties
-      || !Array.isArray(sequenceFlow.extensionElements.camundaExtensionProperties)) {
+  public async evaluateMapperForFlowNode(flowNode: Model.Base.FlowNode): Promise<void> {
+
+    const tokenData: any = await this.getOldTokenFormat();
+
+    const mapper: string = this._getMapper(flowNode);
+
+    if (mapper !== undefined) {
+      const newCurrent: any = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+
+      const allResults: Array<IProcessTokenResult> = await this.getAllResults();
+      const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
+
+      currentResult.result = newCurrent;
+    }
+  }
+
+  private _getMapper(sequenceFlowOrFlowNode: Model.Types.SequenceFlow | Model.Base.FlowNode): string {
+    if (!sequenceFlowOrFlowNode.extensionElements
+      || !sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties
+      || !Array.isArray(sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties)) {
       return;
     }
 
-    const mapperExtensionProperty: any = sequenceFlow.extensionElements.camundaExtensionProperties.find((extensionProperty) => {
+    const mapperExtensionProperty: any = sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties.find((extensionProperty) => {
       return extensionProperty.name === 'mapper';
     });
+
+    if (!mapperExtensionProperty) {
+      return undefined;
+    }
 
     return mapperExtensionProperty.value;
   }
