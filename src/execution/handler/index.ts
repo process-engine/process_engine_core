@@ -10,4 +10,5 @@ export * from './start_event_handler';
 export * from './intermediate_catch_event_handler';
 export * from './intermediate_throw_event_handler';
 export * from './error_boundary_event_handler';
+export * from './timer_boundary_event_handler';
 export * from './end_event_handler';
