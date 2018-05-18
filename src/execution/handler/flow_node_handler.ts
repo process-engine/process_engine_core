@@ -15,6 +15,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
             // TODO: (SM) this is only to support the old implementation
             //            I would like to set no token result or further specify it to be an error to avoid confusion
             await processTokenFascade.addResultForFlowNode(flowNode.id, error);
+
+            throw error;
         }
 
         if (!nextFlowNode) {
