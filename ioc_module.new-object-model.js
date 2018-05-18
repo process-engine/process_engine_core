@@ -9,6 +9,7 @@ const ExclusiveGatewayHandler = require('./dist/commonjs/index').ExclusiveGatewa
 const ParallelGatewayHandler = require('./dist/commonjs/index').ParallelGatewayHandler;
 const ServiceTaskHandler = require('./dist/commonjs/index').ServiceTaskHandler;
 const ErrorBoundaryEventHandler = require('./dist/commonjs/index').ErrorBoundaryEventHandler;
+const TimerBoundaryEventHandler = require('./dist/commonjs/index').TimerBoundaryEventHandler;
 const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
@@ -43,6 +44,8 @@ function registerInContainer(container) {
   container.register('ServiceTaskHandler', ServiceTaskHandler)
     .dependencies('container', 'Invoker');
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+  container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
+    .dependencies('TimingService');
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler);
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler);
   container.register('EndEventHandler', EndEventHandler);
