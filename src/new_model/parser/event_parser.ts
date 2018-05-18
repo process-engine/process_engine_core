@@ -16,7 +16,37 @@ export function parseEventsFromProcessData(processData: any): Array<Model.Events
 
   const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
 
-  return Array.prototype.concat(startEvents, boundaryEvents, endEvents);
+  const intermediateCatchEvents: Array<Model.Events.Event> = parseIntermediateCatchEvents(processData);
+
+  return Array.prototype.concat(startEvents, boundaryEvents, intermediateCatchEvents, endEvents);
+}
+
+function parseIntermediateCatchEvents(processData: any): Array<Model.Events.IntermediateCatchEvent> {
+  const events: Array<Model.Events.IntermediateCatchEvent> = [];
+
+  const intermediateCatchEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.IntermediateCatchEvent);
+
+  if (!intermediateCatchEventsRaw || intermediateCatchEventsRaw.length === 0) {
+    return [];
+  }
+
+  for (const intermediateCatchEventRaw of intermediateCatchEventsRaw) {
+    const event: Model.Events.IntermediateCatchEvent = createObjectWithCommonProperties(intermediateCatchEventRaw, Model.Events.IntermediateCatchEvent);
+
+    event.incoming = getModelPropertyAsArray(intermediateCatchEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    event.outgoing = getModelPropertyAsArray(intermediateCatchEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    event.name = intermediateCatchEventRaw.name;
+    event.errorEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
+    event.timerEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
+    event.terminateEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition];
+    event.messageEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
+    event.signalEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
+
+    events.push(event);
+  }
+
+  return events;
 }
 
 function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
