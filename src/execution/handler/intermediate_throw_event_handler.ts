@@ -7,7 +7,7 @@ import {
 import { IFlowNodeHandlerFactory } from './iflow_node_handler_factory';
 import { FlowNodeHandler } from './index';
 
-export class IntermedtiateThrowEventHandler extends FlowNodeHandler<Model.Events.Event> {
+export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.Event> {
     protected async executeIntern(flowNode: Model.Events.Event, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
         await new Promise<void>( (resolve) => setTimeout(resolve, 2000) );
 
