@@ -14,7 +14,7 @@ import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_ins
 
 import * as debug from 'debug';
 
-const debugInfo = debug('processengine:info');
+const debugInfo: debug.IDebugger = debug('processengine:info');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
@@ -48,26 +48,27 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     this.state = 'progress';
 
     if (this.process.processDef.persist) {
       await this.save(internalContext, { reloadAfterSave: false });
     }
 
-    const subProcessKey = this.nodeDef.subProcessKey || null;
+    const subProcessKey: string = this.nodeDef.subProcessKey || null;
     if (!subProcessKey) {
       debugInfo(`No key is provided for call activity key '${this.key}'`);
       this.changeState(context, 'end', this);
+
       return;
-    } 
-    
+    }
+
     debugInfo(`Executing Call activity '${this.key}', using subprocess key '${subProcessKey}'`);
 
     const result: ProcessStartResponsePayload = await this._executeSubProcess(context);
 
     // save new data in token
-    const tokenData = this.processToken.data || {};
+    const tokenData: any = this.processToken.data || {};
     tokenData.current = result;
     this.processToken.data = tokenData;
 
@@ -77,7 +78,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
   private async _executeSubProcess(context: ExecutionContext): Promise<ProcessStartResponsePayload> {
 
     const consumerContext: ConsumerContext = {
-      identity: context.encryptedToken
+      identity: context.encryptedToken,
     };
 
     const startEventKey: string = await this._getAccessibleStartEventForProcessModel(consumerContext, this.nodeDef.subProcessKey);
@@ -89,7 +90,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnEndEventReached;
 
-    const result: ProcessStartResponsePayload = 
+    const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, this.nodeDef.subProcessKey, startEventKey, payload, startCallbackType);
 
     return result;
