@@ -24,9 +24,9 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _consumerApiService: IConsumerApiService = undefined;
 
-  constructor(nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
+  constructor(consumerApiService: IConsumerApiService,
+              nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
               processDefEntityTypeService: IProcessDefEntityTypeService,
-              consumerApiService: IConsumerApiService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
