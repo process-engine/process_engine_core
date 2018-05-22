@@ -16,6 +16,7 @@ import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_ins
 import * as debug from 'debug';
 
 const debugInfo: debug.IDebugger = debug('processengine:info');
+const debugError: debug.IDebugger = debug('processengine:error');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
@@ -66,14 +67,20 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
     debugInfo(`Executing Call activity '${this.key}', using subprocess key '${subProcessKey}'`);
 
-    const result: ICorrelationResult = await this._executeSubProcess(context);
+    try {
+      const result: ICorrelationResult = await this._executeSubProcess(context);
 
-    // save new data in token
-    const tokenData: any = this.processToken.data || {};
-    tokenData.current = result;
-    this.processToken.data = tokenData;
+      // save new data in token
+      const tokenData: any = this.processToken.data || {};
+      tokenData.current = result;
+      this.processToken.data = tokenData;
 
-    this.changeState(context, 'end', this);
+      this.changeState(context, 'end', this);
+
+    } catch (error) {
+      debugError(error);
+      this.triggerEvent(context, 'error', error);
+    }
   }
 
   private async _executeSubProcess(context: ExecutionContext): Promise<ICorrelationResult> {
@@ -107,7 +114,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const payload: ProcessStartRequestPayload = {
       correlation_id: undefined, // Let the consumer API generate a correlation id.
       callerId: this.id,
-      input_values: {},
+      input_values: this.processToken.data || {},
     };
 
     const result: ProcessStartResponsePayload =
