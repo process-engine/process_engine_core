@@ -6,7 +6,15 @@ import {
   IPublicGetOptions,
   SchemaAttributeType,
 } from '@essential-projects/core_contracts';
-import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag, IDatastoreService } from '@essential-projects/data_model_contracts';
+
+import {
+  Entity,
+  EntityDependencyHelper,
+  IEntityType,
+  IDatastoreService ,
+  IPropertyBag
+} from '@essential-projects/data_model_contracts';
+
 import { IDataMessage, IEntityMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
 import {
