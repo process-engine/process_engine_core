@@ -25,6 +25,7 @@
     "@essential-projects/messagebus_contracts": "^1.0.0",
     "@essential-projects/metadata": "^1.0.0",
     "@essential-projects/metadata_contracts": "^1.0.0",
+    "@essential-projects/routing_contracts": "^1.0.0",
     "@essential-projects/timing_contracts": "^1.0.0",
     "@essential-projects/foundation": "^1.0.0",
     "@process-engine/consumer_api_contracts": "feature~add_feature_for_returning_correlation_results",
