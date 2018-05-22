@@ -69,9 +69,9 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     debugInfo(`Executing Call activity '${this.key}', using subprocess key '${subProcessKey}'`);
 
     try {
-      const result: ICorrelationResult = await this._executeSubProcess(context);
+      const result: ICorrelationResult = await this._executeSubProcess(context.encryptedToken);
 
-      // save new data in token
+      // save new data in token or create new token
       const tokenData: any = this.processToken.data || {};
       tokenData.current = result;
       this.processToken.data = tokenData;
@@ -84,10 +84,10 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     }
   }
 
-  private async _executeSubProcess(context: ExecutionContext): Promise<ICorrelationResult> {
+  private async _executeSubProcess(identity: string): Promise<ICorrelationResult> {
 
     const consumerContext: ConsumerContext = {
-      identity: context.encryptedToken,
+      identity: identity,
     };
 
     const startEventKey: string = await this._getAccessibleSubProcessStartEvent(consumerContext, this.nodeDef.subProcessKey);
@@ -101,8 +101,12 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
     const processModel: ProcessModel = await this.consumerApiService.getProcessModelByKey(consumerContext, subProcessKey);
 
-    // Pick the first accessible start event
-    // Note: If the user cannot access the process model and/or its start events, the consumer api will already have thrown an error.
+    /*
+     * Pick the first accessible start event;
+     * note: If the user cannot access the process model and/or its start events,
+     * the Consumer API will already have thrown an HTTP Unauthorized error,
+     * so we do not need to handle those cases here.
+     */
     const startEventKey: string = processModel.startEvents[0].key;
 
     return startEventKey;
@@ -113,23 +117,32 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnEndEventReached;
 
     const payload: ProcessStartRequestPayload = {
-      correlation_id: undefined, // Let the consumer API generate a correlation id.
+      // Setting this to undefined, will cause the Consumer API generate a Correlation ID (UUID).
+      correlation_id: undefined,
       callerId: this.id,
       input_values: this.processToken.data || {},
     };
 
     const result: ProcessStartResponsePayload =
-      await this.consumerApiService.startProcessInstance(consumerContext, this.nodeDef.subProcessKey, startEventKey, payload, startCallbackType);
+      await this
+              .consumerApiService
+              .startProcessInstance(consumerContext,
+                this.nodeDef.subProcessKey,
+                startEventKey,
+                payload,
+                startCallbackType);
 
     const correlationId: string = result.correlation_id;
 
     return correlationId;
   }
 
-  private async _retrieveSubProcessResult(context: ConsumerContext, correlationId: string): Promise<ICorrelationResult> {
+  private async _retrieveSubProcessResult(consumerContext: ConsumerContext, correlationId: string): Promise<ICorrelationResult> {
 
     const correlationResult: ICorrelationResult =
-      await this.consumerApiService.getProcessResultForCorrelation(context, correlationId, this.nodeDef.subProcessKey);
+      await this
+              .consumerApiService
+              .getProcessResultForCorrelation(consumerContext, correlationId, this.nodeDef.subProcessKey);
 
     return correlationResult;
   }
