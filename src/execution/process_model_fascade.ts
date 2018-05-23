@@ -1,19 +1,5 @@
-import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
-
-export interface IPredicate<T> {
-  (item: T): boolean;
-}
-
-export interface IProcessModelFascade {
-  getStartEvent(): Model.Events.StartEvent;
-  getFlowNodeById(flowNodeId: string): Model.Base.FlowNode;
-  getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow>;
-  getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow>;
-  getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode;
-  getBoundaryEventsFor(flowNode: Model.Base.FlowNode): Array<Model.Events.BoundaryEvent>;
-  getJoinGatewayFor(parallelGatewayNode: Model.Gateways.ParallelGateway): Model.Gateways.ParallelGateway;
-  getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow;
-}
+import { BpmnType, Model } from '@process-engine/process_engine_contracts';
+import { IProcessModelFascade } from './iprocess_model_fascade';
 
 export class ProcessModelFascade implements IProcessModelFascade {
 
@@ -84,6 +70,7 @@ export class ProcessModelFascade implements IProcessModelFascade {
       return parallelGatewayNode;
     } else {
       const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeFor(parallelGatewayNode);
+
       return this.getJoinGatewayFor(nextFlowNode as Model.Gateways.ParallelGateway);
     }
   }
@@ -107,8 +94,8 @@ export class ProcessModelFascade implements IProcessModelFascade {
       return null;
     }
 
-    const nextFlowNode: Model.Base.FlowNode = this.processDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
-      return flowNode.id === flow.targetRef;
+    const nextFlowNode: Model.Base.FlowNode = this.processDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
+      return currentFlowNode.id === flow.targetRef;
     });
 
     return nextFlowNode;

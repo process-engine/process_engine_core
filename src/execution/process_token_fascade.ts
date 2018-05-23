@@ -1,22 +1,6 @@
 import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
-import { ProcessToken } from '@process-engine/process_engine_contracts/dist/new_model/domains/runtime/types';
-
-export interface IProcessTokenFascade {
-  addResultForFlowNode(flowNodeId: string, result: any): Promise<void>;
-  getResultForFlowNode(flowNodeId: string): Promise<IProcessTokenResult>;
-  getAllResultsForFlowNode(flowNodeId: string): Promise<Array<IProcessTokenResult>>;
-  getProcessTokenFascadeForParallelBranch(): Promise<IProcessTokenFascade>;
-  mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void>;
-  getAllResults(): Promise<Array<IProcessTokenResult>>;
-  getOldTokenFormat(): Promise<any>;
-  evaluateMapperForSequenceFlow(sequenceFlow: Model.Types.SequenceFlow): Promise<void>;
-  evaluateMapperForFlowNode(flowNode: Model.Base.FlowNode): Promise<void>;
-}
-
-export interface IProcessTokenResult {
-  flowNodeId: string;
-  result: any;
-}
+import { IProcessTokenFascade } from './iprocess_token_fascade';
+import { IProcessTokenResult } from './iprocess_token_result';
 
 export class ProcessTokenFascade implements IProcessTokenFascade {
   private processToken: Runtime.Types.ProcessToken;
