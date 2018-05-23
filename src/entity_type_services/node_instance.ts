@@ -260,25 +260,6 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     const currentLane = currentDef.lane;
 
     const nextLane = nextDef.lane;
-    // check for lane change
-    if (currentLane && nextLane && currentLane.id !== nextLane.id) {
-      // if we have a new lane, create a temporary context with lane role
-
-      const role = await nextDef.lane.role;
-      if (role) {
-        // Todo: refactor lane change
-        /*const identityContext = await context.createNewContext('identity');
-        const tempUser = role + source.id;
-
-        const identity = model._datastore._processengine.identity;
-        await identity.addSystemUser(tempUser, { roles: [role] }, identityContext);
-
-        const jwt = await identity.loginByToken(tempUser);
-        // use new context of temporary lane user
-        context = await identity.token.verifyToken(jwt);*/
-      }
-
-    }
 
     let node = null;
     let createNode = true;
@@ -291,7 +272,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
     });
 
     let count = 0;
-    if (token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
+    if (token && token.data && token.data.history && token.data.history.hasOwnProperty(nextDef.key)) {
       if (Array.isArray(token.data.history[nextDef.key])) {
         count = token.data.history[nextDef.key].length;
       } else {
