@@ -8,55 +8,57 @@ import { FlowNodeHandler } from './flow_node_handler';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-    protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>  {
+  protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway,
+                                processTokenFascade: IProcessTokenFascade,
+                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
 
-        const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
-        const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
+    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
 
-        const currentToken: any = await processTokenFascade.getOldTokenFormat();
-        const current: any = processTokenFascade.addResultForFlowNode(flowNode.id, currentToken.current);
+    const currentToken: any = await processTokenFascade.getOldTokenFormat();
+    const current: any = processTokenFascade.addResultForFlowNode(flowNode.id, currentToken.current);
 
-        // TODO: Robin: is this comparison really appropriate?
-        if (incomingSequenceFlows.length > outgoingSequenceFlows.length) {
+    // TODO: Robin: is this comparison really appropriate?
+    if (incomingSequenceFlows.length > outgoingSequenceFlows.length) {
 
-            const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
+      const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
-            return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
 
-        } else {
+    } else {
 
-            for (const outgoingSequenceFlow of outgoingSequenceFlows) {
+      for (const outgoingSequenceFlow of outgoingSequenceFlows) {
 
-                if (!outgoingSequenceFlow.conditionExpression) {
-                    continue;
-                }
-
-                const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFascade);
-
-                if (!conditionWasPositive) {
-                    continue;
-                }
-
-                const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
-
-                return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
-            }
-
-            throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');
+        if (!outgoingSequenceFlow.conditionExpression) {
+          continue;
         }
-    }
 
-    private async executeCondition(condition: string, processTokenFascade: IProcessTokenFascade): Promise<boolean> {
-        const tokenData = await processTokenFascade.getOldTokenFormat();
+        const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFascade);
 
-        try {
-            const functionString = 'return ' + condition;
-            const evaluateFunction = new Function('token', functionString);
-
-            return evaluateFunction.call(tokenData, tokenData);
-
-        } catch (err) {
-            return false;
+        if (!conditionWasPositive) {
+          continue;
         }
+
+        const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
+
+        return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      }
+
+      throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');
     }
+  }
+
+  private async executeCondition(condition: string, processTokenFascade: IProcessTokenFascade): Promise<boolean> {
+    const tokenData: any = await processTokenFascade.getOldTokenFormat();
+
+    try {
+      const functionString: string = `return ${condition}`;
+      const evaluateFunction: Function = new Function('token', functionString);
+
+      return evaluateFunction.call(tokenData, tokenData);
+
+    } catch (err) {
+      return false;
+    }
+  }
 }

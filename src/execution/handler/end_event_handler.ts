@@ -9,7 +9,9 @@ import { FlowNodeHandler } from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
-    protected async executeIntern(flowNode: Model.Events.EndEvent, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
-        return new NextFlowNodeInfo(null, processTokenFascade);
-    }
+  protected async executeIntern(flowNode: Model.Events.EndEvent,
+                                processTokenFascade: IProcessTokenFascade,
+                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+    return new NextFlowNodeInfo(null, processTokenFascade);
+  }
 }

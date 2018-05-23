@@ -1,8 +1,21 @@
 // tslint:disable:max-line-length
-import { ExecutionContext, IIamService } from '@essential-projects/core_contracts';
-import { IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
-import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
-import { Model, Runtime, TimerDefinitionType } from '@process-engine/process_engine_contracts';
+import {
+  ExecutionContext,
+  IIamService,
+} from '@essential-projects/core_contracts';
+import {
+  IEventAggregator,
+  ISubscription,
+} from '@essential-projects/event_aggregator_contracts';
+import {
+  ITimingRule,
+  ITimingService,
+} from '@essential-projects/timing_contracts';
+import {
+  Model,
+  Runtime,
+  TimerDefinitionType,
+} from '@process-engine/process_engine_contracts';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 import {
@@ -10,196 +23,200 @@ import {
   IProcessTokenFascade,
   NextFlowNodeInfo,
 } from './../../index';
-import { FlowNodeHandler } from './index';
+import {
+  FlowNodeHandler,
+} from './index';
 
-export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
-    private timingService: ITimingService;
-    private eventAggregator: IEventAggregator;
-    private iamService: IIamService;
-    private activityHandler: FlowNodeHandler<Model.Base.FlowNode>;
+export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.BoundaryEvent > {
+  private _timingService: ITimingService;
+  private _eventAggregator: IEventAggregator;
+  private _iamService: IIamService;
+  private _activityHandler: FlowNodeHandler < Model.Base.FlowNode > ;
 
-    constructor(timingService: ITimingService, eventAggregator: IEventAggregator, iamService: IIamService, activityHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-        super();
-        this.timingService = timingService;
-        this.eventAggregator = eventAggregator;
-        this.iamService = iamService;
-        this.activityHandler = activityHandler;
-    }
+  constructor(timingService: ITimingService, eventAggregator: IEventAggregator, iamService: IIamService, activityHandler: FlowNodeHandler < Model.Base.FlowNode > ) {
+    super();
+    this._timingService = timingService;
+    this._eventAggregator = eventAggregator;
+    this._iamService = iamService;
+    this._activityHandler = activityHandler;
+  }
 
-    protected async executeIntern(flowNode: Model.Events.BoundaryEvent, processTokenFascade: IProcessTokenFascade, processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+  private get timingService(): ITimingService {
+    return this._timingService;
+  }
 
-        return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
+  }
 
-            let timerSubscription: ISubscription;
+  private get iamService(): IIamService {
+    return this._iamService;
+  }
 
-            try {
+  private get activityHandler(): FlowNodeHandler < Model.Base.FlowNode > {
+    return this._activityHandler;
+  }
 
-                const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFascade.getBoundaryEventsFor(flowNode);
+  protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
+                                processTokenFascade: IProcessTokenFascade,
+                                processModelFascade: IProcessModelFascade): Promise < NextFlowNodeInfo > {
 
-                const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
-                    return currentBoundaryEvent.timerEventDefinition !== undefined;
-                });
+    return new Promise < NextFlowNodeInfo > (async(resolve: Function, reject: Function): Promise < NextFlowNodeInfo > => {
 
-                const timerEventDefinition: any = boundaryEvent.timerEventDefinition;
+      let timerSubscription: ISubscription;
 
-                const timerType: TimerDefinitionType = this._parseTimerDefinitionType(timerEventDefinition);
-                const timerValue: string = this._parseTimerDefinitionValue(timerEventDefinition);
+      try {
 
-                let hasTimerElapsed: boolean = false;
-                let hasHandlerFinished: boolean = false;
+        const boundaryEvents: Array < Model.Events.BoundaryEvent > = processModelFascade.getBoundaryEventsFor(flowNode);
 
-                const timerElapsed: any = async(): Promise<void> => {
-                    if (hasHandlerFinished) {
-                        return;
-                    }
-                    hasTimerElapsed = true;
-
-                    const token: any = await processTokenFascade.getOldTokenFormat();
-                    await processTokenFascade.addResultForFlowNode(boundaryEvent.id, token.current);
-
-                    const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
-                    resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, processTokenFascade));
-                };
-
-                timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
-
-                const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
-
-                if (hasTimerElapsed) {
-                    return;
-                }
-
-                hasHandlerFinished = true;
-                resolve(nextFlowNodeInfo);
-            } catch (err) {
-
-                // const boundaryEvent: Model.Events.BoundaryEvent = processModelFascade.getBoundaryEventsFor(flowNode)[0];
-
-                // if (!boundaryEvent) {
-                //     throw err;
-                // }
-
-                // const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
-
-                // return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
-            } finally {
-                timerSubscription.dispose();
-
-            }
+        const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
+          return currentBoundaryEvent.timerEventDefinition !== undefined;
         });
-    }
 
-    private async _initializeTimer(flowNode: Model.Events.BoundaryEvent, timerType: TimerDefinitionType, timerValue: string, timerCallback: Function): Promise<ISubscription> {
+        const timerEventDefinition: any = boundaryEvent.timerEventDefinition;
 
-        const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
+        const timerType: TimerDefinitionType = this._parseTimerDefinitionType(timerEventDefinition);
+        const timerValue: string = this._parseTimerDefinitionValue(timerEventDefinition);
 
-        const context: any = await this.iamService.createInternalContext('processengine_system');
+        let hasTimerElapsed: boolean = false;
+        let hasHandlerFinished: boolean = false;
 
-        // setTimeout(timerCallback, 25000);
-
-        // TODO: (SM) use the real TimingService for persistance - maybe also use EventAggregator instead of a functional callback
-
-        // switch (timerType) {
-        //     case TimerDefinitionType.cycle:
-        //         this.eventAggregator.subscribe(callbackEventName, timerCallback);
-        //         await this.timingService.periodic(<ITimingRule> timerValue, callbackEventName, context);
-        //         break;
-        //     case TimerDefinitionType.date:
-        //         this.eventAggregator.subscribeOnce(callbackEventName, timerCallback);
-        //         await this.timingService.once(<moment.Moment> timerValue, callbackEventName, context);
-        //         break;
-        //     case TimerDefinitionType.duration:
-        //         this.eventAggregator.subscribeOnce(callbackEventName, timerCallback);
-        //         await this.timingService.once(<moment.Moment> timerValue, callbackEventName, context);
-        //         break;
-        //     default: return;
-        //   }
-
-        switch (timerType) {
-            case TimerDefinitionType.cycle:
-              return this._startCycleTimer(timerValue, timerCallback, callbackEventName, context);
-            case TimerDefinitionType.date:
-              return this._startDateTimer(timerValue, timerCallback, callbackEventName, context);
-            case TimerDefinitionType.duration:
-              return this._startDurationTimer(timerValue, timerCallback, callbackEventName, context);
-            default:
+        const timerElapsed: any = async(): Promise < void > => {
+          if (hasHandlerFinished) {
+            return;
           }
-    }
+          hasTimerElapsed = true;
 
-    private _parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
-        if (eventDefinition['bpmn:timeDuration']) {
-          return TimerDefinitionType.duration;
+          const token: any = await processTokenFascade.getOldTokenFormat();
+          await processTokenFascade.addResultForFlowNode(boundaryEvent.id, token.current);
+
+          const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
+          resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, processTokenFascade));
+        };
+
+        timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
+
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
+
+        if (hasTimerElapsed) {
+          return;
         }
-        if (eventDefinition['bpmn:timeCycle']) {
-          return TimerDefinitionType.cycle;
-        }
-        if (eventDefinition['bpmn:timeDate']) {
-          return TimerDefinitionType.date;
-        }
 
-        return undefined;
-    }
+        hasHandlerFinished = true;
+        resolve(nextFlowNodeInfo);
+      } catch (err) {
 
-    private _parseTimerDefinitionValue(eventDefinition: any): string {
-      if (eventDefinition['bpmn:timeDuration']) {
-        return eventDefinition['bpmn:timeDuration']._;
+        // TODO: error handling for timers only (must not replace the error boundary event handler)
+      } finally {
+        timerSubscription.dispose();
+
       }
-      if (eventDefinition['bpmn:timeCycle']) {
-        return eventDefinition['bpmn:timeCycle']._;
-      }
-      if (eventDefinition['bpmn:timeDate']) {
-        return eventDefinition['bpmn:timeDate']._;
-      }
+    });
+  }
 
-      return undefined;
+  private async _initializeTimer(flowNode: Model.Events.BoundaryEvent,
+                                 timerType: TimerDefinitionType,
+                                 timerValue: string,
+                                 timerCallback: Function): Promise < ISubscription > {
+
+    const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
+
+    const context: any = await this.iamService.createInternalContext('processengine_system');
+
+    switch (timerType) {
+      case TimerDefinitionType.cycle:
+        return this._startCycleTimer(timerValue, timerCallback, callbackEventName, context);
+      case TimerDefinitionType.date:
+        return this._startDateTimer(timerValue, timerCallback, callbackEventName, context);
+      case TimerDefinitionType.duration:
+        return this._startDurationTimer(timerValue, timerCallback, callbackEventName, context);
+      default:
+    }
+  }
+
+  private _parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
+    if (eventDefinition['bpmn:timeDuration']) {
+      return TimerDefinitionType.duration;
+    }
+    if (eventDefinition['bpmn:timeCycle']) {
+      return TimerDefinitionType.cycle;
+    }
+    if (eventDefinition['bpmn:timeDate']) {
+      return TimerDefinitionType.date;
     }
 
-    private async _startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string, context: ExecutionContext): Promise<ISubscription> {
+    return undefined;
+  }
 
-      const duration: moment.Duration = moment.duration(timerDefinition);
-
-      const timingRule: ITimingRule = {
-        year: duration.years(),
-        month: duration.months(),
-        date: duration.days(),
-        hour: duration.hours(),
-        minute: duration.minutes(),
-        second: duration.seconds(),
-      };
-
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
-        timerCallback();
-      });
-
-      await this.timingService.periodic(timingRule, callbackEventName, context);
-
-      return subscription;
+  private _parseTimerDefinitionValue(eventDefinition: any): string {
+    if (eventDefinition['bpmn:timeDuration']) {
+      return eventDefinition['bpmn:timeDuration']._;
+    }
+    if (eventDefinition['bpmn:timeCycle']) {
+      return eventDefinition['bpmn:timeCycle']._;
+    }
+    if (eventDefinition['bpmn:timeDate']) {
+      return eventDefinition['bpmn:timeDate']._;
     }
 
-    private async _startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string, context: ExecutionContext): Promise<ISubscription> {
+    return undefined;
+  }
 
-      const duration: moment.Duration = moment.duration(timerDefinition);
-      const date: moment.Moment = moment().add(duration);
+  private async _startCycleTimer(timerDefinition: string,
+                                 timerCallback: Function,
+                                 callbackEventName: string,
+                                 context: ExecutionContext): Promise < ISubscription > {
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
-        timerCallback();
-      });
+    const duration: moment.Duration = moment.duration(timerDefinition);
 
-      await this.timingService.once(date, callbackEventName, context);
+    const timingRule: ITimingRule = {
+      year: duration.years(),
+      month: duration.months(),
+      date: duration.days(),
+      hour: duration.hours(),
+      minute: duration.minutes(),
+      second: duration.seconds(),
+    };
 
-      return subscription;
-    }
+    const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
+      timerCallback();
+    });
 
-    private async _startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string, context: ExecutionContext): Promise<ISubscription> {
+    await this.timingService.periodic(timingRule, callbackEventName, context);
 
-      const date: moment.Moment = moment(timerDefinition);
+    return subscription;
+  }
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
-        timerCallback();
-      });
+  private async _startDurationTimer(timerDefinition: string,
+                                    timerCallback: Function,
+                                    callbackEventName: string,
+                                    context: ExecutionContext): Promise < ISubscription > {
 
-      await this.timingService.once(date, callbackEventName, context);
+    const duration: moment.Duration = moment.duration(timerDefinition);
+    const date: moment.Moment = moment().add(duration);
 
-      return subscription;
-    }
+    const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
+      timerCallback();
+    });
+
+    await this.timingService.once(date, callbackEventName, context);
+
+    return subscription;
+  }
+
+  private async _startDateTimer(timerDefinition: string,
+                                timerCallback: Function,
+                                callbackEventName: string,
+                                context: ExecutionContext): Promise < ISubscription > {
+
+    const date: moment.Moment = moment(timerDefinition);
+
+    const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
+      timerCallback();
+    });
+
+    await this.timingService.once(date, callbackEventName, context);
+
+    return subscription;
+  }
 }

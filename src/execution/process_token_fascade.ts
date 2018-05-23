@@ -55,22 +55,6 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     return processTokenFascade;
   }
   public async mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void> {
-
-    // if (this.processToken.data === undefined) {
-    //   this.processToken.data = {};
-    // }
-
-    // if (this.processToken.data.history === undefined) {
-    //   this.processToken.data.history = {};
-    // }
-
-    // const tokenDataToMerge: any = await processTokenToMerge.getOldTokenFormat();
-
-    // this.processToken.data.history = {
-    //   ...this.processToken.data.history,
-    //   ...tokenDataToMerge,
-    // };
-
     const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
@@ -111,7 +95,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     const mapper: string = this._getMapper(sequenceFlow);
 
     if (mapper !== undefined) {
-      const newCurrent: any = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+      const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
 
       const allResults: Array<IProcessTokenResult> = await this.getAllResults();
       const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
@@ -127,7 +111,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     const mapper: string = this._getMapper(flowNode);
 
     if (mapper !== undefined) {
-      const newCurrent: any = (new Function('token', 'return ' + mapper)).call(tokenData, tokenData);
+      const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
 
       const allResults: Array<IProcessTokenResult> = await this.getAllResults();
       const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
@@ -143,7 +127,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
       return;
     }
 
-    const mapperExtensionProperty: any = sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties.find((extensionProperty) => {
+    const mapperExtensionProperty: any = sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties.find((extensionProperty: any) => {
       return extensionProperty.name === 'mapper';
     });
 
