@@ -120,7 +120,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
       // Setting this to undefined, will cause the Consumer API generate a Correlation ID (UUID).
       correlation_id: undefined,
       callerId: this.id,
-      input_values: this.processToken.data || {},
+      input_values: this.processToken.data.current || {},
     };
 
     const result: ProcessStartResponsePayload =
