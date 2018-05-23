@@ -31,6 +31,7 @@ function parseIntermediateCatchEvents(processData: any): Array<Model.Events.Inte
   }
 
   for (const intermediateCatchEventRaw of intermediateCatchEventsRaw) {
+    // tslint:disable-next-line:max-line-length
     const event: Model.Events.IntermediateCatchEvent = createObjectWithCommonProperties(intermediateCatchEventRaw, Model.Events.IntermediateCatchEvent);
 
     event.incoming = getModelPropertyAsArray(intermediateCatchEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
