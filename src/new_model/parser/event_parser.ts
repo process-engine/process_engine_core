@@ -37,16 +37,33 @@ function parseIntermediateCatchEvents(processData: any): Array<Model.Events.Inte
     event.outgoing = getModelPropertyAsArray(intermediateCatchEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
     event.name = intermediateCatchEventRaw.name;
-    event.errorEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
-    event.timerEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
-    event.terminateEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition];
-    event.messageEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
-    event.signalEventDefinition = intermediateCatchEventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
+
+    assignEventDefinitions(event, intermediateCatchEventRaw);
 
     events.push(event);
   }
 
   return events;
+}
+
+function assignEventDefinitions(event: any, eventRaw: any): void {
+
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
+
+}
+
+function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: string, targetPropertyName: string): void {
+  let eventDefinitonValue: any = eventRaw[eventRawTagName];
+  if (eventDefinitonValue === '') {
+    eventDefinitonValue = {};
+  }
+  if (eventDefinitonValue !== undefined && eventDefinitonValue !== null) {
+    event[targetPropertyName] = eventDefinitonValue;
+  }
 }
 
 function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
@@ -68,11 +85,8 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     event.name = boundaryEventRaw.name;
     event.attachedToRef = boundaryEventRaw.attachedToRef;
     event.cancelActivity = boundaryEventRaw.cancelActivity || true;
-    event.errorEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition];
-    event.timerEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
-    event.terminateEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition];
-    event.messageEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
-    event.signalEventDefinition = boundaryEventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
+
+    assignEventDefinitions(event, boundaryEventRaw);
 
     events.push(event);
   }
