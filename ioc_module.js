@@ -28,7 +28,7 @@ const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInsta
 
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-model');
-const schemasIocModule = require('./ioc.schemas');
+// const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
 
@@ -125,7 +125,7 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   processEngineContractsIocModule.registerInContainer(container);
-  schemasIocModule.registerInContainer(container);
+  // schemasIocModule.registerInContainer(container);
   processEngineNewObjectModelIocModule.registerInContainer(container);
 }
 
