@@ -6,7 +6,15 @@ import {
   IPublicGetOptions,
   SchemaAttributeType,
 } from '@essential-projects/core_contracts';
-import { Entity, EntityDependencyHelper, IEntityType, IPropertyBag } from '@essential-projects/data_model_contracts';
+
+import {
+  Entity,
+  EntityDependencyHelper,
+  IEntityType,
+  IDatastoreService ,
+  IPropertyBag
+} from '@essential-projects/data_model_contracts';
+
 import { IDataMessage, IEntityMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import {schemaAttribute} from '@essential-projects/metadata';
 import {
@@ -24,8 +32,6 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Logger} from 'loggerhythm';
 
-import * as debug from 'debug';
-const debugInfo: debug.IDebugger = debug('processengine:info');
 const logger: Logger = Logger.createLogger('process_engine').createChildLogger('process_entity');
 
   // tslint:disable:cyclomatic-complexity
@@ -143,6 +149,15 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     this.setProperty(this, 'callerId', value);
   }
 
+  @schemaAttribute({ type: SchemaAttributeType.string })
+  public get correlationId(): string {
+    return this.getProperty(this, 'correlationId');
+  }
+
+  public set correlationId(value: string) {
+    this.setProperty(this, 'correlationId', value);
+  }
+
   public async initializeProcess(): Promise<void> {
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     const processDef: IProcessDefEntity = await this.getProcessDef(internalContext);
@@ -189,19 +204,18 @@ export class ProcessEntity extends Entity implements IProcessEntity {
 
   // tslint:disable:cyclomatic-complexity
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<void> {
-    const source = params ? params.source : undefined;
-    const isSubProcess = params ? params.isSubProcess : false;
-    const initialToken = params ? params.initialToken : undefined;
-    const participant = params ? params.participant : null;
+    const source: any = params ? params.source : undefined;
+    const isSubProcess: boolean = params ? params.isSubProcess : false;
+    const initialToken: any = params ? params.initialToken : undefined;
+    const participant: string = params ? params.participant : null;
 
-    const datastoreService = await this.getDatastoreService();
-    const processTokenType = await datastoreService.getEntityType('ProcessToken');
-    const startEventType = await datastoreService.getEntityType('StartEvent');
+    const datastoreService: IDatastoreService = await this.getDatastoreService();
+    const processTokenType: IEntityType<IProcessTokenEntity> = await datastoreService.getEntityType<IProcessTokenEntity>('ProcessToken');
+    const startEventType: IEntityType<IStartEventEntity> = await datastoreService.getEntityType<IStartEventEntity>('StartEvent');
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
-    const laneContext = context;
 
-    let applicationId = null;
+    let applicationId: any = null;
 
     this.isSubProcess = isSubProcess;
     this.callerId = (isSubProcess && source) ? source.id : null;
@@ -237,7 +251,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
       await processToken.save(internalContext, { reloadAfterSave: false });
     }
 
-    debugInfo(`process id ${this.id} started: `);
+    logger.verbose(`process id ${this.id} started: `);
 
     const startEvent: IStartEventEntity = <IStartEventEntity> await this.nodeInstanceEntityTypeService.createNode(internalContext, startEventType);
     startEvent.name = startEventDef.name;
@@ -249,7 +263,7 @@ export class ProcessEntity extends Entity implements IProcessEntity {
     startEvent.participant = participant;
     startEvent.application = applicationId;
 
-    startEvent.changeState(laneContext, 'start', this);
+    startEvent.changeState(context, 'start', this);
   }
 
   public async end(context: ExecutionContext, processToken: any, endEventKey?: string): Promise<void> {
