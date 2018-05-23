@@ -48,16 +48,20 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                 let hasTimerElapsed: boolean = false;
                 let hasHandlerFinished: boolean = false;
 
-                const timerElapsed: any = (): void => {
+                const timerElapsed: any = async(): Promise<void> => {
                     if (hasHandlerFinished) {
                         return;
                     }
                     hasTimerElapsed = true;
+
+                    const token: any = await processTokenFascade.getOldTokenFormat();
+                    await processTokenFascade.addResultForFlowNode(boundaryEvent.id, token.current);
+
                     const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
                     resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, processTokenFascade));
                 };
 
-                timerSubscription = await this._initializeTimer(flowNode, timerType, timerValue, timerElapsed);
+                timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
                 const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
