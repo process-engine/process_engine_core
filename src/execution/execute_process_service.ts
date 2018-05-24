@@ -12,14 +12,28 @@ import { IProcessModelFascade, IProcessTokenFascade, ProcessModelFascade } from 
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
-  private flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private datastoreService: IDatastoreService = undefined;
-  private messageBusService: IMessageBusService;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
+  private _datastoreService: IDatastoreService = undefined;
+  private _messageBusService: IMessageBusService;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, datastoreService: IDatastoreService, messageBusService: IMessageBusService) {
-    this.flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this.datastoreService = datastoreService;
-    this.messageBusService = messageBusService;
+  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+              datastoreService: IDatastoreService,
+              messageBusService: IMessageBusService) {
+    this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this._datastoreService = datastoreService;
+    this._messageBusService = messageBusService;
+  }
+
+  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
+    return this._flowNodeHandlerFactory;
+  }
+
+  private get datastoreService(): IDatastoreService {
+    return this._datastoreService;
+  }
+
+  private get messageBusService(): IMessageBusService {
+    return this._messageBusService;
   }
 
   public async start(context: ExecutionContext, process: Model.Types.Process, initialToken?: any): Promise<any> {

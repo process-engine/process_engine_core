@@ -6,14 +6,22 @@ import { IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo } from './
 import { FlowNodeHandler } from './index';
 
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
-  private container: IContainer;
-  private invoker: IInvoker;
+  private _container: IContainer;
+  private _invoker: IInvoker;
 
   constructor(container: IContainer, invoker: IInvoker) {
     super();
 
-    this.container = container;
-    this.invoker = invoker;
+    this._container = container;
+    this._invoker = invoker;
+  }
+
+  private get container(): IContainer {
+    return this._container;
+  }
+
+  private get invoker(): IInvoker {
+    return this._invoker;
   }
 
   protected async executeIntern(serviceTaskNode: Model.Activities.ServiceTask,
@@ -31,7 +39,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
       // tslint:disable-next-line:max-line-length
-      const argumentsToPassThrough: Array<any> = (new Function('context', 'token', 'return ' + invocation.params)).call(tokenData, context, tokenData) || [];
+      const argumentsToPassThrough: Array<any> = (new Function('context', 'token', `return ${invocation.params}`)).call(tokenData, context, tokenData) || [];
 
       const serviceMethod: Function = serviceInstance[invocation.method];
 

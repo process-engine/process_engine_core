@@ -3,10 +3,14 @@ import { IProcessModelFascade } from './iprocess_model_fascade';
 
 export class ProcessModelFascade implements IProcessModelFascade {
 
-  private processDefinition: Model.Types.Process;
+  private _processDefinition: Model.Types.Process;
 
   constructor(processDefinition: Model.Types.Process) {
-    this.processDefinition = processDefinition;
+    this._processDefinition = processDefinition;
+  }
+
+  private get processDefinition(): Model.Types.Process {
+    return this._processDefinition;
   }
 
   public getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow {

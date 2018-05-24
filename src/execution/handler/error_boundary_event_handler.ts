@@ -7,18 +7,23 @@ import {
 import { FlowNodeHandler } from './index';
 
 export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
-  private activityHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(activityHandler: FlowNodeHandler<Model.Base.FlowNode>) {
+  private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
+
+  constructor(decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
     super();
-    this.activityHandler = activityHandler;
+    this._decoratedHandler = decoratedHandler;
+  }
+
+  private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
+    return this._decoratedHandler;
   }
 
   protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
                                 processTokenFascade: IProcessTokenFascade,
                                 processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
     try {
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
+      const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
       return nextFlowNodeInfo;
     } catch (err) {

@@ -13,6 +13,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
   public async getAllResults(): Promise<Array<IProcessTokenResult>> {
     return Promise.resolve(this.processTokenResults);
   }
+
   public async addResultForFlowNode(flowNodeId: string, result: any): Promise<void> {
     const processTokenResult: IProcessTokenResult = {
       flowNodeId: flowNodeId,
@@ -20,15 +21,19 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     };
     this.processTokenResults.push(processTokenResult);
   }
+
   public async getResultForFlowNode(flowNodeId: string): Promise<IProcessTokenResult> {
     throw new Error('Method not implemented.');
   }
+
   public async getAllResultsForFlowNode(flowNodeId: string): Promise<Array<IProcessTokenResult>> {
     throw new Error('Method not implemented.');
   }
+
   protected async importResults(processTokenResults: Array<IProcessTokenResult>): Promise<void> {
     Array.prototype.push.apply(this.processTokenResults, processTokenResults);
   }
+
   public async getProcessTokenFascadeForParallelBranch(): Promise<IProcessTokenFascade> {
     const processToken: any = new Runtime.Types.ProcessToken();
 
@@ -38,6 +43,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
 
     return processTokenFascade;
   }
+
   public async mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void> {
     const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);

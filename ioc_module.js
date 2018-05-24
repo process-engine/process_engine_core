@@ -32,12 +32,6 @@ const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-mo
 
 function registerInContainer(container) {
 
-  // container.register('ProcessEngineService', ProcessEngineService)
-  //   .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker')
-  //   .injectPromiseLazy('NodeInstanceEntityTypeService')
-  //   .configure('process_engine:process_engine_service')
-  //   .singleton();
-
   container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
 

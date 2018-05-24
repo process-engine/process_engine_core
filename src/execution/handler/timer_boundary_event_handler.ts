@@ -31,14 +31,17 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
   private _timingService: ITimingService;
   private _eventAggregator: IEventAggregator;
   private _iamService: IIamService;
-  private _activityHandler: FlowNodeHandler < Model.Base.FlowNode > ;
+  private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(timingService: ITimingService, eventAggregator: IEventAggregator, iamService: IIamService, activityHandler: FlowNodeHandler < Model.Base.FlowNode > ) {
+  constructor(timingService: ITimingService,
+              eventAggregator: IEventAggregator,
+              iamService: IIamService,
+              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
     super();
     this._timingService = timingService;
     this._eventAggregator = eventAggregator;
     this._iamService = iamService;
-    this._activityHandler = activityHandler;
+    this._decoratedHandler = decoratedHandler;
   }
 
   private get timingService(): ITimingService {
@@ -53,8 +56,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
     return this._iamService;
   }
 
-  private get activityHandler(): FlowNodeHandler < Model.Base.FlowNode > {
-    return this._activityHandler;
+  private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
+    return this._decoratedHandler;
   }
 
   protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
@@ -96,7 +99,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
 
         timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.activityHandler.execute(flowNode, processTokenFascade, processModelFascade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade);
 
         if (hasTimerElapsed) {
           return;

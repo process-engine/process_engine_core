@@ -14,10 +14,14 @@ enum BoundaryEventDefinitionType {
 
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
-  private container: IContainer;
+  private _container: IContainer;
 
   constructor(container: IContainer) {
-    this.container = container;
+    this._container = container;
+  }
+
+  private get container(): IContainer {
+    return this._container;
   }
 
   public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
