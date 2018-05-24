@@ -41,6 +41,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     switch (type) {
       case BpmnType.startEvent:
         return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('StartEventHandler');
+      case BpmnType.callActivity:
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('CallActivityHandler');
       case BpmnType.exclusiveGateway:
         return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ExclusiveGatewayHandler');
       case BpmnType.parallelGateway:
@@ -50,6 +52,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BpmnType.scriptTask:
         const flowNodeHandler: IFlowNodeHandler<Model.Activities.ScriptTask> =
           await this.container.resolveAsync<IFlowNodeHandler<Model.Activities.ScriptTask>>('ScriptTaskHandler');
+        // TODO: (SM) should the script task really be wrapped with an error boundary event by default?
 
         return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', [flowNodeHandler]);
       case BpmnType.intermediateCatchEvent:

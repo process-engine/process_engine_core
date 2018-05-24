@@ -19,6 +19,7 @@ import {
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 import {
+  IExecutionContextFascade,
   IProcessModelFascade,
   IProcessTokenFascade,
   NextFlowNodeInfo,
@@ -62,7 +63,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
 
   protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
                                 processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade): Promise < NextFlowNodeInfo > {
+                                processModelFascade: IProcessModelFascade,
+                                executionContextFascade: IExecutionContextFascade): Promise < NextFlowNodeInfo > {
 
     return new Promise < NextFlowNodeInfo > (async(resolve: Function, reject: Function): Promise < NextFlowNodeInfo > => {
 
@@ -99,7 +101,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
 
         timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
 
         if (hasTimerElapsed) {
           return;

@@ -1,6 +1,7 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
 import {
+  IExecutionContextFascade,
   IProcessModelFascade,
   IProcessTokenFascade,
   NextFlowNodeInfo,
@@ -12,7 +13,8 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
   protected async executeIntern(scriptTask: Model.Activities.ScriptTask,
                                 processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                                processModelFascade: IProcessModelFascade,
+                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
     const script: string = scriptTask.script;
     const context: ExecutionContext = undefined; // TODO: context needed

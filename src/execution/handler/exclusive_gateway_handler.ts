@@ -1,5 +1,6 @@
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
 import {
+  IExecutionContextFascade,
   IProcessModelFascade,
   IProcessTokenFascade,
   NextFlowNodeInfo,
@@ -10,7 +11,8 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
   protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway,
                                 processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                                processModelFascade: IProcessModelFascade,
+                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);

@@ -1,6 +1,7 @@
 export * from './execute_process_service';
 export * from './handler';
 export * from './iexecute_process_service';
+export * from './iexecution_context_fascade';
 export * from './iprocess_model_fascade';
 export * from './iprocess_token_fascade';
 export * from './iprocess_token_result';

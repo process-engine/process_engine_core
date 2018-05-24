@@ -1,5 +1,6 @@
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
 import {
+  IExecutionContextFascade,
   IProcessModelFascade,
   IProcessTokenFascade,
   NextFlowNodeInfo,
@@ -21,9 +22,11 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
   protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
                                 processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                                processModelFascade: IProcessModelFascade,
+                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
     try {
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade);
+      const nextFlowNodeInfo: NextFlowNodeInfo
+        = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
 
       return nextFlowNodeInfo;
     } catch (err) {

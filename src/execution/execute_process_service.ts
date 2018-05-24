@@ -2,12 +2,13 @@ import { ExecutionContext } from '@essential-projects/core_contracts';
 import { IDatastoreService } from '@essential-projects/data_model_contracts';
 import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IFlowNodeHandler, ProcessTokenFascade } from '.';
+import { IExecutionContextFascade, IFlowNodeHandler, ProcessTokenFascade } from '.';
 import { IFlowNodeHandlerFactory } from './handler/iflow_node_handler_factory';
 import { IExecuteProcessService } from './iexecute_process_service';
 import { NextFlowNodeInfo } from './next_flow_node_info';
 
 import * as uuid from 'uuid';
+import { ExecutionContextFascade } from './execution_context_fascade';
 import { IProcessModelFascade, IProcessTokenFascade, ProcessModelFascade } from './index';
 
 export class ExecuteProcessService implements IExecuteProcessService {
@@ -46,10 +47,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processToken: Runtime.Types.ProcessToken = this._createProcessToken(context);
     const processTokenFascade: IProcessTokenFascade = new ProcessTokenFascade(processToken);
+    const executionContextFascade: IExecutionContextFascade = new ExecutionContextFascade(context);
 
     processTokenFascade.addResultForFlowNode(startEvent.id, initialToken);
 
-    await this._executeFlowNode(startEvent, processTokenFascade, processModelFascade);
+    await this._executeFlowNode(startEvent, processTokenFascade, processModelFascade, executionContextFascade);
 
     const resultToken: any = await processTokenFascade.getOldTokenFormat();
 
@@ -66,14 +68,18 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
                                  processTokenFascade: IProcessTokenFascade,
-                                 processModelFascade: IProcessModelFascade): Promise<void> {
+                                 processModelFascade: IProcessModelFascade,
+                                 executionContextFascade: IExecutionContextFascade): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFascade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
+    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
+                                                                             processTokenFascade,
+                                                                             processModelFascade,
+                                                                             executionContextFascade);
 
     if (nextFlowNodeInfo.flowNode !== null) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFascade, processModelFascade);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFascade, processModelFascade, executionContextFascade);
     }
   }
 

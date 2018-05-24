@@ -2,7 +2,7 @@ import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contr
 import { IInvoker } from '@essential-projects/invocation_contracts';
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
 import { IContainer } from 'addict-ioc';
-import { IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo } from './../../index';
+import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo } from './../../index';
 import { FlowNodeHandler } from './index';
 
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
@@ -26,7 +26,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
   protected async executeIntern(serviceTaskNode: Model.Activities.ServiceTask,
                                 processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                                processModelFascade: IProcessModelFascade,
+                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
     const context: ExecutionContext = undefined; // TODO: context needed
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;

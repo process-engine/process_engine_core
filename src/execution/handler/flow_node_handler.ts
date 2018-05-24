@@ -1,18 +1,19 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
 import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IProcessTokenFascade } from '../index';
+import { IExecutionContextFascade, IProcessTokenFascade } from '../index';
 import { IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, NextFlowNodeInfo } from './../index';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
   public async execute(flowNode: TFlowNode,
                        processTokenFascade: IProcessTokenFascade,
-                       processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                       processModelFascade: IProcessModelFascade,
+                       executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
     let nextFlowNode: NextFlowNodeInfo;
 
     try {
-      nextFlowNode = await this.executeIntern(flowNode, processTokenFascade, processModelFascade);
+      nextFlowNode = await this.executeIntern(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
       //            I would like to set no token result or further specify it to be an error to avoid confusion
@@ -32,7 +33,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected async abstract executeIntern(flowNode: TFlowNode,
                                          processTokenFascade: IProcessTokenFascade,
-                                         processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo>;
+                                         processModelFascade: IProcessModelFascade,
+                                         executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo>;
 
   private async afterExecute(flowNode: TFlowNode,
                              nextFlowNode: Model.Base.FlowNode,

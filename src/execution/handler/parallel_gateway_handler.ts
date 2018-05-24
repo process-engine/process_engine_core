@@ -1,5 +1,6 @@
 import { Model, Runtime } from '@process-engine/process_engine_contracts';
 import {
+  IExecutionContextFascade,
   IProcessModelFascade,
   IProcessTokenFascade,
   NextFlowNodeInfo,
@@ -23,7 +24,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
   protected async executeIntern(flowNode: Model.Gateways.ParallelGateway,
                                 processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                                processModelFascade: IProcessModelFascade,
+                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
@@ -37,7 +39,11 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         const processTokenForBranch: IProcessTokenFascade = await processTokenFascade.getProcessTokenFascadeForParallelBranch();
         const nextFlowNodeInBranch: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
-        return await this._executeBranchToJoinGateway(nextFlowNodeInBranch, joinGateway, processTokenForBranch, processModelFascade);
+        return await this._executeBranchToJoinGateway(nextFlowNodeInBranch,
+                                                      joinGateway,
+                                                      processTokenForBranch,
+                                                      processModelFascade,
+                                                      executionContextFascade);
       });
 
       const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(promises);
@@ -56,14 +62,22 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   private async _executeBranchToJoinGateway(flowNode: Model.Base.FlowNode,
                                             joinGateway: Model.Gateways.ParallelGateway,
                                             processTokenFascade: IProcessTokenFascade,
-                                            processModelFascade: IProcessModelFascade): Promise<NextFlowNodeInfo> {
+                                            processModelFascade: IProcessModelFascade,
+                                            executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFascade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode, processTokenFascade, processModelFascade);
+    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
+      processTokenFascade,
+      processModelFascade,
+      executionContextFascade);
 
     if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
-      return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode, joinGateway, nextFlowNodeInfo.processTokenFascade, processModelFascade);
+      return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
+                                              joinGateway,
+                                              nextFlowNodeInfo.processTokenFascade,
+                                              processModelFascade,
+                                              executionContextFascade);
     }
 
     return new NextFlowNodeInfo(joinGateway, processTokenFascade);
