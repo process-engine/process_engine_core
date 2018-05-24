@@ -13,6 +13,7 @@ const TimerBoundaryEventHandler = require('./dist/commonjs/index').TimerBoundary
 const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
+const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
 
 const ProcessEngineStorageService = require('./dist/commonjs/index').ProcessEngineStorageService;
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
@@ -35,6 +36,8 @@ function registerInContainer(container) {
   container.register('BpmnProcessEntity', BpmnProcessEntity)
     .tags(entityDiscoveryTag);
 
+  container.register('CallActivityHandler', CallActivityHandler)
+    .dependencies('ConsumerApiService');
   container.register('ScriptTaskHandler', ScriptTaskHandler);
 
   container.register('StartEventHandler', StartEventHandler);
