@@ -67,6 +67,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
       await this.importBpmnFromXml(
         context,
         {
+          name: name,
           xml: xml,
           path: path,
           internalName: name,
