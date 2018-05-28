@@ -8,3 +8,4 @@ export * from './iprocess_token_result';
 export * from './next_flow_node_info';
 export * from './process_model_fascade';
 export * from './process_token_fascade';
+export * from './sub_process_model_fascade';

@@ -61,6 +61,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('IntermediateThrowEventHandler');
       case BpmnType.endEvent:
         return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('EndEventHandler');
+      case BpmnType.subProcess:
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SubProcessHandler');
       default:
         throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${type} gefunden werden.`);
     }

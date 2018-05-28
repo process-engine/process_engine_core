@@ -13,3 +13,4 @@ export * from './error_boundary_event_handler';
 export * from './timer_boundary_event_handler';
 export * from './end_event_handler';
 export * from './call_activity_handler';
+export * from './sub_process_handler';

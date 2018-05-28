@@ -1,4 +1,5 @@
 import { BpmnType, Model } from '@process-engine/process_engine_contracts';
+import { SubProcessModelFascade } from './index';
 import { IProcessModelFascade } from './iprocess_model_fascade';
 
 export class ProcessModelFascade implements IProcessModelFascade {
@@ -9,7 +10,7 @@ export class ProcessModelFascade implements IProcessModelFascade {
     this._processDefinition = processDefinition;
   }
 
-  private get processDefinition(): Model.Types.Process {
+  protected get processDefinition(): Model.Types.Process {
     return this._processDefinition;
   }
 
@@ -41,10 +42,23 @@ export class ProcessModelFascade implements IProcessModelFascade {
     }
   }
 
+  public getSubProcessModelFascade(subProcessNode: Model.Activities.SubProcess): IProcessModelFascade {
+    return new SubProcessModelFascade(this.processDefinition, subProcessNode);
+  }
+
+  // public getSubProcessStartEvent(subProcessFlowNode: Model.Activities.SubProcess): Model.Events.StartEvent {
+
+  //   const startEventDef: Model.Base.FlowNode = subProcessFlowNode.flowNodes.find((flowNode: Model.Base.FlowNode) => {
+  //     return flowNode.constructor.name === 'StartEvent';
+  //   });
+
+  //   return startEventDef as Model.Events.StartEvent;
+  // }
+
   public getStartEvent(): Model.Events.StartEvent {
 
-    const startEventDef: Model.Base.FlowNode = this.processDefinition.flowNodes.find((nodeDef: Model.Base.FlowNode) => {
-      return nodeDef.constructor.name === 'StartEvent';
+    const startEventDef: Model.Base.FlowNode = this.processDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
+      return flowNode.constructor.name === 'StartEvent';
     });
 
     return startEventDef as Model.Events.StartEvent;

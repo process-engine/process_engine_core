@@ -30,7 +30,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
 
-    // TODO: Robin: is this comparison really appropriate?
     if (incomingSequenceFlows.length < outgoingSequenceFlows.length) {
       const joinGateway: Model.Gateways.ParallelGateway = processModelFascade.getJoinGatewayFor(flowNode);
 
@@ -55,7 +54,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
     } else {
-      return null;
+      // TODO: Token-Methoden in Benutzerdoku beschreiben (Issue erstellen)
+      return undefined;
     }
   }
 
