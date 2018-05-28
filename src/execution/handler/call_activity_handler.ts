@@ -47,7 +47,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     await processTokenFascade.addResultForFlowNode(callActivityNode.id, correlationResult);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(callActivityNode.id);
+    const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(callActivityNode);
 
     return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
   }
