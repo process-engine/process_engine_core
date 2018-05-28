@@ -14,6 +14,7 @@ const IntermediateCatchEventHandler = require('./dist/commonjs/index').Intermedi
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
+const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 
 const ProcessEngineStorageService = require('./dist/commonjs/index').ProcessEngineStorageService;
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
@@ -38,6 +39,10 @@ function registerInContainer(container) {
 
   container.register('CallActivityHandler', CallActivityHandler)
     .dependencies('ConsumerApiService');
+
+  container.register('SubProcessHandler', SubProcessHandler)
+    .dependencies('FlowNodeHandlerFactory');
+
   container.register('ScriptTaskHandler', ScriptTaskHandler);
 
   container.register('StartEventHandler', StartEventHandler);
