@@ -1,5 +1,5 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
-import { IExecutionContextFascade } from './iexecution_context_fascade';
+import { IExecutionContextFascade } from '@process-engine/process_engine_contracts';
 
 export class ExecutionContextFascade implements IExecutionContextFascade {
 

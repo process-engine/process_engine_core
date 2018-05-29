@@ -17,6 +17,7 @@ import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from
 import {
   IBpmnDiagram,
   IErrorDeserializer,
+  IExecuteProcessService,
   IImportFromFileOptions,
   INodeDefEntity,
   INodeInstanceEntity,
@@ -35,7 +36,6 @@ import {
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
-import { FlowNodeHandlerFactory, IExecuteProcessService } from './execution';
 import { IProcessEngineStorageService } from './index';
 
 const debugInfo = debug('processengine:info');

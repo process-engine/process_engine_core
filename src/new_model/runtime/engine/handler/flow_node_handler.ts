@@ -1,7 +1,6 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
-import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IExecutionContextFascade, IProcessTokenFascade } from '../index';
-import { IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, NextFlowNodeInfo } from './../index';
+import { BpmnType, IExecutionContextFascade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade,
+  IProcessTokenFascade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 

@@ -1,9 +1,5 @@
-import { BpmnType, Model } from '@process-engine/process_engine_contracts';
+import { BpmnType, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, Model} from '@process-engine/process_engine_contracts';
 import { IContainer } from 'addict-ioc';
-import { IFlowNodeHandler, IFlowNodeHandlerFactory } from '.';
-import {
-  IProcessModelFascade,
-} from './../../index';
 
 enum BoundaryEventDefinitionType {
   Error = 0,
@@ -37,35 +33,36 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return this._decorateWithBoundaryEventHandlers(boundaryEvents, processModelFascade, flowNodeHandler);
   }
 
+  // tslint:disable-next-line:cyclomatic-complexity
   private async _create<TFlowNode extends Model.Base.FlowNode>(type: BpmnType): Promise<IFlowNodeHandler<TFlowNode>> {
     switch (type) {
       case BpmnType.startEvent:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('StartEventHandler');
+        return this._createHandler<TFlowNode>('StartEventHandler');
       case BpmnType.callActivity:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('CallActivityHandler');
+        return this._createHandler<TFlowNode>('CallActivityHandler');
       case BpmnType.exclusiveGateway:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ExclusiveGatewayHandler');
+        return this._createHandler<TFlowNode>('ExclusiveGatewayHandler');
       case BpmnType.parallelGateway:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ParallelGatewayHandler');
+        return this._createHandler<TFlowNode>('ParallelGatewayHandler');
       case BpmnType.serviceTask:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ServiceTaskHandler');
+        return this._createHandler<TFlowNode>('ServiceTaskHandler');
       case BpmnType.scriptTask:
-        const flowNodeHandler: IFlowNodeHandler<Model.Activities.ScriptTask> =
-          await this.container.resolveAsync<IFlowNodeHandler<Model.Activities.ScriptTask>>('ScriptTaskHandler');
-        // TODO: (SM) should the script task really be wrapped with an error boundary event by default?
-
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', [flowNodeHandler]);
+        return this._createHandler<TFlowNode>('ErrorBoundaryEventHandler');
       case BpmnType.intermediateCatchEvent:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('IntermediateCatchEventHandler');
+        return this._createHandler<TFlowNode>('IntermediateCatchEventHandler');
       case BpmnType.intermediateThrowEvent:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('IntermediateThrowEventHandler');
+        return this._createHandler<TFlowNode>('IntermediateThrowEventHandler');
       case BpmnType.endEvent:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('EndEventHandler');
+        return this._createHandler<TFlowNode>('EndEventHandler');
       case BpmnType.subProcess:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SubProcessHandler');
+        return this._createHandler<TFlowNode>('SubProcessHandler');
       default:
         throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${type} gefunden werden.`);
     }
+  }
+
+  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(registrationKey: string): Promise<IFlowNodeHandler<TFlowNode>> {
+    return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey);
   }
 
   private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(boundaryEvents: Array<Model.Events.BoundaryEvent>,

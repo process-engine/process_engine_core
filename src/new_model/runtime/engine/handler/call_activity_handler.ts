@@ -9,9 +9,9 @@ import {
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IExecuteProcessService } from '../iexecute_process_service';
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo } from './../../index';
+// tslint:disable-next-line:max-line-length
+import { IExecuteProcessService, IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model, Runtime } from '@process-engine/process_engine_contracts';
+import { NextFlowNodeInfo } from './../../index';
 import { FlowNodeHandler } from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {

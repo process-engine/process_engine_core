@@ -1,6 +1,5 @@
-import { BpmnType, Model } from '@process-engine/process_engine_contracts';
+import { BpmnType, IProcessModelFascade, Model } from '@process-engine/process_engine_contracts';
 import { SubProcessModelFascade } from './index';
-import { IProcessModelFascade } from './iprocess_model_fascade';
 
 export class ProcessModelFascade implements IProcessModelFascade {
 

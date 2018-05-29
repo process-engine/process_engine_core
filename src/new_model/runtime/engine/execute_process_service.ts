@@ -1,15 +1,13 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
 import { IDatastoreService } from '@essential-projects/data_model_contracts';
 import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IExecutionContextFascade, IFlowNodeHandler, ProcessTokenFascade } from '.';
-import { IFlowNodeHandlerFactory } from './handler/iflow_node_handler_factory';
-import { IExecuteProcessService } from './iexecute_process_service';
-import { NextFlowNodeInfo } from './next_flow_node_info';
+import { IExecuteProcessService, IExecutionContextFascade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade,
+  IProcessTokenFascade, Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
+import { ProcessTokenFascade } from '.';
 
 import * as uuid from 'uuid';
 import { ExecutionContextFascade } from './execution_context_fascade';
-import { IProcessModelFascade, IProcessTokenFascade, ProcessModelFascade } from './index';
+import { ProcessModelFascade } from './process_model_fascade';
 
 export class ExecuteProcessService implements IExecuteProcessService {
 

@@ -1,8 +1,8 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
 import { IInvoker } from '@essential-projects/invocation_contracts';
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
+import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model,
+  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { IContainer } from 'addict-ioc';
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo } from './../../index';
 import { FlowNodeHandler } from './index';
 
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {

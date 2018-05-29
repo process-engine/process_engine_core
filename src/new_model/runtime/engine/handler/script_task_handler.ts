@@ -1,12 +1,6 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import {
-  IExecutionContextFascade,
-  IProcessModelFascade,
-  IProcessTokenFascade,
-  NextFlowNodeInfo,
-} from './../../index';
-import { IFlowNodeHandlerFactory } from './iflow_node_handler_factory';
+import { IExecutionContextFascade, IFlowNodeHandlerFactory, IProcessModelFascade, IProcessTokenFascade,
+  Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {

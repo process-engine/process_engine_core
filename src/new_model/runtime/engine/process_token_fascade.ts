@@ -1,6 +1,4 @@
-import { BpmnType, Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IProcessTokenFascade } from './iprocess_token_fascade';
-import { IProcessTokenResult } from './iprocess_token_result';
+import { BpmnType, IProcessTokenFascade, IProcessTokenResult, Model, Runtime } from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFascade implements IProcessTokenFascade {
   private processToken: Runtime.Types.ProcessToken;

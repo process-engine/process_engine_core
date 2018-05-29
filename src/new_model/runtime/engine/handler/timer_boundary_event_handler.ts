@@ -12,21 +12,17 @@ import {
   ITimingService,
 } from '@essential-projects/timing_contracts';
 import {
+  IExecutionContextFascade,
+  IProcessModelFascade,
+  IProcessTokenFascade,
   Model,
+  NextFlowNodeInfo,
   Runtime,
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
-import {
-  IExecutionContextFascade,
-  IProcessModelFascade,
-  IProcessTokenFascade,
-  NextFlowNodeInfo,
-} from './../../index';
-import {
-  FlowNodeHandler,
-} from './index';
+import {FlowNodeHandler} from './index';
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.BoundaryEvent > {
   private _timingService: ITimingService;

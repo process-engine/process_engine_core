@@ -1,8 +1,7 @@
-import { Model } from '@process-engine/process_engine_contracts';
-import { IProcessModelFascade } from './iprocess_model_fascade';
+import { IProcessModelFascade, Model } from '@process-engine/process_engine_contracts';
 import { ProcessModelFascade } from './process_model_fascade';
 
-export class SubProcessModelFascade extends ProcessModelFascade implements IProcessModelFascade {
+export class SubProcessModelFascade extends ProcessModelFascade {
 
   private _subProcessDefinition: Model.Activities.SubProcess;
 

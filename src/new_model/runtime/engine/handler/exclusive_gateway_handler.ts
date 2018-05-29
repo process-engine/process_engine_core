@@ -1,8 +1,6 @@
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
+import { Model, Runtime, IExecutionContextFascade,
+  IProcessModelFascade, IProcessTokenFascade } from '@process-engine/process_engine_contracts';
 import {
-  IExecutionContextFascade,
-  IProcessModelFascade,
-  IProcessTokenFascade,
   NextFlowNodeInfo,
 } from './../../index';
 import { FlowNodeHandler } from './flow_node_handler';

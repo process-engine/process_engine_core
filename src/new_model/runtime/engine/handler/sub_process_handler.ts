@@ -9,10 +9,9 @@ import {
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IExecuteProcessService } from '../iexecute_process_service';
-import { IExecutionContextFascade,
-  IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo, ProcessModelFascade } from './../../index';
+import { IExecuteProcessService, IExecutionContextFascade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, IProcessTokenFascade, Model,
+  NextFlowNodeInfo} from '@process-engine/process_engine_contracts';
+import { ProcessModelFascade } from './../../index';
 import { FlowNodeHandler } from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {

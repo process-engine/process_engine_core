@@ -1,5 +1,5 @@
-import { Model, Runtime } from '@process-engine/process_engine_contracts';
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, NextFlowNodeInfo } from './../../index';
+import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model, NextFlowNodeInfo,
+  Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> {
