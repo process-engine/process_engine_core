@@ -36,7 +36,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
       });
 
       if (!boundaryEvent) {
-        throw new Error('' );
+        throw new Error(`ErrorBoundaryEvent attached to node with id "${flowNode.id}" could not be found.`);
       }
 
       const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
