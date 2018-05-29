@@ -1,8 +1,5 @@
-import { Model, Runtime, IExecutionContextFascade,
-  IProcessModelFascade, IProcessTokenFascade } from '@process-engine/process_engine_contracts';
-import {
-  NextFlowNodeInfo,
-} from './../../index';
+import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model,
+  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './flow_node_handler';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {

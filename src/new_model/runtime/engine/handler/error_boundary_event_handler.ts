@@ -1,8 +1,5 @@
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade,
-  Model, Runtime } from '@process-engine/process_engine_contracts';
-import {
-  NextFlowNodeInfo,
-} from './../../index';
+import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model,
+  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
