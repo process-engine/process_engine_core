@@ -44,6 +44,10 @@ interface BindingMessagebus {
   entity: any;
 }
 
+// tslint:disable:typedef
+// tslint:disable:cyclomatic-complexity
+// tslint:disable:max-classes-per-file
+// tslint:disable:max-file-line-count
 export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
@@ -457,7 +461,7 @@ export class NodeInstanceEntityTypeService implements INodeInstanceEntityTypeSer
       }
 
       const isSubProcessEndEvent: boolean = (nextDef.type === 'bpmn:EndEvent' && !!nextDef.belongsToSubProcessKey);
-      
+
       if (splitToken && !isFirstNextDef) {
         currentToken = await processToken.clone();
 

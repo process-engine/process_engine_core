@@ -3,13 +3,16 @@ import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-proj
 import { ISubscription } from '@essential-projects/event_aggregator_contracts';
 import { IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {IEventEntity, INodeInstanceEntity, TimerDefinitionType} from '@process-engine/process_engine_contracts';
-import {NodeInstanceEntity} from './node_instance';
-import {NodeInstanceEntityDependencyHelper} from './node_instance';
+import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
 import * as debug from 'debug';
 import * as moment from 'moment';
 const debugInfo = debug('processengine:info');
 
+// tslint:disable:typedef
+// tslint:disable:cyclomatic-complexity
+// tslint:disable:max-classes-per-file
+// tslint:disable:max-file-line-count
 export class EventEntity extends NodeInstanceEntity implements IEventEntity {
 
   public config: any = undefined;
