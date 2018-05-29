@@ -16,6 +16,8 @@ export class SubProcessModelFascade extends ProcessModelFascade {
 
   public getStartEvent(): Model.Events.StartEvent {
 
+    // The SubProcess-StartEvent is not contained in the processDefinition, but in the subProcessDefinition
+
     const startEventDef: Model.Base.FlowNode = this.subProcessDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
       return flowNode.constructor.name === 'StartEvent';
     });
@@ -24,6 +26,8 @@ export class SubProcessModelFascade extends ProcessModelFascade {
   }
 
   public getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode {
+
+    // The FlowNodes of the SubProcess are not contained in the processDefinition, but in the subProcessDefinition
 
     const flow: Model.Types.SequenceFlow = this.subProcessDefinition.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.sourceRef === flowNode.id;

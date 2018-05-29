@@ -20,11 +20,15 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                 processModelFascade: IProcessModelFascade,
                                 executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
     try {
+
       const nextFlowNodeInfo: NextFlowNodeInfo
         = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
 
       return nextFlowNodeInfo;
+
     } catch (err) {
+      // if the decorated handler encountered an error, the next flow node after the ErrorBoundaryEvent is returned
+
       const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFascade.getBoundaryEventsFor(flowNode);
 
       const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
@@ -32,7 +36,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
       });
 
       if (!boundaryEvent) {
-        throw err;
+        throw new Error('' );
       }
 
       const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);

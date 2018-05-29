@@ -13,36 +13,39 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
 
     const currentToken: any = await processTokenFascade.getOldTokenFormat();
-    const current: any = processTokenFascade.addResultForFlowNode(flowNode.id, currentToken.current);
+    processTokenFascade.addResultForFlowNode(flowNode.id, currentToken.current);
 
-    // TODO: Robin: is this comparison really appropriate?
-    if (incomingSequenceFlows.length > outgoingSequenceFlows.length) {
+    const isExclusiveJoinGateway: boolean = incomingSequenceFlows.length > outgoingSequenceFlows.length;
 
+    if (isExclusiveJoinGateway) {
+
+      // If this is the join gateway, just return the next FlowNode to execute
       const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
       return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+    }
 
-    } else {
+    // If this is the split gateway, find the SequenceFlow that has a truthy condition
+    // and continue execution with its target FlowNode.
 
-      for (const outgoingSequenceFlow of outgoingSequenceFlows) {
+    for (const outgoingSequenceFlow of outgoingSequenceFlows) {
 
-        if (!outgoingSequenceFlow.conditionExpression) {
-          continue;
-        }
-
-        const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFascade);
-
-        if (!conditionWasPositive) {
-          continue;
-        }
-
-        const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
-
-        return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      if (!outgoingSequenceFlow.conditionExpression) {
+        continue;
       }
 
-      throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');
+      const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFascade);
+
+      if (!conditionWasPositive) {
+        continue;
+      }
+
+      const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
+
+      return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
     }
+
+    throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');
   }
 
   private async executeCondition(condition: string, processTokenFascade: IProcessTokenFascade): Promise<boolean> {

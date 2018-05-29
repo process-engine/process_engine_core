@@ -30,6 +30,9 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       return flowNodeHandler;
     }
 
+    // the original FlowNodeHandler created above will now be decorated by one handler for each BoundaryEvent that is attached to the FlowNode
+    // as a result, the `execute`-method will be called on the topmost decorated BoundaryEventHandler
+    // the BoundaryEventHandler will then pass the `execute`-call down to the next BoundaryEventHandler until the original FlowNodeHandler is called
     return this._decorateWithBoundaryEventHandlers(boundaryEvents, processModelFascade, flowNodeHandler);
   }
 
@@ -70,6 +73,9 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
                                                                                           handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>)
                                                                                           : Promise<IFlowNodeHandler<TFlowNode>> {
 
+    // first the boundary events are ordered by type
+    // e.g.: the ErrorBoundaryEventHandler has to be applied before other BoundaryEvents so that it only catches errors
+    // from the actual FlowNode it is attached to
     this._orderBoundaryEventsByPriority(boundaryEvents);
 
     let currentHandler: IFlowNodeHandler<Model.Base.FlowNode> = handlerToDecorate;
@@ -85,6 +91,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
                                             handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>)
                                             : Promise<IFlowNodeHandler<Model.Base.FlowNode>> {
 
+    // the handler that shall be decorated is passed through using the IoC container
+    // this causes the handler to be injected after the declared dependencies of the individual handler that gets instantiated in this method
     const argumentsToPassThrough: Array<any> = handlerToDecorate ? [handlerToDecorate] : [];
 
     const eventDefinitionType: BoundaryEventDefinitionType = this._getEventDefinitionType(boundaryEventNode);

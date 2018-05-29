@@ -33,8 +33,8 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const tokenData: any = await processTokenFascade.getOldTokenFormat();
 
     const startEventKey: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
-    // tslint:disable-next-line:max-line-length
-    const correlationId: string = await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, startEventKey, callActivityNode, tokenData);
+    const correlationId: string =
+      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, startEventKey, callActivityNode, tokenData);
     const correlationResult: ICorrelationResult = await this._retrieveSubProcessResult(consumerContext, callActivityNode, correlationId);
 
     await processTokenFascade.addResultForFlowNode(callActivityNode.id, correlationResult);

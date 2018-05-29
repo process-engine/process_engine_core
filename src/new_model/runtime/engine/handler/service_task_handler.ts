@@ -29,7 +29,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                 processModelFascade: IProcessModelFascade,
                                 executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
 
-    const context: ExecutionContext = undefined; // TODO: context needed
+    const context: ExecutionContext = executionContextFascade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFascade.getOldTokenFormat();
 
@@ -58,8 +58,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     } else {
 
-      // TODO: implement call to webservice, which is the default in the
-      // BPMN spec
+      // TODO: implement call to webservice, which is the default in the BPMN spec
     }
 
   }

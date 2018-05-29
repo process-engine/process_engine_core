@@ -20,15 +20,7 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     this.processTokenResults.push(processTokenResult);
   }
 
-  public async getResultForFlowNode(flowNodeId: string): Promise<IProcessTokenResult> {
-    throw new Error('Method not implemented.');
-  }
-
-  public async getAllResultsForFlowNode(flowNodeId: string): Promise<Array<IProcessTokenResult>> {
-    throw new Error('Method not implemented.');
-  }
-
-  protected async importResults(processTokenResults: Array<IProcessTokenResult>): Promise<void> {
+  public async importResults(processTokenResults: Array<IProcessTokenResult>): Promise<void> {
     Array.prototype.push.apply(this.processTokenResults, processTokenResults);
   }
 

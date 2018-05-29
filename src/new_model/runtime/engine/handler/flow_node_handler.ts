@@ -12,7 +12,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     let nextFlowNode: NextFlowNodeInfo;
 
     try {
+
+      // executeIntern is the method where derived handlers can implement their logic
       nextFlowNode = await this.executeIntern(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
+
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
       //            I would like to set no token result or further specify it to be an error to avoid confusion
@@ -39,6 +42,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                              nextFlowNode: Model.Base.FlowNode,
                              processTokenFascade: IProcessTokenFascade,
                              processModelFascade: IProcessModelFascade): Promise<void> {
+
+    // there are two kinds of Mappers to evaluate: FlowNode- and SequenceFlow-Mappers
+    // they are evaluated in between handling of FlowNodes
 
     await processTokenFascade.evaluateMapperForFlowNode(flowNode);
 

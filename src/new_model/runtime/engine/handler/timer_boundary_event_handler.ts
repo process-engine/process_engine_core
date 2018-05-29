@@ -1,30 +1,15 @@
 // tslint:disable:max-line-length
-import {
-  ExecutionContext,
-  IIamService,
-} from '@essential-projects/core_contracts';
-import {
-  IEventAggregator,
-  ISubscription,
-} from '@essential-projects/event_aggregator_contracts';
-import {
-  ITimingRule,
-  ITimingService,
-} from '@essential-projects/timing_contracts';
-import {
-  IExecutionContextFascade,
-  IProcessModelFascade,
-  IProcessTokenFascade,
-  Model,
-  NextFlowNodeInfo,
-  Runtime,
-  TimerDefinitionType,
-} from '@process-engine/process_engine_contracts';
-import * as moment from 'moment';
-import * as uuid from 'uuid';
+import {ExecutionContext, IIamService} from '@essential-projects/core_contracts';
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
+import {IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model, NextFlowNodeInfo,
+  Runtime, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 import {FlowNodeHandler} from './index';
 
-export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.BoundaryEvent > {
+import * as moment from 'moment';
+import * as uuid from 'uuid';
+
+export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNode> {
   private _timingService: ITimingService;
   private _eventAggregator: IEventAggregator;
   private _iamService: IIamService;
@@ -57,7 +42,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
     return this._decoratedHandler;
   }
 
-  protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
+  protected async executeIntern(flowNode: Model.Base.FlowNode,
                                 processTokenFascade: IProcessTokenFascade,
                                 processModelFascade: IProcessModelFascade,
                                 executionContextFascade: IExecutionContextFascade): Promise < NextFlowNodeInfo > {
@@ -68,25 +53,22 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
 
       try {
 
-        const boundaryEvents: Array < Model.Events.BoundaryEvent > = processModelFascade.getBoundaryEventsFor(flowNode);
+        const boundaryEvent: Model.Events.BoundaryEvent = this._getTimerBoundaryEvent(flowNode, processModelFascade);
 
-        const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
-          return currentBoundaryEvent.timerEventDefinition !== undefined;
-        });
+        const timerType: TimerDefinitionType = this._parseTimerDefinitionType(boundaryEvent.timerEventDefinition);
+        const timerValue: string = this._parseTimerDefinitionValue(boundaryEvent.timerEventDefinition);
 
-        const timerEventDefinition: any = boundaryEvent.timerEventDefinition;
-
-        const timerType: TimerDefinitionType = this._parseTimerDefinitionType(timerEventDefinition);
-        const timerValue: string = this._parseTimerDefinitionValue(timerEventDefinition);
-
-        let hasTimerElapsed: boolean = false;
+        let timerHasElapsed: boolean = false;
         let hasHandlerFinished: boolean = false;
 
         const timerElapsed: any = async(): Promise < void > => {
           if (hasHandlerFinished) {
             return;
           }
-          hasTimerElapsed = true;
+          timerHasElapsed = true;
+
+          // if the timer elapsed before the decorated handler finished execution,
+          // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
 
           const token: any = await processTokenFascade.getOldTokenFormat();
           await processTokenFascade.addResultForFlowNode(boundaryEvent.id, token.current);
@@ -99,20 +81,31 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler < Model.Events.Bo
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
 
-        if (hasTimerElapsed) {
+        if (timerHasElapsed) {
           return;
         }
 
+        // if the decorated handler finished execution before the timer elapsed,
+        // continue the regular execution with the next FlowNode and dispose the timer
+
         hasHandlerFinished = true;
         resolve(nextFlowNodeInfo);
-      } catch (err) {
 
-        // TODO: error handling for timers only (must not replace the error boundary event handler)
       } finally {
         timerSubscription.dispose();
-
       }
     });
+  }
+
+  private _getTimerBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFascade: IProcessModelFascade): Model.Events.BoundaryEvent {
+
+    const boundaryEvents: Array < Model.Events.BoundaryEvent > = processModelFascade.getBoundaryEventsFor(flowNode);
+
+    const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
+      return currentBoundaryEvent.timerEventDefinition !== undefined;
+    });
+
+    return boundaryEvent;
   }
 
   private async _initializeTimer(flowNode: Model.Events.BoundaryEvent,

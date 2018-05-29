@@ -17,4 +17,8 @@ export class ExecutionContextFascade implements IExecutionContextFascade {
     return this.context.encryptedToken;
   }
 
+  public getExecutionContext(): ExecutionContext {
+    return this.context;
+  }
+
 }

@@ -8,6 +8,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                 processTokenFascade: IProcessTokenFascade,
                                 processModelFascade: IProcessModelFascade,
                                 executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
-    return new NextFlowNodeInfo(null, processTokenFascade);
+    return new NextFlowNodeInfo(undefined, processTokenFascade);
   }
 }

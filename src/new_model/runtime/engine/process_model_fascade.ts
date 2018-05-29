@@ -45,15 +45,7 @@ export class ProcessModelFascade implements IProcessModelFascade {
     return new SubProcessModelFascade(this.processDefinition, subProcessNode);
   }
 
-  // public getSubProcessStartEvent(subProcessFlowNode: Model.Activities.SubProcess): Model.Events.StartEvent {
-
-  //   const startEventDef: Model.Base.FlowNode = subProcessFlowNode.flowNodes.find((flowNode: Model.Base.FlowNode) => {
-  //     return flowNode.constructor.name === 'StartEvent';
-  //   });
-
-  //   return startEventDef as Model.Events.StartEvent;
-  // }
-
+  // TODO: implement execution of specific StartEvent
   public getStartEvent(): Model.Events.StartEvent {
 
     const startEventDef: Model.Base.FlowNode = this.processDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
@@ -81,27 +73,33 @@ export class ProcessModelFascade implements IProcessModelFascade {
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getIncomingSequenceFlowsFor(parallelGatewayNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getOutgoingSequenceFlowsFor(parallelGatewayNode.id);
 
-    const isFlowNodeParallelGateway: boolean = parallelGatewayNode.bpmnType === BpmnType.parallelGateway;
+    const flowNodeIsParallelGateway: boolean = parallelGatewayNode.bpmnType === BpmnType.parallelGateway;
+    const flowNodeIsJoinGateway: boolean = incomingSequenceFlows.length > outgoingSequenceFlows.length;
 
-    if (isFlowNodeParallelGateway && incomingSequenceFlows.length > outgoingSequenceFlows.length) {
+    if (flowNodeIsParallelGateway && flowNodeIsJoinGateway) {
       return parallelGatewayNode;
-    } else {
-      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeFor(parallelGatewayNode);
-
-      return this.getJoinGatewayFor(nextFlowNode as Model.Gateways.ParallelGateway);
     }
+
+    const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeFor(parallelGatewayNode);
+
+    return this.getJoinGatewayFor(nextFlowNode as Model.Gateways.ParallelGateway);
   }
 
   public getBoundaryEventsFor(flowNode: Model.Base.FlowNode): Array<Model.Events.BoundaryEvent> {
     const boundaryEvents: Array<Model.Base.FlowNode> = this.processDefinition.flowNodes.filter((currentFlowNode: Model.Base.FlowNode) => {
-      return currentFlowNode.bpmnType === BpmnType.boundaryEvent
-        && (currentFlowNode as Model.Events.BoundaryEvent).attachedToRef === flowNode.id;
+
+      const isBoundaryEvent: boolean = currentFlowNode.bpmnType === BpmnType.boundaryEvent;
+      const boundaryEventIsAttachedToFlowNode: boolean = (currentFlowNode as Model.Events.BoundaryEvent).attachedToRef === flowNode.id;
+
+      return isBoundaryEvent && boundaryEventIsAttachedToFlowNode;
     });
 
     return boundaryEvents as Array<Model.Events.BoundaryEvent>;
   }
 
   public getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode {
+
+    // First find the SequenceFlow that describes the next target after the FlowNode
 
     const flow: Model.Types.SequenceFlow = this.processDefinition.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.sourceRef === flowNode.id;
@@ -110,6 +108,8 @@ export class ProcessModelFascade implements IProcessModelFascade {
     if (!flow) {
       return null;
     }
+
+    // Then find the target FlowNode of the SequenceFlow
 
     const nextFlowNode: Model.Base.FlowNode = this.processDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
       return currentFlowNode.id === flow.targetRef;
