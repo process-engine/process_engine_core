@@ -180,11 +180,6 @@ export class ProcessEngineService implements IProcessEngineService {
     this._continueOwnProcesses();
   }
 
-  public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<string> {
-    const processEntity: IEntityReference = await this.processDefEntityTypeService.start(context, params, options);
-    return processEntity.id;
-  }
-
   public async getUserTaskData(context: ExecutionContext, userTaskId: string): Promise<IUserTaskMessageData> {
     const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
     const userTaskEntityQueryOptions: IPrivateQueryOptions = {
