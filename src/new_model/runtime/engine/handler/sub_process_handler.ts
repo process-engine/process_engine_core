@@ -74,7 +74,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                                     processModelFascade,
                                                     executionContextFascade);
 
-    if (nextFlowNodeInfo.flowNode) {
+    if (nextFlowNodeInfo.flowNode !== undefined) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFascade, processModelFascade, executionContextFascade);
     }
   }
