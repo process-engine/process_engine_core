@@ -14,10 +14,10 @@ import {
   IParamStart, IProcessDefEntity, IProcessDefEntityTypeService, IProcessRepository,
 } from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
-import { IProcessEngineStorageService } from './../index';
 
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
+import { IProcessEngineStorageService } from '../../dist';
 
 // tslint:disable:cyclomatic-complexity
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
@@ -28,7 +28,11 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _bpmnModelParser: IModelParser = undefined;
   private _processEngineStorageService: IProcessEngineStorageService = undefined;
 
-  constructor(datastoreService: IDatastoreService, processRepository: IProcessRepository, invoker: IInvoker, bpmnModelParser: IModelParser, processEngineStorageService: IProcessEngineStorageService) {
+  constructor(datastoreService: IDatastoreService,
+              processRepository: IProcessRepository,
+              invoker: IInvoker,
+              bpmnModelParser: IModelParser,
+              processEngineStorageService: IProcessEngineStorageService) {
     this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;

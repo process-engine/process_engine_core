@@ -27,6 +27,7 @@ import {
   IProcessDefEntity,
   IProcessDefEntityTypeService,
   IProcessEngineService,
+  IProcessEngineStorageService,
   IProcessEntity,
   IProcessRepository,
   IUserTaskEntity,
@@ -36,7 +37,6 @@ import {
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
-import { IProcessEngineStorageService } from './index';
 
 const debugInfo = debug('processengine:info');
 const debugErr = debug('processengine:error');
