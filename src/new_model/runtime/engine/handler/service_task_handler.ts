@@ -1,6 +1,6 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
 import { IInvoker } from '@essential-projects/invocation_contracts';
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model,
+import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model,
   NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { IContainer } from 'addict-ioc';
 import { FlowNodeHandler } from './index';
@@ -25,13 +25,13 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   }
 
   protected async executeIntern(serviceTaskNode: Model.Activities.ServiceTask,
-                                processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade,
-                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const context: ExecutionContext = executionContextFascade.getExecutionContext();
+    const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
-    const tokenData: any = await processTokenFascade.getOldTokenFormat();
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     if (isMethodInvocation) {
 
@@ -50,11 +50,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
-      processTokenFascade.addResultForFlowNode(serviceTaskNode.id, result);
+      processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
 
-      const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(serviceTaskNode);
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
 
     } else {
 

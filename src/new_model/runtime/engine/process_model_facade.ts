@@ -1,7 +1,7 @@
-import { BpmnType, IProcessModelFascade, Model } from '@process-engine/process_engine_contracts';
-import { SubProcessModelFascade } from './index';
+import { BpmnType, IProcessModelFacade, Model } from '@process-engine/process_engine_contracts';
+import { SubProcessModelFacade } from './index';
 
-export class ProcessModelFascade implements IProcessModelFascade {
+export class ProcessModelFacade implements IProcessModelFacade {
 
   private _processDefinition: Model.Types.Process;
 
@@ -41,8 +41,8 @@ export class ProcessModelFascade implements IProcessModelFascade {
     }
   }
 
-  public getSubProcessModelFascade(subProcessNode: Model.Activities.SubProcess): IProcessModelFascade {
-    return new SubProcessModelFascade(this.processDefinition, subProcessNode);
+  public getSubProcessModelFacade(subProcessNode: Model.Activities.SubProcess): IProcessModelFacade {
+    return new SubProcessModelFacade(this.processDefinition, subProcessNode);
   }
 
   // TODO: implement execution of specific StartEvent

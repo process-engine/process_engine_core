@@ -2,7 +2,7 @@
 import {ExecutionContext, IIamService} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
-import {IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model, NextFlowNodeInfo,
+import {IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo,
   Runtime, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 import {FlowNodeHandler} from './index';
 
@@ -43,9 +43,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
   }
 
   protected async executeIntern(flowNode: Model.Base.FlowNode,
-                                processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade,
-                                executionContextFascade: IExecutionContextFascade): Promise < NextFlowNodeInfo > {
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                executionContextFacade: IExecutionContextFacade): Promise < NextFlowNodeInfo > {
 
     return new Promise < NextFlowNodeInfo > (async(resolve: Function, reject: Function): Promise < NextFlowNodeInfo > => {
 
@@ -53,7 +53,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
       try {
 
-        const boundaryEvent: Model.Events.BoundaryEvent = this._getTimerBoundaryEvent(flowNode, processModelFascade);
+        const boundaryEvent: Model.Events.BoundaryEvent = this._getTimerBoundaryEvent(flowNode, processModelFacade);
 
         const timerType: TimerDefinitionType = this._parseTimerDefinitionType(boundaryEvent.timerEventDefinition);
         const timerValue: string = this._parseTimerDefinitionValue(boundaryEvent.timerEventDefinition);
@@ -70,16 +70,16 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
           // if the timer elapsed before the decorated handler finished execution,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
 
-          const token: any = await processTokenFascade.getOldTokenFormat();
-          await processTokenFascade.addResultForFlowNode(boundaryEvent.id, token.current);
+          const token: any = await processTokenFacade.getOldTokenFormat();
+          await processTokenFacade.addResultForFlowNode(boundaryEvent.id, token.current);
 
-          const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
-          resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, processTokenFascade));
+          const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);
+          resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, processTokenFacade));
         };
 
         timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
 
         if (timerHasElapsed) {
           return;
@@ -97,9 +97,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
     });
   }
 
-  private _getTimerBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFascade: IProcessModelFascade): Model.Events.BoundaryEvent {
+  private _getTimerBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFacade: IProcessModelFacade): Model.Events.BoundaryEvent {
 
-    const boundaryEvents: Array < Model.Events.BoundaryEvent > = processModelFascade.getBoundaryEventsFor(flowNode);
+    const boundaryEvents: Array < Model.Events.BoundaryEvent > = processModelFacade.getBoundaryEventsFor(flowNode);
 
     const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
       return currentBoundaryEvent.timerEventDefinition !== undefined;

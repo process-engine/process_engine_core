@@ -1,14 +1,14 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IExecutionContextFascade, IFlowNodeHandlerFactory, IProcessModelFascade, IProcessTokenFascade,
+import { IExecutionContextFacade, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade,
   Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
   protected async executeIntern(scriptTask: Model.Activities.ScriptTask,
-                                processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade,
-                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const script: string = scriptTask.script;
     const context: ExecutionContext = undefined; // TODO: context needed
@@ -17,7 +17,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
       return undefined;
     }
 
-    const tokenData: any = await processTokenFascade.getOldTokenFormat();
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
     let result: any;
 
     const scriptFunction: Function = new Function('token', 'context', script);
@@ -32,10 +32,10 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
       finalResult = await result.toPojo(context, toPojoOptions);
     }
 
-    await processTokenFascade.addResultForFlowNode(scriptTask.id, finalResult);
+    await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
 
-    const nextFlowNode: Model.Base.FlowNode = await processModelFascade.getNextFlowNodeFor(scriptTask);
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
   }
 }

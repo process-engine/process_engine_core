@@ -1,13 +1,13 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
 import { IDatastoreService } from '@essential-projects/data_model_contracts';
 import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
-import { IExecuteProcessService, IExecutionContextFascade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade,
-  IProcessTokenFascade, Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
-import { ProcessTokenFascade } from '.';
+import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade,
+  IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
+import { ProcessTokenFacade } from '.';
 
 import * as uuid from 'uuid';
-import { ExecutionContextFascade } from './execution_context_fascade';
-import { ProcessModelFascade } from './process_model_fascade';
+import { ExecutionContextFacade } from './execution_context_facade';
+import { ProcessModelFacade } from './process_model_facade';
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
@@ -37,21 +37,21 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   public async start(context: ExecutionContext, process: Model.Types.Process, initialToken?: any): Promise<any> {
 
-    const processModelFascade: IProcessModelFascade = new ProcessModelFascade(process);
+    const processModelFacade: IProcessModelFacade = new ProcessModelFacade(process);
 
-    const startEvent: Model.Events.StartEvent = processModelFascade.getStartEvent();
+    const startEvent: Model.Events.StartEvent = processModelFacade.getStartEvent();
 
     const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
 
     const processToken: Runtime.Types.ProcessToken = this._createProcessToken(context);
-    const processTokenFascade: IProcessTokenFascade = new ProcessTokenFascade(processToken);
-    const executionContextFascade: IExecutionContextFascade = new ExecutionContextFascade(context);
+    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processToken);
+    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
-    processTokenFascade.addResultForFlowNode(startEvent.id, initialToken);
+    processTokenFacade.addResultForFlowNode(startEvent.id, initialToken);
 
-    await this._executeFlowNode(startEvent, processTokenFascade, processModelFascade, executionContextFascade);
+    await this._executeFlowNode(startEvent, processTokenFacade, processModelFacade, executionContextFacade);
 
-    const resultToken: any = await processTokenFascade.getOldTokenFormat();
+    const resultToken: any = await processTokenFacade.getOldTokenFormat();
 
     return resultToken.current;
     // await this._end(processInstance, resultToken, context);
@@ -65,19 +65,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
-                                 processTokenFascade: IProcessTokenFascade,
-                                 processModelFascade: IProcessModelFascade,
-                                 executionContextFascade: IExecutionContextFascade): Promise<void> {
+                                 processTokenFacade: IProcessTokenFacade,
+                                 processModelFacade: IProcessModelFacade,
+                                 executionContextFacade: IExecutionContextFacade): Promise<void> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFascade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             processTokenFascade,
-                                                                             processModelFascade,
-                                                                             executionContextFascade);
+                                                                             processTokenFacade,
+                                                                             processModelFacade,
+                                                                             executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFascade, processModelFascade, executionContextFascade);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFacade, processModelFacade, executionContextFacade);
     }
   }
 

@@ -1,7 +1,7 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
-import { IExecutionContextFascade } from '@process-engine/process_engine_contracts';
+import { IExecutionContextFacade } from '@process-engine/process_engine_contracts';
 
-export class ExecutionContextFascade implements IExecutionContextFascade {
+export class ExecutionContextFacade implements IExecutionContextFacade {
 
   private _context: ExecutionContext = undefined;
 

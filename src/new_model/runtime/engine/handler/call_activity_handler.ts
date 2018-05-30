@@ -3,7 +3,7 @@ import { IInvoker } from '@essential-projects/invocation_contracts';
 import { ConsumerContext, IConsumerApiService, ICorrelationResult, ProcessModel,
   ProcessStartRequestPayload, ProcessStartResponsePayload, StartCallbackType} from '@process-engine/consumer_api_contracts';
 // tslint:disable-next-line:max-line-length
-import { IExecuteProcessService, IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
+import { IExecuteProcessService, IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
@@ -20,28 +20,28 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
   }
 
   protected async executeIntern(callActivityNode: Model.Activities.CallActivity,
-                                processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade,
-                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const encryptedToken: string = await executionContextFascade.getIdentityToken();
+    const encryptedToken: string = await executionContextFacade.getIdentityToken();
 
     const consumerContext: ConsumerContext = {
       identity: encryptedToken,
     };
 
-    const tokenData: any = await processTokenFascade.getOldTokenFormat();
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     const startEventKey: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
     const correlationId: string =
       await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, startEventKey, callActivityNode, tokenData);
     const correlationResult: ICorrelationResult = await this._retrieveSubProcessResult(consumerContext, callActivityNode, correlationId);
 
-    await processTokenFascade.addResultForFlowNode(callActivityNode.id, correlationResult);
+    await processTokenFacade.addResultForFlowNode(callActivityNode.id, correlationResult);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(callActivityNode);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
   }
 
   private async _getAccessibleStartEvent(consumerContext: ConsumerContext, processKey: string): Promise<string> {

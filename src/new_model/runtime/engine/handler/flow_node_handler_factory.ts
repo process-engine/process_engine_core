@@ -1,4 +1,4 @@
-import { BpmnType, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFascade, Model} from '@process-engine/process_engine_contracts';
+import { BpmnType, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
 import { IContainer } from 'addict-ioc';
 
 enum BoundaryEventDefinitionType {
@@ -21,7 +21,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   }
 
   public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
-                                                             processModelFascade: IProcessModelFascade): Promise<IFlowNodeHandler<TFlowNode>> {
+                                                             processModelFascade: IProcessModelFacade): Promise<IFlowNodeHandler<TFlowNode>> {
     const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode.bpmnType);
 
     const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFascade.getBoundaryEventsFor(flowNode);
@@ -69,7 +69,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   }
 
   private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(boundaryEvents: Array<Model.Events.BoundaryEvent>,
-                                                                                          processModelFascade: IProcessModelFascade,
+                                                                                          processModelFascade: IProcessModelFacade,
                                                                                           handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>)
                                                                                           : Promise<IFlowNodeHandler<TFlowNode>> {
 

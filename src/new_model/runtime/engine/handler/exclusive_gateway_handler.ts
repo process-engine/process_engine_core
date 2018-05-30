@@ -1,28 +1,28 @@
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model,
+import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model,
   NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './flow_node_handler';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
   protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway,
-                                processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade,
-                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getIncomingSequenceFlowsFor(flowNode.id);
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFascade.getOutgoingSequenceFlowsFor(flowNode.id);
+    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
 
-    const currentToken: any = await processTokenFascade.getOldTokenFormat();
-    processTokenFascade.addResultForFlowNode(flowNode.id, currentToken.current);
+    const currentToken: any = await processTokenFacade.getOldTokenFormat();
+    processTokenFacade.addResultForFlowNode(flowNode.id, currentToken.current);
 
     const isExclusiveJoinGateway: boolean = incomingSequenceFlows.length > outgoingSequenceFlows.length;
 
     if (isExclusiveJoinGateway) {
 
       // If this is the join gateway, just return the next FlowNode to execute
-      const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
     }
 
     // If this is the split gateway, find the SequenceFlow that has a truthy condition
@@ -34,22 +34,22 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
         continue;
       }
 
-      const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFascade);
+      const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFacade);
 
       if (!conditionWasPositive) {
         continue;
       }
 
-      const nextFlowNode: Model.Base.FlowNode = processModelFascade.getFlowNodeById(outgoingSequenceFlow.targetRef);
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
     }
 
     throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');
   }
 
-  private async executeCondition(condition: string, processTokenFascade: IProcessTokenFascade): Promise<boolean> {
-    const tokenData: any = await processTokenFascade.getOldTokenFormat();
+  private async executeCondition(condition: string, processTokenFacade: IProcessTokenFacade): Promise<boolean> {
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     try {
       const functionString: string = `return ${condition}`;

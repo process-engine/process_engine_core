@@ -1,4 +1,4 @@
-import { IExecutionContextFascade, IProcessModelFascade, IProcessTokenFascade, Model,
+import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model,
   NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
@@ -16,20 +16,20 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
   }
 
   protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
-                                processTokenFascade: IProcessTokenFascade,
-                                processModelFascade: IProcessModelFascade,
-                                executionContextFascade: IExecutionContextFascade): Promise<NextFlowNodeInfo> {
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
     try {
 
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(flowNode, processTokenFascade, processModelFascade, executionContextFascade);
+        = await this.decoratedHandler.execute(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
 
       return nextFlowNodeInfo;
 
     } catch (err) {
       // if the decorated handler encountered an error, the next flow node after the ErrorBoundaryEvent is returned
 
-      const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFascade.getBoundaryEventsFor(flowNode);
+      const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
       const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
         return currentBoundaryEvent.errorEventDefinition !== undefined;
@@ -39,9 +39,9 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
         throw new Error(`ErrorBoundaryEvent attached to node with id "${flowNode.id}" could not be found.`);
       }
 
-      const nextFlowNode: Model.Base.FlowNode = processModelFascade.getNextFlowNodeFor(boundaryEvent);
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFascade);
+      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
     }
   }
 }

@@ -1,6 +1,6 @@
-import { BpmnType, IProcessTokenFascade, IProcessTokenResult, Model, Runtime } from '@process-engine/process_engine_contracts';
+import { BpmnType, IProcessTokenFacade, IProcessTokenResult, Model, Runtime } from '@process-engine/process_engine_contracts';
 
-export class ProcessTokenFascade implements IProcessTokenFascade {
+export class ProcessTokenFacade implements IProcessTokenFacade {
   private processToken: Runtime.Types.ProcessToken;
   private processTokenResults: Array<IProcessTokenResult> = [];
 
@@ -24,17 +24,17 @@ export class ProcessTokenFascade implements IProcessTokenFascade {
     Array.prototype.push.apply(this.processTokenResults, processTokenResults);
   }
 
-  public async getProcessTokenFascadeForParallelBranch(): Promise<IProcessTokenFascade> {
+  public async getProcessTokenFacadeForParallelBranch(): Promise<IProcessTokenFacade> {
     const processToken: any = new Runtime.Types.ProcessToken();
 
-    const processTokenFascade: any = new ProcessTokenFascade(processToken);
+    const processTokenFacade: any = new ProcessTokenFacade(processToken);
     const allResults: Array<IProcessTokenResult> = await this.getAllResults();
-    await processTokenFascade.importResults(allResults);
+    await processTokenFacade.importResults(allResults);
 
-    return processTokenFascade;
+    return processTokenFacade;
   }
 
-  public async mergeTokenHistory(processTokenToMerge: IProcessTokenFascade): Promise<void> {
+  public async mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): Promise<void> {
     const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
