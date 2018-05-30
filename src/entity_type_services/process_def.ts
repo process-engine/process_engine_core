@@ -11,13 +11,12 @@ import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   Definitions, IImportFromFileOptions, IImportFromXmlOptions,
   IModelParser, IParamImportFromFile, IParamImportFromXml,
-  IParamStart, IProcessDefEntity, IProcessDefEntityTypeService, IProcessRepository,
+  IParamStart, IProcessDefEntity, IProcessDefEntityTypeService, IProcessEngineStorageService, IProcessRepository,
 } from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
-import { IProcessEngineStorageService } from '../../dist';
 
 // tslint:disable:cyclomatic-complexity
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
