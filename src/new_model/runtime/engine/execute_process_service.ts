@@ -76,7 +76,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                                              processModelFascade,
                                                                              executionContextFascade);
 
-    if (nextFlowNodeInfo.flowNode !== null) {
+    if (nextFlowNodeInfo.flowNode) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFascade, processModelFascade, executionContextFascade);
     }
   }

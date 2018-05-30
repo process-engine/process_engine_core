@@ -50,7 +50,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BpmnType.serviceTask:
         return this._createHandler<TFlowNode>('ServiceTaskHandler');
       case BpmnType.scriptTask:
-        return this._createHandler<TFlowNode>('ErrorBoundaryEventHandler');
+        return this._createHandler<TFlowNode>('ScriptTaskHandler');
       case BpmnType.intermediateCatchEvent:
         return this._createHandler<TFlowNode>('IntermediateCatchEventHandler');
       case BpmnType.intermediateThrowEvent:
