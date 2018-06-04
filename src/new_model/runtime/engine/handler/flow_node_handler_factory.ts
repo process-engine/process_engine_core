@@ -21,10 +21,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   }
 
   public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
-                                                             processModelFascade: IProcessModelFacade): Promise<IFlowNodeHandler<TFlowNode>> {
+                                                             processModelFacade: IProcessModelFacade): Promise<IFlowNodeHandler<TFlowNode>> {
     const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode.bpmnType);
 
-    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFascade.getBoundaryEventsFor(flowNode);
+    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
     if (boundaryEvents.length === 0) {
       return flowNodeHandler;
@@ -33,7 +33,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     // the original FlowNodeHandler created above will now be decorated by one handler for each BoundaryEvent that is attached to the FlowNode
     // as a result, the `execute`-method will be called on the topmost decorated BoundaryEventHandler
     // the BoundaryEventHandler will then pass the `execute`-call down to the next BoundaryEventHandler until the original FlowNodeHandler is called
-    return this._decorateWithBoundaryEventHandlers(boundaryEvents, processModelFascade, flowNodeHandler);
+    return this._decorateWithBoundaryEventHandlers(boundaryEvents, flowNodeHandler);
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
@@ -69,7 +69,6 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   }
 
   private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(boundaryEvents: Array<Model.Events.BoundaryEvent>,
-                                                                                          processModelFascade: IProcessModelFacade,
                                                                                           handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>)
                                                                                           : Promise<IFlowNodeHandler<TFlowNode>> {
 
@@ -114,13 +113,21 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   private _getEventDefinitionType(boundaryEventNode: Model.Events.BoundaryEvent): BoundaryEventDefinitionType {
     if (boundaryEventNode.errorEventDefinition) {
       return BoundaryEventDefinitionType.Error;
-    } else if (boundaryEventNode.messageEventDefinition) {
+    }
+
+    if (boundaryEventNode.messageEventDefinition) {
       return BoundaryEventDefinitionType.Message;
-    } else if (boundaryEventNode.signalEventDefinition) {
+    }
+
+    if (boundaryEventNode.signalEventDefinition) {
       return BoundaryEventDefinitionType.Signal;
-    } else if (boundaryEventNode.timerEventDefinition) {
+    }
+
+    if (boundaryEventNode.timerEventDefinition) {
       return BoundaryEventDefinitionType.Timer;
     }
+
+    return undefined;
   }
 
   private _orderBoundaryEventsByPriority(boundaryEvents: Array<Model.Events.BoundaryEvent>): void {
@@ -135,7 +142,9 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
       if (eventAType < eventBType) {
         return -1;
-      } else if (eventAType > eventBType) {
+      }
+
+      if (eventAType > eventBType) {
         return 1;
       }
 

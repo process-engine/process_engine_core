@@ -2,8 +2,8 @@ import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contr
 import { IInvoker } from '@essential-projects/invocation_contracts';
 import { ConsumerContext, IConsumerApiService, ICorrelationResult, ProcessModel,
   ProcessStartRequestPayload, ProcessStartResponsePayload, StartCallbackType} from '@process-engine/consumer_api_contracts';
-// tslint:disable-next-line:max-line-length
-import { IExecuteProcessService, IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
+import { IExecuteProcessService, IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade,
+  Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
@@ -19,10 +19,10 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return this._consumerApiService;
   }
 
-  protected async executeIntern(callActivityNode: Model.Activities.CallActivity,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const encryptedToken: string = await executionContextFacade.getIdentityToken();
 

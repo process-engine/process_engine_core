@@ -1,4 +1,3 @@
-// tslint:disable:max-line-length
 import {ExecutionContext, IIamService} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
@@ -8,6 +7,12 @@ import {FlowNodeHandler} from './index';
 
 import * as moment from 'moment';
 import * as uuid from 'uuid';
+
+enum TimerBpmnType {
+  Duration = 'bpmn:timeDuration',
+  Cycle = 'bpmn:timeCycle',
+  Date = 'bpmn:timeDate',
+}
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNode> {
   private _timingService: ITimingService;
@@ -42,10 +47,10 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
     return this._decoratedHandler;
   }
 
-  protected async executeIntern(flowNode: Model.Base.FlowNode,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise < NextFlowNodeInfo > {
+  protected async executeInternally(flowNode: Model.Base.FlowNode,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise < NextFlowNodeInfo > {
 
     return new Promise < NextFlowNodeInfo > (async(resolve: Function, reject: Function): Promise < NextFlowNodeInfo > => {
 
@@ -79,7 +84,10 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
         timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode,
+                                                                                       processTokenFacade,
+                                                                                       processModelFacade,
+                                                                                       executionContextFacade);
 
         if (timerHasElapsed) {
           return;
@@ -129,13 +137,13 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
   }
 
   private _parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
-    if (eventDefinition['bpmn:timeDuration']) {
+    if (eventDefinition[TimerBpmnType.Duration]) {
       return TimerDefinitionType.duration;
     }
-    if (eventDefinition['bpmn:timeCycle']) {
+    if (eventDefinition[TimerBpmnType.Cycle]) {
       return TimerDefinitionType.cycle;
     }
-    if (eventDefinition['bpmn:timeDate']) {
+    if (eventDefinition[TimerBpmnType.Date]) {
       return TimerDefinitionType.date;
     }
 
@@ -143,14 +151,14 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
   }
 
   private _parseTimerDefinitionValue(eventDefinition: any): string {
-    if (eventDefinition['bpmn:timeDuration']) {
-      return eventDefinition['bpmn:timeDuration']._;
+    if (eventDefinition[TimerBpmnType.Duration]) {
+      return eventDefinition[TimerBpmnType.Duration]._;
     }
-    if (eventDefinition['bpmn:timeCycle']) {
-      return eventDefinition['bpmn:timeCycle']._;
+    if (eventDefinition[TimerBpmnType.Cycle]) {
+      return eventDefinition[TimerBpmnType.Cycle]._;
     }
-    if (eventDefinition['bpmn:timeDate']) {
-      return eventDefinition['bpmn:timeDate']._;
+    if (eventDefinition[TimerBpmnType.Date]) {
+      return eventDefinition[TimerBpmnType.Date]._;
     }
 
     return undefined;

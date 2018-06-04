@@ -538,7 +538,7 @@ export class ProcessEngineService implements IProcessEngineService {
     const process: Model.Types.Process = await this.processEngineStorageService.getProcess(key);
 
     if (!process) {
-      throw new Error(`couldn't execute process: no process with id "${id}" was found`);
+      throw new Error(`couldn't execute process: no process with id "${key}" was found`);
     }
 
     return this._executeProcessLocally(context, process, initialToken);

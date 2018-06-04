@@ -4,10 +4,10 @@ import { FlowNodeHandler } from './flow_node_handler';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-  protected async executeIntern(flowNode: Model.Gateways.ExclusiveGateway,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(flowNode: Model.Gateways.ExclusiveGateway,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);

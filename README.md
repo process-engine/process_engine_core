@@ -47,7 +47,7 @@ entire process token history.
 
 It performs the following tasks:
 * store each FlowNode execution result, using the `addResultForFlowNode` method.
-* split process tokens, using `getProcessTokenFascadeForParallelBranch`
+* split process tokens, using `getProcessTokenFacadeForParallelBranch`
 * merge process tokens, using `mergeTokenHistory`
 * For backwards compatibility:
   * get a process token in the old format, using `getOldTokenFormat`

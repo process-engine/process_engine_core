@@ -43,7 +43,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
 
-    const processToken: Runtime.Types.ProcessToken = this._createProcessToken(context);
+    const processToken: Runtime.Types.ProcessToken = new Runtime.Types.ProcessToken();
     const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processToken);
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
@@ -94,7 +94,4 @@ export class ExecuteProcessService implements IExecuteProcessService {
     this.messageBusService.publish(`/processengine/process/${processInstance.processInstanceId}`, processEndMessage);
   }
 
-  private _createProcessToken(context: ExecutionContext): Runtime.Types.ProcessToken {
-    return new Runtime.Types.ProcessToken();
-  }
 }

@@ -24,10 +24,10 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     return this._invoker;
   }
 
-  protected async executeIntern(serviceTaskNode: Model.Activities.ServiceTask,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
@@ -39,8 +39,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
-      // tslint:disable-next-line:max-line-length
-      const argumentsToPassThrough: Array<any> = (new Function('context', 'token', `return ${invocation.params}`)).call(tokenData, context, tokenData) || [];
+      const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
+      const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, context, tokenData) || [];
 
       const serviceMethod: Function = serviceInstance[invocation.method];
 

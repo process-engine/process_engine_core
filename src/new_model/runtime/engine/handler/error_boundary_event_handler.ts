@@ -15,10 +15,10 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     return this._decoratedHandler;
   }
 
-  protected async executeIntern(flowNode: Model.Events.BoundaryEvent,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
     try {
 
       const nextFlowNodeInfo: NextFlowNodeInfo

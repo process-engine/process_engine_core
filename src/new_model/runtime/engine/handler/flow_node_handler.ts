@@ -33,10 +33,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return nextFlowNode;
   }
 
-  protected async abstract executeIntern(flowNode: TFlowNode,
-                                         processTokenFacade: IProcessTokenFacade,
-                                         processModelFacade: IProcessModelFacade,
-                                         executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;
+  protected async abstract executeInternally(flowNode: TFlowNode,
+                                             processTokenFacade: IProcessTokenFacade,
+                                             processModelFacade: IProcessModelFacade,
+                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;
 
   private async afterExecute(flowNode: TFlowNode,
                              nextFlowNode: Model.Base.FlowNode,

@@ -26,10 +26,10 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     return this._flowNodeHandlerFactory;
   }
 
-  protected async executeIntern(subProcessNode: Model.Activities.SubProcess,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(subProcessNode: Model.Activities.SubProcess,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,
     // but results of the SubProcess are not accessible by the original Process before the SubProcess finishes.

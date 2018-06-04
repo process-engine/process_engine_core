@@ -5,13 +5,13 @@ import { FlowNodeHandler } from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
-  protected async executeIntern(scriptTask: Model.Activities.ScriptTask,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(scriptTask: Model.Activities.ScriptTask,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const script: string = scriptTask.script;
-    const context: ExecutionContext = undefined; // TODO: context needed
+    const context: ExecutionContext = executionContextFacade.getExecutionContext();
 
     if (!script) {
       return undefined;
