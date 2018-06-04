@@ -2,6 +2,7 @@ import {
   BpmnTags,
   Definitions,
   IModelParser,
+  IParsedObjectModel,
   Model,
 } from '@process-engine/process_engine_contracts';
 
@@ -37,40 +38,16 @@ export class BpmnModelParser implements IModelParser {
 
   public async parseXmlToObjectModel(xml: string): Promise<Definitions> {
 
-    const definitions: any = await this._xmlParserFunc(xml);
+    const parsedObjectModel: IParsedObjectModel = await this._parseObjectModel(xml);
+    const definitions: Definitions = Parser.parseDefinitions(parsedObjectModel);
 
-    return this._convertToInternalObjectModel(definitions[BpmnTags.CommonElement.Definitions]);
+    return definitions;
   }
 
-  private _convertToInternalObjectModel(parsedXml: any): Definitions {
+  private async _parseObjectModel(xml: string): Promise<IParsedObjectModel> {
+    const parsedXml: any = await this._xmlParserFunc(xml);
 
-    const definition: Definitions = this._createDefinitionBaseObject(parsedXml);
-
-    definition.collaboration = Parser.parseCollaboration(parsedXml);
-    definition.processes = Parser.parseProcesses(parsedXml);
-
-    return definition;
-  }
-
-  private _createDefinitionBaseObject(parsedXml: any): Definitions {
-
-    const basicDefinition: Definitions = new Definitions();
-
-    basicDefinition.id = parsedXml.id;
-    basicDefinition.xmlns = {
-      bpmn: parsedXml[BpmnTags.XmlnsProperty.bpmn],
-      bpmndi: parsedXml[BpmnTags.XmlnsProperty.bpmndi],
-      camunda: parsedXml[BpmnTags.XmlnsProperty.camunda],
-      dc: parsedXml[BpmnTags.XmlnsProperty.dc],
-      di: parsedXml[BpmnTags.XmlnsProperty.di],
-      xsi: parsedXml[BpmnTags.XmlnsProperty.xsi],
-    };
-
-    basicDefinition.targetNamespace = parsedXml.targetNamespace;
-    basicDefinition.exporter = parsedXml.exporter;
-    basicDefinition.exporterVersion = parsedXml.exporterVersion;
-
-    return basicDefinition;
+    return parsedXml;
   }
 
 }

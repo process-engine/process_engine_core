@@ -1,15 +1,15 @@
 
-import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
+import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/process_engine_contracts';
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
 } from './../type_factory';
 import * as Parser from './index';
 
-export function parseProcesses(data: any): Array<Model.Types.Process> {
+export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Process> {
 
   // NOTE: See above, this can be an Object or an Array.
-  const processData: Array<any> = getModelPropertyAsArray(data, BpmnTags.CommonElement.Process);
+  const processData: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
 
   const processes: Array<Model.Types.Process> = [];
 

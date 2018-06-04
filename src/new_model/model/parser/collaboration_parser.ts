@@ -1,14 +1,14 @@
-import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
+import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/process_engine_contracts';
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
 } from './../type_factory';
 
-export function parseCollaboration(data: any): Model.Types.Collaboration {
+export function parseCollaboration(parsedObjectModel: IParsedObjectModel): Model.Types.Collaboration {
 
-  const collaborationData: any = data[BpmnTags.CommonElement.Collaboration];
+  const collaborationData: any = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
 
-  const collaboration: Model.Types.Collaboration = createObjectWithCommonProperties(data, Model.Types.Collaboration);
+  const collaboration: Model.Types.Collaboration = createObjectWithCommonProperties(parsedObjectModel, Model.Types.Collaboration);
 
   collaboration.participants = getCollaborationParticipants(collaborationData);
 
