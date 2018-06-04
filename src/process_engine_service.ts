@@ -599,54 +599,9 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private async _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any): Promise<any> {
-    // return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
+    const tokenResult: any = await this._executeProcessService.start(context, process, initialToken);
 
-      // const processInstance: IProcessEntity = await processDefinition.createProcessInstance(context);
-      // const processInstanceChannel: string = `/processengine/process/${processInstance.id}`;
-
-      // const processEndSubscription: IMessageSubscription = await this.messageBusService.subscribe(processInstanceChannel, (message: IDataMessage) => {
-
-      //   if (message.data.event === 'error') {
-
-      //     if (!this.errorDeserializer) {
-      //       throw new Error('error deserializer not found.');
-      //     }
-
-      //     let finalError: any;
-
-      //     if (message.data.data.serializedError) {
-      //       finalError = this.errorDeserializer(message.data.data.serializedError);
-      //     } else {
-      //       finalError = message.data.data.error;
-      //     }
-
-      //     reject(finalError);
-      //     processEndSubscription.cancel();
-
-      //     return;
-      //   }
-
-      //   if (message.data.event === 'terminate') {
-      //     debugErr(`Unexpected process termination through TerminationEndEvent '${message.data.endEventKey}'!`);
-
-      //     return reject(new Error(`The process was terminated through the '${message.data.endEventKey}' TerminationEndEvent!`));
-      //   }
-
-      //   if (message.data.event !== 'end') {
-      //     return;
-      //   }
-
-      //   resolve(message.data.token);
-      //   processEndSubscription.cancel();
-      // });
-
-      // await this.invoker.invoke(processInstance, 'start', undefined, context, context, {
-      //   initialToken: initialToken,
-      // });
-      const tokenResult: any = await this._executeProcessService.start(context, process, initialToken);
-
-      return tokenResult;
-    // });
+    return tokenResult;
   }
 
   private _executeProcessInstanceLocally(context: ExecutionContext,

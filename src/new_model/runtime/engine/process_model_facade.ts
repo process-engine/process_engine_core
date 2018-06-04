@@ -68,6 +68,8 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   // TODO: support of new Split Gateway in Branch
+  //       currently the next Parallel Gateway is always taken as the Parallel Join Gateway
+  //       we still need an integration test with multiple parallel branches to fully implement this
   public getJoinGatewayFor(parallelGatewayNode: Model.Gateways.ParallelGateway): Model.Gateways.ParallelGateway {
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getIncomingSequenceFlowsFor(parallelGatewayNode.id);

@@ -8,7 +8,6 @@ import * as Parser from './index';
 
 export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Process> {
 
-  // NOTE: See above, this can be an Object or an Array.
   const processData: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
 
   const processes: Array<Model.Types.Process> = [];
@@ -33,8 +32,6 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
 // TODO: The following elements are not supported yet:
 // - Text annotations
 // - Associations
-// - Intermediate Catch- & Throw- Events of any kind
-// - Subprocess
 export function parseProcessFlowNodes(processData: any): Array<Model.Base.FlowNode> {
 
   let nodes: Array<Model.Base.FlowNode> = [];
