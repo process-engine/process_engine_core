@@ -53,8 +53,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const resultToken: any = await processTokenFacade.getOldTokenFormat();
 
+    await this._end(processInstance, resultToken, context);
+
     return resultToken.current;
-    // await this._end(processInstance, resultToken, context);
   }
 
   private _createProcessInstance(processDefinition: Model.Types.Process): Runtime.Types.ProcessInstance {
@@ -86,7 +87,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                      context: ExecutionContext): Promise<void> {
     const processEndMessageData: any = {
       event: 'end',
-      token: processToken.data.current,
+      token: processToken.current,
     };
 
     const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
