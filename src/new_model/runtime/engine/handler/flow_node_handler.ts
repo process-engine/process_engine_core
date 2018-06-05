@@ -13,7 +13,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     try {
 
-      // executeIntern is the method where derived handlers can implement their logic
+      // executeInternally is the method where derived handlers can implement their logic
       nextFlowNode = await this.executeInternally(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
 
     } catch (error) {
