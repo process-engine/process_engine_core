@@ -18,3 +18,4 @@ export * from './subprocess_external';
 export * from './subprocess_internal';
 export * from './throw_event';
 export * from './catch_event';
+export * from './bpmn_process';

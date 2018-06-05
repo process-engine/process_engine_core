@@ -6,6 +6,10 @@ import {
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
+import {parseProcessFlowNodes} from './flow_node_parser';
+import {parseProcessLaneSet} from './process_lane_set_parser';
+import {parseProcessSequenceFlows} from './sequence_flow_parser';
+
 import * as moment from 'moment';
 
 export function parseActivitiesFromProcessData(processData: any): Array<Model.Activities.Activity> {
@@ -15,8 +19,14 @@ export function parseActivitiesFromProcessData(processData: any): Array<Model.Ac
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
+  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData);
 
-  return Array.prototype.concat(manualTasks, scriptTasks, serviceTasks, userTasks, callActivities);
+  return Array.prototype.concat(manualTasks,
+                                scriptTasks,
+                                serviceTasks,
+                                userTasks,
+                                callActivities,
+                                subProcesses);
 }
 
 function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
@@ -216,6 +226,29 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   }
 
   return callActivities;
+}
+
+function parseSubProcesses(processData: any): Array<Model.Activities.SubProcess> {
+
+  const subProcesses: Array<Model.Activities.SubProcess> = [];
+
+  const subProcessesRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SubProcess);
+
+  if (!subProcessesRaw || subProcessesRaw.length === 0) {
+    return [];
+  }
+
+  for (const subProcessRaw of subProcessesRaw) {
+    const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
+
+    subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
+    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw);
+    subProcess.sequenceFlows = parseProcessSequenceFlows(subProcessRaw);
+
+    subProcesses.push(subProcess);
+  }
+
+  return subProcesses;
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {
