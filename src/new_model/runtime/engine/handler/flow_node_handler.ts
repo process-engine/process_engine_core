@@ -14,7 +14,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     try {
 
       // executeIntern is the method where derived handlers can implement their logic
-      nextFlowNode = await this.executeIntern(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
+      nextFlowNode = await this.executeInternally(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
