@@ -33,7 +33,7 @@ The factory is build to prevent such conflicts. However, the original `FlowNodeH
 
 ## FlowNodeHandler
 
-The FlowNodeHandler is the base class for all handlers. It provides an abstract `executeIntern`-method for the derived handler to implement its logic.
+The FlowNodeHandler is the base class for all handlers. It provides an abstract `executeInternally`-method for the derived handler to implement its logic.
 
 The base class also offers a private hook `afterExecute` that is executed after each FlowNode execution, that is not exposed to derived classes.
 It can be used to perform tasks like saving progress or exporting metrics (things that are done identically for all FlowNodeHandlers).
