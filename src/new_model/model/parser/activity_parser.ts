@@ -6,8 +6,9 @@ import {
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
+import {parseProcessFlowNodes} from './flow_node_parser';
 import {parseProcessLaneSet} from './process_lane_set_parser';
-import {parseProcessFlowNodes, parseProcessSequenceFlows} from './process_parser';
+import {parseProcessSequenceFlows} from './sequence_flow_parser';
 
 import * as moment from 'moment';
 
