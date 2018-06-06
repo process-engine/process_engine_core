@@ -39,29 +39,29 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
     const extensions: any = this.nodeDef.extensions || null;
     const props: any = (extensions && extensions.properties) ? extensions.properties : null;
     if (props) {
-      let serviceModule: string;
-      let serviceMethod: string;
       let namespace: string;
-      let paramString: string;
+      let moduleName: string;
+      let methodName: string;
+      let parametersAsString: string;
 
       props.forEach((prop: any) => {
-        if (prop.name === 'module') {
-          serviceModule = <string> this.parseExtensionProperty(prop.value, tokenData, context);
-        }
-        if (prop.name === 'method') {
-          serviceMethod = <string> this.parseExtensionProperty(prop.value, tokenData, context);
-        }
-        if (prop.name === 'params') {
-          paramString = <string> this.parseExtensionProperty(prop.value, tokenData, context);
-        }
         if (prop.name === 'namespace') {
           namespace = <string> this.parseExtensionProperty(prop.value, tokenData, context);
         }
+        if (prop.name === 'module') {
+          moduleName = <string> this.parseExtensionProperty(prop.value, tokenData, context);
+        }
+        if (prop.name === 'method') {
+          methodName = <string> this.parseExtensionProperty(prop.value, tokenData, context);
+        }
+        if (prop.name === 'params') {
+          parametersAsString = <string> this.parseExtensionProperty(prop.value, tokenData, context);
+        }
       });
 
-      if (serviceModule && serviceMethod) {
+      if (moduleName && methodName) {
 
-        const serviceInstance: any = await this.container.resolveAsync(serviceModule);
+        const serviceInstance: any = await this.container.resolveAsync(moduleName);
 
         let result: any;
 
@@ -71,10 +71,10 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
             this.triggerEvent(context, 'data', data);
           };
 
-          const serviceTaskFunc: Function = new Function('context', 'token', 'callback', `return ${paramString}`);
-          const argumentsToPassThrough: any = serviceTaskFunc.call(tokenData, context, tokenData, dataEventTriggerCallback) || [];
+          const getArgsFunction: Function = new Function('context', 'token', 'callback', `return ${parametersAsString}`);
+          const argumentsToPassThrough: any = getArgsFunction.call(tokenData, context, tokenData, dataEventTriggerCallback) || [];
 
-          result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
+          result = await this.invoker.invoke(serviceInstance, methodName, namespace, context, ...argumentsToPassThrough);
 
         } catch (err) {
           result = err;
