@@ -28,23 +28,16 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
     this.setProperty(this, 'script', value);
   }
 
-  public async execute(context): Promise<void> {
+  public async execute(context: ExecutionContext): Promise<void> {
     this.state = 'progress';
 
-    const processToken = this.processToken;
+    const tokenData: any = this.processToken.data || {};
+    let continueEnd: boolean = true;
+    let result: any;
 
-    const tokenData = processToken.data || {};
-    let continueEnd = true;
-    let result;
-
-    // call service
-    const nodeDef = this.nodeDef;
-
-    const script = nodeDef.script;
-
-    if (script) {
+    if (this.nodeDef.script) {
       try {
-        const scriptFunction = new Function('token', 'context', script);
+        const scriptFunction: Function = new Function('token', 'context', this.nodeDef.script);
         result = await scriptFunction.call(this, tokenData, context);
       } catch (err) {
         result = err;
@@ -52,7 +45,7 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
         this.error(context, err);
       }
 
-      let finalResult = result;
+      let finalResult: any = result;
       const toPojoOptions: IToPojoOptions = { skipCalculation: true };
       if (result && typeof result.toPojos === 'function') {
         finalResult = await result.toPojos(context, toPojoOptions);
@@ -61,7 +54,7 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
       }
 
       tokenData.current = finalResult;
-      processToken.data = tokenData;
+      this.processToken.data = tokenData;
     }
 
     if (continueEnd) {
