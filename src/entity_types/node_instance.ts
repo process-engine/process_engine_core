@@ -273,11 +273,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     this.eventAggregator.publish(`/processengine/node/${this.id}`, event);
   }
 
-  public error(context: ExecutionContext, error: any): void {
-    logger.error(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
-    this.triggerEvent(context, 'error', error);
-  }
-
   public async wait(context: ExecutionContext): Promise<void> {
     // logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
@@ -301,6 +296,11 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async proceed(context: ExecutionContext, data: any, source: IEntity, applicationId: string, participant: string): Promise<void> {
     // by default do nothing, implementation should be overwritten by child class
+  }
+
+  public async error(context: ExecutionContext, error: any): Promise<void> {
+    logger.error(`node error, id ${this.id}, key ${this.key}, type ${this.type}, ${error}`);
+    this.triggerEvent(context, 'error', error);
   }
 
   public triggerEvent(context: ExecutionContext, eventType: string, data: any): void {
@@ -670,7 +670,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     } else if (isTerminateEndEvent) {
       await this.process.terminate(context, processToken, this.key);
-    } else if (isEndEvent) {
+    } else {
       await this.process.end(context, processToken, this.key);
     }
   }

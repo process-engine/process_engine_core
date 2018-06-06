@@ -10,9 +10,9 @@ import {
 import {
   Entity,
   EntityDependencyHelper,
+  IDatastoreService,
   IEntityType,
-  IDatastoreService ,
-  IPropertyBag
+  IPropertyBag,
 } from '@essential-projects/data_model_contracts';
 
 import { IDataMessage, IEntityMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';

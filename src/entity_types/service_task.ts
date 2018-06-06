@@ -28,55 +28,53 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
     await super.initialize(this);
   }
 
+  // tslint:disable-next-line:cyclomatic-complexity
   public async execute(context: ExecutionContext): Promise<void> {
     this.state = 'progress';
 
-    const processToken = this.processToken;
-    const tokenData = processToken.data || {};
-    let continueEnd = true;
+    const tokenData: any = this.processToken.data || {};
+    let continueEnd: boolean = true;
 
     // call service
-    const nodeDef = this.nodeDef;
-    const extensions = nodeDef.extensions || null;
-    const props = (extensions && extensions.properties) ? extensions.properties : null;
+    const extensions: any = this.nodeDef.extensions || null;
+    const props: any = (extensions && extensions.properties) ? extensions.properties : null;
     if (props) {
-      let serviceModule;
-      let serviceMethod;
-      let namespace;
-      let paramString;
+      let namespace: string;
+      let moduleName: string;
+      let methodName: string;
+      let parametersAsString: string;
 
-      props.forEach((prop) => {
-        if (prop.name === 'module') {
-          serviceModule = <string> this.parseExtensionProperty(prop.value, tokenData, context);
-        }
-        if (prop.name === 'method') {
-          serviceMethod = <string> this.parseExtensionProperty(prop.value, tokenData, context);
-        }
-        if (prop.name === 'params') {
-          paramString = <string> this.parseExtensionProperty(prop.value, tokenData, context);
-        }
+      props.forEach((prop: any) => {
         if (prop.name === 'namespace') {
           namespace = <string> this.parseExtensionProperty(prop.value, tokenData, context);
         }
+        if (prop.name === 'module') {
+          moduleName = <string> this.parseExtensionProperty(prop.value, tokenData, context);
+        }
+        if (prop.name === 'method') {
+          methodName = <string> this.parseExtensionProperty(prop.value, tokenData, context);
+        }
+        if (prop.name === 'params') {
+          parametersAsString = <string> this.parseExtensionProperty(prop.value, tokenData, context);
+        }
       });
 
-      if (serviceModule && serviceMethod) {
+      if (moduleName && methodName) {
 
-        const serviceInstance = await this.container.resolveAsync(serviceModule);
+        const serviceInstance: any = await this.container.resolveAsync(moduleName);
 
-        let result;
+        let result: any;
 
         try {
 
-          const self = this;
-
-          const cb = function(data) {
-            self.triggerEvent(context, 'data', data);
+          const dataEventTriggerCallback: Function = (data: any): void => {
+            this.triggerEvent(context, 'data', data);
           };
 
-          const argumentsToPassThrough = (new Function('context', 'token', 'callback', 'return ' + paramString)).call(tokenData, context, tokenData, cb) || [];
+          const getArgsFunction: Function = new Function('context', 'token', 'callback', `return ${parametersAsString}`);
+          const argumentsToPassThrough: any = getArgsFunction.call(tokenData, context, tokenData, dataEventTriggerCallback) || [];
 
-          result = await this.invoker.invoke(serviceInstance, serviceMethod, namespace, context, ...argumentsToPassThrough);
+          result = await this.invoker.invoke(serviceInstance, methodName, namespace, context, ...argumentsToPassThrough);
 
         } catch (err) {
           result = err;
@@ -84,7 +82,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
           this.error(context, err);
         }
 
-        let finalResult = result;
+        let finalResult: any = result;
         const toPojoOptions: IToPojoOptions = { skipCalculation: true };
         if (result && typeof result.toPojos === 'function') {
           finalResult = await result.toPojos(context, toPojoOptions);
@@ -93,7 +91,7 @@ export class ServiceTaskEntity extends NodeInstanceEntity implements IServiceTas
         }
 
         tokenData.current = finalResult;
-        processToken.data = tokenData;
+        this.processToken.data = tokenData;
       } else {
         continueEnd = false;
         this.error(context, new Error('missing extensions properties'));

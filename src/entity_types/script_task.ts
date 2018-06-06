@@ -28,45 +28,49 @@ export class ScriptTaskEntity extends NodeInstanceEntity implements IScriptTaskE
     this.setProperty(this, 'script', value);
   }
 
-  public async execute(context): Promise<void> {
+  public async execute(context: ExecutionContext): Promise<void> {
     this.state = 'progress';
 
-    const processToken = this.processToken;
+    let continueToEnd: boolean = true;
+    let result: any;
 
-    const tokenData = processToken.data || {};
-    let continueEnd = true;
-    let result;
-
-    // call service
-    const nodeDef = this.nodeDef;
-
-    const script = nodeDef.script;
-
-    if (script) {
+    if (this.nodeDef.script) {
       try {
-        const scriptFunction = new Function('token', 'context', script);
-        result = await scriptFunction.call(this, tokenData, context);
+        result = await this._executeScript(context);
       } catch (err) {
         result = err;
-        continueEnd = false;
+        continueToEnd = false;
         this.error(context, err);
       }
 
-      let finalResult = result;
-      const toPojoOptions: IToPojoOptions = { skipCalculation: true };
-      if (result && typeof result.toPojos === 'function') {
-        finalResult = await result.toPojos(context, toPojoOptions);
-      } else if (result && typeof result.toPojo === 'function') {
-        finalResult = await result.toPojo(context, toPojoOptions);
-      }
-
-      tokenData.current = finalResult;
-      processToken.data = tokenData;
+      this.processToken.data.current = await this._transformScriptTaskResultToPojo(context, result);
     }
 
-    if (continueEnd) {
+    if (continueToEnd) {
       this.changeState(context, 'end', this);
     }
+  }
 
+  private async _executeScript(context: ExecutionContext): Promise<any> {
+    const tokenData: any = this.processToken.data || {};
+
+    const scriptFunction: Function = new Function('token', 'context', this.nodeDef.script);
+    const result: any = await scriptFunction.call(this, tokenData, context);
+
+    return result;
+  }
+
+  private async _transformScriptTaskResultToPojo(context: ExecutionContext, result: any): Promise<any> {
+
+    let transformedResult: any = result;
+
+    const toPojoOptions: IToPojoOptions = { skipCalculation: true };
+    if (result && typeof result.toPojos === 'function') {
+      transformedResult = await result.toPojos(context, toPojoOptions);
+    } else if (result && typeof result.toPojo === 'function') {
+      transformedResult = await result.toPojo(context, toPojoOptions);
+    }
+
+    return transformedResult;
   }
 }
