@@ -2,7 +2,13 @@ import { ExecutionContext } from '@essential-projects/core_contracts';
 import { BpmnType, IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade,
   IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 
+import * as uuid from 'uuid';
+
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
+
+  protected createFlowNodeInstanceId(): string {
+    return uuid.v4();
+  }
 
   public async execute(flowNode: TFlowNode,
                        processTokenFacade: IProcessTokenFacade,

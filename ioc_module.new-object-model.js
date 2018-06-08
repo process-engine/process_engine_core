@@ -15,10 +15,13 @@ const IntermediateThrowEventHandler = require('./dist/commonjs/index').Intermedi
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
 const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
+const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 
 const ProcessEngineStorageService = require('./dist/commonjs/index').ProcessEngineStorageService;
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+
+const FlowNodeInstancePersistance = require('./dist/commonjs/index').FlowNodeInstancePersistance;
 
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
@@ -27,6 +30,9 @@ function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'DatastoreService', 'MessageBusService');
+
+  container.register('FlowNodeInstancePersistance', FlowNodeInstancePersistance)
+    .singleton();
 
   container.register('BpmnModelParser', BpmnModelParser);
 
@@ -39,6 +45,9 @@ function registerInContainer(container) {
 
   container.register('CallActivityHandler', CallActivityHandler)
     .dependencies('ConsumerApiService');
+
+  container.register('UserTaskHandler', UserTaskHandler)
+    .dependencies('FlowNodeInstancePersistance');
 
   container.register('SubProcessHandler', SubProcessHandler)
     .dependencies('FlowNodeHandlerFactory');

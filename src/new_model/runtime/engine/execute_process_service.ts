@@ -35,7 +35,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._messageBusService;
   }
 
-  public async start(context: ExecutionContext, process: Model.Types.Process, initialToken?: any): Promise<any> {
+  public async start(context: ExecutionContext, process: Model.Types.Process, correlationId: string, initialToken?: any): Promise<any> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(process);
 
@@ -43,8 +43,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
 
-    const processToken: Runtime.Types.ProcessToken = new Runtime.Types.ProcessToken();
-    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processToken);
+    // ein großes wow für den folgenden methodenaufruf
+    const identity: any = await context.getIdentity(context);
+    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstance.id, correlationId, identity);
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
     processTokenFacade.addResultForFlowNode(startEvent.id, initialToken);
@@ -60,7 +61,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private _createProcessInstance(processDefinition: Model.Types.Process): Runtime.Types.ProcessInstance {
     const processInstance: Runtime.Types.ProcessInstance = new Runtime.Types.ProcessInstance();
-    processInstance.processInstanceId = uuid.v4();
+    processInstance.id = uuid.v4();
 
     return processInstance;
   }
@@ -83,7 +84,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   }
 
   private async _end(processInstance: Runtime.Types.ProcessInstance,
-                     processToken: Runtime.Types.ProcessToken,
+                     processToken: any,
                      context: ExecutionContext): Promise<void> {
     const processEndMessageData: any = {
       event: 'end',
@@ -91,7 +92,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     };
 
     const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
-    this.messageBusService.publish(`/processengine/process/${processInstance.processInstanceId}`, processEndMessage);
+    this.messageBusService.publish(`/processengine/process/${processInstance.id}`, processEndMessage);
   }
 
 }
