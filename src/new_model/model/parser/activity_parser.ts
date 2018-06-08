@@ -68,9 +68,9 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return dateObj.toDate();
   }
 
-  function parseFormField(formFieldRaw: any): FormField {
+  function parseFormField(formFieldRaw: any): Model.Types.FormField {
 
-    const formField: FormField = new Model.Types.FormField();
+    const formField: Model.Types.FormField = new Model.Types.FormField();
 
     formField.id = formFieldRaw.id;
     formField.label = formFieldRaw.label;
@@ -80,7 +80,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return formField;
   }
 
-  function parseFormFields(userTaskRaw: any): Array<FormField> {
+  function parseFormFields(userTaskRaw: any): Array<Model.Types.FormField> {
 
     const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
     if (!extensionElements) {
@@ -97,10 +97,10 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
       return [];
     }
 
-    const formFields: Array<FormField> = [];
+    const formFields: Array<Model.Types.FormField> = [];
 
     for (const formFieldRaw of formFieldsRaw) {
-      const formField: FormField = parseFormField(formFieldRaw);
+      const formField: Model.Types.FormField = parseFormField(formFieldRaw);
       formFields.push(formField);
     }
 
