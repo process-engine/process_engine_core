@@ -68,6 +68,45 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return dateObj.toDate();
   }
 
+  function parseFormField(formFieldRaw: any): FormField {
+
+    const formField: FormField = new Model.Types.FormField();
+
+    formField.id = formFieldRaw.id;
+    formField.label = formFieldRaw.label;
+    formField.type = formFieldRaw.type;
+    formField.defaultValue = formFieldRaw.defaultValue;
+
+    return formField;
+  }
+
+  function parseFormFields(userTaskRaw: any): Array<FormField> {
+
+    const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
+    if (!extensionElements) {
+      return [];
+    }
+
+    const formDataRaw: any = extensionElements[BpmnTags.CamundaProperty.FormData];
+    if (!formDataRaw) {
+      return [];
+    }
+
+    const formFieldsRaw: any = getModelPropertyAsArray(formDataRaw, BpmnTags.CamundaProperty.FormField);
+    if (!formFieldsRaw) {
+      return [];
+    }
+
+    const formFields: Array<FormField> = [];
+
+    for (const formFieldRaw of formFieldsRaw) {
+      const formField: FormField = parseFormField(formFieldRaw);
+      formFields.push(formField);
+    }
+
+    return formFields;
+  }
+
   for (const userTaskRaw of userTasksRaw) {
     const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
 
@@ -76,6 +115,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTask.candidateGroups = userTaskRaw[BpmnTags.CamundaProperty.CandidateGroups];
     userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
+    userTask.formFields = parseFormFields(userTaskRaw);
 
     userTasks.push(userTask);
   }
