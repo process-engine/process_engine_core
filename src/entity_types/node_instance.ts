@@ -352,8 +352,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     // logger.verbose(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
 
-    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
-
     const map: Map<string, string> = new Map();
     map.set('error', 'bpmn:ErrorEventDefinition');
     map.set('cancel', 'bpmn:CancelEventDefinition');
@@ -400,7 +398,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
           await this._informProcessSubscribers(context, eventType, data);
         }
         await this._publishToApi(context, eventType, data);
-        await this.end(context, true);
+        await this.end(context, true, true);
       }
     }
 
@@ -614,7 +612,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     }
   }
 
-  public async end(context: ExecutionContext, cancelFlow: boolean = false): Promise<void> {
+  public async end(context: ExecutionContext, cancelFlow: boolean = false, isEndedByError: boolean = false): Promise<void> {
 
     const isEndEvent: boolean = this.type === BpmnType.endEvent;
     const isTerminateEndEvent: boolean = this.nodeDef.eventType === 'bpmn:TerminateEventDefinition';
@@ -670,7 +668,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
       }
     } else if (isTerminateEndEvent) {
       await this.process.terminate(context, processToken, this.key);
-    } else {
+    } else if (isEndEvent || isEndedByError) {
       await this.process.end(context, processToken, this.key);
     }
   }
@@ -689,7 +687,6 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
     }
 
     await this._updateToken(internalContext);
-    const processToken: IProcessTokenEntity = this.processToken;
 
     // cancel subscriptions
     this.eventAggregatorSubscription.dispose();
