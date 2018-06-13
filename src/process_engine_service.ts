@@ -530,7 +530,7 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
-  public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any, version?: string): Promise<any> {
+  public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any, version?: string, correlationId?: string): Promise<any> {
     if (id === undefined && key === undefined) {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
@@ -541,7 +541,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
     }
 
-    return this._executeProcessLocally(context, process, initialToken);
+    return this._executeProcessLocally(context, process, initialToken, correlationId);
   }
 
   public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, participantId: string, initialToken: any): Promise<any> {
@@ -598,8 +598,8 @@ export class ProcessEngineService implements IProcessEngineService {
     this._errorDeserializer = deserializer;
   }
 
-  private async _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any): Promise<any> {
-    const tokenResult: any = await this._executeProcessService.start(context, process, initialToken);
+  private async _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any, correlationId?: string): Promise<any> {
+    const tokenResult: any = await this._executeProcessService.start(context, process, correlationId, initialToken);
 
     return tokenResult;
   }

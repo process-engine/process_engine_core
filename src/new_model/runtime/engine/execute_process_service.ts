@@ -13,14 +13,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _datastoreService: IDatastoreService = undefined;
-  private _messageBusService: IMessageBusService;
+  private _messageBusService: IMessageBusService = undefined;
+  private _processEngineStorageService: IProcessEngineStorageService = undefined;
 
   constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               datastoreService: IDatastoreService,
-              messageBusService: IMessageBusService) {
+              messageBusService: IMessageBusService,
+              processEngineStorageService: IProcessEngineStorageService) {
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._datastoreService = datastoreService;
     this._messageBusService = messageBusService;
+    this._processEngineStorageService = processEngineStorageService;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
@@ -35,13 +38,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._messageBusService;
   }
 
+  private get processEngineStorageService(): IProcessEngineStorageService {
+    return this._processEngineStorageService;
+  }
+
   public async start(context: ExecutionContext, process: Model.Types.Process, correlationId: string, initialToken?: any): Promise<any> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(process);
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEvent();
 
-    const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process);
+    const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process, correlationId);
+
+    await this.processEngineStorageService.saveProcessInstance(processInstance);
 
     // ein großes wow für den folgenden methodenaufruf
     const identity: any = await context.getIdentity(context);
@@ -59,9 +68,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return resultToken.current;
   }
 
-  private _createProcessInstance(processDefinition: Model.Types.Process): Runtime.Types.ProcessInstance {
+  private _createProcessInstance(processDefinition: Model.Types.Process, correlationId: string): Runtime.Types.ProcessInstance {
     const processInstance: Runtime.Types.ProcessInstance = new Runtime.Types.ProcessInstance();
     processInstance.id = uuid.v4();
+    processInstance.correlationId = correlationId;
+    processInstance.processDefinition = processDefinition;
 
     return processInstance;
   }

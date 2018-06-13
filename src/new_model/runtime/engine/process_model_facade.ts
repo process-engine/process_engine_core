@@ -55,6 +55,45 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return startEventDef as Model.Events.StartEvent;
   }
 
+  // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
+  public getUserTasks(): Array<Model.Activities.UserTask> {
+
+    const userTaskFlowNodes: Model.Base.FlowNode = this.processDefinition.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof Model.Activities.UserTask;
+    });
+    
+    const laneUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(this.processDefinition.laneSet);
+
+    return [
+      ...userTaskFlowNodes,
+      ...laneUserTasks,
+    ];
+  }
+
+  // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
+  private _getUserTasksFromLaneRecursively(laneSet: Model.Types.LaneSet): Array<Model.Activities.UserTask> {
+    
+    const userTasks: Array<Model.Activities.UserTask> = [];
+    
+    if (!laneSet) {
+      return userTasks;
+    }
+
+    for (const lane of laneSet.lanes) {
+
+      const userTaskFlowNodes: Model.Base.FlowNode = lane.flowNodeReferences.filter((flowNode: Model.Base.FlowNode) => {
+        return flowNode instanceof Model.Activities.UserTask;
+      });
+
+      userTasks.push(userTaskFlowNodes);
+      
+      const childUserTasks = this._getUserTasksFromLaneRecursively(lane.childLaneSet);
+      userTasks.push(childUserTasks);
+    }
+
+    return userTasks;
+  }
+
   public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
     return this.processDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.targetRef === flowNodeId;

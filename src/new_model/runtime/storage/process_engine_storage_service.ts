@@ -7,6 +7,7 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
   private _datastoreService: IDatastoreService = undefined;
   private _iamService: IIamService = undefined;
   private _definitions: Array<Definitions> = [];
+  private _instances: Array<Runtime.Types.ProcessInstance> = [];
 
   constructor(datastoreService: IDatastoreService, iamService: IIamService) {
     this._datastoreService = datastoreService;
@@ -21,9 +22,21 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
     return this._iamService;
   }
 
+  private get definitions(): Array<Definitions> {
+    return this._definitions;
+  }
+
+  private get instances(): Array<Runtime.Types.ProcessInstance> {
+    return this._instances;
+  }
+
+  public async saveProcessInstance(processInstance: Runtime.Types.ProcessInstance): Promise<void> {
+    this.instances.push(processInstance);
+  }
+
   public async saveDefinitions(definitions: Definitions): Promise<void> {
 
-    this._definitions.push(definitions);
+    this.definitions.push(definitions);
 
     // TODO: rename this - ProcessEntity is already present in the old model
     // const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
@@ -45,6 +58,14 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
 
   }
 
+  public async getProcessInstancesForCorrelation(correlationId: string): Promise<Array<Runtime.Types.ProcessInstance>> {
+    const processInstancesForCorrelation: Array<Runtime.Types.ProcessInstance> = this.instances.filter((processInstance: Runtime.Types.ProcessInstance) => {
+      return processInstance.correlationId === correlationId;
+    });
+
+    return processInstancesForCorrelation;
+  }
+
   public async getProcess(processId: string): Promise<Model.Types.Process> {
 
     for (const definition of this._definitions) {
@@ -56,32 +77,5 @@ export class ProcessEngineStorageService implements IProcessEngineStorageService
         }
       }
     }
-
-    // TODO: rename this - ProcessEntity is already present in the old model
-    // const processEntityType = await this.datastoreService.getEntityType('BpmnProcess');
-    // const context = await this.iamService.createInternalContext('processengine_system');
-
-    // const queryOptions: IPrivateQueryOptions = {
-    //   query: {
-    //     attribute: 'processId',
-    //     operator: '=',
-    //     value: processId,
-    //   },
-    // };
-    // const processEntityCollection: any = await processEntityType.query(context, queryOptions);
-
-    // if (processEntityCollection.data.length === 0) {
-    //   throw new Error(`process with id "${processId}" not found`);
-    // }
-
-    // return processEntityCollection.data[0].process;
-  }
-
-  public async saveProcessInstance(processInstance: Runtime.Types.ProcessInstance): Promise<void> {
-    return;
-  }
-
-  public async saveProcessToken(processToken: Runtime.Types.ProcessToken): Promise<void> {
-    return;
   }
 }

@@ -59,6 +59,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         return this._createHandler<TFlowNode>('EndEventHandler');
       case BpmnType.subProcess:
         return this._createHandler<TFlowNode>('SubProcessHandler');
+      case BpmnType.userTask:
+        return this._createHandler<TFlowNode>('UserTaskHandler');
       default:
         throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${type} gefunden werden.`);
     }
