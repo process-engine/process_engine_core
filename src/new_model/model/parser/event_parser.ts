@@ -111,30 +111,8 @@ function parseEndEvents(processData: any) {
     assignEventDefinition(event, endEventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
 
     if (endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition)) {
-      const endEventKey: string = event['errorEventDefinition'].errorRef;
-      let errorEventDef: any;
-
-      const errorDefinition = processData[BpmnTags.FlowElementProperty.ErrorEventDefinition];
-      
-      /*
-      * Find the error end event which fits to the error end event definition
-      * TODO: Refactor this to a new function.
-      */
-      if (Array.isArray(errorDefinition)) {
-        for (const errorEvent of processData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
-        
-          if (errorEvent.id === endEventKey) {
-            errorEventDef = errorEvent;
-            break;
-          }
-        }
-
-      } else {
-        errorEventDef = errorDefinition;
-      }
-
-      event['errorEventDefinition'] = errorEventDef;
-
+      const errorEventKey: string = event['errorEventDefinition'].errorRef;
+      event['errorEventDefinition'] = getEndEventDefinitions(processData, errorEventKey);
     }
     
     events.push(event);
@@ -168,4 +146,37 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
   }
 
   return events;
+}
+
+/**
+ * Returns the error event definition for a given error event key.
+ * 
+ * @param processData Parsed process data
+ * @param errorKey Key of the error event
+ * @returns the error event definition, that matches the given end event key.
+ */
+function getEndEventDefinitions(processData: any, errorKey: string): any {
+  const errorDefinition = processData[BpmnTags.FlowElementProperty.ErrorEventDefinition];
+  let errorEventDefinition;
+
+  /*
+  * Find the error end event which fits to the error end event definition
+  * TODO: Refactor this to a new function.
+  */
+  if (Array.isArray(errorDefinition)) {
+    for (const errorEvent of processData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
+      if (errorEvent.id === errorKey) {
+        errorEventDefinition = errorEvent;
+        break;
+      }
+    }
+  } else {
+    errorEventDefinition = errorDefinition;
+  }
+
+  if (errorEventDefinition === undefined) {
+    throw Error(`No Error Event for key ${errorKey} found.`);
+  }
+
+  return errorEventDefinition;
 }
