@@ -114,15 +114,23 @@ function parseEndEvents(processData: any) {
       const endEventKey: string = event['errorEventDefinition'].errorRef;
       let errorEventDef: any;
 
-      /*
-      * Find the error end event which fits to the error end event definition
-      * TODO: Refactor this to a new function.
-      */
-      for (const errorEvent of processData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
-        if (errorEvent.id === endEventKey) {
-          errorEventDef = errorEvent;
-          break;
+      const errorDefinition = processData[BpmnTags.FlowElementProperty.ErrorEventDefinition];
+
+      if (Array.isArray(errorDefinition)) {
+        
+        /*
+        * Find the error end event which fits to the error end event definition
+        * TODO: Refactor this to a new function.
+        */
+        for (const errorEvent of processData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
+          if (errorEvent.id === endEventKey) {
+            errorEventDef = errorEvent;
+            break;
+          }
         }
+
+      } else {
+        errorEventDef = errorDefinition;
       }
 
       event['errorEventDefinition'] = errorEventDef;
