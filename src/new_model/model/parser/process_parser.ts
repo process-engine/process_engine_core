@@ -16,12 +16,17 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
 
     const process: Model.Types.Process = createObjectWithCommonProperties(processRaw, Model.Types.Process);
 
+    if (parsedObjectModel.hasOwnProperty('bpmn:error')) {
+      processRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] = parsedObjectModel['bpmn:error'];
+    }
+
     process.name = processRaw.name;
     process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
 
     process.laneSet = Parser.parseProcessLaneSet(processRaw);
     process.sequenceFlows = Parser.parseProcessSequenceFlows(processRaw);
     process.flowNodes = Parser.parseProcessFlowNodes(processRaw);
+
 
     processes.push(process);
   }

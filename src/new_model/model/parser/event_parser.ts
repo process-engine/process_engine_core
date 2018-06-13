@@ -11,8 +11,7 @@ export function parseEventsFromProcessData(processData: any): Array<Model.Events
   const startEvents: Array<Model.Events.StartEvent>
     = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
 
-  const endEvents: Array<Model.Events.EndEvent>
-    = parseEventsByType(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
+  const endEvents: Array<Model.Events.EndEvent> = parseEndEvents(processData);
 
   const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
 
@@ -89,6 +88,46 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     assignEventDefinitions(event, boundaryEventRaw);
 
+    events.push(event);
+  }
+
+  return events;
+}
+
+function parseEndEvents(processData: any) {
+  const events: Array<Model.Events.EndEvent> = [];
+
+  const endEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
+
+  for (const endEventRaw of endEventsRaw) {
+
+    //TODO: Extend End Event definition type
+    const event: any = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
+   
+    event.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    event.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+    event.name = endEventRaw.name;
+    
+    assignEventDefinition(event, endEventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
+
+    if (endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition)) {
+      const endEventKey: string = event['errorEventDefinition'].errorRef;
+      let errorEventDef: any;
+
+      /*
+      * Find the error end event which fits to the error end event definition
+      * TODO: Refactor this to a new function.
+      */
+      for (const errorEvent of processData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
+        if (errorEvent.id === endEventKey) {
+          errorEventDef = errorEvent;
+          break;
+        }
+      }
+
+      event['errorEventDefinition'] = errorEventDef;
+    }
+    
     events.push(event);
   }
 
