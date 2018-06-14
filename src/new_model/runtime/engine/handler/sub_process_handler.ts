@@ -27,6 +27,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
   }
 
   protected async executeInternally(subProcessNode: Model.Activities.SubProcess,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

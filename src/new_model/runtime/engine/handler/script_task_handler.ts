@@ -6,6 +6,7 @@ import { FlowNodeHandler } from './index';
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
   protected async executeInternally(scriptTask: Model.Activities.ScriptTask,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

@@ -25,6 +25,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   }
 
   protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

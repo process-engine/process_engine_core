@@ -16,6 +16,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   }
 
   protected async executeInternally(flowNode: Model.Gateways.ParallelGateway,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
@@ -33,6 +34,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> = this._executeParallelBranches(outgoingSequenceFlows,
                                                                                        joinGateway,
+                                                                                       token,
                                                                                        processTokenFacade,
                                                                                        processModelFacade,
                                                                                        executionContextFacade);
@@ -55,6 +57,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
                                    joinGateway: Model.Gateways.ParallelGateway,
+                                   token: Runtime.Types.ProcessToken,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
                                    executionContextFacade: IExecutionContextFacade): Array<Promise<NextFlowNodeInfo>> {
@@ -63,10 +66,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       // To have an isolated ProcessToken for each branch, we fork a new ProcessToken from the original one and use it during execution of this branch
       const processTokenForBranch: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
+      const tokenForBranch: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(token.payload);
+
       const nextFlowNodeInBranch: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
       return await this._executeBranchToJoinGateway(nextFlowNodeInBranch,
                                                     joinGateway,
+                                                    tokenForBranch,
                                                     processTokenForBranch,
                                                     processModelFacade,
                                                     executionContextFacade);
@@ -75,6 +81,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
   private async _executeBranchToJoinGateway(flowNode: Model.Base.FlowNode,
                                             joinGateway: Model.Gateways.ParallelGateway,
+                                            token: Runtime.Types.ProcessToken,
                                             processTokenFacade: IProcessTokenFacade,
                                             processModelFacade: IProcessModelFacade,
                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
@@ -82,13 +89,15 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-      processTokenFacade,
-      processModelFacade,
-      executionContextFacade);
+                                                                             token,
+                                                                             processTokenFacade,
+                                                                             processModelFacade,
+                                                                             executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
       return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                               joinGateway,
+                                              token,
                                               nextFlowNodeInfo.processTokenFacade,
                                               processModelFacade,
                                               executionContextFacade);

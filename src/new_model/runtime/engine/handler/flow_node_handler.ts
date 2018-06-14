@@ -11,6 +11,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   public async execute(flowNode: TFlowNode,
+                       token: Runtime.Types.ProcessToken,
                        processTokenFacade: IProcessTokenFacade,
                        processModelFacade: IProcessModelFacade,
                        executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
@@ -20,7 +21,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     try {
 
       // executeInternally is the method where derived handlers can implement their logic
-      nextFlowNode = await this.executeInternally(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
+      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
@@ -40,6 +41,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   protected async abstract executeInternally(flowNode: TFlowNode,
+                                             token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
                                              executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;

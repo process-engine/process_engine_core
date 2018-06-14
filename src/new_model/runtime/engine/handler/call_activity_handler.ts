@@ -20,6 +20,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
   }
 
   protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

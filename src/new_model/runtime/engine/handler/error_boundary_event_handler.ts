@@ -16,6 +16,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
   }
 
   protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

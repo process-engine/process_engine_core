@@ -23,6 +23,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
   }
 
   protected async executeInternally(userTask: Model.Activities.UserTask,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

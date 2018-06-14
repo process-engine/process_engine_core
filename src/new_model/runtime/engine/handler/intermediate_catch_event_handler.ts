@@ -4,6 +4,7 @@ import { FlowNodeHandler } from './index';
 
 export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.Event> {
   protected async executeInternally(flowNode: Model.Events.Event,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {

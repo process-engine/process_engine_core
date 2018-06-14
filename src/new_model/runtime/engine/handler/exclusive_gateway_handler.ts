@@ -5,6 +5,7 @@ import { FlowNodeHandler } from './flow_node_handler';
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
   protected async executeInternally(flowNode: Model.Gateways.ExclusiveGateway,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
