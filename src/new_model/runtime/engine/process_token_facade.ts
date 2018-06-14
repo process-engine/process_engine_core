@@ -28,13 +28,12 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return Promise.resolve(this.processTokenResults);
   }
 
-  public createProcessToken(flowNodeId: string, payload?: any): Runtime.Types.ProcessToken {
+  public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
     const token: Runtime.Types.ProcessToken = new Runtime.Types.ProcessToken();
     token.processInstanceId = this.processInstanceId;
     token.correlationId = this.correlationId;
     token.identity = this.identity;
     token.createdAt = new Date();
-    token.flowNodeId = flowNodeId;
     token.payload = payload;
     return token;
   }

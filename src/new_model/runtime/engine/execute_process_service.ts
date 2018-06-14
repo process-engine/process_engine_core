@@ -42,24 +42,22 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._processEngineStorageService;
   }
 
-  public async start(context: ExecutionContext, process: Model.Types.Process, correlationId: string, initialToken?: any): Promise<any> {
+  public async start(context: ExecutionContext, process: Model.Types.Process, correlationId: string, initialPayload?: any): Promise<any> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(process);
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEvent();
 
-    const processInstance: Runtime.Types.ProcessInstance = this._createProcessInstance(process, correlationId);
+    const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
+    const processInstanceId: string = uuid.v4();
 
-    await this.processEngineStorageService.saveProcessInstance(processInstance);
-
-    // ein großes wow für den folgenden methodenaufruf
     const identity: any = await context.getIdentity(context);
-    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstance.id, correlationId, identity);
+    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, correlationId, identity);
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
     processTokenFacade.addResultForFlowNode(startEvent.id, initialToken);
 
-    await this._executeFlowNode(startEvent, processTokenFacade, processModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     const resultToken: any = await processTokenFacade.getOldTokenFormat();
 
@@ -78,6 +76,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
+                                 token: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
@@ -85,16 +84,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
+                                                                             token,
                                                                              processTokenFacade,
                                                                              processModelFacade,
                                                                              executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFacade, processModelFacade, executionContextFacade);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade, processModelFacade, executionContextFacade);
     }
   }
 
-  private async _end(processInstance: Runtime.Types.ProcessInstance,
+  private async _end(processInstanceId: string,
                      processToken: any,
                      context: ExecutionContext): Promise<void> {
     const processEndMessageData: any = {
