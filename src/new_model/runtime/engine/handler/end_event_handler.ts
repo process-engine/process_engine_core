@@ -44,19 +44,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
-    console.log(flowNode);
-
-    // TODO: Remove the hardcoded reference
-    // TODO: The typings are completely messed up here
-    if (flowNode.hasOwnProperty('errorEventDefinition')) {
-      const errorEventDefinition: any = flowNode.errorEventDefinition;
-
-      const errorObject: {errorCode: string, name: string} = {
-        errorCode: errorEventDefinition.errorCode,
+    if (flowNode.errorEventDefinition) {
+      const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition;
+      const errorObject: {error_code: string, name: string} = {
+        error_code: errorEventDefinition.errorCode,
         name: errorEventDefinition.name,
       };
 
-      throw errorObject;
+      /*
+       * If the ErrorEndEvent gets encountered, reject the promise
+       * with the defined error object.
+       */
+      return Promise.reject(errorObject);
     }
 
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);

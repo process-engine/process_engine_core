@@ -280,8 +280,10 @@ function parseSubProcesses(processData: any): Array<Model.Activities.SubProcess>
   for (const subProcessRaw of subProcessesRaw) {
     const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
 
+    const errors: any = createObjectWithCommonProperties(subProcessRaw, Model.Types.Error);
+
     subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
-    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw);
+    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors);
     subProcess.sequenceFlows = parseProcessSequenceFlows(subProcessRaw);
 
     subProcesses.push(subProcess);
@@ -323,4 +325,50 @@ function createActivityInstance<TActivity extends Model.Activities.Activity>(
   instance.name = data.name;
 
   return instance;
+}
+
+/**
+ * Parse the error definitions.
+ * 
+ * @param parsedObjectModel Object model of the parsed xml process definition.
+ * @returns a list of all parsed error events.
+ */
+function parseErrors(parsedObjectModel: any): Array<Model.Types.Error> {
+  
+  const errors: Array<Model.Types.Error> = []
+  const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
+  
+  if (collaborationHasNoError) {
+    return errors;
+  }
+
+  const rawErrors: any = parsedObjectModel[BpmnTags.CommonElement.Error];
+
+  if (Array.isArray(rawErrors)) {
+    for (const rawError of rawErrors) {
+      const newError: Model.Types.Error = getErrorObjectFromRawError(rawError);
+      errors.push(newError);
+    }
+  } else {
+    const newError: Model.Types.Error = getErrorObjectFromRawError(rawErrors);
+    errors.push(newError);
+  }
+
+  return errors;
+}
+
+/**
+ *  Creates a new error object from a parsed error object model.
+ * 
+ * @param rawError Raw error data from the parsed object model
+ * @returns a parsed error object 
+ */
+function getErrorObjectFromRawError(rawError: any): Model.Types.Error {          
+  const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
+    
+  newError.errorCode = rawError.errorCode;
+  newError.name = rawError.name;
+  newError.id = rawError.id;
+
+  return newError;
 }

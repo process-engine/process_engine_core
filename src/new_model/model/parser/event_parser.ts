@@ -6,12 +6,12 @@ import {
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
-export function parseEventsFromProcessData(processData: any): Array<Model.Events.Event> {
+export function parseEventsFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Events.Event> {
 
   const startEvents: Array<Model.Events.StartEvent>
     = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
 
-  const endEvents: Array<Model.Events.EndEvent> = parseEndEvents(processData);
+  const endEvents: Array<Model.Events.EndEvent> = parseEndEvents(processData, errors);
 
   const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
 
@@ -94,27 +94,33 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
   return events;
 }
 
-function parseEndEvents(processData: any) {
+/**
+ * Parse an EndEvent. If the EndEvent is an ErrorEndEvent, the errors which
+ * belongs to the error end event are attached to the event.
+ * 
+ * @param data Parsed process definition data
+ * @param errors List of errors, if the event has attached error events
+ * @returns an array of parsed end events
+ */
+function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Model.Events.EndEvent> {
   const events: Array<Model.Events.EndEvent> = [];
 
-  const endEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
+  // Build end events
+  const endEventsRaw: any = getModelPropertyAsArray(data, BpmnTags.EventElement.EndEvent);
 
   for (const endEventRaw of endEventsRaw) {
+    const event: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
 
-    //TODO: Extend End Event definition type
-    const event: any = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
-   
+    event.name = endEventRaw.name,
     event.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-    event.name = endEventRaw.name;
-    
-    assignEventDefinition(event, endEventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
 
-    if (endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition)) {
-      const errorEventKey: string = event['errorEventDefinition'].errorRef;
-      event['errorEventDefinition'] = getEndEventDefinitions(processData, errorEventKey);
+    if (endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
+      const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+      const currentError: Model.Types.Error = getErrorForId(errors, errorId);
+      event.errorEventDefinition = currentError;
     }
-    
+
     events.push(event);
   }
 
@@ -149,34 +155,19 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 }
 
 /**
- * Returns the error event definition for a given error event key.
+ * Return the error with the given id from the raw error definition data.
  * 
- * @param processData Parsed process data
- * @param errorKey Key of the error event
- * @returns the error event definition, that matches the given end event key.
+ * @param errorList List of all parsed errors
+ * @param errorId id of the error
+ * @returns Error that matches the given id
  */
-function getEndEventDefinitions(processData: any, errorKey: string): any {
-  const errorDefinition = processData[BpmnTags.FlowElementProperty.ErrorEventDefinition];
-  let errorEventDefinition;
-
-  /*
-  * Find the error end event which fits to the error end event definition
-  * TODO: Refactor this to a new function.
-  */
-  if (Array.isArray(errorDefinition)) {
-    for (const errorEvent of processData[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
-      if (errorEvent.id === errorKey) {
-        errorEventDefinition = errorEvent;
-        break;
-      }
-    }
-  } else {
-    errorEventDefinition = errorDefinition;
+function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
+  
+  for (const currentError of errorList) {
+    debugger;
+    if (currentError.id === errorId) {
+      return currentError;
+    }  
   }
-
-  if (errorEventDefinition === undefined) {
-    throw Error(`No Error Event for key ${errorKey} found.`);
-  }
-
-  return errorEventDefinition;
+  throw Error(`No error for id ${errorId} found.`);
 }
