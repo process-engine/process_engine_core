@@ -162,9 +162,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
  * @returns Error that matches the given id
  */
 function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
-  
   for (const currentError of errorList) {
-    debugger;
     if (currentError.id === errorId) {
       return currentError;
     }  

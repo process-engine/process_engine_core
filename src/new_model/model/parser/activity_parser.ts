@@ -11,14 +11,14 @@ import {parseProcessSequenceFlows} from './sequence_flow_parser';
 
 import * as moment from 'moment';
 
-export function parseActivitiesFromProcessData(processData: any): Array<Model.Activities.Activity> {
+export function parseActivitiesFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
   const scriptTasks: Array<Model.Activities.ScriptTask> = parseScriptTasks(processData);
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
-  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData);
+  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
 
   return Array.prototype.concat(manualTasks,
                                 scriptTasks,
@@ -267,7 +267,7 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   return callActivities;
 }
 
-function parseSubProcesses(processData: any): Array<Model.Activities.SubProcess> {
+function parseSubProcesses(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
 
@@ -279,8 +279,6 @@ function parseSubProcesses(processData: any): Array<Model.Activities.SubProcess>
 
   for (const subProcessRaw of subProcessesRaw) {
     const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
-
-    const errors: any = createObjectWithCommonProperties(subProcessRaw, Model.Types.Error);
 
     subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
     subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors);
@@ -325,50 +323,4 @@ function createActivityInstance<TActivity extends Model.Activities.Activity>(
   instance.name = data.name;
 
   return instance;
-}
-
-/**
- * Parse the error definitions.
- * 
- * @param parsedObjectModel Object model of the parsed xml process definition.
- * @returns a list of all parsed error events.
- */
-function parseErrors(parsedObjectModel: any): Array<Model.Types.Error> {
-  
-  const errors: Array<Model.Types.Error> = []
-  const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
-  
-  if (collaborationHasNoError) {
-    return errors;
-  }
-
-  const rawErrors: any = parsedObjectModel[BpmnTags.CommonElement.Error];
-
-  if (Array.isArray(rawErrors)) {
-    for (const rawError of rawErrors) {
-      const newError: Model.Types.Error = getErrorObjectFromRawError(rawError);
-      errors.push(newError);
-    }
-  } else {
-    const newError: Model.Types.Error = getErrorObjectFromRawError(rawErrors);
-    errors.push(newError);
-  }
-
-  return errors;
-}
-
-/**
- *  Creates a new error object from a parsed error object model.
- * 
- * @param rawError Raw error data from the parsed object model
- * @returns a parsed error object 
- */
-function getErrorObjectFromRawError(rawError: any): Model.Types.Error {          
-  const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
-    
-  newError.errorCode = rawError.errorCode;
-  newError.name = rawError.name;
-  newError.id = rawError.id;
-
-  return newError;
 }
