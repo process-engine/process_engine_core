@@ -35,7 +35,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       throw new Error(`Next flow node after node with id "${flowNode.id}" could not be found.`);
     }
 
-    await this.afterExecute(flowNode, nextFlowNode.flowNode, processTokenFacade, processModelFacade);
+    await this.afterExecute(flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }

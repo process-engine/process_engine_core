@@ -34,9 +34,10 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     }
 
     await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
+    const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(finalResult);
 
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
   }
 }

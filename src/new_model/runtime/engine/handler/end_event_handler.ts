@@ -9,6 +9,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    return new NextFlowNodeInfo(undefined, processTokenFacade);
+    return new NextFlowNodeInfo(undefined, token, processTokenFacade);
   }
 }

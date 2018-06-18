@@ -17,9 +17,10 @@ const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler
 const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 
-const ProcessDefinitionPersistance = require('./dist/commonjs/index').ProcessDefinitionPersistance;
+const ProcessModelPersistance = require('./dist/commonjs/index').ProcessModelPersistance;
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
 const FlowNodeInstancePersistance = require('./dist/commonjs/index').FlowNodeInstancePersistance;
 
@@ -29,14 +30,17 @@ const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
 function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
-    .dependencies('FlowNodeHandlerFactory', 'DatastoreService', 'MessageBusService', 'ProcessDefinitionPersistance');
+    .dependencies('FlowNodeHandlerFactory', 'DatastoreService', 'MessageBusService', 'ProcessModelPersistance');
 
   container.register('FlowNodeInstancePersistance', FlowNodeInstancePersistance)
+    .singleton();  
+    
+  container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
     .singleton();
 
   container.register('BpmnModelParser', BpmnModelParser);
 
-  container.register('ProcessDefinitionPersistance', ProcessDefinitionPersistance)
+  container.register('ProcessModelPersistance', ProcessModelPersistance)
     .singleton();
 
   container.register('BpmnProcessEntity', BpmnProcessEntity)
@@ -67,7 +71,7 @@ function registerInContainer(container) {
   container.register('EndEventHandler', EndEventHandler);
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker', 'ProcessDefinitionPersistance')
+    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker', 'ProcessModelPersistance')
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();

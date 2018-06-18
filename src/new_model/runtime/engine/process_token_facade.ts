@@ -3,17 +3,23 @@ import { BpmnType, IProcessTokenFacade, IProcessTokenResult, Model, Runtime } fr
 export class ProcessTokenFacade implements IProcessTokenFacade {
   private processTokenResults: Array<IProcessTokenResult> = [];
   private _processInstanceId: string;
+  private _processModelId: string;
   private _correlationId: string;
   private _identity: any;
 
-  constructor(processInstanceId: string, correlationId: string, identity: any) {
+  constructor(processInstanceId: string, processModelId: string, correlationId: string, identity: any) {
     this._processInstanceId = processInstanceId;
+    this._processModelId = processModelId;
     this._correlationId = correlationId;
     this._identity = identity;
   }
   
   private get processInstanceId(): string {
     return this._processInstanceId;
+  }
+  
+  private get processModelId(): string {
+    return this._processModelId;
   }
   
   private get correlationId(): string {
@@ -31,6 +37,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
   public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
     const token: Runtime.Types.ProcessToken = new Runtime.Types.ProcessToken();
     token.processInstanceId = this.processInstanceId;
+    token.processModelId = this.processModelId;
     token.correlationId = this.correlationId;
     token.identity = this.identity;
     token.createdAt = new Date();
@@ -52,7 +59,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
 
   public async getProcessTokenFacadeForParallelBranch(): Promise<IProcessTokenFacade> {
 
-    const processTokenFacade: any = new ProcessTokenFacade(this.processInstanceId, this.correlationId, this.identity);
+    const processTokenFacade: any = new ProcessTokenFacade(this.processInstanceId, this.processModelId, this.correlationId, this.identity);
     const allResults: Array<IProcessTokenResult> = await this.getAllResults();
     await processTokenFacade.importResults(allResults);
 

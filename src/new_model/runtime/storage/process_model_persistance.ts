@@ -1,6 +1,6 @@
-import { Definitions, Model, IProcessDefinitionPersistance } from '@process-engine/process_engine_contracts';
+import { Definitions, Model, IProcessModelPersistance } from '@process-engine/process_engine_contracts';
 
-export class ProcessModelPersistance implements IProcessDefinitionPersistance {
+export class ProcessModelPersistance implements IProcessModelPersistance {
 
   private _definitions: Array<Definitions> = [];
 
@@ -8,7 +8,7 @@ export class ProcessModelPersistance implements IProcessDefinitionPersistance {
     return this._definitions;
   }
 
-  public async persistProcessDefinitions(): Promise<void> {
+  public async persistProcessDefinitions(definitions: Definitions): Promise<void> {
     this.definitions.push(definitions);
   }
 
@@ -18,7 +18,7 @@ export class ProcessModelPersistance implements IProcessDefinitionPersistance {
 
       for (const process of definition.processes) {
 
-       if (process.id === processId) {
+       if (process.id === processModelId) {
           return process;
         }
       }

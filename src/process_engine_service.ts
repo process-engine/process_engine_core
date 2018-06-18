@@ -27,7 +27,7 @@ import {
   IProcessDefEntity,
   IProcessDefEntityTypeService,
   IProcessEngineService,
-  IProcessEngineStorageService,
+  IProcessModelPersistance,
   IProcessEntity,
   IProcessRepository,
   IUserTaskEntity,
@@ -55,7 +55,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
-  private _processEngineStorageService: IProcessEngineStorageService = undefined;
+  private _processModelPersistance: IProcessModelPersistance = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
@@ -72,7 +72,7 @@ export class ProcessEngineService implements IProcessEngineService {
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
               invoker: IInvoker,
-              processEngineStorageService: IProcessEngineStorageService) {
+              processModelPersistance: IProcessModelPersistance) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -84,7 +84,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
     this._applicationService = applicationService;
     this._invoker = invoker;
-    this._processEngineStorageService = processEngineStorageService;
+    this._processModelPersistance = processModelPersistance;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -131,8 +131,8 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
-  private get processEngineStorageService(): IProcessEngineStorageService {
-    return this._processEngineStorageService;
+  private get processModelPersistance(): IProcessModelPersistance {
+    return this._processModelPersistance;
   }
 
   private get errorDeserializer(): IErrorDeserializer {
@@ -535,7 +535,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    const process: Model.Types.Process = await this.processEngineStorageService.getProcess(key);
+    const process: Model.Types.Process = await this.processModelPersistance.getProcess(key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);

@@ -42,37 +42,28 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._processEngineStorageService;
   }
 
-  public async start(context: ExecutionContext, process: Model.Types.Process, correlationId: string, initialPayload?: any): Promise<any> {
+  public async start(context: ExecutionContext, processModel: Model.Types.Process, correlationId: string, initialPayload?: any): Promise<any> {
 
-    const processModelFacade: IProcessModelFacade = new ProcessModelFacade(process);
+    const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEvent();
 
-    const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
     const processInstanceId: string = uuid.v4();
 
     const identity: any = await context.getIdentity(context);
-    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, correlationId, identity);
+    const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
-    processTokenFacade.addResultForFlowNode(startEvent.id, initialToken);
+    const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
+    processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
     await this._executeFlowNode(startEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     const resultToken: any = await processTokenFacade.getOldTokenFormat();
 
-    await this._end(processInstance, resultToken, context);
+    await this._end(processInstanceId, resultToken, context);
 
     return resultToken.current;
-  }
-
-  private _createProcessInstance(processDefinition: Model.Types.Process, correlationId: string): Runtime.Types.ProcessInstance {
-    const processInstance: Runtime.Types.ProcessInstance = new Runtime.Types.ProcessInstance();
-    processInstance.id = uuid.v4();
-    processInstance.correlationId = correlationId;
-    processInstance.processDefinition = processDefinition;
-
-    return processInstance;
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
@@ -101,9 +92,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
       event: 'end',
       token: processToken.current,
     };
-
+    console.log(`/processengine/process/${processInstanceId}`);
     const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
-    this.messageBusService.publish(`/processengine/process/${processInstance.id}`, processEndMessage);
+    this.messageBusService.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }
 
 }

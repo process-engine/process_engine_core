@@ -10,7 +10,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
+    const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(token.payload);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
   }
 }

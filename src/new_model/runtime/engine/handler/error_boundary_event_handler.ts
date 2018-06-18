@@ -42,7 +42,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
   }
 }

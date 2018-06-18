@@ -30,11 +30,9 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
     return new Promise<NextFlowNodeInfo>(async (resolve: Function): Promise<void> => {
 
-      let processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(userTask.id);
-
       const userTaskInstanceId: string = super.createFlowNodeInstanceId();
 
-      await this.flowNodeInstancePersistance.persistOnEnter(processToken, userTask.id, userTaskInstanceId);
+      await this.flowNodeInstancePersistance.persistOnEnter(token, userTask.id, userTaskInstanceId);
 
       this.eventAggregator.subscribeOnce(`/processengine/node/${userTask.id}`, async(message: any): Promise<void> => {
 
@@ -44,17 +42,33 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
           form_fields: message.data.token,
         };
         
-        processToken = processTokenFacade.createProcessToken(userTask.id, userTaskResult);
+        const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(userTaskResult);
         processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
         const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
         
-        await this.flowNodeInstancePersistance.persistOnExit(processToken, userTask.id, userTaskInstanceId);
+        await this.flowNodeInstancePersistance.persistOnExit(newToken, userTask.id, userTaskInstanceId);
 
-        resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, processTokenFacade));
+        this._sendUserTaskFinishedToConsumerApi(userTask, executionContextFacade);
+
+        resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, newToken, processTokenFacade));
       });
 
-      await this.flowNodeInstancePersistance.suspend(processToken, userTaskInstanceId);
+      await this.flowNodeInstancePersistance.suspend(token, userTaskInstanceId);
     });
 
+  }
+
+  private _sendUserTaskFinishedToConsumerApi(userTask: Model.Activities.UserTask,
+                                             executionContextFacade: IExecutionContextFacade): void {
+
+    this.eventAggregator.publish(`/processengine/node/${userTask.id}`, {
+      data: {
+        action: 'changeState',
+        data: 'end',
+      },
+      metadata: {
+        context: executionContextFacade.getExecutionContext(),
+      },
+    });
   }
 }

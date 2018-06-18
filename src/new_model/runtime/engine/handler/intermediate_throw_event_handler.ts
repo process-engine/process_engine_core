@@ -11,6 +11,6 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 }

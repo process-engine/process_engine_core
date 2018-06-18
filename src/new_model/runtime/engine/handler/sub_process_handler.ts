@@ -57,13 +57,15 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const finalTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
     processTokenFacade.addResultForFlowNode(subProcessNode.id, finalTokenData.current);
+    const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(finalTokenData.current);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcessNode);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
+                                 token: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
@@ -76,7 +78,11 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                                     executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFacade, processModelFacade, executionContextFacade);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+                                  nextFlowNodeInfo.token,
+                                  nextFlowNodeInfo.processTokenFacade,
+                                  processModelFacade,
+                                  executionContextFacade);
     }
   }
 

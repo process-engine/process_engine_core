@@ -47,10 +47,10 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       }
 
       const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(joinGateway);
+      const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken();
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
     } else {
-      // TODO: Token-Methoden in Benutzerdoku beschreiben (Issue erstellen)
       return undefined;
     }
   }
@@ -97,13 +97,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
       return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                               joinGateway,
-                                              token,
+                                              nextFlowNodeInfo.token,
                                               nextFlowNodeInfo.processTokenFacade,
                                               processModelFacade,
                                               executionContextFacade);
     }
 
-    return new NextFlowNodeInfo(joinGateway, processTokenFacade);
+    return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
   }
 
 }
