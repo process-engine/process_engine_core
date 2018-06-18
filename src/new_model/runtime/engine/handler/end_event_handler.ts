@@ -45,7 +45,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
     if (flowNode.errorEventDefinition) {
-      const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition;
+      const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition.errorReference;
       const errorObject: {error_code: string, name: string} = {
         error_code: errorEventDefinition.errorCode,
         name: errorEventDefinition.name,

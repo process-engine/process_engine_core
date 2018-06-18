@@ -131,14 +131,14 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
         currentError = getErrorForId(errors, errorId);
       } else {
         /*
-         * We define an anonymous error end event as the folloging 
+         * We define an anonymous error end event as the following 
          * object. This may change in the future.
         */
         currentError.errorCode = '';
         currentError.name = '';
       }
 
-      event.errorEventDefinition = currentError;
+      event.errorEventDefinition.errorReference = currentError;
 
     }
 
