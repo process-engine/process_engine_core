@@ -115,10 +115,31 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
     event.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-    if (endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition]) {
-      const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
-      const currentError: Model.Types.Error = getErrorForId(errors, errorId);
+    const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
+
+    if (eventHasErrorEventDefinition) {
+      const errorIsNotAnonymous: boolean = !(endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === '');
+      let currentError: Model.Types.Error = createObjectWithCommonProperties(endEventRaw, Model.Types.Error);
+
+      /*
+      * If the error is not anonymous, we can look it up in our error definition
+      * list. Otherwise, we will declare the error as an anonymous error
+      * and attach it to the end event.
+      */
+     if (errorIsNotAnonymous) {
+        const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+        currentError = getErrorForId(errors, errorId);
+      } else {
+        /*
+         * We define an anonymous error end event as the folloging 
+         * object. This may change in the future.
+        */
+        currentError.errorCode = '';
+        currentError.name = '';
+      }
+
       event.errorEventDefinition = currentError;
+
     }
 
     events.push(event);
