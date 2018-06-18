@@ -95,11 +95,11 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 }
 
 /**
- * Parse an EndEvent. If the EndEvent is an ErrorEndEvent, the errors which
- * belongs to the error end event are attached to the event.
+ * Parse all EndEvents of a process. If the EndEvent is an ErrorEndEvent, the errors which
+ * belongs to the error end event will be attached to the end event event.
  * 
  * @param data Parsed process definition data
- * @param errors List of errors, if the event has attached error events
+ * @param errors List of errors, if the process has attached errors
  * @returns an array of parsed end events
  */
 function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Model.Events.EndEvent> {
@@ -138,11 +138,13 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
         currentError.name = '';
       }
 
+      event.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
       event.errorEventDefinition.errorReference = currentError;
 
     }
 
     events.push(event);
+
   }
 
   return events;
@@ -181,6 +183,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
  * @param errorList List of all parsed errors
  * @param errorId id of the error
  * @returns Error that matches the given id
+ * @throws Error if the end event with the given key was not found.
  */
 function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
   for (const currentError of errorList) {
