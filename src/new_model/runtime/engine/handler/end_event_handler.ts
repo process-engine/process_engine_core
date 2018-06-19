@@ -58,6 +58,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       return Promise.reject(errorObject);
     }
 
+<<<<<<< HEAD
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+=======
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+
+    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+>>>>>>> ef56e4c... Remove unused imports and fix code style
   }
 }

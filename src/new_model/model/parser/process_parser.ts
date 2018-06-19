@@ -44,18 +44,18 @@ function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.E
   const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
   
   if (collaborationHasNoError) {
-    return errors;
+    return [];
   }
 
   const rawErrors: any = parsedObjectModel[BpmnTags.CommonElement.Error];
 
   if (Array.isArray(rawErrors)) {
     for (const rawError of rawErrors) {
-      const newError: Model.Types.Error = getErrorObjectFromRawError(rawError);
+      const newError: Model.Types.Error = getErrorFromRawErrorData(rawError);
       errors.push(newError);
     }
   } else {
-    const newError: Model.Types.Error = getErrorObjectFromRawError(rawErrors);
+    const newError: Model.Types.Error = getErrorFromRawErrorData(rawErrors);
     errors.push(newError);
   }
 
@@ -63,12 +63,12 @@ function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.E
 }
 
 /**
- *  Creates a new error object from a parsed error object model.
+ *  Creates a new error object from the parsed error object model.
  * 
  * @param rawError Raw error data from the parsed object model
  * @returns a parsed error object 
  */
-function getErrorObjectFromRawError(rawError: any): Model.Types.Error {          
+function getErrorFromRawErrorData(rawError: any): Model.Types.Error {          
   const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
     
   newError.errorCode = rawError.errorCode;
