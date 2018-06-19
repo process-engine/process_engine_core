@@ -50,7 +50,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     subProcessTokenFacade.addResultForFlowNode(startEvent.id, initialTokenData.current);
 
-    await this._executeFlowNode(startEvent, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
 
     // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
     // and on the original ProcessTokenFacade, so that is is accessible by the original Process
@@ -73,9 +73,10 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                    processTokenFacade,
-                                                    processModelFacade,
-                                                    executionContextFacade);
+                                                                             token,
+                                                                             processTokenFacade,
+                                                                             processModelFacade,
+                                                                             executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,

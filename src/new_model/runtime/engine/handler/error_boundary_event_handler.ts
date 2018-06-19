@@ -23,7 +23,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     try {
 
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
+        = await this.decoratedHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
       return nextFlowNodeInfo;
 

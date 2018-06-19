@@ -535,7 +535,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    const process: Model.Types.Process = await this.processModelPersistance.getProcess(key);
+    const process: Model.Types.Process = await this.processModelPersistance.getProcessModelById(key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
