@@ -1,16 +1,31 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IExecutionContextFacade, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade,
+import { IExecutionContextFacade, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade, IFlowNodeInstancePersistance,
   Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
+
+  private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
+
+  constructor(flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
+    super();
+    this._flowNodeInstancePersistance = flowNodeInstancePersistance;
+  }
+
+  private get flowNodeInstancePersistance(): IFlowNodeInstancePersistance {
+    return this._flowNodeInstancePersistance;
+  }
 
   protected async executeInternally(scriptTask: Model.Activities.ScriptTask,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-
+    
+    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    
+    await this.flowNodeInstancePersistance.persistOnEnter(token, scriptTask.id, flowNodeInstanceId);
+    
     const script: string = scriptTask.script;
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
 
@@ -33,9 +48,10 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
       finalResult = await result.toPojo(context, toPojoOptions);
     }
 
-    await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
-
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
+
+    await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
+    await this.flowNodeInstancePersistance.persistOnExit(token, scriptTask.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

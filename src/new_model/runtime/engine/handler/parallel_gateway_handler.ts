@@ -1,18 +1,25 @@
-import { IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory,
+import { IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IFlowNodeInstancePersistance,
   IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
+  private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory) {
+
+  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactor, flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
     super();
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this._flowNodeInstancePersistance = flowNodeInstancePersistance;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
+  }
+
+  private get flowNodeInstancePersistance(): IFlowNodeInstancePersistance {
+    return this._flowNodeInstancePersistance;
   }
 
   protected async executeInternally(flowNode: Model.Gateways.ParallelGateway,
@@ -21,6 +28,10 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
+    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+
+    await this.flowNodeInstancePersistance.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
+    
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
 
@@ -47,6 +58,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       }
 
       const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(joinGateway);
+
+      await this.flowNodeInstancePersistance.persistOnExit(token, flowNode.id, flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     } else {

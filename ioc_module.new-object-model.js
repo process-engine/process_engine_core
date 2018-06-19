@@ -47,28 +47,34 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   container.register('CallActivityHandler', CallActivityHandler)
-    .dependencies('ConsumerApiService');
+    .dependencies('ConsumerApiService', 'FlowNodeInstancePersistance');
 
   container.register('UserTaskHandler', UserTaskHandler)
     .dependencies('EventAggregator', 'FlowNodeInstancePersistance');
 
   container.register('SubProcessHandler', SubProcessHandler)
-    .dependencies('FlowNodeHandlerFactory');
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistance');
 
-  container.register('ScriptTaskHandler', ScriptTaskHandler);
+  container.register('ScriptTaskHandler', ScriptTaskHandler)
+    .dependencies('FlowNodeInstancePersistance');
 
-  container.register('StartEventHandler', StartEventHandler);
-  container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler);
+  container.register('StartEventHandler', StartEventHandler)
+    .dependencies('FlowNodeInstancePersistance');
+  container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
+    .dependencies('FlowNodeInstancePersistance');
   container.register('ParallelGatewayHandler', ParallelGatewayHandler)
-    .dependencies('FlowNodeHandlerFactory');
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistance');
   container.register('ServiceTaskHandler', ServiceTaskHandler)
-    .dependencies('container', 'Invoker');
+    .dependencies('container', 'Invoker', 'FlowNodeInstancePersistance');
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
     .dependencies('TimingService', 'EventAggregator', 'IamService');
-  container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler);
-  container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler);
-  container.register('EndEventHandler', EndEventHandler);
+  container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
+    .dependencies('FlowNodeInstancePersistance');
+  container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
+    .dependencies('FlowNodeInstancePersistance');
+  container.register('EndEventHandler', EndEventHandler)
+    .dependencies('FlowNodeInstancePersistance');
 
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker', 'ProcessModelPersistance')

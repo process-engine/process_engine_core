@@ -42,7 +42,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._processEngineStorageService;
   }
 
-  public async start(context: ExecutionContext, processModel: Model.Types.Process, correlationId: string, initialPayload?: any): Promise<any> {
+  public async start(context: ExecutionContext, processModel: Model.Types.Process, correlationId: string, initialPayload?: any, caller?: string): Promise<any> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -55,6 +55,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
     const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
+    token.caller = caller;
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
     await this._executeFlowNode(startEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
