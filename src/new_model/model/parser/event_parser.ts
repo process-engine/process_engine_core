@@ -1,4 +1,7 @@
-import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
+import {
+  BpmnTags,
+  Model
+} from '@process-engine/process_engine_contracts';
 
 import {
   createObjectWithCommonProperties,

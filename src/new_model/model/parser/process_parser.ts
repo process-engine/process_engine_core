@@ -1,9 +1,14 @@
 
-import {BpmnTags, IParsedObjectModel, Model,} from '@process-engine/process_engine_contracts';
+import {BpmnTags,
+  IParsedObjectModel,
+  Model,
+} from '@process-engine/process_engine_contracts';
+
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
 } from './../type_factory';
+
 import * as Parser from './index';
 
 export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Process> {
