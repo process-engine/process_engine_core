@@ -15,7 +15,6 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const currentToken: any = await processTokenFacade.getOldTokenFormat();
     processTokenFacade.addResultForFlowNode(flowNode.id, currentToken.current);
-    const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(currentToken.current);
 
     const isExclusiveJoinGateway: boolean = incomingSequenceFlows.length > outgoingSequenceFlows.length;
 
@@ -24,7 +23,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       // If this is the join gateway, just return the next FlowNode to execute
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
-      return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
 
     // If this is the split gateway, find the SequenceFlow that has a truthy condition
@@ -44,7 +43,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
-      return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
 
     throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');

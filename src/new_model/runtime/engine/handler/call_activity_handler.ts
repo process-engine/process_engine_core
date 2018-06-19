@@ -39,11 +39,10 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const correlationResult: ICorrelationResult = await this._retrieveSubProcessResult(consumerContext, callActivityNode, correlationId);
 
     await processTokenFacade.addResultForFlowNode(callActivityNode.id, correlationResult);
-    const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(correlationResult);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
-    return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
   private async _getAccessibleStartEvent(consumerContext: ConsumerContext, processKey: string): Promise<string> {

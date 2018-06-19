@@ -47,9 +47,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       }
 
       const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(joinGateway);
-      const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken();
 
-      return new NextFlowNodeInfo(nextFlowNode, newToken, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     } else {
       return undefined;
     }
