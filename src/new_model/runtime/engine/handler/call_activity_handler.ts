@@ -64,13 +64,13 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                                                  callActivityNode: Model.Activities.CallActivity,
                                                                  tokenData: any): Promise<string> {
 
-    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnEndEventReached;
+    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
     const payload: ProcessStartRequestPayload = {
-      // Setting this to undefined, will cause the Consumer API generate a Correlation ID (UUID).
-      correlation_id: undefined,
+      // Setting this to undefined, will cause the Consumer API to generate a Correlation ID (UUID).
+      correlationId: undefined,
       callerId: callActivityNode.id,
-      input_values: tokenData.current || {},
+      inputValues: tokenData.current || {},
     };
 
     const processKey: string = callActivityNode.calledReference;
@@ -78,7 +78,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, processKey, startEventKey, payload, startCallbackType);
 
-    const correlationId: string = result.correlation_id;
+    const correlationId: string = result.correlationId;
 
     return correlationId;
   }

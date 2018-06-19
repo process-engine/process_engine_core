@@ -28,7 +28,7 @@
     "@essential-projects/metadata_contracts": "^2.0.0",
     "@essential-projects/routing_contracts": "^2.0.0",
     "@essential-projects/timing_contracts": "^2.0.0",
-    "@process-engine/consumer_api_contracts": "^0.8.0",
+    "@process-engine/consumer_api_contracts": "^0.11.0",
     "@process-engine/process_engine_contracts": "^9.0.0",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
