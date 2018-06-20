@@ -61,7 +61,9 @@ export class FlowNodeInstancePersistance implements IFlowNodeInstancePersistance
     });
   }
 
-  public async persistOnEnter(token: Runtime.Types.ProcessToken, flowNodeId: string, flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
+  public async persistOnEnter(token: Runtime.Types.ProcessToken,
+                              flowNodeId: string,
+                              flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
 
     const persistedFlowNode: IPersistedFlowNodeInstance = {
       token: token,
@@ -77,7 +79,9 @@ export class FlowNodeInstancePersistance implements IFlowNodeInstancePersistance
     return Promise.resolve(flowNodeInstance);
   }
 
-  public async persistOnExit(token: Runtime.Types.ProcessToken, flowNodeId: string, flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
+  public async persistOnExit(token: Runtime.Types.ProcessToken,
+                             flowNodeId: string,
+                             flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
 
     const persistedFlowNode: IPersistedFlowNodeInstance = this.persistedFlowNodes.get(flowNodeInstanceId);
 
@@ -92,7 +96,9 @@ export class FlowNodeInstancePersistance implements IFlowNodeInstancePersistance
     return Promise.resolve(flowNodeInstance);
   }
 
-  public async suspend(token: Runtime.Types.ProcessToken, flowNodeInstanceId: string, correlationHash?: string): Promise<Runtime.Types.FlowNodeInstance> {
+  public async suspend(token: Runtime.Types.ProcessToken,
+                       flowNodeInstanceId: string,
+                       correlationHash?: string): Promise<Runtime.Types.FlowNodeInstance> {
 
     const persistedFlowNode: IPersistedFlowNodeInstance = this.persistedFlowNodes.get(flowNodeInstanceId);
 
