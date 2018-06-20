@@ -48,7 +48,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const startEventKey: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
     const correlationId: string =
       await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventKey, callActivityNode, tokenData);
-    const correlationResult: ICorrelationResult = await this._retrieveSubProcessResult(consumerContext, callActivityNode, correlationId);
+    const correlationResult: ICorrelationResult = await this._retrieveSubProcessResult(consumerContext, processModelFacade, callActivityNode, correlationId);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
@@ -79,13 +79,13 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                                                  callActivityNode: Model.Activities.CallActivity,
                                                                  tokenData: any): Promise<string> {
 
-    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnEndEventReached;
+    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
     const payload: ProcessStartRequestPayload = {
       // Setting this to undefined, will cause the Consumer API generate a Correlation ID (UUID).
       correlation_id: undefined,
       callerId: processInstanceId,
-      input_values: tokenData.current || {},
+      inputValues: tokenData.current || {},
     };
 
     const processKey: string = callActivityNode.calledReference;
@@ -93,15 +93,16 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, processKey, startEventKey, payload, startCallbackType);
 
-    const correlationId: string = result.correlation_id;
+    const correlationId: string = result.correlationId;
 
     return correlationId;
   }
 
   private async _retrieveSubProcessResult(consumerContext: ConsumerContext,
+                                          processModelFacade: IProcessModelFacade,
                                           callActivityNode: Model.Activities.CallActivity,
                                           correlationId: string): Promise<ICorrelationResult> {
-
+    
     const correlationResult: ICorrelationResult =
       await this.consumerApiService.getProcessResultForCorrelation(consumerContext, correlationId, callActivityNode.calledReference);
 
