@@ -27,8 +27,8 @@ import {
   IProcessDefEntity,
   IProcessDefEntityTypeService,
   IProcessEngineService,
-  IProcessModelPersistance,
   IProcessEntity,
+  IProcessModelPersistance,
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
@@ -530,7 +530,12 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
-  public async executeProcess(context: ExecutionContext, id: string, key: string, initialToken: any, version?: string, correlationId?: string): Promise<any> {
+  public async executeProcess(context: ExecutionContext,
+                              id: string,
+                              key: string,
+                              initialToken: any,
+                              version?: string,
+                              correlationId?: string): Promise<any> {
     if (id === undefined && key === undefined) {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
@@ -598,7 +603,10 @@ export class ProcessEngineService implements IProcessEngineService {
     this._errorDeserializer = deserializer;
   }
 
-  private async _executeProcessLocally(context: ExecutionContext, process: Model.Types.Process, initialToken: any, correlationId?: string): Promise<any> {
+  private async _executeProcessLocally(context: ExecutionContext,
+                                       process: Model.Types.Process,
+                                       initialToken: any,
+                                       correlationId?: string): Promise<any> {
     const tokenResult: any = await this._executeProcessService.start(context, process, correlationId, initialToken);
 
     return tokenResult;
@@ -741,4 +749,5 @@ export class ProcessEngineService implements IProcessEngineService {
     return createProcessResponse.data;
   }
 
+// tslint:disable-next-line:max-file-line-count
 }

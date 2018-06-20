@@ -67,40 +67,39 @@ export class ProcessModelFacade implements IProcessModelFacade {
   // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
   public getUserTasks(): Array<Model.Activities.UserTask> {
 
-    const userTaskFlowNodes: Model.Base.FlowNode = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+    const userTaskFlowNodes: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
       return flowNode instanceof Model.Activities.UserTask;
     });
-    
+
     const laneUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(this.processModel.laneSet);
 
     return [
       ...userTaskFlowNodes,
       ...laneUserTasks,
-    ];
+    ] as Array<Model.Activities.UserTask>;
   }
 
-  // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
   private _getUserTasksFromLaneRecursively(laneSet: Model.Types.LaneSet): Array<Model.Activities.UserTask> {
-    
-    const userTasks: Array<Model.Activities.UserTask> = [];
-    
+
+    const userTasks: Array<Model.Base.FlowNode> = [];
+
     if (!laneSet) {
-      return userTasks;
+      return userTasks as Array<Model.Activities.UserTask>;
     }
 
     for (const lane of laneSet.lanes) {
 
-      const userTaskFlowNodes: Model.Base.FlowNode = lane.flowNodeReferences.filter((flowNode: Model.Base.FlowNode) => {
+      const userTaskFlowNodes: Array<Model.Base.FlowNode> = lane.flowNodeReferences.filter((flowNode: Model.Base.FlowNode) => {
         return flowNode instanceof Model.Activities.UserTask;
       });
 
-      userTasks.push(userTaskFlowNodes);
-      
-      const childUserTasks = this._getUserTasksFromLaneRecursively(lane.childLaneSet);
-      userTasks.push(childUserTasks);
+      Array.prototype.push.apply(userTasks, userTaskFlowNodes);
+
+      const childUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(lane.childLaneSet);
+      Array.prototype.push.apply(userTasks, childUserTasks);
     }
 
-    return userTasks;
+    return userTasks as Array<Model.Activities.UserTask>;
   }
 
   public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {

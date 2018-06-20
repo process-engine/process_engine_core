@@ -1,5 +1,5 @@
-import { IEvent, IEventAggregator } from '@essential-projects/event_aggregator_contracts';
-import { IExecutionContextFacade, IFlowNodeHandlerFactory, IProcessModelFacade, IFlowNodeInstancePersistance,
+import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
+import { IExecutionContextFacade, IFlowNodeInstancePersistance, IProcessModelFacade,
   IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
@@ -28,7 +28,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async (resolve: Function): Promise<void> => {
+    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       const userTaskInstanceId: string = super.createFlowNodeInstanceId();
 
@@ -41,10 +41,10 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
         const userTaskResult: any = {
           form_fields: message.data.token,
         };
-        
+
         processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
         const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
-        
+
         await this.flowNodeInstancePersistance.persistOnExit(token, userTask.id, userTaskInstanceId);
 
         this._sendUserTaskFinishedToConsumerApi(userTask, executionContextFacade);

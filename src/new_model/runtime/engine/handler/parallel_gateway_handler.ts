@@ -7,8 +7,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
 
-
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactor, flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
+  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
     super();
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstancePersistance = flowNodeInstancePersistance;
@@ -31,7 +30,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
     await this.flowNodeInstancePersistance.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
-    
+
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
 

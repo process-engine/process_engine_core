@@ -6,6 +6,7 @@ import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeHandler, IFlo
 import { ProcessTokenFacade } from '.';
 
 import * as uuid from 'uuid';
+import { IEventAggregator, ISubscription } from '../../../../node_modules/@essential-projects/event_aggregator_contracts';
 import { ExecutionContextFacade } from './execution_context_facade';
 import { ProcessModelFacade } from './process_model_facade';
 
@@ -14,32 +15,26 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _datastoreService: IDatastoreService = undefined;
   private _messageBusService: IMessageBusService = undefined;
-  private _processEngineStorageService: IProcessEngineStorageService = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
 
   constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
-              datastoreService: IDatastoreService,
               messageBusService: IMessageBusService,
-              processEngineStorageService: IProcessEngineStorageService) {
+              eventAggregator: IEventAggregator) {
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._datastoreService = datastoreService;
     this._messageBusService = messageBusService;
-    this._processEngineStorageService = processEngineStorageService;
+    this._eventAggregator = eventAggregator;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
   }
 
-  private get datastoreService(): IDatastoreService {
-    return this._datastoreService;
-  }
-
   private get messageBusService(): IMessageBusService {
     return this._messageBusService;
   }
 
-  private get processEngineStorageService(): IProcessEngineStorageService {
-    return this._processEngineStorageService;
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   public async start(context: ExecutionContext,
@@ -77,7 +72,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              endEventId: string,
                                              initialPayload?: any): Promise<any> {
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: any): Promise<void> => {
         resolve();
@@ -99,13 +94,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
-    const endEvents = processModelFacade.getEndEvents();
-    const subscriptions = [];
+    const endEvents: Array<Model.Events.EndEvent> = processModelFacade.getEndEvents();
+    const subscriptions: Array<ISubscription> = [];
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
       for (const endEvent of endEvents) {
 
-        const subscription = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: any): Promise<void> => {
+        const subscription: ISubscription
+          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: any): Promise<void> => {
 
           for (const existingSubscription of subscriptions) {
             existingSubscription.dispose();
@@ -142,7 +138,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                                              executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade, processModelFacade, executionContextFacade);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+                                  nextFlowNodeInfo.token,
+                                  nextFlowNodeInfo.processTokenFacade,
+                                  processModelFacade,
+                                  executionContextFacade);
     }
   }
 
@@ -153,7 +153,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       event: 'end',
       token: processToken.current,
     };
-    console.log(`/processengine/process/${processInstanceId}`);
+
     const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
     this.messageBusService.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }

@@ -1,5 +1,3 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   ConsumerContext,
   IConsumerApiService,
@@ -9,9 +7,9 @@ import {
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
-import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade, Model,
-  NextFlowNodeInfo, IFlowNodeInstancePersistance} from '@process-engine/process_engine_contracts';
-import { ProcessModelFacade } from './../../index';
+import { IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory,
+  IFlowNodeInstancePersistance, IProcessModelFacade, IProcessTokenFacade,
+  Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
@@ -38,11 +36,11 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    
+
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
+
     await this.flowNodeInstancePersistance.persistOnEnter(token, subProcessNode.id, flowNodeInstanceId);
-    
+
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,
     // but results of the SubProcess are not accessible by the original Process before the SubProcess finishes.
 
