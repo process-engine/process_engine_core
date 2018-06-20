@@ -119,17 +119,17 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
     const payload: ProcessStartRequestPayload = {
       // If the process already has a correlation, use it for the call activity.
       // Otherwise, set to undefined, so that the consumer api will create a new correlation (UUID).
-      correlation_id: this.process.correlationId || undefined,
+      correlationId: this.process.correlationId || undefined,
       callerId: this.id,
       // TODO - Question: Allow for parameters to be retrieved through extension properties, as it is done with service tasks?
       // Using only the current token could be problematic, if you want to provide tokens from previous node instances.
-      input_values: this.processToken.data.current || {},
+      inputValues: this.processToken.data.current || {},
     };
 
     const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, this.nodeDef.subProcessKey, startEventKey, payload, startCallbackType);
 
-    const correlationId: string = result.correlation_id;
+    const correlationId: string = result.correlationId;
 
     return correlationId;
   }

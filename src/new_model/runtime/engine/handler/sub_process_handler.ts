@@ -53,7 +53,8 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // through to handlers inside the SubProcess.
 
     const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(subProcessNode);
-    const startEvent: Model.Events.StartEvent = subProcessModelFacade.getStartEvent();
+    const startEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
+    const startEvent: Model.Events.StartEvent = startEvents[0];
 
     // The initial token value is used as a result of the StartEvent inside the SubProcess
     const initialTokenData: any = await processTokenFacade.getOldTokenFormat();

@@ -14,15 +14,15 @@ export class SubProcessModelFacade extends ProcessModelFacade {
     return this._subProcessDefinition;
   }
 
-  public getStartEvent(): Model.Events.StartEvent {
+  public getStartEvents(): Array<Model.Events.StartEvent> {
 
     // The SubProcess-StartEvent is not contained in the processDefinition, but in the subProcessDefinition
 
-    const startEventDef: Model.Base.FlowNode = this.subProcessDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
-      return flowNode.constructor.name === 'StartEvent';
+    const startEventDef: Array<Model.Base.FlowNode> = this.subProcessDefinition.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof Model.Events.StartEvent;
     });
 
-    return startEventDef as Model.Events.StartEvent;
+    return startEventDef as Array<Model.Events.StartEvent>;
   }
 
   public getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode {

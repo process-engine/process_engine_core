@@ -15,24 +15,47 @@ export class FlowNodeInstancePersistance implements IFlowNodeInstancePersistance
     return this._persistedFlowNodes;
   }
 
-  public async queryBy(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+  public async queryByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     const persistedFlowNodes: Array<IPersistedFlowNodeInstance> = Array.from(this.persistedFlowNodes.values());
     const filteredFlowNodes: Array<IPersistedFlowNodeInstance> = persistedFlowNodes.filter((persistedFlowNode: IPersistedFlowNodeInstance) => {
       return persistedFlowNode.token.correlationId === correlationId;
     });
-    
+
     return filteredFlowNodes.map((persistedFlowNode: IPersistedFlowNodeInstance) => {
       return this._createFlowNodeInstance(persistedFlowNode);
     });
   }
 
-  public async querySuspended(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+  public async queryByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    const persistedFlowNodes: Array<IPersistedFlowNodeInstance> = Array.from(this.persistedFlowNodes.values());
+    const filteredFlowNodes: Array<IPersistedFlowNodeInstance> = persistedFlowNodes.filter((persistedFlowNode: IPersistedFlowNodeInstance) => {
+      return persistedFlowNode.token.processModelId === processModelId;
+    });
+
+    return filteredFlowNodes.map((persistedFlowNode: IPersistedFlowNodeInstance) => {
+      return this._createFlowNodeInstance(persistedFlowNode);
+    });
+  }
+
+  public async querySuspendedByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     const persistedFlowNodes: Array<IPersistedFlowNodeInstance> = Array.from(this.persistedFlowNodes.values());
     const filteredFlowNodes: Array<IPersistedFlowNodeInstance> = persistedFlowNodes.filter((persistedFlowNode: IPersistedFlowNodeInstance) => {
       return persistedFlowNode.token.correlationId === correlationId
         && persistedFlowNode.isSuspended === true;
     });
-    
+
+    return filteredFlowNodes.map((persistedFlowNode: IPersistedFlowNodeInstance) => {
+      return this._createFlowNodeInstance(persistedFlowNode);
+    });
+  }
+
+  public async querySuspendedByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    const persistedFlowNodes: Array<IPersistedFlowNodeInstance> = Array.from(this.persistedFlowNodes.values());
+    const filteredFlowNodes: Array<IPersistedFlowNodeInstance> = persistedFlowNodes.filter((persistedFlowNode: IPersistedFlowNodeInstance) => {
+      return persistedFlowNode.token.processModelId === processModelId
+        && persistedFlowNode.isSuspended === true;
+    });
+
     return filteredFlowNodes.map((persistedFlowNode: IPersistedFlowNodeInstance) => {
       return this._createFlowNodeInstance(persistedFlowNode);
     });
@@ -85,7 +108,7 @@ export class FlowNodeInstancePersistance implements IFlowNodeInstancePersistance
     return Promise.resolve(flowNodeInstance);
   }
 
-  public async resume(flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance>{
+  public async resume(flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
 
     const persistedFlowNode: IPersistedFlowNodeInstance = this.persistedFlowNodes.get(flowNodeInstanceId);
 
@@ -107,7 +130,7 @@ export class FlowNodeInstancePersistance implements IFlowNodeInstancePersistance
     flowNodeInstance.id = persistedFlowNodeInstance.flowNodeInstanceId;
     flowNodeInstance.flowNodeId = persistedFlowNodeInstance.flowNodeId;
     flowNodeInstance.token = persistedFlowNodeInstance.token;
-    
+
     return flowNodeInstance;
   }
 

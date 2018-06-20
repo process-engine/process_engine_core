@@ -45,7 +45,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
-    const startEvent: Model.Events.StartEvent = processModelFacade.getStartEvent();
+    const startEvents: Array<Model.Events.StartEvent> = processModelFacade.getStartEvents();
+    const startEvent: Model.Events.StartEvent = startEvents[0];
 
     const processInstanceId: string = uuid.v4();
 

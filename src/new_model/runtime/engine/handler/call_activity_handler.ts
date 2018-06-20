@@ -2,8 +2,8 @@ import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contr
 import { IInvoker } from '@essential-projects/invocation_contracts';
 import { ConsumerContext, IConsumerApiService, ICorrelationResult, ProcessModel,
   ProcessStartRequestPayload, ProcessStartResponsePayload, StartCallbackType} from '@process-engine/consumer_api_contracts';
-import { IExecuteProcessService, IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade,
-  Model, NextFlowNodeInfo, IFlowNodeInstancePersistance, Runtime } from '@process-engine/process_engine_contracts';
+import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeInstancePersistance, IProcessModelFacade,
+  IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
@@ -31,11 +31,11 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    
+
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
+
     await this.flowNodeInstancePersistance.persistOnEnter(token, callActivityNode.id, flowNodeInstanceId);
-    
+
     const encryptedToken: string = await executionContextFacade.getIdentityToken();
 
     const consumerContext: ConsumerContext = {
@@ -48,7 +48,8 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const startEventKey: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
     const correlationId: string =
       await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventKey, callActivityNode, tokenData);
-    const correlationResult: ICorrelationResult = await this._retrieveSubProcessResult(consumerContext, processModelFacade, callActivityNode, correlationId);
+    const correlationResult: ICorrelationResult
+      = await this._retrieveSubProcessResult(consumerContext, processModelFacade, callActivityNode, correlationId);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
@@ -83,7 +84,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const payload: ProcessStartRequestPayload = {
       // Setting this to undefined, will cause the Consumer API generate a Correlation ID (UUID).
-      correlation_id: undefined,
+      correlationId: undefined,
       callerId: processInstanceId,
       inputValues: tokenData.current || {},
     };
@@ -102,7 +103,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                           processModelFacade: IProcessModelFacade,
                                           callActivityNode: Model.Activities.CallActivity,
                                           correlationId: string): Promise<ICorrelationResult> {
-    
+
     const correlationResult: ICorrelationResult =
       await this.consumerApiService.getProcessResultForCorrelation(consumerContext, correlationId, callActivityNode.calledReference);
 

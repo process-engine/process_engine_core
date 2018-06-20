@@ -45,23 +45,22 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return new SubProcessModelFacade(this.processModel, subProcessNode);
   }
 
-  // TODO: implement execution of specific StartEvent
-  public getStartEvent(): Model.Events.StartEvent {
+  public getStartEvents(): Array<Model.Events.StartEvent> {
 
-    const startEvent: Model.Base.FlowNode = this.processModel.flowNodes.find((flowNode: Model.Base.FlowNode) => {
+    const startEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
       return flowNode instanceof Model.Events.StartEvent;
     });
 
-    return startEvent as Model.Events.StartEvent;
+    return startEvents as Array<Model.Events.StartEvent>;
   }
 
   public getEndEvents(): Array<Model.Events.EndEvent> {
 
-    const endEvent: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+    const endEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
       return flowNode instanceof Model.Events.EndEvent;
     });
 
-    return endEvent as Array<Model.Events.EndEvent>;
+    return endEvents as Array<Model.Events.EndEvent>;
   }
 
   // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
