@@ -42,7 +42,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._processEngineStorageService;
   }
 
-  public async start(context: ExecutionContext, processModel: Model.Types.Process, correlationId: string, initialPayload?: any, caller?: string): Promise<any> {
+  public async start(context: ExecutionContext,
+                     processModel: Model.Types.Process,
+                     correlationId: string,
+                     initialPayload?: any,
+                     caller?: string): Promise<any> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -65,6 +69,62 @@ export class ExecuteProcessService implements IExecuteProcessService {
     await this._end(processInstanceId, resultToken, context);
 
     return resultToken.current;
+  }
+
+  public async startAndAwaitSpecificEndEvent(context: ExecutionContext,
+                                             processModel: Model.Types.Process,
+                                             correlationId: string,
+                                             endEventId: string,
+                                             initialPayload?: any): Promise<any> {
+
+    return new Promise(async (resolve, reject) => {
+
+      this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: any): Promise<void> => {
+        resolve();
+      });
+
+      try {
+        await this.start(context, processModel, correlationId, initialPayload, undefined);
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  public async startAndAwaitEndEvent(context: ExecutionContext,
+                                     processModel: Model.Types.Process,
+                                     correlationId: string,
+                                     initialPayload?: any): Promise<any> {
+
+    const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
+
+    const endEvents = processModelFacade.getEndEvents();
+    const subscriptions = [];
+
+    return new Promise(async (resolve, reject) => {
+      for (const endEvent of endEvents) {
+
+        const subscription = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: any): Promise<void> => {
+
+          for (const existingSubscription of subscriptions) {
+            existingSubscription.dispose();
+          }
+
+          resolve();
+        });
+
+        subscriptions.push(subscription);
+      }
+
+      try {
+        await this.start(context, processModel, correlationId, initialPayload, undefined);
+
+      } catch (error) {
+        reject(error);
+      }
+
+    });
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
