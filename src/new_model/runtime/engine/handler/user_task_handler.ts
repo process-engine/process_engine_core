@@ -34,7 +34,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       await this.flowNodeInstancePersistance.persistOnEnter(token, userTask.id, userTaskInstanceId);
 
-      this.eventAggregator.subscribeOnce(`/processengine/node/${userTask.id}`, async(message: any): Promise<void> => {
+      this.eventAggregator.subscribeOnce(`/processengine/node/${userTask.id}/finish`, async(message: any): Promise<void> => {
 
         await this.flowNodeInstancePersistance.resume(userTaskInstanceId);
 
@@ -60,14 +60,6 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
   private _sendUserTaskFinishedToConsumerApi(userTask: Model.Activities.UserTask,
                                              executionContextFacade: IExecutionContextFacade): void {
 
-    this.eventAggregator.publish(`/processengine/node/${userTask.id}`, {
-      data: {
-        action: 'changeState',
-        data: 'end',
-      },
-      metadata: {
-        context: executionContextFacade.getExecutionContext(),
-      },
-    });
+    this.eventAggregator.publish(`/processengine/node/${userTask.id}/finished`, {});
   }
 }
