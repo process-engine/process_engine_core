@@ -24,4 +24,15 @@ export class ProcessModelPersistance implements IProcessModelPersistance {
       }
     }
   }
+
+  public async getProcessModels(): Promise<Array<Model.Types.Process>> {
+
+    const allProcessModels: Array<Model.Types.Process> = [];
+
+    for (const definition of this.definitions) {
+      Array.prototype.push.apply(allProcessModels, definition.processes);
+    }
+
+    return allProcessModels;
+  }
 }
