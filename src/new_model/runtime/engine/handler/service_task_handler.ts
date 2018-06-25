@@ -1,6 +1,5 @@
 import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IInvoker } from '@essential-projects/invocation_contracts';
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, IFlowNodeInstancePersistance,
+import { IExecutionContextFacade, IFlowNodeInstancePersistence, IProcessModelFacade, IProcessTokenFacade, Model,
   NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { IContainer } from 'addict-ioc';
 import { FlowNodeHandler } from './index';
@@ -8,27 +7,21 @@ import { FlowNodeHandler } from './index';
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
-  private _invoker: IInvoker;
-  private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
+  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
 
-  constructor(container: IContainer, invoker: IInvoker, flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
+  constructor(container: IContainer, flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
     super();
 
     this._container = container;
-    this._invoker = invoker;
-    this._flowNodeInstancePersistance = flowNodeInstancePersistance;
+    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
   }
 
   private get container(): IContainer {
     return this._container;
   }
 
-  private get invoker(): IInvoker {
-    return this._invoker;
-  }
-
-  private get flowNodeInstancePersistance(): IFlowNodeInstancePersistance {
-    return this._flowNodeInstancePersistance;
+  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
+    return this._flowNodeInstancePersistence;
   }
 
   protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
@@ -36,11 +29,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    
+
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
-    await this.flowNodeInstancePersistance.persistOnEnter(token, serviceTaskNode.id, flowNodeInstanceId);
-    
+
+    await this.flowNodeInstancePersistence.persistOnEnter(token, serviceTaskNode.id, flowNodeInstanceId);
+
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
@@ -65,7 +58,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
 
       processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
-      await this.flowNodeInstancePersistance.persistOnExit(token, serviceTaskNode.id, flowNodeInstanceId);
+      await this.flowNodeInstancePersistence.persistOnExit(token, serviceTaskNode.id, flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
 

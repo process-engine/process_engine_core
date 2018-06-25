@@ -11,7 +11,7 @@ import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
   Definitions, IImportFromFileOptions, IImportFromXmlOptions,
   IModelParser, IParamImportFromFile, IParamImportFromXml,
-  IParamStart, IProcessDefEntity, IProcessDefEntityTypeService, IProcessModelPersistance, IProcessRepository,
+  IParamStart, IProcessDefEntity, IProcessDefEntityTypeService, IProcessModelPersistence, IProcessRepository,
 } from '@process-engine/process_engine_contracts';
 import { BpmnDiagram } from '../bpmn_diagram';
 
@@ -25,18 +25,18 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
   private _bpmnModelParser: IModelParser = undefined;
-  private _processModelPersistance: IProcessModelPersistance = undefined;
+  private _processModelPersistence: IProcessModelPersistence = undefined;
 
   constructor(datastoreService: IDatastoreService,
               processRepository: IProcessRepository,
               invoker: IInvoker,
               bpmnModelParser: IModelParser,
-              processModelPersistance: IProcessModelPersistance) {
+              processModelPersistence: IProcessModelPersistence) {
     this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;
     this._bpmnModelParser = bpmnModelParser;
-    this._processModelPersistance = processModelPersistance;
+    this._processModelPersistence = processModelPersistence;
   }
 
   // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
@@ -56,8 +56,8 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._bpmnModelParser;
   }
 
-  private get processModelPersistance(): IProcessModelPersistance {
-    return this._processModelPersistance;
+  private get processModelPersistence(): IProcessModelPersistence {
+    return this._processModelPersistence;
   }
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
@@ -88,9 +88,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const xml = params && params.xml ? params.xml : null;
     const definitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
-    await this.processModelPersistance.persistProcessDefinitions(definitions);
-
-    // TODO: (SM) check which persistance to use (new vs old object model)
+    await this.processModelPersistence.persistProcessDefinitions(definitions);
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 

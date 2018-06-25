@@ -1,18 +1,18 @@
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo, IFlowNodeInstancePersistance,
+import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo, IFlowNodeInstancePersistence,
   Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> {
 
-  private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
+  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
 
-  constructor(flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
+  constructor(flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
     super();
-    this._flowNodeInstancePersistance = flowNodeInstancePersistance;
+    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
   }
 
-  private get flowNodeInstancePersistance(): IFlowNodeInstancePersistance {
-    return this._flowNodeInstancePersistance;
+  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
+    return this._flowNodeInstancePersistence;
   }
 
   protected async executeInternally(flowNode: Model.Events.StartEvent,
@@ -23,11 +23,11 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
     
-    await this.flowNodeInstancePersistance.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistence.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
     
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await this.flowNodeInstancePersistance.persistOnExit(token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistence.persistOnExit(token, flowNode.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

@@ -62,7 +62,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BpmnType.userTask:
         return this._createHandler<TFlowNode>('UserTaskHandler');
       default:
-        throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${type} gefunden werden.`);
+        throw Error(`FlowNodeHandler for BPMN type "${type}" could not be found.`);
     }
   }
 

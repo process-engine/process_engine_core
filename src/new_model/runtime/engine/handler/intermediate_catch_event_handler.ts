@@ -1,18 +1,18 @@
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, IFlowNodeInstancePersistance,
+import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, IFlowNodeInstancePersistence,
   Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.Event> {
 
-  private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
+  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
 
-  constructor(flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
+  constructor(flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
     super();
-    this._flowNodeInstancePersistance = flowNodeInstancePersistance;
+    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
   }
 
-  private get flowNodeInstancePersistance(): IFlowNodeInstancePersistance {
-    return this._flowNodeInstancePersistance;
+  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
+    return this._flowNodeInstancePersistence;
   }
 
   protected async executeInternally(flowNode: Model.Events.Event,
@@ -23,11 +23,11 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
     
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
     
-    await this.flowNodeInstancePersistance.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistence.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
     
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await this.flowNodeInstancePersistance.persistOnExit(token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistence.persistOnExit(token, flowNode.id, flowNodeInstanceId);
     
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

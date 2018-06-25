@@ -2,28 +2,28 @@ import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contr
 import { IInvoker } from '@essential-projects/invocation_contracts';
 import { ConsumerContext, IConsumerApiService, ICorrelationResult, ProcessModel,
   ProcessStartRequestPayload, ProcessStartResponsePayload, StartCallbackType} from '@process-engine/consumer_api_contracts';
-import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeInstancePersistance, IProcessModelFacade,
+import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeInstancePersistence, IProcessModelFacade,
   IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
 import { FlowNodeHandler } from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApiService;
-  private _flowNodeInstancePersistance: IFlowNodeInstancePersistance = undefined;
+  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
 
-  constructor(consumerApiService: IConsumerApiService, flowNodeInstancePersistance: IFlowNodeInstancePersistance) {
+  constructor(consumerApiService: IConsumerApiService, flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
     super();
 
     this._consumerApiService = consumerApiService;
-    this._flowNodeInstancePersistance = flowNodeInstancePersistance;
+    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
   }
 
   private get consumerApiService(): IConsumerApiService {
     return this._consumerApiService;
   }
 
-  private get flowNodeInstancePersistance(): IFlowNodeInstancePersistance {
-    return this._flowNodeInstancePersistance;
+  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
+    return this._flowNodeInstancePersistence;
   }
 
   protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
@@ -34,7 +34,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistance.persistOnEnter(token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistence.persistOnEnter(token, callActivityNode.id, flowNodeInstanceId);
 
     const encryptedToken: string = await executionContextFacade.getIdentityToken();
 
@@ -46,15 +46,17 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const processInstanceId: string = token.processInstanceId;
     const startEventKey: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
+
     const correlationId: string =
       await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventKey, callActivityNode, tokenData);
+
     const correlationResult: ICorrelationResult
       = await this._retrieveSubProcessResult(consumerContext, processModelFacade, callActivityNode, correlationId);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
     await processTokenFacade.addResultForFlowNode(callActivityNode.id, correlationResult);
-    await this.flowNodeInstancePersistance.persistOnExit(token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistence.persistOnExit(token, callActivityNode.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
@@ -83,7 +85,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
     const payload: ProcessStartRequestPayload = {
-      // Setting this to undefined, will cause the Consumer API generate a Correlation ID (UUID).
+      // Setting this to undefined, will cause the Consumer API to generate a Correlation ID (UUID).
       correlationId: undefined,
       callerId: processInstanceId,
       inputValues: tokenData.current || {},

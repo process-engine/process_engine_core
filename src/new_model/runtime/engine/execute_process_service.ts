@@ -1,19 +1,22 @@
 import { ExecutionContext } from '@essential-projects/core_contracts';
-import { IDatastoreService } from '@essential-projects/data_model_contracts';
 import { IDataMessage, IMessageBusService } from '@essential-projects/messagebus_contracts';
 import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade,
   IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
 import { ProcessTokenFacade } from '.';
 
 import * as uuid from 'uuid';
-import { IEventAggregator, ISubscription } from '../../../../node_modules/@essential-projects/event_aggregator_contracts';
+
+import { IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
 import { ExecutionContextFacade } from './execution_context_facade';
 import { ProcessModelFacade } from './process_model_facade';
+
+import {Logger} from 'loggerhythm';
+
+const logger: Logger = Logger.createLogger('processengine:execute_process_service');
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _datastoreService: IDatastoreService = undefined;
   private _messageBusService: IMessageBusService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
 
@@ -83,6 +86,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
         await this.start(context, processModel, correlationId, initialPayload, undefined);
 
       } catch (error) {
+        // tslint:disable-next-line:max-line-length
+        const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
+        logger.error(errorMessage, error);
         reject(error);
       }
     });
@@ -118,6 +124,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
         await this.start(context, processModel, correlationId, initialPayload, undefined);
 
       } catch (error) {
+        // tslint:disable-next-line:max-line-length
+        const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
+        logger.error(errorMessage, error);
         reject(error);
       }
 

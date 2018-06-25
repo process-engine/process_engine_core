@@ -1,3 +1,5 @@
+// tslint:disable:max-file-line-count
+
 import {
   ExecutionContext,
   IApplicationService,
@@ -28,7 +30,7 @@ import {
   IProcessDefEntityTypeService,
   IProcessEngineService,
   IProcessEntity,
-  IProcessModelPersistance,
+  IProcessModelPersistence,
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
@@ -55,7 +57,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
-  private _processModelPersistance: IProcessModelPersistance = undefined;
+  private _processModelPersistence: IProcessModelPersistence = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
@@ -72,7 +74,7 @@ export class ProcessEngineService implements IProcessEngineService {
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
               invoker: IInvoker,
-              processModelPersistance: IProcessModelPersistance) {
+              processModelPersistence: IProcessModelPersistence) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -84,7 +86,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
     this._applicationService = applicationService;
     this._invoker = invoker;
-    this._processModelPersistance = processModelPersistance;
+    this._processModelPersistence = processModelPersistence;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -131,8 +133,8 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
-  private get processModelPersistance(): IProcessModelPersistance {
-    return this._processModelPersistance;
+  private get processModelPersistence(): IProcessModelPersistence {
+    return this._processModelPersistence;
   }
 
   private get errorDeserializer(): IErrorDeserializer {
@@ -540,7 +542,7 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    const process: Model.Types.Process = await this.processModelPersistance.getProcessModelById(key);
+    const process: Model.Types.Process = await this.processModelPersistence.getProcessModelById(key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
@@ -749,5 +751,4 @@ export class ProcessEngineService implements IProcessEngineService {
     return createProcessResponse.data;
   }
 
-// tslint:disable-next-line:max-file-line-count
 }
