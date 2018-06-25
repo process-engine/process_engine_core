@@ -1,14 +1,38 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IExecutionContextFacade, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade,
-  Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {ExecutionContext, IToPojoOptions} from '@essential-projects/core_contracts';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistence,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
+  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
+
+  constructor(flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
+    super();
+    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
+  }
+
+  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
+    return this._flowNodeInstancePersistence;
+  }
+
   protected async executeInternally(scriptTask: Model.Activities.ScriptTask,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+
+    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+
+    await this.flowNodeInstancePersistence.persistOnEnter(token, scriptTask.id, flowNodeInstanceId);
 
     const script: string = scriptTask.script;
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
@@ -32,10 +56,11 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
       finalResult = await result.toPojo(context, toPojoOptions);
     }
 
-    await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
-
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+    await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
+    await this.flowNodeInstancePersistence.persistOnExit(token, scriptTask.id, flowNodeInstanceId);
+
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 }

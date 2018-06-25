@@ -1,6 +1,13 @@
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model,
-  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {
+  IExecutionContextFacade,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
@@ -16,13 +23,14 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
   }
 
   protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
     try {
 
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
+        = await this.decoratedHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
       return nextFlowNodeInfo;
 
@@ -41,7 +49,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);
 
-      return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
   }
 }

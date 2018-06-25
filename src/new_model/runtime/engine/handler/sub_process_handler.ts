@@ -1,35 +1,45 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IInvoker } from '@essential-projects/invocation_contracts';
 import {
-  ConsumerContext,
-  IConsumerApiService,
-  ICorrelationResult,
-  ProcessModel,
-  ProcessStartRequestPayload,
-  ProcessStartResponsePayload,
-  StartCallbackType,
-} from '@process-engine/consumer_api_contracts';
-import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade, Model,
-  NextFlowNodeInfo} from '@process-engine/process_engine_contracts';
-import { ProcessModelFacade } from './../../index';
-import { FlowNodeHandler } from './index';
+  IExecutionContextFacade,
+  IFlowNodeHandler,
+  IFlowNodeHandlerFactory,
+  IFlowNodeInstancePersistence,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory) {
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
+  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
+
+  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
     super();
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
   }
 
+  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
+    return this._flowNodeInstancePersistence;
+  }
+
   protected async executeInternally(subProcessNode: Model.Activities.SubProcess,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+
+    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+
+    await this.flowNodeInstancePersistence.persistOnEnter(token, subProcessNode.id, flowNodeInstanceId);
 
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,
     // but results of the SubProcess are not accessible by the original Process before the SubProcess finishes.
@@ -43,26 +53,30 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // through to handlers inside the SubProcess.
 
     const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(subProcessNode);
-    const startEvent: Model.Events.StartEvent = subProcessModelFacade.getStartEvent();
+    const startEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
+    const startEvent: Model.Events.StartEvent = startEvents[0];
 
     // The initial token value is used as a result of the StartEvent inside the SubProcess
     const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     subProcessTokenFacade.addResultForFlowNode(startEvent.id, initialTokenData.current);
 
-    await this._executeFlowNode(startEvent, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
 
     // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
     // and on the original ProcessTokenFacade, so that is is accessible by the original Process
 
     const finalTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
-    processTokenFacade.addResultForFlowNode(subProcessNode.id, finalTokenData.current);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcessNode);
 
-    return new NextFlowNodeInfo(nextFlowNode, processTokenFacade);
+    processTokenFacade.addResultForFlowNode(subProcessNode.id, finalTokenData.current);
+    await this.flowNodeInstancePersistence.persistOnExit(token, subProcessNode.id, flowNodeInstanceId);
+
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
+                                 token: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
@@ -70,12 +84,17 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                    processTokenFacade,
-                                                    processModelFacade,
-                                                    executionContextFacade);
+                                                                             token,
+                                                                             processTokenFacade,
+                                                                             processModelFacade,
+                                                                             executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode, nextFlowNodeInfo.processTokenFacade, processModelFacade, executionContextFacade);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+                                  nextFlowNodeInfo.token,
+                                  nextFlowNodeInfo.processTokenFacade,
+                                  processModelFacade,
+                                  executionContextFacade);
     }
   }
 

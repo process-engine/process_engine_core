@@ -1,10 +1,23 @@
-import { ExecutionContext } from '@essential-projects/core_contracts';
-import { BpmnType, IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade,
-  IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
+import {
+  IExecutionContextFacade,
+  IFlowNodeHandler,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import * as uuid from 'uuid';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
+  protected createFlowNodeInstanceId(): string {
+    return uuid.v4();
+  }
+
   public async execute(flowNode: TFlowNode,
+                       token: Runtime.Types.ProcessToken,
                        processTokenFacade: IProcessTokenFacade,
                        processModelFacade: IProcessModelFacade,
                        executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
@@ -14,7 +27,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     try {
 
       // executeInternally is the method where derived handlers can implement their logic
-      nextFlowNode = await this.executeInternally(flowNode, processTokenFacade, processModelFacade, executionContextFacade);
+      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
@@ -28,12 +41,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       throw new Error(`Next flow node after node with id "${flowNode.id}" could not be found.`);
     }
 
-    await this.afterExecute(flowNode, nextFlowNode.flowNode, processTokenFacade, processModelFacade);
+    await this.afterExecute(flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }
 
   protected async abstract executeInternally(flowNode: TFlowNode,
+                                             token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
                                              executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;

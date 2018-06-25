@@ -1,16 +1,17 @@
-import { BpmnType, IProcessModelFacade, Model } from '@process-engine/process_engine_contracts';
-import { SubProcessModelFacade } from './index';
+import {BpmnType, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
+
+import {SubProcessModelFacade} from './index';
 
 export class ProcessModelFacade implements IProcessModelFacade {
 
-  private _processDefinition: Model.Types.Process;
+  private _processModel: Model.Types.Process;
 
-  constructor(processDefinition: Model.Types.Process) {
-    this._processDefinition = processDefinition;
+  constructor(processModel: Model.Types.Process) {
+    this._processModel = processModel;
   }
 
-  protected get processDefinition(): Model.Types.Process {
-    return this._processDefinition;
+  protected get processModel(): Model.Types.Process {
+    return this._processModel;
   }
 
   public getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow {
@@ -20,7 +21,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
     }
 
     const sequenceFlowsTargetingNextFlowNode: Array<Model.Types.SequenceFlow>
-      = this.processDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+      = this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.targetRef === nextFlowNode.id;
     });
 
@@ -42,27 +43,73 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getSubProcessModelFacade(subProcessNode: Model.Activities.SubProcess): IProcessModelFacade {
-    return new SubProcessModelFacade(this.processDefinition, subProcessNode);
+    return new SubProcessModelFacade(this.processModel, subProcessNode);
   }
 
-  // TODO: implement execution of specific StartEvent
-  public getStartEvent(): Model.Events.StartEvent {
+  public getStartEvents(): Array<Model.Events.StartEvent> {
 
-    const startEventDef: Model.Base.FlowNode = this.processDefinition.flowNodes.find((flowNode: Model.Base.FlowNode) => {
-      return flowNode.constructor.name === 'StartEvent';
+    const startEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof Model.Events.StartEvent;
     });
 
-    return startEventDef as Model.Events.StartEvent;
+    return startEvents as Array<Model.Events.StartEvent>;
+  }
+
+  public getEndEvents(): Array<Model.Events.EndEvent> {
+
+    const endEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof Model.Events.EndEvent;
+    });
+
+    return endEvents as Array<Model.Events.EndEvent>;
+  }
+
+  // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
+  public getUserTasks(): Array<Model.Activities.UserTask> {
+
+    const userTaskFlowNodes: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof Model.Activities.UserTask;
+    });
+
+    const laneUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(this.processModel.laneSet);
+
+    return [
+      ...userTaskFlowNodes,
+      ...laneUserTasks,
+    ] as Array<Model.Activities.UserTask>;
+  }
+
+  private _getUserTasksFromLaneRecursively(laneSet: Model.Types.LaneSet): Array<Model.Activities.UserTask> {
+
+    const userTasks: Array<Model.Base.FlowNode> = [];
+
+    if (!laneSet) {
+      return userTasks as Array<Model.Activities.UserTask>;
+    }
+
+    for (const lane of laneSet.lanes) {
+
+      const userTaskFlowNodes: Array<Model.Base.FlowNode> = lane.flowNodeReferences.filter((flowNode: Model.Base.FlowNode) => {
+        return flowNode instanceof Model.Activities.UserTask;
+      });
+
+      Array.prototype.push.apply(userTasks, userTaskFlowNodes);
+
+      const childUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(lane.childLaneSet);
+      Array.prototype.push.apply(userTasks, childUserTasks);
+    }
+
+    return userTasks as Array<Model.Activities.UserTask>;
   }
 
   public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
-    return this.processDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.targetRef === flowNodeId;
     });
   }
 
   public getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
-    return this.processDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.sourceRef === flowNodeId;
     });
   }
@@ -88,7 +135,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getBoundaryEventsFor(flowNode: Model.Base.FlowNode): Array<Model.Events.BoundaryEvent> {
-    const boundaryEvents: Array<Model.Base.FlowNode> = this.processDefinition.flowNodes.filter((currentFlowNode: Model.Base.FlowNode) => {
+    const boundaryEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((currentFlowNode: Model.Base.FlowNode) => {
 
       const isBoundaryEvent: boolean = currentFlowNode.bpmnType === BpmnType.boundaryEvent;
       const boundaryEventIsAttachedToFlowNode: boolean = (currentFlowNode as Model.Events.BoundaryEvent).attachedToRef === flowNode.id;
@@ -103,7 +150,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     // First find the SequenceFlow that describes the next target after the FlowNode
 
-    const flow: Model.Types.SequenceFlow = this.processDefinition.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow) => {
+    const flow: Model.Types.SequenceFlow = this.processModel.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.sourceRef === flowNode.id;
     });
 
@@ -113,7 +160,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     // Then find the target FlowNode of the SequenceFlow
 
-    const nextFlowNode: Model.Base.FlowNode = this.processDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
+    const nextFlowNode: Model.Base.FlowNode = this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
       return currentFlowNode.id === flow.targetRef;
     });
 
@@ -121,7 +168,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getFlowNodeById(flowNodeId: string): Model.Base.FlowNode {
-    const nextFlowNode: Model.Base.FlowNode = this.processDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
+    const nextFlowNode: Model.Base.FlowNode = this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
         return currentFlowNode.id === flowNodeId;
     });
 

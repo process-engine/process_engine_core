@@ -1,17 +1,10 @@
 import {
-  BpmnTags,
   Definitions,
   IModelParser,
   IParsedObjectModel,
-  Model,
 } from '@process-engine/process_engine_contracts';
 
 import * as Parser from './parser';
-
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from './type_factory';
 
 import * as BluebirdPromise from 'bluebird';
 import * as xml2js from 'xml2js';

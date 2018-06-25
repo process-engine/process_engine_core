@@ -1,5 +1,12 @@
-import { BpmnType, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
-import { IContainer } from 'addict-ioc';
+import {
+  BpmnType,
+  IFlowNodeHandler,
+  IFlowNodeHandlerFactory,
+  IProcessModelFacade,
+  Model,
+} from '@process-engine/process_engine_contracts';
+
+import {IContainer} from 'addict-ioc';
 
 enum BoundaryEventDefinitionType {
   Error = 0,
@@ -59,8 +66,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         return this._createHandler<TFlowNode>('EndEventHandler');
       case BpmnType.subProcess:
         return this._createHandler<TFlowNode>('SubProcessHandler');
+      case BpmnType.userTask:
+        return this._createHandler<TFlowNode>('UserTaskHandler');
       default:
-        throw Error(`Es konnte kein FlowNodeHandler für den FlowNodeType ${type} gefunden werden.`);
+        throw Error(`FlowNodeHandler for BPMN type "${type}" could not be found.`);
     }
   }
 

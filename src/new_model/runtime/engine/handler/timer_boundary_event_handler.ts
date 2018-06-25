@@ -1,8 +1,16 @@
 import {ExecutionContext, IIamService} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
-import {IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo,
-  Runtime, TimerDefinitionType} from '@process-engine/process_engine_contracts';
+import {
+  IExecutionContextFacade,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+  TimerDefinitionType,
+} from '@process-engine/process_engine_contracts';
+
 import {FlowNodeHandler} from './index';
 
 import * as moment from 'moment';
@@ -48,6 +56,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
   }
 
   protected async executeInternally(flowNode: Model.Base.FlowNode,
+                                    token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise < NextFlowNodeInfo > {
@@ -75,16 +84,17 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
           // if the timer elapsed before the decorated handler finished execution,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
 
-          const token: any = await processTokenFacade.getOldTokenFormat();
-          await processTokenFacade.addResultForFlowNode(boundaryEvent.id, token.current);
+          const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
+          await processTokenFacade.addResultForFlowNode(boundaryEvent.id, oldTokenFormat.current);
 
           const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);
-          resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, processTokenFacade));
+          resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
         };
 
         timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
         const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode,
+                                                                                       token,
                                                                                        processTokenFacade,
                                                                                        processModelFacade,
                                                                                        executionContextFacade);
