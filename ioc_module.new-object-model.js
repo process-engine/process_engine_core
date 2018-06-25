@@ -65,7 +65,7 @@ function registerInContainer(container) {
   container.register('ParallelGatewayHandler', ParallelGatewayHandler)
     .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistence');
   container.register('ServiceTaskHandler', ServiceTaskHandler)
-    .dependencies('container', 'Invoker', 'FlowNodeInstancePersistence');
+    .dependencies('container', 'FlowNodeInstancePersistence');
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
     .dependencies('TimingService', 'EventAggregator', 'IamService');
