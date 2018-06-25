@@ -1,6 +1,16 @@
-import { IExecutionContextFacade, IFlowNodeHandler, IFlowNodeHandlerFactory, IFlowNodeInstancePersistence,
-  IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {
+  IExecutionContextFacade,
+  IFlowNodeHandler,
+  IFlowNodeHandlerFactory,
+  IFlowNodeInstancePersistence,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 

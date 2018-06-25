@@ -1,8 +1,17 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IExecutionContextFacade, IFlowNodeInstancePersistence, IProcessModelFacade, IProcessTokenFacade, Model,
-  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { IContainer } from 'addict-ioc';
-import { FlowNodeHandler } from './index';
+import {ExecutionContext} from '@essential-projects/core_contracts';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistence,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {IContainer} from 'addict-ioc';
+
+import {FlowNodeHandler} from './index';
 
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 

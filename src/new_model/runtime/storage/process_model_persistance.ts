@@ -18,7 +18,7 @@ export class ProcessModelPersistence implements IProcessModelPersistence {
 
       for (const process of definition.processes) {
 
-       if (process.id === processModelId) {
+        if (process.id === processModelId) {
           return process;
         }
       }

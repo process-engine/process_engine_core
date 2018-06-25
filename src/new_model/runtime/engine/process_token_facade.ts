@@ -1,4 +1,4 @@
-import { BpmnType, IProcessTokenFacade, IProcessTokenResult, Model, Runtime } from '@process-engine/process_engine_contracts';
+import {IProcessTokenFacade, IProcessTokenResult, Model, Runtime} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
   private processTokenResults: Array<IProcessTokenResult> = [];
@@ -13,19 +13,19 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     this._correlationId = correlationId;
     this._identity = identity;
   }
-  
+
   private get processInstanceId(): string {
     return this._processInstanceId;
   }
-  
+
   private get processModelId(): string {
     return this._processModelId;
   }
-  
+
   private get correlationId(): string {
     return this._correlationId;
   }
-  
+
   private get identity(): any {
     return this._identity;
   }
@@ -42,6 +42,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     token.identity = this.identity;
     token.createdAt = new Date();
     token.payload = payload;
+
     return token;
   }
 

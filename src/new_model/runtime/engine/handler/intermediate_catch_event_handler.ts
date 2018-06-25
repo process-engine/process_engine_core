@@ -1,6 +1,14 @@
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, IFlowNodeInstancePersistence,
-  Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistence,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.Event> {
 
@@ -20,15 +28,15 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    
+
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
+
     await this.flowNodeInstancePersistence.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
-    
+
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
     await this.flowNodeInstancePersistence.persistOnExit(token, flowNode.id, flowNodeInstanceId);
-    
+
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 }

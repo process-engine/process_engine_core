@@ -1,7 +1,15 @@
-import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
-import { IExecutionContextFacade, IFlowNodeInstancePersistence, IProcessModelFacade,
-  IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime} from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistence,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> {
 
