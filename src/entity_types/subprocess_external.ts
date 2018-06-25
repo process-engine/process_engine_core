@@ -10,7 +10,7 @@ import {
 
 import {ExecutionContext, IEntity, IInheritedSchema} from '@essential-projects/core_contracts';
 import {EntityDependencyHelper, IEntityType, IPropertyBag} from '@essential-projects/data_model_contracts';
-import {IParamStart, IProcessDefEntityTypeService, ISubprocessExternalEntity} from '@process-engine/process_engine_contracts';
+import {ISubprocessExternalEntity} from '@process-engine/process_engine_contracts';
 
 import {NodeInstanceEntity, NodeInstanceEntityDependencyHelper} from './node_instance';
 
@@ -21,12 +21,10 @@ const debugError: debug.IDebugger = debug('processengine:error');
 
 export class SubprocessExternalEntity extends NodeInstanceEntity implements ISubprocessExternalEntity {
 
-  private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _consumerApiService: IConsumerApiService = undefined;
 
   constructor(consumerApiService: IConsumerApiService,
               nodeInstanceEntityDependencyHelper: NodeInstanceEntityDependencyHelper,
-              processDefEntityTypeService: IProcessDefEntityTypeService,
               entityDependencyHelper: EntityDependencyHelper,
               context: ExecutionContext,
               schema: IInheritedSchema,
@@ -34,16 +32,11 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
               entityType: IEntityType<IEntity>) {
     super(nodeInstanceEntityDependencyHelper, entityDependencyHelper, context, schema, propertyBag, entityType);
 
-    this._processDefEntityTypeService = processDefEntityTypeService;
     this._consumerApiService = consumerApiService;
   }
 
   private get consumerApiService(): IConsumerApiService {
     return this._consumerApiService;
-  }
-
-  private get processDefEntityTypeService(): IProcessDefEntityTypeService {
-    return this._processDefEntityTypeService;
   }
 
   public async initialize(): Promise<void> {
@@ -114,7 +107,7 @@ export class SubprocessExternalEntity extends NodeInstanceEntity implements ISub
 
   private async _waitForSubProcessToFinishAndReturnCorrelationId(consumerContext: ConsumerContext, startEventKey: string): Promise<string> {
 
-    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnEndEventReached;
+    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
     const payload: ProcessStartRequestPayload = {
       // If the process already has a correlation, use it for the call activity.
