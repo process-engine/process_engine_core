@@ -1,6 +1,14 @@
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, IFlowNodeInstancePersistance,
-  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './flow_node_handler';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistance,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
@@ -22,9 +30,9 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
+
     await this.flowNodeInstancePersistance.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
-    
+
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
 

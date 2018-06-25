@@ -1,4 +1,4 @@
-import { Definitions, IProcessModelPersistance, Model } from '@process-engine/process_engine_contracts';
+import {Definitions, IProcessModelPersistance, Model} from '@process-engine/process_engine_contracts';
 
 export class ProcessModelPersistance implements IProcessModelPersistance {
 

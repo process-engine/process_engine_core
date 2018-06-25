@@ -1,5 +1,12 @@
-import { BpmnType, IFlowNodeHandler, IFlowNodeHandlerFactory, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
-import { IContainer } from 'addict-ioc';
+import {
+  BpmnType,
+  IFlowNodeHandler,
+  IFlowNodeHandlerFactory,
+  IProcessModelFacade,
+  Model,
+} from '@process-engine/process_engine_contracts';
+
+import {IContainer} from 'addict-ioc';
 
 enum BoundaryEventDefinitionType {
   Error = 0,

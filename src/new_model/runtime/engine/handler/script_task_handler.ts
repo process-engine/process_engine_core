@@ -1,7 +1,15 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IExecutionContextFacade, IFlowNodeHandlerFactory, IProcessModelFacade, IProcessTokenFacade, IFlowNodeInstancePersistance,
-  Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {ExecutionContext, IToPojoOptions} from '@essential-projects/core_contracts';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistance,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
@@ -21,11 +29,11 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    
+
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
+
     await this.flowNodeInstancePersistance.persistOnEnter(token, scriptTask.id, flowNodeInstanceId);
-    
+
     const script: string = scriptTask.script;
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
 

@@ -1,9 +1,7 @@
 import {
   BpmnTags,
   Definitions,
-  IModelParser,
   IParsedObjectModel,
-  Model,
 } from '@process-engine/process_engine_contracts';
 
 import * as Parser from './index';

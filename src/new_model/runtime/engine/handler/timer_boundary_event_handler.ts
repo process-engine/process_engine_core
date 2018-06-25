@@ -1,8 +1,16 @@
 import {ExecutionContext, IIamService} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
-import {IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, NextFlowNodeInfo,
-  Runtime, TimerDefinitionType} from '@process-engine/process_engine_contracts';
+import {
+  IExecutionContextFacade,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+  TimerDefinitionType,
+} from '@process-engine/process_engine_contracts';
+
 import {FlowNodeHandler} from './index';
 
 import * as moment from 'moment';

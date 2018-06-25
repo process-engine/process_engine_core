@@ -1,9 +1,18 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IInvoker } from '@essential-projects/invocation_contracts';
-import { IExecutionContextFacade, IProcessModelFacade, IProcessTokenFacade, Model, IFlowNodeInstancePersistance,
-  NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { IContainer } from 'addict-ioc';
-import { FlowNodeHandler } from './index';
+import {ExecutionContext} from '@essential-projects/core_contracts';
+import {IInvoker} from '@essential-projects/invocation_contracts';
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstancePersistance,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {IContainer} from 'addict-ioc';
+
+import {FlowNodeHandler} from './index';
 
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
@@ -36,11 +45,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
-    
+
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    
+
     await this.flowNodeInstancePersistance.persistOnEnter(token, serviceTaskNode.id, flowNodeInstanceId);
-    
+
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFacade.getOldTokenFormat();

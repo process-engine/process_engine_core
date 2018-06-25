@@ -1,5 +1,5 @@
-import { IProcessModelFacade, Model } from '@process-engine/process_engine_contracts';
-import { ProcessModelFacade } from './process_model_facade';
+import {Model} from '@process-engine/process_engine_contracts';
+import {ProcessModelFacade} from './process_model_facade';
 
 export class SubProcessModelFacade extends ProcessModelFacade {
 

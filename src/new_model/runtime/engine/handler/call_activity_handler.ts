@@ -1,10 +1,22 @@
-import { ExecutionContext, IToPojoOptions } from '@essential-projects/core_contracts';
-import { IInvoker } from '@essential-projects/invocation_contracts';
-import { ConsumerContext, IConsumerApiService, ICorrelationResult, ProcessModel,
-  ProcessStartRequestPayload, ProcessStartResponsePayload, StartCallbackType} from '@process-engine/consumer_api_contracts';
-import { IExecuteProcessService, IExecutionContextFacade, IFlowNodeInstancePersistance, IProcessModelFacade,
-  IProcessTokenFacade, Model, NextFlowNodeInfo, Runtime } from '@process-engine/process_engine_contracts';
-import { FlowNodeHandler } from './index';
+import {
+  ConsumerContext,
+  IConsumerApiService,
+  ICorrelationResult,
+  ProcessModel,
+  ProcessStartRequestPayload,
+  ProcessStartResponsePayload,
+  StartCallbackType,
+} from '@process-engine/consumer_api_contracts';
+import { IExecutionContextFacade,
+  IFlowNodeInstancePersistance,
+  IProcessModelFacade,
+  IProcessTokenFacade,
+  Model,
+  NextFlowNodeInfo,
+  Runtime,
+} from '@process-engine/process_engine_contracts';
+
+import {FlowNodeHandler} from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 

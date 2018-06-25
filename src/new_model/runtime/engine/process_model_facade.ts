@@ -1,5 +1,6 @@
-import { BpmnType, IProcessModelFacade, Model } from '@process-engine/process_engine_contracts';
-import { SubProcessModelFacade } from './index';
+import {BpmnType, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
+
+import {SubProcessModelFacade} from './sub_process_model_facade';
 
 export class ProcessModelFacade implements IProcessModelFacade {
 

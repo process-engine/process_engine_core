@@ -1,7 +1,6 @@
 import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
 
 import {
-  createObjectWithCommonProperties,
   getModelPropertyAsArray,
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
