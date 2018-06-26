@@ -30,7 +30,7 @@ const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
 function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
-    .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'ProcessModelPersistence');
+    .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
   container.register('FlowNodeInstancePersistence', FlowNodeInstancePersistence)
     .singleton();
@@ -74,7 +74,7 @@ function registerInContainer(container) {
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
     .dependencies('FlowNodeInstancePersistence');
   container.register('EndEventHandler', EndEventHandler)
-    .dependencies('FlowNodeInstancePersistence');
+    .dependencies('FlowNodeInstancePersistence', 'EventAggregator');
 
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker', 'ProcessModelPersistence')

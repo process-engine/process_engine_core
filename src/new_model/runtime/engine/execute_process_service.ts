@@ -2,7 +2,9 @@ import {ExecutionContext} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IDataMessage, IMessageBusService} from '@essential-projects/messagebus_contracts';
 
-import {IExecuteProcessService,
+import {
+  EndEventReachedMessage,
+  IExecuteProcessService,
   IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
@@ -83,12 +85,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              processModel: Model.Types.Process,
                                              correlationId: string,
                                              endEventId: string,
-                                             initialPayload?: any): Promise<any> {
+                                             initialPayload?: any): Promise<EndEventReachedMessage> {
 
-    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: any): Promise<void> => {
-        resolve();
+      this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
+        resolve(message);
       });
 
       try {
@@ -106,24 +108,24 @@ export class ExecuteProcessService implements IExecuteProcessService {
   public async startAndAwaitEndEvent(context: ExecutionContext,
                                      processModel: Model.Types.Process,
                                      correlationId: string,
-                                     initialPayload?: any): Promise<any> {
+                                     initialPayload?: any): Promise<EndEventReachedMessage> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     const endEvents: Array<Model.Events.EndEvent> = processModelFacade.getEndEvents();
     const subscriptions: Array<ISubscription> = [];
 
-    return new Promise(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
       for (const endEvent of endEvents) {
 
         const subscription: ISubscription
-          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: any): Promise<void> => {
+          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: EndEventReachedMessage): Promise<void> => {
 
           for (const existingSubscription of subscriptions) {
             existingSubscription.dispose();
           }
 
-          resolve();
+          resolve(message);
         });
 
         subscriptions.push(subscription);
