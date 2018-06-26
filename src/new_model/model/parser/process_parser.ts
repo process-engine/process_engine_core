@@ -45,7 +45,7 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
  */
 function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
 
-  const errors: Array<Model.Types.Error> = []
+  const errors: Array<Model.Types.Error> = [];
   const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
 
   if (collaborationHasNoError) {
