@@ -140,7 +140,7 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
       }
 
       event.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
-      event.errorEventDefinition.errorReference = currentError.structureRef.structureId;
+      event.errorEventDefinition.errorReference = currentError;
     }
     events.push(event);
   }
