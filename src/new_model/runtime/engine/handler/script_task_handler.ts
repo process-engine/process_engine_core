@@ -59,6 +59,8 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
 
     await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
+    token.payload = finalResult;
+
     await this.flowNodeInstancePersistence.persistOnExit(token, scriptTask.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
