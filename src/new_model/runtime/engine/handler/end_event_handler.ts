@@ -50,7 +50,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
         error_code: errorEventDefinition.errorCode,
         name: errorEventDefinition.name,
       };
-
       /*
        * If the ErrorEndEvent gets encountered, reject the promise
        * with the defined error object.

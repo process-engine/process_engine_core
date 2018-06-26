@@ -121,7 +121,9 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
     const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
 
     if (eventHasErrorEventDefinition) {
+
       const errorIsNotAnonymous: boolean = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+
       let currentError: Model.Types.Error;
 
       /*

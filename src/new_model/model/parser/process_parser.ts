@@ -55,25 +55,14 @@ function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.E
   const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel[BpmnTags.CommonElement.Error], BpmnTags.CommonElement.Error);
 
   for (const rawError of rawErrors) {
-      const newError: Model.Types.Error = getErrorFromRawErrorData(rawError);
+      const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
+
+      newError.errorCode = rawError.errorCode;
+      newError.name = rawError.name;
+      newError.id = rawError.id;
+
       errors.push(newError);
     }
 
   return errors;
-}
-
-/**
- *  Creates an error object from the given raw error data.
- *
- * @param rawError The raw error data
- * @returns a parsed error object
- */
-function getErrorFromRawErrorData(rawError: any): Model.Types.Error {
-  const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
-
-  newError.errorCode = rawError.errorCode;
-  newError.name = rawError.name;
-  newError.id = rawError.id;
-
-  return newError;
 }
