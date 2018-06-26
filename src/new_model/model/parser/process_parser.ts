@@ -52,17 +52,12 @@ function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.E
     return [];
   }
 
-  const rawErrors: any = parsedObjectModel[BpmnTags.CommonElement.Error];
+  const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel[BpmnTags.CommonElement.Error], BpmnTags.CommonElement.Error);
 
-  if (Array.isArray(rawErrors)) {
-    for (const rawError of rawErrors) {
+  for (const rawError of rawErrors) {
       const newError: Model.Types.Error = getErrorFromRawErrorData(rawError);
       errors.push(newError);
     }
-  } else {
-    const newError: Model.Types.Error = getErrorFromRawErrorData(rawErrors);
-    errors.push(newError);
-  }
 
   return errors;
 }
