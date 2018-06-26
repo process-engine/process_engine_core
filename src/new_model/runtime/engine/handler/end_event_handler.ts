@@ -1,4 +1,6 @@
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {
+  EndEventReachedMessage,
   IExecutionContextFacade,
   IFlowNodeInstancePersistence,
   IProcessModelFacade,
@@ -13,14 +15,20 @@ import {FlowNodeHandler} from './index';
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
   private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
+  private _eventAggregator: IEventAggregator = undefined;
 
-  constructor(flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
+  constructor(flowNodeInstancePersistence: IFlowNodeInstancePersistence, eventAggregator: IEventAggregator) {
     super();
     this._flowNodeInstancePersistence = flowNodeInstancePersistence;
+    this._eventAggregator = eventAggregator;
   }
 
   private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
     return this._flowNodeInstancePersistence;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   protected async executeInternally(flowNode: Model.Events.EndEvent,
@@ -33,6 +41,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     await this.flowNodeInstancePersistence.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
     await this.flowNodeInstancePersistence.persistOnExit(token, flowNode.id, flowNodeInstanceId);
+
+    this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);
   }

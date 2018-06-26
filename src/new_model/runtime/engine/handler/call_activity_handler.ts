@@ -60,15 +60,14 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const processInstanceId: string = token.processInstanceId;
     const startEventKey: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
 
-    const correlationId: string =
+    const processStartResponse: ProcessStartResponsePayload =
       await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventKey, callActivityNode, tokenData);
-
-    const correlationResult: ICorrelationResult
-      = await this._retrieveSubProcessResult(consumerContext, processModelFacade, callActivityNode, correlationId);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
-    await processTokenFacade.addResultForFlowNode(callActivityNode.id, correlationResult);
+    await processTokenFacade.addResultForFlowNode(callActivityNode.id, processStartResponse.tokenPayload);
+    token.payload = processStartResponse.tokenPayload;
+
     await this.flowNodeInstancePersistence.persistOnExit(token, callActivityNode.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
@@ -93,7 +92,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                                                  processInstanceId: string,
                                                                  startEventKey: string,
                                                                  callActivityNode: Model.Activities.CallActivity,
-                                                                 tokenData: any): Promise<string> {
+                                                                 tokenData: any): Promise<ProcessStartResponsePayload> {
 
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
@@ -109,19 +108,6 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, processKey, startEventKey, payload, startCallbackType);
 
-    const correlationId: string = result.correlationId;
-
-    return correlationId;
-  }
-
-  private async _retrieveSubProcessResult(consumerContext: ConsumerContext,
-                                          processModelFacade: IProcessModelFacade,
-                                          callActivityNode: Model.Activities.CallActivity,
-                                          correlationId: string): Promise<ICorrelationResult> {
-
-    const correlationResult: ICorrelationResult =
-      await this.consumerApiService.getProcessResultForCorrelation(consumerContext, correlationId, callActivityNode.calledReference);
-
-    return correlationResult;
+    return result;
   }
 }
