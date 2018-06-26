@@ -42,8 +42,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     await this.flowNodeInstancePersistence.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
     await this.flowNodeInstancePersistence.persistOnExit(token, flowNode.id, flowNodeInstanceId);
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
-
     this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);
