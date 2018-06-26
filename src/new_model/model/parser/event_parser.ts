@@ -1,6 +1,6 @@
 import {
   BpmnTags,
-  Model
+  Model,
 } from '@process-engine/process_engine_contracts';
 
 import {
@@ -98,12 +98,12 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 }
 
 /**
- * Parse all EndEvents of a process. If the EndEvent is an ErrorEndEvent, the errors which
- * belongs to the error end event will be attached to the end event event.
- * 
+ * Parse all EndEvents of a process.
+ * ErrorEndEvents will get their Errors attached to them.
+ *
  * @param data Parsed process definition data
- * @param errors List of errors, if the process has attached errors
- * @returns an array of parsed end events
+ * @param errors List of process errors
+ * @returns an array of parsed EndEvents
  */
 function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Model.Events.EndEvent> {
   const events: Array<Model.Events.EndEvent> = [];
@@ -122,32 +122,27 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
 
     if (eventHasErrorEventDefinition) {
       const errorIsNotAnonymous: boolean = !(endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === '');
-      let currentError: Model.Types.Error = createObjectWithCommonProperties(endEventRaw, Model.Types.Error);
+      let currentError: Model.Types.Error;
 
       /*
       * If the error is not anonymous, we can look it up in our error definition
       * list. Otherwise, we will declare the error as an anonymous error
-      * and attach it to the end event.
+      * and attach it to the ErrorEndEvent.
       */
-     if (errorIsNotAnonymous) {
+      if (errorIsNotAnonymous) {
         const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
         currentError = getErrorForId(errors, errorId);
       } else {
-        /*
-         * We define an anonymous error end event as the following 
-         * object. This may change in the future.
-        */
+
+        // Define an anonymous error.
         currentError.errorCode = '';
         currentError.name = '';
       }
 
       event.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
-      event.errorEventDefinition.errorReference = currentError;
-
+      event.errorEventDefinition.errorReference = currentError.structureRef.structureId;
     }
-
     events.push(event);
-
   }
 
   return events;
@@ -182,7 +177,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
 /**
  * Return the error with the given id from the raw error definition data.
- * 
+ *
  * @param errorList List of all parsed errors
  * @param errorId id of the error
  * @returns Error that matches the given id
@@ -192,7 +187,7 @@ function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Mo
   for (const currentError of errorList) {
     if (currentError.id === errorId) {
       return currentError;
-    }  
+    }
   }
-  throw Error(`No error for id ${errorId} found.`);
+  throw Error(`No error with id ${errorId} found.`);
 }

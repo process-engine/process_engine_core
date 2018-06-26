@@ -1,5 +1,6 @@
 
-import {BpmnTags,
+import {
+  BpmnTags,
   IParsedObjectModel,
   Model,
 } from '@process-engine/process_engine_contracts';
@@ -30,7 +31,6 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
     process.sequenceFlows = Parser.parseProcessSequenceFlows(processRaw);
     process.flowNodes = Parser.parseProcessFlowNodes(processRaw, bpmnErrors);
 
-
     processes.push(process);
   }
 
@@ -39,15 +39,15 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
 
 /**
  * Parse the error definitions.
- * 
+ *
  * @param parsedObjectModel Object model of the parsed xml process definition.
- * @returns a list of all parsed error events.
+ * @returns a list of all parsed error definitions.
  */
 function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
-  
+
   const errors: Array<Model.Types.Error> = []
   const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
-  
+
   if (collaborationHasNoError) {
     return [];
   }
@@ -68,14 +68,14 @@ function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.E
 }
 
 /**
- *  Creates a new error object from the parsed error object model.
- * 
- * @param rawError Raw error data from the parsed object model
- * @returns a parsed error object 
+ *  Creates an error object from the given raw error data.
+ *
+ * @param rawError The raw error data
+ * @returns a parsed error object
  */
-function getErrorFromRawErrorData(rawError: any): Model.Types.Error {          
+function getErrorFromRawErrorData(rawError: any): Model.Types.Error {
   const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
-    
+
   newError.errorCode = rawError.errorCode;
   newError.name = rawError.name;
   newError.id = rawError.id;
