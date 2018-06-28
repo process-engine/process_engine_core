@@ -25,7 +25,7 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
     process.name = processRaw.name;
     process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
 
-    const bpmnErrors: Array<Model.Types.Error> = parseErrors(parsedObjectModel);
+    const bpmnErrors: Array<Model.Types.Error> = ExtractErrorsFromObjectModel(parsedObjectModel);
 
     process.laneSet = Parser.parseProcessLaneSet(processRaw);
     process.sequenceFlows = Parser.parseProcessSequenceFlows(processRaw);
@@ -38,12 +38,12 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
 }
 
 /**
- * Parse the error definitions.
+ * Extract the error definitions from the process model.
  *
  * @param parsedObjectModel Object model of the parsed xml process definition.
- * @returns a list of all parsed error definitions.
+ * @returns A list of all parsed error definitions.
  */
-function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
+function ExtractErrorsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
 
   const errors: Array<Model.Types.Error> = [];
   const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
