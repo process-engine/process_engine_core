@@ -121,40 +121,37 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
     const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
 
     if (eventHasErrorEventDefinition) {
+      const currentError: Model.Types.Error = ((): Model.Types.Error => {
+        const errorIsNotAnonymous: boolean = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+        if (errorIsNotAnonymous) {
+          /*
+          * If the error is not anonymous, we can look it up in our error definition
+          * list. Otherwise, we will declare the error as an anonymous error
+          * and attach it to the ErrorEndEvent.
+          */
+          const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
-      const errorIsNotAnonymous: boolean = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+          return getErrorForId(errors, errorId);
+        } else {
+          /*
+          * An anonymous error should not have any reference or error
+          * information.
+          *
+          * TODO: Find out if we can set the structureRef of the Error Object
+          * to undefined here.
+          */
+          const anonymousStructureRef: Model.TypeReferences.StructureReference = {
+            structureId: '',
+          };
 
-      let currentError: Model.Types.Error;
-
-      /*
-      * If the error is not anonymous, we can look it up in our error definition
-      * list. Otherwise, we will declare the error as an anonymous error
-      * and attach it to the ErrorEndEvent.
-      */
-      if (errorIsNotAnonymous) {
-        const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
-        currentError = getErrorForId(errors, errorId);
-      } else {
-
-        /*
-         * An anonymous error should not have any reference or error
-         * information.
-         *
-         * TODO: Find out if we can set the structureRef of the Error Object
-         * to undefined here.
-         */
-
-        const anonymousStructureRef: Model.TypeReferences.StructureReference = {
-          structureId: '',
-        };
-
-        currentError = {
-          id: '',
-          structureRef: anonymousStructureRef,
-          errorCode: '',
-          name: '',
-        };
-      }
+          return {
+            id: '',
+            structureRef: anonymousStructureRef,
+            errorCode: '',
+            name: '',
+          };
+        }
+      })();
 
       event.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
       event.errorEventDefinition.errorReference = currentError;
