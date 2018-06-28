@@ -136,9 +136,24 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
         currentError = getErrorForId(errors, errorId);
       } else {
 
-        // Define an anonymous error.
-        currentError.errorCode = '';
-        currentError.name = '';
+        /*
+         * An anonymous error should not have any reference or error
+         * information.
+         *
+         * TODO: Find out if we can set the structureRef of the Error Object
+         * to undefined here.
+         */
+
+        const anonymousStructureRef: Model.TypeReferences.StructureReference = {
+          structureId: '',
+        };
+
+        currentError = {
+          id: '',
+          structureRef: anonymousStructureRef,
+          errorCode: '',
+          name: '',
+        };
       }
 
       event.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
