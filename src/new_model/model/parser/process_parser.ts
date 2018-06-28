@@ -52,7 +52,7 @@ function parseErrors(parsedObjectModel: IParsedObjectModel): Array<Model.Types.E
     return [];
   }
 
-  const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel[BpmnTags.CommonElement.Error], BpmnTags.CommonElement.Error);
+  const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Error);
 
   for (const rawError of rawErrors) {
       const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
