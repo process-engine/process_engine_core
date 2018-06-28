@@ -46,8 +46,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     if (flowNode.errorEventDefinition) {
       const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition.errorReference;
-      const errorObject: {error_code: string, name: string} = {
-        error_code: errorEventDefinition.errorCode,
+      const errorObject: {errorCode: string, name: string} = {
+        errorCode: errorEventDefinition.errorCode,
         name: errorEventDefinition.name,
       };
       /*
