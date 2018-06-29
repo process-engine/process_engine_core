@@ -55,6 +55,33 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return startEvents as Array<Model.Events.StartEvent>;
   }
 
+  public getStartEventById(startEventId: string): Model.Events.StartEvent {
+
+    const startEvents: Array<Model.Base.FlowNode> = this.getStartEvents();
+
+    // TODO:
+    // For backwards compatibility only.
+    // This allows the old process engine service to use the new object model.
+    //
+    // Note that is not the desired default behavior.
+    // Aside from the ProcessEngineService, no component should ever pass an empty start event to the executeProcessService!
+    //
+    // In future versions, passing an empty start event key should result in an error!
+    if (!startEventId) {
+      return startEvents[0];
+    }
+
+    const matchingStartEvent: Model.Events.StartEvent = startEvents.find((startEvent: Model.Events.StartEvent): boolean => {
+      return startEvent.id === startEventId;
+    });
+
+    if (!matchingStartEvent) {
+      throw new Error(`Start event with id '${startEventId}' not found!`);
+    }
+
+    return matchingStartEvent;
+  }
+
   public getEndEvents(): Array<Model.Events.EndEvent> {
 
     const endEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {

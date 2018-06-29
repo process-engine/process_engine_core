@@ -60,8 +60,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
-    const startEvents: Array<Model.Events.StartEvent> = processModelFacade.getStartEvents();
-    const startEvent: Model.Events.StartEvent = this._pickStartEventWithMatchingId(startEvents, startEventId);
+    const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
 
     const processInstanceId: string = uuid.v4();
 
@@ -147,28 +146,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
       }
 
     });
-  }
-
-  private _pickStartEventWithMatchingId(startEvents: Array<Model.Events.StartEvent>, startEventId: string): Model.Events.StartEvent {
-
-    // For backwards compatibility only.
-    // This allows the old process engine service to use the new object model.
-    //
-    // Note that is not the desired default behavior.
-    // Aside from the ProcessEngineService, no component should ever pass an empty start event to the executeProcessService!
-    if (!startEventId) {
-      return startEvents[0];
-    }
-
-    const matchingStartEvent: Model.Events.StartEvent = startEvents.find((startEvent: Model.Events.StartEvent): boolean => {
-      return startEvent.id === startEventId;
-    });
-
-    if (!matchingStartEvent) {
-      throw new Error(`Start event with id '${startEventId}' not found!`);
-    }
-
-    return matchingStartEvent;
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
