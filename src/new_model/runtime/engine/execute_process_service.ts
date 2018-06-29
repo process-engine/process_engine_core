@@ -87,7 +87,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              startEventId: string,
                                              correlationId: string,
                                              endEventId: string,
-                                             initialPayload?: any): Promise<EndEventReachedMessage> {
+                                             initialPayload?: any,
+                                             caller?: string): Promise<EndEventReachedMessage> {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -96,7 +97,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       });
 
       try {
-        await this.start(context, processModel, startEventId, correlationId, initialPayload, undefined);
+        await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
 
       } catch (error) {
         // tslint:disable-next-line:max-line-length
@@ -111,7 +112,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                      processModel: Model.Types.Process,
                                      startEventId: string,
                                      correlationId: string,
-                                     initialPayload?: any): Promise<EndEventReachedMessage> {
+                                     initialPayload?: any,
+                                     caller?: string): Promise<EndEventReachedMessage> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -135,7 +137,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       }
 
       try {
-        await this.start(context, processModel, startEventId, correlationId, initialPayload, undefined);
+        await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
 
       } catch (error) {
         // tslint:disable-next-line:max-line-length
