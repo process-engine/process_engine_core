@@ -53,14 +53,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   public async start(context: ExecutionContext,
                      processModel: Model.Types.Process,
+                     startEventId: string,
                      correlationId: string,
                      initialPayload?: any,
                      caller?: string): Promise<any> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
-    const startEvents: Array<Model.Events.StartEvent> = processModelFacade.getStartEvents();
-    const startEvent: Model.Events.StartEvent = startEvents[0];
+    const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
 
     const processInstanceId: string = uuid.v4();
 
@@ -83,9 +83,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   public async startAndAwaitSpecificEndEvent(context: ExecutionContext,
                                              processModel: Model.Types.Process,
+                                             startEventId: string,
                                              correlationId: string,
                                              endEventId: string,
-                                             initialPayload?: any): Promise<EndEventReachedMessage> {
+                                             initialPayload?: any,
+                                             caller?: string): Promise<EndEventReachedMessage> {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -94,7 +96,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       });
 
       try {
-        await this.start(context, processModel, correlationId, initialPayload, undefined);
+        await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
 
       } catch (error) {
         // tslint:disable-next-line:max-line-length
@@ -107,8 +109,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   public async startAndAwaitEndEvent(context: ExecutionContext,
                                      processModel: Model.Types.Process,
+                                     startEventId: string,
                                      correlationId: string,
-                                     initialPayload?: any): Promise<EndEventReachedMessage> {
+                                     initialPayload?: any,
+                                     caller?: string): Promise<EndEventReachedMessage> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -132,7 +136,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       }
 
       try {
-        await this.start(context, processModel, correlationId, initialPayload, undefined);
+        await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
 
       } catch (error) {
         // tslint:disable-next-line:max-line-length

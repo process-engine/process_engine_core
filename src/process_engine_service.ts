@@ -3,19 +3,15 @@
 import {
   ExecutionContext,
   IApplicationService,
-  IEntity,
-  IEntityReference,
   IIamService,
   IPrivateQueryOptions,
-  IPublicGetOptions,
-  TokenType,
 } from '@essential-projects/core_contracts';
-import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
+import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-projects/data_model_contracts';
 import * as ProcessEngineErrors from '@essential-projects/errors_ts';
-import { IDataEvent, IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
-import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
-import {IInvoker, InvocationType} from '@essential-projects/invocation_contracts';
-import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IFeature, IFeatureService} from '@essential-projects/feature_contracts';
+import {IInvoker} from '@essential-projects/invocation_contracts';
+import {IDataMessage, IMessage, IMessageBusService, IMessageSubscription} from '@essential-projects/messagebus_contracts';
 import {
   IBpmnDiagram,
   IErrorDeserializer,
@@ -30,6 +26,7 @@ import {
   IProcessDefEntityTypeService,
   IProcessEngineService,
   IProcessEntity,
+  IProcessEntry,
   IProcessModelPersistence,
   IProcessRepository,
   IUserTaskEntity,
@@ -40,8 +37,8 @@ import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
 
-const debugInfo = debug('processengine:info');
-const debugErr = debug('processengine:error');
+const debugInfo: debug.IDebugger = debug('processengine:info');
+const debugErr: debug.IDebugger = debug('processengine:error');
 
 export class ProcessEngineService implements IProcessEngineService {
 
@@ -91,10 +88,6 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get messageBusService(): IMessageBusService {
     return this._messageBusService;
-  }
-
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
   }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
@@ -183,7 +176,6 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async getUserTaskData(context: ExecutionContext, userTaskId: string): Promise<IUserTaskMessageData> {
-    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
     const userTaskEntityQueryOptions: IPrivateQueryOptions = {
       expandEntity: [{
         attribute: 'nodeDef',
@@ -254,7 +246,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
-  private async _messageHandler(msg): Promise<void> {
+  private async _messageHandler(msg: any): Promise<void> {
     debugInfo('we got a message: ', msg);
 
     await this.messageBusService.verifyMessage(msg);
@@ -263,7 +255,9 @@ export class ProcessEngineService implements IProcessEngineService {
     const key: string = (msg && msg.data && msg.data.key) ? msg.data.key : null;
     const initialToken: any = (msg && msg.data && msg.data.token) ? msg.data.token : null;
     let source: any = (msg && msg.metadata && msg.metadata.applicationId) ? msg.metadata.applicationId : null;
-    const participant = (msg && msg.metadata && msg.metadata.options && msg.metadata.options.participantId) ? msg.metadata.options.participantId : null;
+    const participant: any = (msg && msg.metadata && msg.metadata.options && msg.metadata.options.participantId)
+                        ? msg.metadata.options.participantId
+                        : null;
 
     // fallback to old origin
     if (!source) {
@@ -271,7 +265,7 @@ export class ProcessEngineService implements IProcessEngineService {
     }
     const isSubProcess: boolean = (msg && msg.data && msg.data.isSubProcess) ? msg.data.isSubProcess : false;
 
-    const context = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
+    const context: any = (msg && msg.metadata && msg.metadata.context) ? msg.metadata.context : {};
 
     switch (action) {
       case 'start':
@@ -354,35 +348,34 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private async _initializeProcesses(): Promise<void> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     const options: IImportFromFileOptions = {
       overwriteExisting: true,
     };
 
-    const processes = this.processRepository.getProcessesByCategory('internal');
-    for (let i = 0; i < processes.length; i++) {
+    const processes: Array<IProcessEntry> = this.processRepository.getProcessesByCategory('internal');
 
-        const process = processes[i];
+    for (const process of processes) {
 
-        const params: IParamImportFromXml = {
-          xml: process.bpmnXml,
-          internalName: process.name,
-          category: process.category,
-          module: process.module,
-          path: process.path,
-          readonly: process.readonly,
-        };
+      const params: IParamImportFromXml = {
+        xml: process.bpmnXml,
+        internalName: process.name,
+        category: process.category,
+        module: process.module,
+        path: process.path,
+        readonly: process.readonly,
+      };
 
-        await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
+      await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
     }
   }
 
   private async _startTimers(): Promise<void> {
 
-    const internalContext = await this.iamService.createInternalContext('processengine_system');
+    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
-    const nodeDefEntityType = await this.datastoreService.getEntityType('NodeDef');
-    const queryObject = {
+    const nodeDefEntityType: IEntityType<INodeDefEntity> = await this.datastoreService.getEntityType<INodeDefEntity>('NodeDef');
+    const queryObject: any = {
           operator: 'and',
           queries: [
             { attribute: 'type', operator: '=', value: 'bpmn:StartEvent' },
@@ -391,9 +384,9 @@ export class ProcessEngineService implements IProcessEngineService {
         };
     const startEventColl: any = await nodeDefEntityType.query(internalContext, { query: queryObject });
 
-    startEventColl.each(internalContext, async(nodeDef) => {
-      const processDef = await nodeDef.getProcessDef(internalContext);
-      await processDef.startTimer(internalContext);
+    startEventColl.each(internalContext, async(nodeDef: INodeDefEntity) => {
+      const processDef: IProcessDefEntity = await nodeDef.getProcessDef(internalContext);
+      await (processDef as any).startTimer(internalContext);
     });
   }
 
@@ -511,7 +504,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private _timeoutPromise(milliseconds: number): Promise<void> {
-    return new Promise((resolve: Function, reject: Function): void => {
+    return new Promise((resolve: Function): void => {
       setTimeout(() => {
         resolve();
       }, milliseconds);
@@ -536,7 +529,6 @@ export class ProcessEngineService implements IProcessEngineService {
                               id: string,
                               key: string,
                               initialToken: any,
-                              version?: string,
                               correlationId?: string): Promise<any> {
     if (id === undefined && key === undefined) {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
@@ -548,7 +540,15 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
     }
 
-    return this._executeProcessLocally(context, process, initialToken, correlationId);
+    // Setting this to undefined, will cause the executeProcessService to pick the first available start event
+    // Background:
+    // The refactored object model requires a start event key for starting a process instance.
+    // Since the old implementation does not support this, we need to tell the executeProcessService to pick a start event by itself.
+    const useDefaultStartEventId: any = undefined;
+
+    const tokenResult: any = await this._executeProcessService.start(context, process, useDefaultStartEventId, correlationId, initialToken);
+
+    return tokenResult;
   }
 
   public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, participantId: string, initialToken: any): Promise<any> {
@@ -605,15 +605,6 @@ export class ProcessEngineService implements IProcessEngineService {
     this._errorDeserializer = deserializer;
   }
 
-  private async _executeProcessLocally(context: ExecutionContext,
-                                       process: Model.Types.Process,
-                                       initialToken: any,
-                                       correlationId?: string): Promise<any> {
-    const tokenResult: any = await this._executeProcessService.start(context, process, correlationId, initialToken);
-
-    return tokenResult;
-  }
-
   private _executeProcessInstanceLocally(context: ExecutionContext,
                                          processInstance: IProcessEntity,
                                          participantId: string,
@@ -656,38 +647,6 @@ export class ProcessEngineService implements IProcessEngineService {
         participant: participantId,
       });
     });
-  }
-
-  private async _executeProcessRemotely(context: ExecutionContext,
-                                        requiredFeatures: Array<IFeature>,
-                                        id: string,
-                                        key: string,
-                                        initialToken: any,
-                                        version?: string): Promise<any> {
-    const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
-    if (possibleRemoteTargets.length === 0) {
-      // tslint:disable-next-line:max-line-length
-      throw new Error(`couldn't execute process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
-    }
-
-    const getInstanceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
-      event: 'getInstanceId',
-    }, null);
-
-    const executeProcessMessage: IDataMessage = this.messageBusService.createDataMessage({
-      event: 'executeProcess',
-      id: id,
-      key: key,
-      initialToken: initialToken,
-      version: version,
-    }, context);
-
-    const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
-    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstanceIdMessage);
-    const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
-    const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessMessage);
-
-    return executeProcessResponse.data;
   }
 
   private async _executeProcessInstanceRemotely(context: ExecutionContext,
