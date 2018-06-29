@@ -29,7 +29,7 @@
     "@essential-projects/routing_contracts": "^2.0.0",
     "@essential-projects/timing_contracts": "^2.0.0",
     "@process-engine/consumer_api_contracts": "^0.12.1",
-    "@process-engine/process_engine_contracts": "^10.2.0",
+    "@process-engine/process_engine_contracts": "feature~start_process_by_start_event_key",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
     "bpmn-moddle": "^0.14.0",
