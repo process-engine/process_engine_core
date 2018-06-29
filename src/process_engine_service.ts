@@ -3,25 +3,20 @@
 import {
   ExecutionContext,
   IApplicationService,
-  IEntity,
-  IEntityReference,
   IIamService,
   IPrivateQueryOptions,
-  IPublicGetOptions,
-  TokenType,
 } from '@essential-projects/core_contracts';
 import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
 import * as ProcessEngineErrors from '@essential-projects/errors_ts';
-import { IDataEvent, IEventAggregator, ISubscription } from '@essential-projects/event_aggregator_contracts';
+import { IEventAggregator } from '@essential-projects/event_aggregator_contracts';
 import { IFeature, IFeatureService } from '@essential-projects/feature_contracts';
-import {IInvoker, InvocationType} from '@essential-projects/invocation_contracts';
+import {IInvoker} from '@essential-projects/invocation_contracts';
 import { IDataMessage, IMessage, IMessageBusService, IMessageSubscription } from '@essential-projects/messagebus_contracts';
 import {
   IBpmnDiagram,
   IErrorDeserializer,
   IExecuteProcessService,
   IImportFromFileOptions,
-  INodeDefEntity,
   INodeInstanceEntity,
   INodeInstanceEntityTypeService,
   IParamImportFromXml,
@@ -93,9 +88,6 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._messageBusService;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
 
   private get processDefEntityTypeService(): IProcessDefEntityTypeService {
     return this._processDefEntityTypeService;
@@ -183,7 +175,6 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async getUserTaskData(context: ExecutionContext, userTaskId: string): Promise<IUserTaskMessageData> {
-    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
     const userTaskEntityQueryOptions: IPrivateQueryOptions = {
       expandEntity: [{
         attribute: 'nodeDef',
@@ -511,7 +502,7 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   private _timeoutPromise(milliseconds: number): Promise<void> {
-    return new Promise((resolve: Function, reject: Function): void => {
+    return new Promise((resolve: Function): void => {
       setTimeout(() => {
         resolve();
       }, milliseconds);
@@ -536,7 +527,6 @@ export class ProcessEngineService implements IProcessEngineService {
                               id: string,
                               key: string,
                               initialToken: any,
-                              version?: string,
                               correlationId?: string): Promise<any> {
     if (id === undefined && key === undefined) {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
@@ -658,37 +648,6 @@ export class ProcessEngineService implements IProcessEngineService {
     });
   }
 
-  private async _executeProcessRemotely(context: ExecutionContext,
-                                        requiredFeatures: Array<IFeature>,
-                                        id: string,
-                                        key: string,
-                                        initialToken: any,
-                                        version?: string): Promise<any> {
-    const possibleRemoteTargets: Array<string> = this.featureService.getApplicationIdsByFeatures(requiredFeatures);
-    if (possibleRemoteTargets.length === 0) {
-      // tslint:disable-next-line:max-line-length
-      throw new Error(`couldn't execute process: the process-engine instance doesn't have the required features to execute the process, and does not know of any other process-engine that does`);
-    }
-
-    const getInstanceIdMessage: IDataMessage = this.messageBusService.createDataMessage({
-      event: 'getInstanceId',
-    }, null);
-
-    const executeProcessMessage: IDataMessage = this.messageBusService.createDataMessage({
-      event: 'executeProcess',
-      id: id,
-      key: key,
-      initialToken: initialToken,
-      version: version,
-    }, context);
-
-    const targetApplicationChannel: string = `/processengine/${possibleRemoteTargets[0]}`;
-    const target: IDataMessage = <IDataMessage> await this.messageBusService.request(targetApplicationChannel, getInstanceIdMessage);
-    const targetInstanceChannel: string = `/processengine/${target.data.instanceId}`;
-    const executeProcessResponse: IDataMessage = <IDataMessage> await this.messageBusService.request(targetInstanceChannel, executeProcessMessage);
-
-    return executeProcessResponse.data;
-  }
 
   private async _executeProcessInstanceRemotely(context: ExecutionContext,
                                                 requiredFeatures: Array<IFeature>,
