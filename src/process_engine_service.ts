@@ -540,7 +540,15 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
     }
 
-    return this._executeProcessLocally(context, process, initialToken, correlationId);
+    // Setting this to undefined, will cause the executeProcessService to pick the first available start event
+    // Background:
+    // The refactored object model requires a start event key for starting a process instance.
+    // Since the old implementation does not support this, we need to tell the executeProcessService to pick a start event by itself.
+    const useDefaultStartEventId: any = undefined;
+
+    const tokenResult: any = await this._executeProcessService.start(context, process, useDefaultStartEventId, correlationId, initialToken);
+
+    return tokenResult;
   }
 
   public async executeProcessInstance(context: ExecutionContext, processInstanceId: string, participantId: string, initialToken: any): Promise<any> {
@@ -595,15 +603,6 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public setErrorDeserializer(deserializer: IErrorDeserializer): void {
     this._errorDeserializer = deserializer;
-  }
-
-  private async _executeProcessLocally(context: ExecutionContext,
-                                       process: Model.Types.Process,
-                                       initialToken: any,
-                                       correlationId?: string): Promise<any> {
-    const tokenResult: any = await this._executeProcessService.start(context, process, correlationId, initialToken);
-
-    return tokenResult;
   }
 
   private _executeProcessInstanceLocally(context: ExecutionContext,
