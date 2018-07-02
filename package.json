@@ -30,6 +30,7 @@
     "@essential-projects/routing_contracts": "^2.0.0",
     "@essential-projects/timing_contracts": "^2.0.0",
     "@process-engine/consumer_api_contracts": "^0.12.1",
+    "@process-engine/iam": "feature~implement_accessibility_checks",
     "@process-engine/process_engine_contracts": "feature~implement_accessibility_checks",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
