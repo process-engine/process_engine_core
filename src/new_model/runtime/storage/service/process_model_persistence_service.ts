@@ -1,16 +1,23 @@
-import {Definitions, IIamFacadeFactory, IProcessModelPersistence, Model} from '@process-engine/process_engine_contracts';
+import {
+  Definitions,
+  IExecutionContextFacade,
+  IIamFacadeFactory,
+  IProcessModelPersistenceRepository,
+  IProcessModelPersistenceService,
+  Model,
+} from '@process-engine/process_engine_contracts';
 
-export class ProcessModelPersistenceService implements IProcessModelPersistence {
+export class ProcessModelPersistenceService implements IProcessModelPersistenceService {
 
-  private _processModelPersistenceRepository: IProcessModelPersistence;
+  private _processModelPersistenceRepository: IProcessModelPersistenceRepository;
   private _iamFacadeFactory: IIamFacadeFactory;
 
-  constructor(processModelPersistenceRepository: IProcessModelPersistence, iamFacadeFactory: IIamFacadeFactory) {
+  constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository, iamFacadeFactory: IIamFacadeFactory) {
     this._processModelPersistenceRepository = processModelPersistenceRepository;
     this._iamFacadeFactory = iamFacadeFactory;
   }
 
-  private get processModelPersistenceRepository(): IProcessModelPersistence {
+  private get processModelPersistenceRepository(): IProcessModelPersistenceRepository {
     return this._processModelPersistenceRepository;
   }
 
@@ -18,15 +25,15 @@ export class ProcessModelPersistenceService implements IProcessModelPersistence 
     return this._iamFacadeFactory;
   }
 
-  public async persistProcessDefinitions(definitions: Definitions): Promise<void> {
+  public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {
     return this.processModelPersistenceRepository.persistProcessDefinitions(definitions);
   }
 
-  public async getProcessModelById(processModelId: string): Promise<Model.Types.Process> {
+  public async getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
     return this.processModelPersistenceRepository.getProcessModelById(processModelId);
   }
 
-  public async getProcessModels(): Promise<Array<Model.Types.Process>> {
+  public async getProcessModels(executionContextFacade: IExecutionContextFacade): Promise<Array<Model.Types.Process>> {
     return this.processModelPersistenceRepository.getProcessModels();
   }
 }
