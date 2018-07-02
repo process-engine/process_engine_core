@@ -17,12 +17,14 @@ const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler
 const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 
-const ProcessModelPersistence = require('./dist/commonjs/index').ProcessModelPersistence;
+const ProcessModelPersistence = require('./dist/commonjs/index').ProcessModelPersistenceRepository;
+const FlowNodeInstancePersistence = require('./dist/commonjs/index').FlowNodeInstancePersistenceRepository;
+
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+const IamFacadeFactory = require('./dist/commonjs/index').IamFacadeFactory;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
-const FlowNodeInstancePersistence = require('./dist/commonjs/index').FlowNodeInstancePersistence;
 
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
@@ -33,6 +35,10 @@ function registerInContainer(container) {
     .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
   container.register('FlowNodeInstancePersistence', FlowNodeInstancePersistence)
+    .singleton();
+
+  container.register('IamFacadeFactory', IamFacadeFactory)
+    .dependencies('IamServiceNew')
     .singleton();
 
   container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)

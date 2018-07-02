@@ -1,2 +1,2 @@
-export * from './process_model_persistence';
-export * from './flow_node_instance_persistence';
+export * from './repository/index';
+export * from './service/index';

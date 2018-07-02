@@ -7,7 +7,7 @@ interface IPersistedFlowNodeInstance {
   isSuspended: boolean;
 }
 
-export class FlowNodeInstancePersistence implements IFlowNodeInstancePersistence {
+export class FlowNodeInstancePersistenceRepository implements IFlowNodeInstancePersistence {
 
   private _persistedFlowNodes: Map<string, IPersistedFlowNodeInstance> = new Map<string, IPersistedFlowNodeInstance>();
 
