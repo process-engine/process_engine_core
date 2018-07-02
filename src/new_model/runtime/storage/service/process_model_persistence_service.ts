@@ -1,7 +1,7 @@
 import {
   Definitions,
   IExecutionContextFacade,
-  IIamFacadeFactory,
+  IIamFacade,
   IProcessModelPersistenceRepository,
   IProcessModelPersistenceService,
   Model,
@@ -10,19 +10,19 @@ import {
 export class ProcessModelPersistenceService implements IProcessModelPersistenceService {
 
   private _processModelPersistenceRepository: IProcessModelPersistenceRepository;
-  private _iamFacadeFactory: IIamFacadeFactory;
+  private _iamFacade: IIamFacade;
 
-  constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository, iamFacadeFactory: IIamFacadeFactory) {
+  constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository, iamFacade: IIamFacade) {
     this._processModelPersistenceRepository = processModelPersistenceRepository;
-    this._iamFacadeFactory = iamFacadeFactory;
+    this._iamFacade = iamFacade;
   }
 
   private get processModelPersistenceRepository(): IProcessModelPersistenceRepository {
     return this._processModelPersistenceRepository;
   }
 
-  private get iamFacadeFactory(): IIamFacadeFactory {
-    return this._iamFacadeFactory;
+  private get iamFacade(): IIamFacade {
+    return this._iamFacade;
   }
 
   public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {

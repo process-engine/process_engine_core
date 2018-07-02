@@ -24,7 +24,7 @@ const ProcessModelPersistenceRepository = require('./dist/commonjs/index').Proce
 
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
-const IamFacadeFactory = require('./dist/commonjs/index').IamFacadeFactory;
+const IamFacade = require('./dist/commonjs/index').IamFacade;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
 
@@ -36,7 +36,7 @@ function registerInContainer(container) {
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
-  container.register('IamFacadeFactory', IamFacadeFactory)
+  container.register('IamFacade', IamFacade)
     .dependencies('IamServiceNew')
     .singleton();
 
@@ -47,11 +47,11 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('FlowNodeInstancePersistenceService', FlowNodeInstancePersistenceService)
-    .dependencies('FlowNodeInstancePersistenceRepository', 'IamFacadeFactory')
+    .dependencies('FlowNodeInstancePersistenceRepository', 'IamFacade')
     .singleton();
 
   container.register('ProcessModelPersistenceService', ProcessModelPersistenceService)
-    .dependencies('ProcessModelPersistenceRepository', 'IamFacadeFactory')
+    .dependencies('ProcessModelPersistenceRepository', 'IamFacade')
     .singleton();
 
   container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)

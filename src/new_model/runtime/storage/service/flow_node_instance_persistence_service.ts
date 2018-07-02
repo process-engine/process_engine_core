@@ -2,26 +2,26 @@ import {
   IExecutionContextFacade,
   IFlowNodeInstancePersistenceRepository,
   IFlowNodeInstancePersistenceService,
-  IIamFacadeFactory,
+  IIamFacade,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
 export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePersistenceService {
 
   private _flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository;
-  private _iamFacadeFactory: IIamFacadeFactory;
+  private _iamFacade: IIamFacade;
 
-  constructor(flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository, iamFacadeFactory: IIamFacadeFactory) {
+  constructor(flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository, iamFacade: IIamFacade) {
     this._flowNodeInstancePersistenceRepository = flowNodeInstancePersistenceRepository;
-    this._iamFacadeFactory = iamFacadeFactory;
+    this._iamFacade = iamFacade;
   }
 
   private get flowNodeInstancePersistenceRepository(): IFlowNodeInstancePersistenceRepository {
     return this._flowNodeInstancePersistenceRepository;
   }
 
-  private get iamFacadeFactory(): IIamFacadeFactory {
-    return this._iamFacadeFactory;
+  private get iamFacade(): IIamFacade {
+    return this._iamFacade;
   }
 
   public async queryByCorrelation(executionContextFacade: IExecutionContextFacade,
