@@ -54,7 +54,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
-  private _processModelPersistence: IProcessModelPersistenceService = undefined;
+  private _processModelPersistenceService: IProcessModelPersistenceService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
@@ -70,7 +70,7 @@ export class ProcessEngineService implements IProcessEngineService {
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
               invoker: IInvoker,
-              processModelPersistence: IProcessModelPersistenceService) {
+              processModelPersistenceService: IProcessModelPersistenceService) {
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._executeProcessService = executeProcessService;
@@ -81,7 +81,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
     this._applicationService = applicationService;
     this._invoker = invoker;
-    this._processModelPersistence = processModelPersistence;
+    this._processModelPersistenceService = processModelPersistenceService;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -124,8 +124,8 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
-  private get processModelPersistence(): IProcessModelPersistenceService {
-    return this._processModelPersistence;
+  private get processModelPersistenceService(): IProcessModelPersistenceService {
+    return this._processModelPersistenceService;
   }
 
   private get errorDeserializer(): IErrorDeserializer {
@@ -534,7 +534,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
-    const process: Model.Types.Process = await this.processModelPersistence.getProcessModelById(executionContextFacade, key);
+    const process: Model.Types.Process = await this.processModelPersistenceService.getProcessModelById(executionContextFacade, key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
