@@ -24,9 +24,9 @@ const ProcessModelPersistenceRepository = require('./dist/commonjs/index').Proce
 
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
-const IamFacade = require('./dist/commonjs/index').IamFacade;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
+const IamFacade = require('./dist/commonjs/index').IamFacade;
 
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
@@ -106,7 +106,7 @@ function registerInContainer(container) {
       'Invoker',
       'ProcessModelPersistenceService',
     )
-    .injectPromiseLazy('NodeInstanceEntityTypeService')
+    .injectPromiseLazy('NodeInstanceEntityTypeService', 'ProcessModelPersistenceService')
     .configure('process_engine:process_engine_service')
     .singleton();
 

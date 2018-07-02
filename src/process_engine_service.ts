@@ -38,6 +38,8 @@ import * as debug from 'debug';
 
 import {ExecutionContextFacade} from './new_model/runtime/engine';
 
+import {IamFacadeMock} from './new_model/runtime/storage/security/iam_facade_mock';
+
 const debugInfo: debug.IDebugger = debug('processengine:info');
 const debugErr: debug.IDebugger = debug('processengine:error');
 
@@ -54,6 +56,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
+  private _processModelPersistenceServiceFactory: IFactoryAsync<IProcessModelPersistenceService> = undefined;
   private _processModelPersistenceService: IProcessModelPersistenceService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
@@ -70,7 +73,8 @@ export class ProcessEngineService implements IProcessEngineService {
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
               invoker: IInvoker,
-              processModelPersistenceService: IProcessModelPersistenceService) {
+              processModelPersistenceServiceFactory: IFactoryAsync<IProcessModelPersistenceService>) {
+
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._executeProcessService = executeProcessService;
@@ -81,7 +85,7 @@ export class ProcessEngineService implements IProcessEngineService {
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
     this._applicationService = applicationService;
     this._invoker = invoker;
-    this._processModelPersistenceService = processModelPersistenceService;
+    this._processModelPersistenceServiceFactory = processModelPersistenceServiceFactory;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -159,6 +163,11 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async initialize(): Promise<void> {
+
+    // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
+    const iamFacadeMock: IamFacadeMock = new IamFacadeMock();
+    this._processModelPersistenceService = await this._processModelPersistenceServiceFactory([iamFacadeMock]);
+
     this._initializeDefaultErrorDeserializer();
     await this._initializeMessageBus();
     await this._initializeProcesses();
