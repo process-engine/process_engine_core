@@ -17,8 +17,10 @@ const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler
 const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 
-const ProcessModelPersistence = require('./dist/commonjs/index').ProcessModelPersistenceRepository;
-const FlowNodeInstancePersistence = require('./dist/commonjs/index').FlowNodeInstancePersistenceRepository;
+const FlowNodeInstancePersistenceService = require('./dist/commonjs/index').FlowNodeInstancePersistenceService;
+const FlowNodeInstancePersistenceRepository = require('./dist/commonjs/index').FlowNodeInstancePersistenceRepository;
+const ProcessModelPersistenceService = require('./dist/commonjs/index').ProcessModelPersistenceService;
+const ProcessModelPersistenceRepository = require('./dist/commonjs/index').ProcessModelPersistenceRepository;
 
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
@@ -34,11 +36,22 @@ function registerInContainer(container) {
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
-  container.register('FlowNodeInstancePersistence', FlowNodeInstancePersistence)
-    .singleton();
-
   container.register('IamFacadeFactory', IamFacadeFactory)
     .dependencies('IamServiceNew')
+    .singleton();
+
+  container.register('FlowNodeInstancePersistenceRepository', FlowNodeInstancePersistenceRepository)
+    .singleton();
+
+  container.register('ProcessModelPersistenceRepository', ProcessModelPersistenceRepository)
+    .singleton();
+
+  container.register('FlowNodeInstancePersistenceService', FlowNodeInstancePersistenceService)
+    .dependencies('FlowNodeInstancePersistenceRepository', 'IamFacadeFactory')
+    .singleton();
+
+  container.register('ProcessModelPersistenceService', ProcessModelPersistenceService)
+    .dependencies('ProcessModelPersistenceRepository', 'IamFacadeFactory')
     .singleton();
 
   container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
@@ -46,44 +59,54 @@ function registerInContainer(container) {
 
   container.register('BpmnModelParser', BpmnModelParser);
 
-  container.register('ProcessModelPersistence', ProcessModelPersistence)
-    .singleton();
-
   container.register('BpmnProcessEntity', BpmnProcessEntity)
     .tags(entityDiscoveryTag);
 
   container.register('CallActivityHandler', CallActivityHandler)
-    .dependencies('ConsumerApiService', 'FlowNodeInstancePersistence');
+    .dependencies('ConsumerApiService', 'FlowNodeInstancePersistenceService');
 
   container.register('UserTaskHandler', UserTaskHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstancePersistence');
+    .dependencies('EventAggregator', 'FlowNodeInstancePersistenceService');
 
   container.register('SubProcessHandler', SubProcessHandler)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistence');
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistenceService');
 
   container.register('ScriptTaskHandler', ScriptTaskHandler)
-    .dependencies('FlowNodeInstancePersistence');
+    .dependencies('FlowNodeInstancePersistenceService');
 
   container.register('StartEventHandler', StartEventHandler)
-    .dependencies('FlowNodeInstancePersistence');
+    .dependencies('FlowNodeInstancePersistenceService');
   container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
-    .dependencies('FlowNodeInstancePersistence');
+    .dependencies('FlowNodeInstancePersistenceService');
   container.register('ParallelGatewayHandler', ParallelGatewayHandler)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistence');
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistenceService');
   container.register('ServiceTaskHandler', ServiceTaskHandler)
-    .dependencies('container', 'FlowNodeInstancePersistence');
+    .dependencies('container', 'FlowNodeInstancePersistenceService');
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
     .dependencies('TimingService', 'EventAggregator', 'IamService');
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
-    .dependencies('FlowNodeInstancePersistence');
+    .dependencies('FlowNodeInstancePersistenceService');
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
-    .dependencies('FlowNodeInstancePersistence');
+    .dependencies('FlowNodeInstancePersistenceService');
   container.register('EndEventHandler', EndEventHandler)
-    .dependencies('FlowNodeInstancePersistence', 'EventAggregator');
+    .dependencies('FlowNodeInstancePersistenceService', 'EventAggregator');
 
   container.register('ProcessEngineService', ProcessEngineService)
-    .dependencies('MessageBusService', 'EventAggregator', 'ProcessDefEntityTypeService', 'ExecuteProcessService', 'FeatureService', 'IamService', 'ProcessRepository', 'DatastoreService', 'NodeInstanceEntityTypeService', 'ApplicationService', 'Invoker', 'ProcessModelPersistence')
+    .dependencies(
+      'MessageBusService',
+      'EventAggregator',
+      'ProcessDefEntityTypeService',
+      'ExecuteProcessService',
+      'FeatureService',
+      'IamService',
+      'ProcessRepository',
+      'DatastoreService',
+      'NodeInstanceEntityTypeService',
+      'ApplicationService',
+      'Invoker',
+      'ProcessModelPersistenceService',
+    )
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();
