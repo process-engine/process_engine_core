@@ -57,7 +57,7 @@
     "build-doc": "gulp doc",
     "build-schemas": "gulp typescript-schema",
     "lint": "gulp lint",
-    "prepare": "npm run build && npm run build-schemas",
+    "prepare": "npm run build",
     "test": "gulp test"
   }
 }
