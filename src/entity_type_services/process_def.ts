@@ -6,17 +6,28 @@ import {
   IPublicGetOptions,
   IQueryClause,
 } from '@essential-projects/core_contracts';
-import { IDatastoreService, IEntityCollection, IEntityType } from '@essential-projects/data_model_contracts';
-import { IInvoker } from '@essential-projects/invocation_contracts';
+import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-projects/data_model_contracts';
+import {IInvoker} from '@essential-projects/invocation_contracts';
 import {
-  Definitions, IImportFromFileOptions, IImportFromXmlOptions,
-  IModelParser, IParamImportFromFile, IParamImportFromXml,
-  IParamStart, IProcessDefEntity, IProcessDefEntityTypeService, IProcessModelPersistence, IProcessRepository,
+  Definitions,
+  IExecutionContextFacade,
+  IImportFromFileOptions,
+  IImportFromXmlOptions,
+  IModelParser,
+  IParamImportFromFile,
+  IParamImportFromXml,
+  IParamStart,
+  IProcessDefEntity,
+  IProcessDefEntityTypeService,
+  IProcessModelPersistenceService,
+  IProcessRepository,
 } from '@process-engine/process_engine_contracts';
-import { BpmnDiagram } from '../bpmn_diagram';
 
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
+
+import {BpmnDiagram} from '../bpmn_diagram';
+import {ExecutionContextFacade} from '../new_model/runtime/engine/index';
 
 // tslint:disable:cyclomatic-complexity
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
@@ -25,13 +36,13 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
   private _bpmnModelParser: IModelParser = undefined;
-  private _processModelPersistence: IProcessModelPersistence = undefined;
+  private _processModelPersistence: IProcessModelPersistenceService = undefined;
 
   constructor(datastoreService: IDatastoreService,
               processRepository: IProcessRepository,
               invoker: IInvoker,
               bpmnModelParser: IModelParser,
-              processModelPersistence: IProcessModelPersistence) {
+              processModelPersistence: IProcessModelPersistenceService) {
     this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;
@@ -56,7 +67,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._bpmnModelParser;
   }
 
-  private get processModelPersistence(): IProcessModelPersistence {
+  private get processModelPersistence(): IProcessModelPersistenceService {
     return this._processModelPersistence;
   }
 
@@ -86,9 +97,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
-    const xml = params && params.xml ? params.xml : null;
+    const xml: string = params && params.xml ? params.xml : null;
     const definitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
-    await this.processModelPersistence.persistProcessDefinitions(definitions);
+
+    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
+
+    await this.processModelPersistence.persistProcessDefinitions(executionContextFacade, definitions);
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
