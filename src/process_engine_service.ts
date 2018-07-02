@@ -112,11 +112,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._datastoreService;
   }
 
-  private async _getNodeInstanceEntityTypeService(): Promise<INodeInstanceEntityTypeService> {
-    if (!this._nodeInstanceEntityTypeService) {
-      this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
-    }
-
+  private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
     return this._nodeInstanceEntityTypeService;
   }
 
@@ -167,6 +163,8 @@ export class ProcessEngineService implements IProcessEngineService {
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamFacadeMock: IamFacadeMock = new IamFacadeMock();
     this._processModelPersistenceService = await this._processModelPersistenceServiceFactory([iamFacadeMock]);
+
+    this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
 
     this._initializeDefaultErrorDeserializer();
     await this._initializeMessageBus();
@@ -434,8 +432,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     // TODO: Here'd we have to check, if we have the features required to continue the execution
     // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
-    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
-    nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
+    this.nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
   }
 
   private async _getAllWaitingNodes(): Promise<Array<INodeInstanceEntity>> {
@@ -492,7 +489,7 @@ export class ProcessEngineService implements IProcessEngineService {
   // When we only have the general NodeInstanceEntity, but what we want the specific entity that represents that nodeInstace
   // (for example the UserTaskEntity), then this method gives us that specific entity
   private async _getSpecificEntityByNodeInstance(context: ExecutionContext, nodeInstance: INodeInstanceEntity): Promise<INodeInstanceEntity> {
-    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+
     const specificEntityQueryOptions: IPrivateQueryOptions = {
       expandEntity: [{
         attribute: 'nodeDef',
@@ -505,7 +502,7 @@ export class ProcessEngineService implements IProcessEngineService {
     };
 
     // tslint:disable-next-line:max-line-length
-    const specificEntityType: IEntityType<INodeInstanceEntity> = await nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(nodeInstance.type);
+    const specificEntityType: IEntityType<INodeInstanceEntity> = await this.nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(nodeInstance.type);
 
     return specificEntityType.getById(nodeInstance.id, context, specificEntityQueryOptions);
   }
