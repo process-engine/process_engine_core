@@ -23,6 +23,8 @@ export class ProcessModelPersistenceRepository implements IProcessModelPersisten
         }
       }
     }
+
+    return undefined;
   }
 
   public async getProcessModels(): Promise<Array<Model.Types.Process>> {
