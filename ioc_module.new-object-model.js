@@ -95,7 +95,6 @@ function registerInContainer(container) {
   container.register('ProcessEngineService', ProcessEngineService)
     .dependencies(
       'MessageBusService',
-      'EventAggregator',
       'ProcessDefEntityTypeService',
       'ExecuteProcessService',
       'FeatureService',

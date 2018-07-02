@@ -7,7 +7,6 @@ import {
 } from '@essential-projects/core_contracts';
 import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-projects/data_model_contracts';
 import * as ProcessEngineErrors from '@essential-projects/errors_ts';
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IFeature, IFeatureService} from '@essential-projects/feature_contracts';
 import {IInvoker} from '@essential-projects/invocation_contracts';
 import {IDataMessage, IMessage, IMessageBusService, IMessageSubscription} from '@essential-projects/messagebus_contracts';
@@ -45,7 +44,6 @@ const debugErr: debug.IDebugger = debug('processengine:error');
 export class ProcessEngineService implements IProcessEngineService {
 
   private _messageBusService: IMessageBusService = undefined;
-  private _eventAggregator: IEventAggregator = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _executeProcessService: IExecuteProcessService = undefined;
   private _featureService: IFeatureService = undefined;
@@ -63,7 +61,6 @@ export class ProcessEngineService implements IProcessEngineService {
   public config: any = undefined;
 
   constructor(messageBusService: IMessageBusService,
-              eventAggregator: IEventAggregator,
               processDefEntityTypeService: IProcessDefEntityTypeService,
               executeProcessService: IExecuteProcessService,
               featureService: IFeatureService,
@@ -75,7 +72,6 @@ export class ProcessEngineService implements IProcessEngineService {
               invoker: IInvoker,
               processModelPersistence: IProcessModelPersistenceService) {
     this._messageBusService = messageBusService;
-    this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._executeProcessService = executeProcessService;
     this._featureService = featureService;

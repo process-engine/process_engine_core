@@ -1,6 +1,5 @@
 'use strict';
 
-const ProcessEngineService = require('./dist/commonjs/index').ProcessEngineService;
 const SubprocessExternalEntity = require('./dist/commonjs/index').SubprocessExternalEntity;
 const SubprocessInternalEntity = require('./dist/commonjs/index').SubprocessInternalEntity;
 const BoundaryEventEntity = require('./dist/commonjs/index').BoundaryEventEntity;
