@@ -20,10 +20,10 @@ export class ProcessModelFacade implements IProcessModelFacade {
       return undefined;
     }
 
-    const sequenceFlowsTargetingNextFlowNode: Array<Model.Types.SequenceFlow>
-      = this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
-      return sequenceFlow.targetRef === nextFlowNode.id;
-    });
+    const sequenceFlowsTargetingNextFlowNode: Array<Model.Types.SequenceFlow> =
+      this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+        return sequenceFlow.targetRef === nextFlowNode.id;
+      });
 
     for (const sequenceFlow of sequenceFlowsTargetingNextFlowNode) {
       if (sequenceFlow.sourceRef === flowNode.id) {
