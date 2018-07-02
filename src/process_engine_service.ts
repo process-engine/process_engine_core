@@ -1,5 +1,4 @@
 // tslint:disable:max-file-line-count
-
 import {
   ExecutionContext,
   IApplicationService,
@@ -16,6 +15,7 @@ import {
   IBpmnDiagram,
   IErrorDeserializer,
   IExecuteProcessService,
+  IExecutionContextFacade,
   IImportFromFileOptions,
   INodeDefEntity,
   INodeInstanceEntity,
@@ -27,7 +27,7 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessEntry,
-  IProcessModelPersistence,
+  IProcessModelPersistenceService,
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
@@ -36,6 +36,8 @@ import {
 import {IFactoryAsync} from 'addict-ioc';
 
 import * as debug from 'debug';
+
+import {ExecutionContextFacade} from './new_model/runtime/engine';
 
 const debugInfo: debug.IDebugger = debug('processengine:info');
 const debugErr: debug.IDebugger = debug('processengine:error');
@@ -54,7 +56,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
-  private _processModelPersistence: IProcessModelPersistence = undefined;
+  private _processModelPersistence: IProcessModelPersistenceService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
@@ -71,7 +73,7 @@ export class ProcessEngineService implements IProcessEngineService {
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
               invoker: IInvoker,
-              processModelPersistence: IProcessModelPersistence) {
+              processModelPersistence: IProcessModelPersistenceService) {
     this._messageBusService = messageBusService;
     this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
@@ -126,7 +128,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
-  private get processModelPersistence(): IProcessModelPersistence {
+  private get processModelPersistence(): IProcessModelPersistenceService {
     return this._processModelPersistence;
   }
 
@@ -534,7 +536,9 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    const process: Model.Types.Process = await this.processModelPersistence.getProcessModelById(key);
+    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
+
+    const process: Model.Types.Process = await this.processModelPersistence.getProcessModelById(executionContextFacade, key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
