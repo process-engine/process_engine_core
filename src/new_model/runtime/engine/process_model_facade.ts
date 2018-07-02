@@ -98,7 +98,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
       return flowNode instanceof Model.Activities.UserTask;
     });
 
-    const laneUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(this.processModel.laneSet);
+    const laneUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromFlowNodeList(this.processModel);
 
     return [
       ...userTaskFlowNodes,
@@ -106,25 +106,15 @@ export class ProcessModelFacade implements IProcessModelFacade {
     ] as Array<Model.Activities.UserTask>;
   }
 
-  private _getUserTasksFromLaneRecursively(laneSet: Model.Types.LaneSet): Array<Model.Activities.UserTask> {
+  private _getUserTasksFromFlowNodeList(processModel: Model.Types.Process): Array<Model.Activities.UserTask> {
 
-    const userTasks: Array<Model.Base.FlowNode> = [];
-
-    if (!laneSet) {
-      return userTasks as Array<Model.Activities.UserTask>;
+    if (!processModel.laneSet) {
+      return [];
     }
 
-    for (const lane of laneSet.lanes) {
-
-      const userTaskFlowNodes: Array<Model.Base.FlowNode> = lane.flowNodeReferences.filter((flowNode: Model.Base.FlowNode) => {
-        return flowNode instanceof Model.Activities.UserTask;
-      });
-
-      Array.prototype.push.apply(userTasks, userTaskFlowNodes);
-
-      const childUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromLaneRecursively(lane.childLaneSet);
-      Array.prototype.push.apply(userTasks, childUserTasks);
-    }
+    const userTasks: Array<Model.Base.FlowNode> = processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof Model.Activities.UserTask;
+    });
 
     return userTasks as Array<Model.Activities.UserTask>;
   }
