@@ -2,7 +2,7 @@ import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {
   EndEventReachedMessage,
   IExecutionContextFacade,
-  IFlowNodeInstancePersistence,
+  IFlowNodeInstancePersistenceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -14,17 +14,17 @@ import {FlowNodeHandler} from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
-  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
 
-  constructor(flowNodeInstancePersistence: IFlowNodeInstancePersistence, eventAggregator: IEventAggregator) {
+  constructor(flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService, eventAggregator: IEventAggregator) {
     super();
-    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
+    this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
     this._eventAggregator = eventAggregator;
   }
 
-  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
-    return this._flowNodeInstancePersistence;
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+    return this._flowNodeInstancePersistenceService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -39,8 +39,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistence.persistOnEnter(token, flowNode.id, flowNodeInstanceId);
-    await this.flowNodeInstancePersistence.persistOnExit(token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstancePersistenceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
     this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
