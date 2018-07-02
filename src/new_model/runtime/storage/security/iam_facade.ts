@@ -14,7 +14,14 @@ export class IamFacade implements IIamFacade {
   }
 
   public async checkIfUserCanAccessLane(identity: IIdentity, laneId: string): Promise<boolean> {
-    return Promise.resolve(true);
+
+    try {
+      await this.iamService.ensureHasClaim(identity, laneId);
+
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
 }
