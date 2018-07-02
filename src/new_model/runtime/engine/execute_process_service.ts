@@ -91,17 +91,21 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
-        resolve(message);
-      });
+      const subscription: ISubscription =
+        this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
+          resolve(message);
+        });
 
       try {
         await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
-
       } catch (error) {
         // tslint:disable-next-line:max-line-length
         const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorMessage, error);
+
+        if (subscription) {
+          subscription.dispose();
+        }
         reject(error);
       }
     });
@@ -142,6 +146,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
         // tslint:disable-next-line:max-line-length
         const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorMessage, error);
+
+        for (const subscription of subscriptions) {
+          subscription.dispose();
+        }
         reject(error);
       }
 
