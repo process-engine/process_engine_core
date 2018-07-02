@@ -55,14 +55,14 @@ function ExtractErrorsFromObjectModel(parsedObjectModel: IParsedObjectModel): Ar
   const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Error);
 
   for (const rawError of rawErrors) {
-      const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
+    const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
 
-      newError.errorCode = rawError.errorCode;
-      newError.name = rawError.name;
-      newError.id = rawError.id;
+    newError.errorCode = rawError.errorCode;
+    newError.name = rawError.name;
+    newError.id = rawError.id;
 
-      errors.push(newError);
-    }
+    errors.push(newError);
+  }
 
   return errors;
 }
