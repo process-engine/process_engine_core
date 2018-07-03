@@ -7,7 +7,7 @@ import {
   Model,
 } from '@process-engine/process_engine_contracts';
 
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {Identity} from '@process-engine/iam';
 
@@ -17,10 +17,15 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
 
   private _processModelPersistenceRepository: IProcessModelPersistenceRepository;
   private _iamFacade: IIamFacade;
+  private _identityService: IIdentityService;
 
-  constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository, iamFacade: IIamFacade) {
+  constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository,
+              iamFacade: IIamFacade,
+              identityService: IIdentityService) {
+
     this._processModelPersistenceRepository = processModelPersistenceRepository;
     this._iamFacade = iamFacade;
+    this._identityService = identityService;
   }
 
   private get processModelPersistenceRepository(): IProcessModelPersistenceRepository {
@@ -29,6 +34,10 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
 
   private get iamFacade(): IIamFacade {
     return this._iamFacade;
+  }
+
+  private get identityService(): IIdentityService {
+    return this._identityService;
   }
 
   public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {
@@ -74,7 +83,7 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
                                                         processModel: Model.Types.Process,
                                                        ): Promise<Model.Types.Process> {
 
-    const identity: Identity = this._resolveIdentity(executionContextFacade);
+    const identity: Identity = await this._resolveIdentity(executionContextFacade);
 
     if (!processModel.laneSet) {
       return processModel;
@@ -150,11 +159,11 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
     return processModelHasAccessibleStartEvent;
   }
 
-  private _resolveIdentity(executionContextFacade: IExecutionContextFacade): IIdentity {
+  private async _resolveIdentity(executionContextFacade: IExecutionContextFacade): Promise<IIdentity> {
 
     const userToken: string = executionContextFacade.getIdentityToken();
 
-    const identity: IIdentity = new Identity(userToken);
+    const identity: IIdentity = await this.identityService.getIdentity(userToken);
 
     return identity;
   }
