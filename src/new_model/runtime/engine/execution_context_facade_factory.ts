@@ -1,6 +1,4 @@
-import {ExecutionContext} from '@essential-projects/core_contracts';
-
-import {IExecutionContextFacade, IExecutionContextFacadeFactory} from '@process-engine/process_engine_contracts';
+import {ExecutionContext, IExecutionContextFacade, IExecutionContextFacadeFactory} from '@process-engine/process_engine_contracts';
 
 import {ExecutionContextFacade} from './execution_context_facade';
 

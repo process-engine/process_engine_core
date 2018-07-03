@@ -1,5 +1,6 @@
-import {ExecutionContext, IToPojoOptions} from '@essential-projects/core_contracts';
+import {IToPojoOptions} from '@essential-projects/core_contracts';
 import {
+  ExecutionContext,
   IExecutionContextFacade,
   IFlowNodeInstancePersistenceService,
   IProcessModelFacade,

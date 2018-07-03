@@ -83,7 +83,7 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
                                                         processModel: Model.Types.Process,
                                                        ): Promise<Model.Types.Process> {
 
-    const identity: Identity = await this._resolveIdentity(executionContextFacade);
+    const identity: Identity = await executionContextFacade.getIdentity();
 
     if (!processModel.laneSet) {
       return processModel;
@@ -157,14 +157,5 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
     });
 
     return processModelHasAccessibleStartEvent;
-  }
-
-  private async _resolveIdentity(executionContextFacade: IExecutionContextFacade): Promise<IIdentity> {
-
-    const userToken: string = executionContextFacade.getIdentityToken();
-
-    const identity: IIdentity = await this.identityService.getIdentity(userToken);
-
-    return identity;
   }
 }

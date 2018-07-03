@@ -1,5 +1,5 @@
-import {ExecutionContext} from '@essential-projects/core_contracts';
 import {
+  ExecutionContext,
   IExecutionContextFacade,
   IFlowNodeInstancePersistenceService,
   IProcessModelFacade,

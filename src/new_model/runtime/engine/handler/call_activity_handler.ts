@@ -17,6 +17,8 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {FlowNodeHandler} from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
@@ -49,10 +51,10 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
 
-    const encryptedToken: string = await executionContextFacade.getIdentityToken();
+    const identity: IIdentity = await executionContextFacade.getIdentity();
 
     const consumerContext: ConsumerContext = {
-      identity: encryptedToken,
+      identity: identity.token,
     };
 
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
