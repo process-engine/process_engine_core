@@ -1,4 +1,4 @@
-import {ExecutionContext} from '@essential-projects/core_contracts';
+import {ExecutionContext, IIdentity} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IDataMessage, IMessageBusService} from '@essential-projects/messagebus_contracts';
 
@@ -64,15 +64,15 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processInstanceId: string = uuid.v4();
 
-    const identity: any = await context.getIdentity(context);
+    const identity: IIdentity = await context.getIdentity(context);
     const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
-    const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
-    token.caller = caller;
+    const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
+    processToken.caller = caller;
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
-    await this._executeFlowNode(startEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
     const resultToken: any = await processTokenFacade.getOldTokenFormat();
 
@@ -157,7 +157,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
-                                 token: Runtime.Types.ProcessToken,
+                                 processToken: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
@@ -165,7 +165,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             token,
+                                                                             processToken,
                                                                              processTokenFacade,
                                                                              processModelFacade,
                                                                              executionContextFacade);
