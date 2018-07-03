@@ -23,6 +23,8 @@ const ProcessModelPersistenceService = require('./dist/commonjs/index').ProcessM
 const ProcessModelPersistenceRepository = require('./dist/commonjs/index').ProcessModelPersistenceRepository;
 
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
+
+const ExecutionContextFacadeFactory = require('./dist/commonjs/index').ExecutionContextFacadeFactory;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
@@ -53,6 +55,12 @@ function registerInContainer(container) {
   container.register('ProcessModelPersistenceService', ProcessModelPersistenceService)
     .dependencies('ProcessModelPersistenceRepository', 'IamFacade', 'IdentityServiceNew')
     .singleton();
+
+  container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
+    .singleton();
+
+  container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
+    .dependencies('container');
 
   container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
     .singleton();
@@ -109,9 +117,6 @@ function registerInContainer(container) {
     .injectPromiseLazy('NodeInstanceEntityTypeService', 'ProcessModelPersistenceService')
     .configure('process_engine:process_engine_service')
     .singleton();
-
-  container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
-    .dependencies('container');
 }
 
 module.exports.registerInContainer = registerInContainer;
