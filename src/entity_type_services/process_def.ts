@@ -7,9 +7,11 @@ import {
   IQueryClause,
 } from '@essential-projects/core_contracts';
 import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-projects/data_model_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 import {IInvoker} from '@essential-projects/invocation_contracts';
 import {
   Definitions,
+  ExecutionContext as NewExecutionContext,
   IExecutionContextFacade,
   IImportFromFileOptions,
   IImportFromXmlOptions,
@@ -100,7 +102,13 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     const xml: string = params && params.xml ? params.xml : null;
     const definitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
 
-    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
+    const identity: IIdentity = {
+      token: context.encryptedToken,
+    };
+
+    const newExecutionContext: NewExecutionContext = new NewExecutionContext(identity);
+
+    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
 
     await this.processModelPersistence.persistProcessDefinitions(executionContextFacade, definitions);
 

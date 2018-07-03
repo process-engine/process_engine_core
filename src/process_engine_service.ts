@@ -11,6 +11,7 @@ import {IFeature, IFeatureService} from '@essential-projects/feature_contracts';
 import {IInvoker} from '@essential-projects/invocation_contracts';
 import {IDataMessage, IMessage, IMessageBusService, IMessageSubscription} from '@essential-projects/messagebus_contracts';
 import {
+  ExecutionContext as NewExecutionContext,
   IBpmnDiagram,
   IErrorDeserializer,
   IExecuteProcessService,
@@ -296,7 +297,7 @@ export class ProcessEngineService implements IProcessEngineService {
     if (message.data.event === 'executeProcess') {
       const responseChannel: string = message.metadata.response;
       await this.messageBusService.verifyMessage(message);
-      const responseData: any = await this.executeProcess(message.metadata.context,
+      const responseData: any = await this.executeProcess((message.metadata.context as any),
                                                           message.data.id,
                                                           message.data.key,
                                                           message.data.initialToken,
@@ -529,7 +530,7 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
-  public async executeProcess(context: ExecutionContext,
+  public async executeProcess(context: NewExecutionContext,
                               id: string,
                               key: string,
                               initialToken: any,
@@ -552,7 +553,8 @@ export class ProcessEngineService implements IProcessEngineService {
     // Since the old implementation does not support this, we need to tell the executeProcessService to pick a start event by itself.
     const useDefaultStartEventId: any = undefined;
 
-    const tokenResult: any = await this._executeProcessService.start(context, process, useDefaultStartEventId, correlationId, initialToken);
+    const tokenResult: any =
+      await this._executeProcessService.start(executionContextFacade, process, useDefaultStartEventId, correlationId, initialToken);
 
     return tokenResult;
   }
