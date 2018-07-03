@@ -9,7 +9,7 @@ import {
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
-import { NotFoundError } from '@essential-projects/errors_ts';
+import {NotFoundError} from '@essential-projects/errors_ts';
 
 export function parseEventsFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Events.Event> {
 
