@@ -41,7 +41,7 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
  * Extract the error definitions from the process model.
  *
  * @param parsedObjectModel Object model of the parsed xml process definition.
- * @returns A list of all parsed error definitions.
+ * @returns A list of all parsed error definitions; an empty list is returned, if no errors are present.
  */
 function ExtractErrorsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
 
