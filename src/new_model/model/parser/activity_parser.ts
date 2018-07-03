@@ -11,14 +11,14 @@ import {parseProcessSequenceFlows} from './sequence_flow_parser';
 
 import * as moment from 'moment';
 
-export function parseActivitiesFromProcessData(processData: any): Array<Model.Activities.Activity> {
+export function parseActivitiesFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
   const scriptTasks: Array<Model.Activities.ScriptTask> = parseScriptTasks(processData);
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
-  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData);
+  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
 
   return Array.prototype.concat(manualTasks,
                                 scriptTasks,
@@ -267,7 +267,7 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   return callActivities;
 }
 
-function parseSubProcesses(processData: any): Array<Model.Activities.SubProcess> {
+function parseSubProcesses(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
 
@@ -281,7 +281,7 @@ function parseSubProcesses(processData: any): Array<Model.Activities.SubProcess>
     const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
 
     subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
-    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw);
+    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors);
     subProcess.sequenceFlows = parseProcessSequenceFlows(subProcessRaw);
 
     subProcesses.push(subProcess);
