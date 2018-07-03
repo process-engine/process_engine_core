@@ -9,6 +9,8 @@ import {
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
+import { NotFoundError } from '@essential-projects/errors_ts';
+
 export function parseEventsFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Events.Event> {
 
   const startEvents: Array<Model.Events.StartEvent>
@@ -203,5 +205,5 @@ function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Mo
       return currentError;
     }
   }
-  throw Error(`No error with id ${errorId} found.`);
+  throw new NotFoundError(`No error with id ${errorId} found.`);
 }
