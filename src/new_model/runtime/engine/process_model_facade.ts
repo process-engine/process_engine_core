@@ -14,6 +14,10 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return this._processModel;
   }
 
+  public getIsExecutable(): boolean {
+    return this.processModel.isExecutable;
+  }
+
   public getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow {
 
     if (!nextFlowNode) {
