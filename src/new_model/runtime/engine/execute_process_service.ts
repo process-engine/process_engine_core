@@ -2,6 +2,8 @@ import {IEventAggregator, ISubscription} from '@essential-projects/event_aggrega
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {IDataMessage, IMessageBusService} from '@essential-projects/messagebus_contracts';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
+
 import {
   EndEventReachedMessage,
   ExecutionContext,
@@ -105,7 +107,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         if (subscription) {
           subscription.dispose();
         }
-        reject(error);
+        reject(new InternalServerError(error.message));
       }
     });
   }
@@ -149,7 +151,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         for (const subscription of subscriptions) {
           subscription.dispose();
         }
-        reject(error);
+        reject(new InternalServerError(error.message));
       }
 
     });
