@@ -128,20 +128,25 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
 
     for (const lane of laneSet.lanes) {
 
+      // NOTE: flowNodeReferences are stored in both, the parent lane AND in the child lane!
+      // So if we have a lane A with two Sublanes B and C, we must not evaluate the elements from lane A!
+      // Consider a user who can only access sublane B.
+      // If we were to allow him access to all references stored in lane A, he would also be granted access to the elements
+      // from lane C, since they are contained within the reference set of lane A!
       if (lane.childLaneSet) {
         const accessibleChildLaneFlowNodes: Array<Model.Base.FlowNode> =
           this._getFlowNodesForLaneSet(lane.childLaneSet, flowNodes);
 
         accessibleFlowNodes.push(...accessibleChildLaneFlowNodes);
-      }
+      } else {
+        for (const flowNodeId of lane.flowNodeReferences) {
+          const matchingFlowNode: Model.Base.FlowNode = flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
+            return flowNode.id === flowNodeId;
+          });
 
-      for (const flowNodeId of lane.flowNodeReferences) {
-        const matchingFlowNode: Model.Base.FlowNode = flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
-          return flowNode.id === flowNodeId;
-        });
-
-        if (matchingFlowNode) {
-          accessibleFlowNodes.push(matchingFlowNode);
+          if (matchingFlowNode) {
+            accessibleFlowNodes.push(matchingFlowNode);
+          }
         }
       }
     }
