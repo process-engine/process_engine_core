@@ -34,7 +34,8 @@ function registerInContainer(container) {
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('DatastoreService', 'ProcessRepository', 'Invoker', 'BpmnModelParser', 'ProcessModelPersistenceService');
+    .dependencies('container', 'DatastoreService', 'ProcessRepository', 'Invoker', 'BpmnModelParser', 'ProcessModelPersistenceService')
+    .injectPromiseLazy('ProcessModelPersistenceService');
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
     .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')

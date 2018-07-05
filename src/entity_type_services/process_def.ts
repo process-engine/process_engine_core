@@ -21,14 +21,17 @@ import {
   IParamStart,
   IProcessDefEntity,
   IProcessDefEntityTypeService,
+  IProcessModelPersistenceRepository,
   IProcessModelPersistenceService,
   IProcessRepository,
 } from '@process-engine/process_engine_contracts';
 
+import {IFactoryAsync, InvocationContainer} from 'addict-ioc';
 import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
 import {BpmnDiagram} from '../bpmn_diagram';
+import {IamServiceMock} from '../iam_service_mock';
 import {ExecutionContextFacade} from '../new_model/runtime/engine/index';
 
 // tslint:disable:cyclomatic-complexity
@@ -38,18 +41,24 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
   private _bpmnModelParser: IModelParser = undefined;
-  private _processModelPersistence: IProcessModelPersistenceService = undefined;
+  private _processModelPersistenceServiceFactory: IFactoryAsync<IProcessModelPersistenceService> = undefined;
+  private _processModelPersistenceService: IProcessModelPersistenceService = undefined;
 
-  constructor(datastoreService: IDatastoreService,
+  private _container: InvocationContainer;
+
+  constructor(container: InvocationContainer,
+              datastoreService: IDatastoreService,
               processRepository: IProcessRepository,
               invoker: IInvoker,
               bpmnModelParser: IModelParser,
-              processModelPersistence: IProcessModelPersistenceService) {
+              processModelPersistenceServiceFactory: IFactoryAsync<IProcessModelPersistenceService>) {
+
+    this._container = container;
     this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;
     this._bpmnModelParser = bpmnModelParser;
-    this._processModelPersistence = processModelPersistence;
+    this._processModelPersistenceServiceFactory = processModelPersistenceServiceFactory;
   }
 
   // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
@@ -69,8 +78,17 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._bpmnModelParser;
   }
 
-  private get processModelPersistence(): IProcessModelPersistenceService {
-    return this._processModelPersistence;
+  private get processModelPersistenceService(): IProcessModelPersistenceService {
+    return this._processModelPersistenceService;
+  }
+
+  public async initialize(): Promise<void> {
+
+    const processModelPeristanceRepository: IProcessModelPersistenceRepository =
+      await this._container.resolveAsync<IProcessModelPersistenceRepository>('ProcessModelPersistenceRepository');
+    // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
+    const iamService: IamServiceMock = new IamServiceMock();
+    this._processModelPersistenceService = await this._processModelPersistenceServiceFactory([processModelPeristanceRepository, iamService]);
   }
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
@@ -110,7 +128,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
 
-    await this.processModelPersistence.persistProcessDefinitions(executionContextFacade, definitions);
+    await this.processModelPersistenceService.persistProcessDefinitions(executionContextFacade, definitions);
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 

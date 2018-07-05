@@ -8,8 +8,6 @@ import {
 
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
-import {Identity} from '@process-engine/iam';
-
 import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 
 export class ProcessModelPersistenceService implements IProcessModelPersistenceService {
@@ -88,7 +86,7 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
                                                         processModel: Model.Types.Process,
                                                        ): Promise<Model.Types.Process> {
 
-    const identity: Identity = await executionContextFacade.getIdentity();
+    const identity: IIdentity = await executionContextFacade.getIdentity();
 
     if (!processModel.laneSet) {
       return processModel;
