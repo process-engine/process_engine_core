@@ -84,19 +84,27 @@ function registerInContainer(container) {
 
   container.register('StartEventHandler', StartEventHandler)
     .dependencies('FlowNodeInstancePersistenceService');
+
   container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
     .dependencies('FlowNodeInstancePersistenceService');
+
   container.register('ParallelGatewayHandler', ParallelGatewayHandler)
     .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstancePersistenceService');
+
   container.register('ServiceTaskHandler', ServiceTaskHandler)
     .dependencies('container', 'FlowNodeInstancePersistenceService');
+
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
     .dependencies('TimingService', 'EventAggregator', 'IamService');
+
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
     .dependencies('FlowNodeInstancePersistenceService');
+
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
     .dependencies('FlowNodeInstancePersistenceService');
+
   container.register('EndEventHandler', EndEventHandler)
     .dependencies('FlowNodeInstancePersistenceService', 'EventAggregator');
 
