@@ -15,20 +15,20 @@ import {FlowNodeHandler} from './index';
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
+  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
+    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstancePersistenceService;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(subProcessNode: Model.Activities.SubProcess,
@@ -39,7 +39,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, subProcessNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, subProcessNode.id, flowNodeInstanceId);
 
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,
     // but results of the SubProcess are not accessible by the original Process before the SubProcess finishes.
@@ -70,7 +70,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcessNode);
 
     processTokenFacade.addResultForFlowNode(subProcessNode.id, finalTokenData.current);
-    await this.flowNodeInstancePersistenceService.persistOnExit(executionContextFacade, token, subProcessNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, subProcessNode.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

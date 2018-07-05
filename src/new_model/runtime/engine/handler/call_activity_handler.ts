@@ -24,21 +24,21 @@ import {FlowNodeHandler} from './index';
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApiService;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(consumerApiService: IConsumerApiService, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
+  constructor(consumerApiService: IConsumerApiService, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
 
     this._consumerApiService = consumerApiService;
-    this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
+    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get consumerApiService(): IConsumerApiService {
     return this._consumerApiService;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstancePersistenceService;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
@@ -49,7 +49,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
 
     const identity: IIdentity = await executionContextFacade.getIdentity();
 
@@ -70,7 +70,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     await processTokenFacade.addResultForFlowNode(callActivityNode.id, processStartResponse.tokenPayload);
     token.payload = processStartResponse.tokenPayload;
 
-    await this.flowNodeInstancePersistenceService.persistOnExit(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

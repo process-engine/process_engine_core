@@ -14,17 +14,17 @@ import {FlowNodeHandler} from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
-  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
 
-  constructor(flowNodeInstancePersistenceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
     super();
-    this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
+    this._flowNodeInstanceService = flowNodeInstanceService;
     this._eventAggregator = eventAggregator;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstancePersistenceService;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -39,8 +39,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
-    await this.flowNodeInstancePersistenceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
     this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 

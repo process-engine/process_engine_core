@@ -164,7 +164,7 @@ export class ProcessEngineService implements IProcessEngineService {
   public async initialize(): Promise<void> {
 
     const processModelPeristanceRepository: IProcessModelRepository =
-      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelPersistenceRepository');
+      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelRepository');
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
     this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);

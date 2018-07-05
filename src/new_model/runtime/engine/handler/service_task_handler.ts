@@ -16,21 +16,21 @@ import {FlowNodeHandler} from './index';
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(container: IContainer, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
 
     this._container = container;
-    this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
+    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get container(): IContainer {
     return this._container;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstancePersistenceService;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
@@ -41,7 +41,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
 
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
@@ -67,7 +67,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
 
       processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
-      await this.flowNodeInstancePersistenceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
 

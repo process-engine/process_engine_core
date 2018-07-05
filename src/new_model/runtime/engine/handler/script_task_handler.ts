@@ -14,15 +14,15 @@ import {FlowNodeHandler} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
-  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
-    this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
+    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstancePersistenceService;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(scriptTask: Model.Activities.ScriptTask,
@@ -33,7 +33,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistenceService.persistOnEnter(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
 
     const script: string = scriptTask.script;
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
@@ -62,7 +62,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
     token.payload = finalResult;
 
-    await this.flowNodeInstancePersistenceService.persistOnExit(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

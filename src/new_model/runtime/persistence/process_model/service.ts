@@ -12,21 +12,21 @@ import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 
 export class ProcessModelService implements IProcessModelService {
 
-  private _processModelPersistenceRepository: IProcessModelRepository;
+  private _processModelRepository: IProcessModelRepository;
   private _iamService: IIAMService;
 
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
-  constructor(processModelPersistenceRepository: IProcessModelRepository,
+  constructor(processModelRepository: IProcessModelRepository,
               iamService: IIAMService) {
 
-    this._processModelPersistenceRepository = processModelPersistenceRepository;
+    this._processModelRepository = processModelRepository;
     this._iamService = iamService;
   }
 
-  private get processModelPersistenceRepository(): IProcessModelRepository {
-    return this._processModelPersistenceRepository;
+  private get processModelRepository(): IProcessModelRepository {
+    return this._processModelRepository;
   }
 
   private get iamService(): IIAMService {
@@ -38,7 +38,7 @@ export class ProcessModelService implements IProcessModelService {
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
 
-    return this.processModelPersistenceRepository.persistProcessDefinitions(definitions);
+    return this.processModelRepository.persistProcessDefinitions(definitions);
   }
 
   public async getProcessModels(executionContextFacade: IExecutionContextFacade): Promise<Array<Model.Types.Process>> {
@@ -46,7 +46,7 @@ export class ProcessModelService implements IProcessModelService {
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
-    const processModelList: Array<Model.Types.Process> = await this.processModelPersistenceRepository.getProcessModels();
+    const processModelList: Array<Model.Types.Process> = await this.processModelRepository.getProcessModels();
 
     const filteredList: Array<Model.Types.Process> = [];
 
@@ -67,7 +67,7 @@ export class ProcessModelService implements IProcessModelService {
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
-    const processModel: Model.Types.Process = await this.processModelPersistenceRepository.getProcessModelById(processModelId);
+    const processModel: Model.Types.Process = await this.processModelRepository.getProcessModelById(processModelId);
 
     if (!processModel) {
       throw new NotFoundError(`Process Model with id ${processModelId} not found!`);
