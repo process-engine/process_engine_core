@@ -1,13 +1,12 @@
 import {
   Definitions,
   IExecutionContextFacade,
-  IIamFacade,
   IProcessModelPersistenceRepository,
   IProcessModelPersistenceService,
   Model,
 } from '@process-engine/process_engine_contracts';
 
-import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
+import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {Identity} from '@process-engine/iam';
 
@@ -16,21 +15,23 @@ import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 export class ProcessModelPersistenceService implements IProcessModelPersistenceService {
 
   private _processModelPersistenceRepository: IProcessModelPersistenceRepository;
-  private _iamFacade: IIamFacade;
+  private _iamService: IIAMService;
+
+  private _canReadProcessModelClaim: string = 'can_read_process_model';
 
   constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository,
-              iamFacade: IIamFacade) {
+              iamService: IIAMService) {
 
     this._processModelPersistenceRepository = processModelPersistenceRepository;
-    this._iamFacade = iamFacade;
+    this._iamService = iamService;
   }
 
   private get processModelPersistenceRepository(): IProcessModelPersistenceRepository {
     return this._processModelPersistenceRepository;
   }
 
-  private get iamFacade(): IIamFacade {
-    return this._iamFacade;
+  private get iamService(): IIAMService {
+    return this._iamService;
   }
 
   public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {
@@ -38,6 +39,9 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
   }
 
   public async getProcessModels(executionContextFacade: IExecutionContextFacade): Promise<Array<Model.Types.Process>> {
+
+    const identity: IIdentity = executionContextFacade.getIdentity();
+    await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const processModelList: Array<Model.Types.Process> = await this.processModelPersistenceRepository.getProcessModels();
 
@@ -56,6 +60,9 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
   }
 
   public async getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
+
+    const identity: IIdentity = executionContextFacade.getIdentity();
+    await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const processModel: Model.Types.Process = await this.processModelPersistenceRepository.getProcessModelById(processModelId);
 
@@ -101,7 +108,7 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
 
     for (const lane of laneSet.lanes) {
 
-      const userCanAccessLane: boolean = await this.iamFacade.checkIfUserCanAccessLane(identity, lane.name);
+      const userCanAccessLane: boolean = await this._checkIfUserCanAccesslane(identity, lane.name);
 
       if (!userCanAccessLane) {
         continue;
@@ -115,6 +122,16 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
     }
 
     return filteredLaneSet;
+  }
+
+  private async _checkIfUserCanAccesslane(identity: IIdentity, laneName: string): Promise<boolean> {
+    try {
+      await this.iamService.ensureHasClaim(identity, laneName);
+
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   private _getFlowNodesForLaneSet(laneSet: Model.Types.LaneSet, flowNodes: Array<Model.Base.FlowNode>): Array<Model.Base.FlowNode> {

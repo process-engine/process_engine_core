@@ -27,19 +27,20 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessEntry,
+  IProcessModelPersistenceRepository,
   IProcessModelPersistenceService,
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
   Model,
 } from '@process-engine/process_engine_contracts';
-import {IFactoryAsync} from 'addict-ioc';
+import {IFactoryAsync, InvocationContainer} from 'addict-ioc';
 
 import * as debug from 'debug';
 
 import {ExecutionContextFacade} from './new_model/runtime/engine';
 
-import {IamFacadeMock} from './new_model/runtime/security/iam_facade_mock';
+import {IamServiceMock} from './iam_service_mock';
 
 const debugInfo: debug.IDebugger = debug('processengine:info');
 const debugErr: debug.IDebugger = debug('processengine:error');
@@ -64,7 +65,10 @@ export class ProcessEngineService implements IProcessEngineService {
   private _internalContext: ExecutionContext;
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService,
+  private _container: InvocationContainer;
+
+  constructor(container: InvocationContainer,
+              messageBusService: IMessageBusService,
               processDefEntityTypeService: IProcessDefEntityTypeService,
               executeProcessService: IExecuteProcessService,
               featureService: IFeatureService,
@@ -76,6 +80,7 @@ export class ProcessEngineService implements IProcessEngineService {
               invoker: IInvoker,
               processModelPersistenceServiceFactory: IFactoryAsync<IProcessModelPersistenceService>) {
 
+    this._container = container;
     this._messageBusService = messageBusService;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._executeProcessService = executeProcessService;
@@ -161,9 +166,11 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public async initialize(): Promise<void> {
 
+    const processModelPeristanceRepository: IProcessModelPersistenceRepository =
+      await this._container.resolveAsync<IProcessModelPersistenceRepository>('ProcessModelPersistenceRepository');
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
-    const iamFacadeMock: IamFacadeMock = new IamFacadeMock();
-    this._processModelPersistenceService = await this._processModelPersistenceServiceFactory([iamFacadeMock]);
+    const iamService: IamServiceMock = new IamServiceMock();
+    this._processModelPersistenceService = await this._processModelPersistenceServiceFactory([processModelPeristanceRepository, iamService]);
 
     this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
 
