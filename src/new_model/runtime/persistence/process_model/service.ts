@@ -108,14 +108,16 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
 
     for (const lane of laneSet.lanes) {
 
-      if (lane.childLaneSet) {
-        lane.childLaneSet = await this._filterOutInaccessibleLanes(lane.childLaneSet, identity);
-      }
-
       const userCanAccessLane: boolean = await this.iamFacade.checkIfUserCanAccessLane(identity, lane.name);
 
-      if (userCanAccessLane) {
-        filteredLaneSet.lanes.push(lane);
+      if (!userCanAccessLane) {
+        continue;
+      }
+
+      filteredLaneSet.lanes.push(lane);
+
+      if (lane.childLaneSet) {
+        lane.childLaneSet = await this._filterOutInaccessibleLanes(lane.childLaneSet, identity);
       }
     }
 

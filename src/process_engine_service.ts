@@ -39,7 +39,7 @@ import * as debug from 'debug';
 
 import {ExecutionContextFacade} from './new_model/runtime/engine';
 
-import {IamFacadeMock} from './new_model/runtime/storage/security/iam_facade_mock';
+import {IamFacadeMock} from './new_model/runtime/security/iam_facade_mock';
 
 const debugInfo: debug.IDebugger = debug('processengine:info');
 const debugErr: debug.IDebugger = debug('processengine:error');
