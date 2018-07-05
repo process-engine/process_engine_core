@@ -9,7 +9,7 @@ import {
 } from '@process-engine/consumer_api_contracts';
 import {
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -24,9 +24,9 @@ import {FlowNodeHandler} from './index';
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApiService;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
 
-  constructor(consumerApiService: IConsumerApiService, flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService) {
+  constructor(consumerApiService: IConsumerApiService, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
     super();
 
     this._consumerApiService = consumerApiService;
@@ -37,7 +37,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return this._consumerApiService;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 

@@ -1,26 +1,26 @@
 import {
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceRepository,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceRepository,
+  IFlowNodeInstanceService,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
 import {IIAMService} from '@essential-projects/iam_contracts';
 
-export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePersistenceService {
+export class FlowNodeInstanceService implements IFlowNodeInstanceService {
 
-  private _flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository;
+  private _flowNodeInstanceRepository: IFlowNodeInstanceRepository;
   private _iamService: IIAMService;
 
-  constructor(flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository,
+  constructor(flowNodeInstanceRepository: IFlowNodeInstanceRepository,
               iamService: IIAMService) {
 
-    this._flowNodeInstancePersistenceRepository = flowNodeInstancePersistenceRepository;
+    this._flowNodeInstanceRepository = flowNodeInstanceRepository;
     this._iamService = iamService;
   }
 
-  private get flowNodeInstancePersistenceRepository(): IFlowNodeInstancePersistenceRepository {
-    return this._flowNodeInstancePersistenceRepository;
+  private get flowNodeInstanceRepository(): IFlowNodeInstanceRepository {
+    return this._flowNodeInstanceRepository;
   }
 
   private get iamService(): IIAMService {
@@ -31,28 +31,28 @@ export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePers
                                   correlationId: string,
                                  ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
-    return this.flowNodeInstancePersistenceRepository.queryByCorrelation(correlationId);
+    return this.flowNodeInstanceRepository.queryByCorrelation(correlationId);
   }
 
   public async queryByProcessModel(executionContextFacade: IExecutionContextFacade,
                                    processModelId: string,
                                   ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
-    return this.flowNodeInstancePersistenceRepository.queryByProcessModel(processModelId);
+    return this.flowNodeInstanceRepository.queryByProcessModel(processModelId);
   }
 
   public async querySuspendedByCorrelation(executionContextFacade: IExecutionContextFacade,
                                            correlationId: string,
                                           ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
-    return this.flowNodeInstancePersistenceRepository.querySuspendedByCorrelation(correlationId);
+    return this.flowNodeInstanceRepository.querySuspendedByCorrelation(correlationId);
   }
 
   public async querySuspendedByProcessModel(executionContextFacade: IExecutionContextFacade,
                                             processModelId: string,
                                            ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
-    return this.flowNodeInstancePersistenceRepository.querySuspendedByProcessModel(processModelId);
+    return this.flowNodeInstanceRepository.querySuspendedByProcessModel(processModelId);
   }
 
   public async persistOnEnter(executionContextFacade: IExecutionContextFacade,
@@ -61,7 +61,7 @@ export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePers
                               flowNodeInstanceId: string,
                             ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstancePersistenceRepository.persistOnEnter(token, flowNodeId, flowNodeInstanceId);
+    return this.flowNodeInstanceRepository.persistOnEnter(token, flowNodeId, flowNodeInstanceId);
   }
 
   public async persistOnExit(executionContextFacade: IExecutionContextFacade,
@@ -70,7 +70,7 @@ export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePers
                              flowNodeInstanceId: string,
                             ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstancePersistenceRepository.persistOnExit(token, flowNodeId, flowNodeInstanceId);
+    return this.flowNodeInstanceRepository.persistOnExit(token, flowNodeId, flowNodeInstanceId);
   }
 
   public async suspend(executionContextFacade: IExecutionContextFacade,
@@ -79,11 +79,11 @@ export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePers
                        correlationHash?: string,
                       ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstancePersistenceRepository.suspend(token, flowNodeInstanceId, correlationHash);
+    return this.flowNodeInstanceRepository.suspend(token, flowNodeInstanceId, correlationHash);
   }
 
   public async resume(executionContextFacade: IExecutionContextFacade, flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
-    return this.flowNodeInstancePersistenceRepository.resume(flowNodeInstanceId);
+    return this.flowNodeInstanceRepository.resume(flowNodeInstanceId);
   }
 
 }

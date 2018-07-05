@@ -21,8 +21,8 @@ import {
   IParamStart,
   IProcessDefEntity,
   IProcessDefEntityTypeService,
-  IProcessModelPersistenceRepository,
-  IProcessModelPersistenceService,
+  IProcessModelRepository,
+  IProcessModelService,
   IProcessRepository,
 } from '@process-engine/process_engine_contracts';
 
@@ -33,7 +33,7 @@ import * as BpmnModdle from 'bpmn-moddle';
 import {BpmnDiagram} from '../bpmn_diagram';
 import {IamServiceMock} from '../iam_service_mock';
 import {ExecutionContextFacade} from '../new_model/runtime/engine/index';
-import {ProcessModelPersistenceService} from '../new_model/runtime/persistence/index';
+import {ProcessModelService} from '../new_model/runtime/persistence/index';
 
 // tslint:disable:cyclomatic-complexity
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
@@ -42,7 +42,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
   private _bpmnModelParser: IModelParser = undefined;
-  private _processModelPersistenceService: IProcessModelPersistenceService = undefined;
+  private _processModelService: IProcessModelService = undefined;
 
   private _container: InvocationContainer;
 
@@ -76,17 +76,17 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._bpmnModelParser;
   }
 
-  private get processModelPersistenceService(): IProcessModelPersistenceService {
-    return this._processModelPersistenceService;
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   public async initialize(): Promise<void> {
 
-    const processModelPeristanceRepository: IProcessModelPersistenceRepository =
-      await this._container.resolveAsync<IProcessModelPersistenceRepository>('ProcessModelPersistenceRepository');
+    const processModelPeristanceRepository: IProcessModelRepository =
+      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelPersistenceRepository');
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelPersistenceService = new ProcessModelPersistenceService(processModelPeristanceRepository, iamService);
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);
   }
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
@@ -126,7 +126,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
 
-    await this.processModelPersistenceService.persistProcessDefinitions(executionContextFacade, definitions);
+    await this.processModelService.persistProcessDefinitions(executionContextFacade, definitions);
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 

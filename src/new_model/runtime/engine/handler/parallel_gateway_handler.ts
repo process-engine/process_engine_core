@@ -2,7 +2,7 @@ import {
   IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -15,9 +15,9 @@ import {FlowNodeHandler} from './index';
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService) {
+  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
     super();
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
@@ -27,7 +27,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return this._flowNodeHandlerFactory;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 

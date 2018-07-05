@@ -1,6 +1,6 @@
-import {Definitions, IProcessModelPersistenceRepository, Model} from '@process-engine/process_engine_contracts';
+import {Definitions, IProcessModelRepository, Model} from '@process-engine/process_engine_contracts';
 
-export class ProcessModelPersistenceRepository implements IProcessModelPersistenceRepository {
+export class ProcessModelRepository implements IProcessModelRepository {
 
   private _definitions: Array<Definitions> = [];
 

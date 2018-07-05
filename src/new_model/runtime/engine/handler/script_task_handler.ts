@@ -2,7 +2,7 @@ import {IToPojoOptions} from '@essential-projects/core_contracts';
 import {
   ExecutionContext,
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -14,14 +14,14 @@ import {FlowNodeHandler} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService) {
+  constructor(flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
     super();
     this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 

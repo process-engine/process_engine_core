@@ -1,7 +1,7 @@
 import {
   ExecutionContext,
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -16,9 +16,9 @@ import {FlowNodeHandler} from './index';
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
 
-  constructor(container: IContainer, flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService) {
+  constructor(container: IContainer, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
     super();
 
     this._container = container;
@@ -29,7 +29,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     return this._container;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 

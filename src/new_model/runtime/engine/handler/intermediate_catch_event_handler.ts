@@ -1,6 +1,6 @@
 import {
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -12,14 +12,14 @@ import {FlowNodeHandler} from './index';
 
 export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.Event> {
 
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService) {
+  constructor(flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
     super();
     this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 

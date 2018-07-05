@@ -1,4 +1,4 @@
-import {IFlowNodeInstancePersistenceRepository, Runtime} from '@process-engine/process_engine_contracts';
+import {IFlowNodeInstanceRepository, Runtime} from '@process-engine/process_engine_contracts';
 
 interface IPersistedFlowNodeInstance {
   token: Runtime.Types.ProcessToken;
@@ -7,7 +7,7 @@ interface IPersistedFlowNodeInstance {
   isSuspended: boolean;
 }
 
-export class FlowNodeInstancePersistenceRepository implements IFlowNodeInstancePersistenceRepository {
+export class FlowNodeInstanceRepository implements IFlowNodeInstanceRepository {
 
   private _persistedFlowNodes: Map<string, IPersistedFlowNodeInstance> = new Map<string, IPersistedFlowNodeInstance>();
 

@@ -27,8 +27,8 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessEntry,
-  IProcessModelPersistenceRepository,
-  IProcessModelPersistenceService,
+  IProcessModelRepository,
+  IProcessModelService,
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
@@ -40,7 +40,7 @@ import * as debug from 'debug';
 
 import {IamServiceMock} from './iam_service_mock';
 import {ExecutionContextFacade} from './new_model/runtime/engine/index';
-import {ProcessModelPersistenceService} from './new_model/runtime/persistence/index';
+import {ProcessModelService} from './new_model/runtime/persistence/index';
 
 const debugInfo: debug.IDebugger = debug('processengine:info');
 const debugErr: debug.IDebugger = debug('processengine:error');
@@ -58,7 +58,7 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
-  private _processModelPersistenceService: IProcessModelPersistenceService = undefined;
+  private _processModelService: IProcessModelService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
@@ -127,8 +127,8 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
-  private get processModelPersistenceService(): IProcessModelPersistenceService {
-    return this._processModelPersistenceService;
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   private get errorDeserializer(): IErrorDeserializer {
@@ -163,11 +163,11 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public async initialize(): Promise<void> {
 
-    const processModelPeristanceRepository: IProcessModelPersistenceRepository =
-      await this._container.resolveAsync<IProcessModelPersistenceRepository>('ProcessModelPersistenceRepository');
+    const processModelPeristanceRepository: IProcessModelRepository =
+      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelPersistenceRepository');
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelPersistenceService = new ProcessModelPersistenceService(processModelPeristanceRepository, iamService);
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);
 
     this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
 
@@ -545,7 +545,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
-    const process: Model.Types.Process = await this.processModelPersistenceService.getProcessModelById(executionContextFacade, key);
+    const process: Model.Types.Process = await this.processModelService.getProcessModelById(executionContextFacade, key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);

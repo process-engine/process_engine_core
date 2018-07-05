@@ -1,7 +1,7 @@
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -14,9 +14,9 @@ import {FlowNodeHandler} from './index';
 export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> {
 
   private _eventAggregator: IEventAggregator = undefined;
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService) {
+  constructor(eventAggregator: IEventAggregator, flowNodeInstancePersistenceService: IFlowNodeInstanceService) {
     super();
     this._eventAggregator = eventAggregator;
     this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
@@ -26,7 +26,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     return this._eventAggregator;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 

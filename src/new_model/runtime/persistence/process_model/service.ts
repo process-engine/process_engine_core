@@ -1,8 +1,8 @@
 import {
   Definitions,
   IExecutionContextFacade,
-  IProcessModelPersistenceRepository,
-  IProcessModelPersistenceService,
+  IProcessModelRepository,
+  IProcessModelService,
   Model,
 } from '@process-engine/process_engine_contracts';
 
@@ -10,22 +10,22 @@ import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 
-export class ProcessModelPersistenceService implements IProcessModelPersistenceService {
+export class ProcessModelService implements IProcessModelService {
 
-  private _processModelPersistenceRepository: IProcessModelPersistenceRepository;
+  private _processModelPersistenceRepository: IProcessModelRepository;
   private _iamService: IIAMService;
 
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
-  constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository,
+  constructor(processModelPersistenceRepository: IProcessModelRepository,
               iamService: IIAMService) {
 
     this._processModelPersistenceRepository = processModelPersistenceRepository;
     this._iamService = iamService;
   }
 
-  private get processModelPersistenceRepository(): IProcessModelPersistenceRepository {
+  private get processModelPersistenceRepository(): IProcessModelRepository {
     return this._processModelPersistenceRepository;
   }
 

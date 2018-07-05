@@ -2,7 +2,7 @@ import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {
   EndEventReachedMessage,
   IExecutionContextFacade,
-  IFlowNodeInstancePersistenceService,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -14,16 +14,16 @@ import {FlowNodeHandler} from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
-  private _flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService = undefined;
+  private _flowNodeInstancePersistenceService: IFlowNodeInstanceService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
 
-  constructor(flowNodeInstancePersistenceService: IFlowNodeInstancePersistenceService, eventAggregator: IEventAggregator) {
+  constructor(flowNodeInstancePersistenceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
     super();
     this._flowNodeInstancePersistenceService = flowNodeInstancePersistenceService;
     this._eventAggregator = eventAggregator;
   }
 
-  private get flowNodeInstancePersistenceService(): IFlowNodeInstancePersistenceService {
+  private get flowNodeInstancePersistenceService(): IFlowNodeInstanceService {
     return this._flowNodeInstancePersistenceService;
   }
 
