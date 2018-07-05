@@ -28,8 +28,6 @@ const ExecutionContextFacadeFactory = require('./dist/commonjs/index').Execution
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
-const IamFacade = require('./dist/commonjs/index').IamFacade;
-
 const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
 const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
 
@@ -38,10 +36,6 @@ function registerInContainer(container) {
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
-  container.register('IamFacade', IamFacade)
-    .dependencies('IamServiceNew')
-    .singleton();
-
   container.register('FlowNodeInstancePersistenceRepository', FlowNodeInstancePersistenceRepository)
     .singleton();
 
@@ -49,12 +43,10 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('FlowNodeInstancePersistenceService', FlowNodeInstancePersistenceService)
-    .dependencies('FlowNodeInstancePersistenceRepository', 'IamServiceNew')
-    .singleton();
+    .dependencies('FlowNodeInstancePersistenceRepository', 'IamServiceNew');
 
   container.register('ProcessModelPersistenceService', ProcessModelPersistenceService)
-    .dependencies('ProcessModelPersistenceRepository', 'IamServiceNew')
-    .singleton();
+    .dependencies('ProcessModelPersistenceRepository', 'IamServiceNew');
 
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
     .singleton();
@@ -121,9 +113,8 @@ function registerInContainer(container) {
       'NodeInstanceEntityTypeService',
       'ApplicationService',
       'Invoker',
-      'ProcessModelPersistenceService',
     )
-    .injectPromiseLazy('NodeInstanceEntityTypeService', 'ProcessModelPersistenceService')
+    .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();
 }
