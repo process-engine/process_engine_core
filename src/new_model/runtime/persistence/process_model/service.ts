@@ -18,6 +18,7 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
   private _iamService: IIAMService;
 
   private _canReadProcessModelClaim: string = 'can_read_process_model';
+  private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
   constructor(processModelPersistenceRepository: IProcessModelPersistenceRepository,
               iamService: IIAMService) {
@@ -35,6 +36,10 @@ export class ProcessModelPersistenceService implements IProcessModelPersistenceS
   }
 
   public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {
+
+    const identity: IIdentity = executionContextFacade.getIdentity();
+    await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
+
     return this.processModelPersistenceRepository.persistProcessDefinitions(definitions);
   }
 
