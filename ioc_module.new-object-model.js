@@ -49,11 +49,11 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('FlowNodeInstancePersistenceService', FlowNodeInstancePersistenceService)
-    .dependencies('FlowNodeInstancePersistenceRepository', 'IamFacade', 'IdentityServiceNew')
+    .dependencies('FlowNodeInstancePersistenceRepository', 'IamFacade')
     .singleton();
 
   container.register('ProcessModelPersistenceService', ProcessModelPersistenceService)
-    .dependencies('ProcessModelPersistenceRepository', 'IamFacade', 'IdentityServiceNew')
+    .dependencies('ProcessModelPersistenceRepository', 'IamFacade')
     .singleton();
 
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)

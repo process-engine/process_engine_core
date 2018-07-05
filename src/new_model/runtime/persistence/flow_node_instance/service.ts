@@ -12,15 +12,12 @@ export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePers
 
   private _flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository;
   private _iamFacade: IIamFacade;
-  private _identityService: IIdentityService;
 
   constructor(flowNodeInstancePersistenceRepository: IFlowNodeInstancePersistenceRepository,
-              iamFacade: IIamFacade,
-              identityService: IIdentityService) {
+              iamFacade: IIamFacade) {
 
     this._flowNodeInstancePersistenceRepository = flowNodeInstancePersistenceRepository;
     this._iamFacade = iamFacade;
-    this._identityService = identityService;
   }
 
   private get flowNodeInstancePersistenceRepository(): IFlowNodeInstancePersistenceRepository {
@@ -29,10 +26,6 @@ export class FlowNodeInstancePersistenceService implements IFlowNodeInstancePers
 
   private get iamFacade(): IIamFacade {
     return this._iamFacade;
-  }
-
-  private get identityService(): IIdentityService {
-    return this._identityService;
   }
 
   public async queryByCorrelation(executionContextFacade: IExecutionContextFacade,
