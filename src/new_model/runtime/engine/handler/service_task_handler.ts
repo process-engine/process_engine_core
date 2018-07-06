@@ -1,7 +1,7 @@
-import {ExecutionContext} from '@essential-projects/core_contracts';
 import {
+  ExecutionContext,
   IExecutionContextFacade,
-  IFlowNodeInstancePersistence,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -16,21 +16,21 @@ import {FlowNodeHandler} from './index';
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
-  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(container: IContainer, flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
 
     this._container = container;
-    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
+    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get container(): IContainer {
     return this._container;
   }
 
-  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
-    return this._flowNodeInstancePersistence;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
@@ -41,7 +41,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistence.persistOnEnter(token, serviceTaskNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
 
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
@@ -67,7 +67,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
 
       processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
-      await this.flowNodeInstancePersistence.persistOnExit(token, serviceTaskNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
 

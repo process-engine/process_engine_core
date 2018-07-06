@@ -2,14 +2,14 @@
 import {
   ConsumerContext,
   IConsumerApiService,
-  ICorrelationResult,
   ProcessModel,
   ProcessStartRequestPayload,
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
-import { IExecutionContextFacade,
-  IFlowNodeInstancePersistence,
+import {
+  IExecutionContextFacade,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -17,26 +17,28 @@ import { IExecutionContextFacade,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {FlowNodeHandler} from './index';
 
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApiService;
-  private _flowNodeInstancePersistence: IFlowNodeInstancePersistence = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(consumerApiService: IConsumerApiService, flowNodeInstancePersistence: IFlowNodeInstancePersistence) {
+  constructor(consumerApiService: IConsumerApiService, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
 
     this._consumerApiService = consumerApiService;
-    this._flowNodeInstancePersistence = flowNodeInstancePersistence;
+    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get consumerApiService(): IConsumerApiService {
     return this._consumerApiService;
   }
 
-  private get flowNodeInstancePersistence(): IFlowNodeInstancePersistence {
-    return this._flowNodeInstancePersistence;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
@@ -47,12 +49,12 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
-    await this.flowNodeInstancePersistence.persistOnEnter(token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
 
-    const encryptedToken: string = await executionContextFacade.getIdentityToken();
+    const identity: IIdentity = await executionContextFacade.getIdentity();
 
     const consumerContext: ConsumerContext = {
-      identity: encryptedToken,
+      identity: identity.token,
     };
 
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
@@ -68,7 +70,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     await processTokenFacade.addResultForFlowNode(callActivityNode.id, processStartResponse.tokenPayload);
     token.payload = processStartResponse.tokenPayload;
 
-    await this.flowNodeInstancePersistence.persistOnExit(token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

@@ -1,6 +1,5 @@
 'use strict';
 
-const ProcessEngineService = require('./dist/commonjs/index').ProcessEngineService;
 const SubprocessExternalEntity = require('./dist/commonjs/index').SubprocessExternalEntity;
 const SubprocessInternalEntity = require('./dist/commonjs/index').SubprocessInternalEntity;
 const BoundaryEventEntity = require('./dist/commonjs/index').BoundaryEventEntity;
@@ -28,7 +27,6 @@ const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInsta
 
 const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-model');
-// const schemasIocModule = require('./ioc.schemas');
 
 function registerInContainer(container) {
 
@@ -36,7 +34,7 @@ function registerInContainer(container) {
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('DatastoreService', 'ProcessRepository', 'Invoker', 'BpmnModelParser', 'ProcessModelPersistence');
+    .dependencies('container', 'DatastoreService', 'ProcessRepository', 'Invoker', 'BpmnModelParser');
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
     .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')
@@ -119,7 +117,6 @@ function registerInContainer(container) {
     .tags(entityDiscoveryTag);
 
   processEngineContractsIocModule.registerInContainer(container);
-  // schemasIocModule.registerInContainer(container);
   processEngineNewObjectModelIocModule.registerInContainer(container);
 }
 

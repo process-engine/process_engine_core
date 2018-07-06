@@ -1,5 +1,4 @@
 // tslint:disable:max-file-line-count
-
 import {
   ExecutionContext,
   IApplicationService,
@@ -8,14 +7,15 @@ import {
 } from '@essential-projects/core_contracts';
 import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-projects/data_model_contracts';
 import * as ProcessEngineErrors from '@essential-projects/errors_ts';
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IFeature, IFeatureService} from '@essential-projects/feature_contracts';
 import {IInvoker} from '@essential-projects/invocation_contracts';
 import {IDataMessage, IMessage, IMessageBusService, IMessageSubscription} from '@essential-projects/messagebus_contracts';
 import {
+  ExecutionContext as NewExecutionContext,
   IBpmnDiagram,
   IErrorDeserializer,
   IExecuteProcessService,
+  IExecutionContextFacade,
   IImportFromFileOptions,
   INodeDefEntity,
   INodeInstanceEntity,
@@ -27,15 +27,20 @@ import {
   IProcessEngineService,
   IProcessEntity,
   IProcessEntry,
-  IProcessModelPersistence,
+  IProcessModelRepository,
+  IProcessModelService,
   IProcessRepository,
   IUserTaskEntity,
   IUserTaskMessageData,
   Model,
 } from '@process-engine/process_engine_contracts';
-import {IFactoryAsync} from 'addict-ioc';
+import {IFactoryAsync, InvocationContainer} from 'addict-ioc';
 
 import * as debug from 'debug';
+
+import {IamServiceMock} from './iam_service_mock';
+import {ExecutionContextFacade} from './new_model/runtime/engine/index';
+import {ProcessModelService} from './new_model/runtime/persistence/index';
 
 const debugInfo: debug.IDebugger = debug('processengine:info');
 const debugErr: debug.IDebugger = debug('processengine:error');
@@ -43,7 +48,6 @@ const debugErr: debug.IDebugger = debug('processengine:error');
 export class ProcessEngineService implements IProcessEngineService {
 
   private _messageBusService: IMessageBusService = undefined;
-  private _eventAggregator: IEventAggregator = undefined;
   private _processDefEntityTypeService: IProcessDefEntityTypeService = undefined;
   private _executeProcessService: IExecuteProcessService = undefined;
   private _featureService: IFeatureService = undefined;
@@ -54,14 +58,16 @@ export class ProcessEngineService implements IProcessEngineService {
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
-  private _processModelPersistence: IProcessModelPersistence = undefined;
+  private _processModelService: IProcessModelService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
 
   private _internalContext: ExecutionContext;
   public config: any = undefined;
 
-  constructor(messageBusService: IMessageBusService,
-              eventAggregator: IEventAggregator,
+  private _container: InvocationContainer;
+
+  constructor(container: InvocationContainer,
+              messageBusService: IMessageBusService,
               processDefEntityTypeService: IProcessDefEntityTypeService,
               executeProcessService: IExecuteProcessService,
               featureService: IFeatureService,
@@ -70,10 +76,10 @@ export class ProcessEngineService implements IProcessEngineService {
               datastoreService: IDatastoreService,
               nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
               applicationService: IApplicationService,
-              invoker: IInvoker,
-              processModelPersistence: IProcessModelPersistence) {
+              invoker: IInvoker) {
+
+    this._container = container;
     this._messageBusService = messageBusService;
-    this._eventAggregator = eventAggregator;
     this._processDefEntityTypeService = processDefEntityTypeService;
     this._executeProcessService = executeProcessService;
     this._featureService = featureService;
@@ -83,7 +89,6 @@ export class ProcessEngineService implements IProcessEngineService {
     this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
     this._applicationService = applicationService;
     this._invoker = invoker;
-    this._processModelPersistence = processModelPersistence;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -110,11 +115,7 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._datastoreService;
   }
 
-  private async _getNodeInstanceEntityTypeService(): Promise<INodeInstanceEntityTypeService> {
-    if (!this._nodeInstanceEntityTypeService) {
-      this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
-    }
-
+  private get nodeInstanceEntityTypeService(): INodeInstanceEntityTypeService {
     return this._nodeInstanceEntityTypeService;
   }
 
@@ -126,8 +127,8 @@ export class ProcessEngineService implements IProcessEngineService {
     return this._invoker;
   }
 
-  private get processModelPersistence(): IProcessModelPersistence {
-    return this._processModelPersistence;
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   private get errorDeserializer(): IErrorDeserializer {
@@ -161,6 +162,15 @@ export class ProcessEngineService implements IProcessEngineService {
   }
 
   public async initialize(): Promise<void> {
+
+    const processModelPeristanceRepository: IProcessModelRepository =
+      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelRepository');
+    // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
+    const iamService: IamServiceMock = new IamServiceMock();
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);
+
+    this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
+
     this._initializeDefaultErrorDeserializer();
     await this._initializeMessageBus();
     await this._initializeProcesses();
@@ -291,7 +301,7 @@ export class ProcessEngineService implements IProcessEngineService {
     if (message.data.event === 'executeProcess') {
       const responseChannel: string = message.metadata.response;
       await this.messageBusService.verifyMessage(message);
-      const responseData: any = await this.executeProcess(message.metadata.context,
+      const responseData: any = await this.executeProcess((message.metadata.context as any),
                                                           message.data.id,
                                                           message.data.key,
                                                           message.data.initialToken,
@@ -427,8 +437,7 @@ export class ProcessEngineService implements IProcessEngineService {
 
     // TODO: Here'd we have to check, if we have the features required to continue the execution
     // and delegate the execution if we don't. See https://github.com/process-engine/process_engine/issues/2
-    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
-    nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
+    this.nodeInstanceEntityTypeService.subscibeToNodeChannels(specificEntity);
   }
 
   private async _getAllWaitingNodes(): Promise<Array<INodeInstanceEntity>> {
@@ -485,7 +494,7 @@ export class ProcessEngineService implements IProcessEngineService {
   // When we only have the general NodeInstanceEntity, but what we want the specific entity that represents that nodeInstace
   // (for example the UserTaskEntity), then this method gives us that specific entity
   private async _getSpecificEntityByNodeInstance(context: ExecutionContext, nodeInstance: INodeInstanceEntity): Promise<INodeInstanceEntity> {
-    const nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = await this._getNodeInstanceEntityTypeService();
+
     const specificEntityQueryOptions: IPrivateQueryOptions = {
       expandEntity: [{
         attribute: 'nodeDef',
@@ -498,7 +507,7 @@ export class ProcessEngineService implements IProcessEngineService {
     };
 
     // tslint:disable-next-line:max-line-length
-    const specificEntityType: IEntityType<INodeInstanceEntity> = await nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(nodeInstance.type);
+    const specificEntityType: IEntityType<INodeInstanceEntity> = await this.nodeInstanceEntityTypeService.getEntityTypeFromBpmnType<INodeInstanceEntity>(nodeInstance.type);
 
     return specificEntityType.getById(nodeInstance.id, context, specificEntityQueryOptions);
   }
@@ -525,7 +534,7 @@ export class ProcessEngineService implements IProcessEngineService {
     }
   }
 
-  public async executeProcess(context: ExecutionContext,
+  public async executeProcess(context: NewExecutionContext,
                               id: string,
                               key: string,
                               initialToken: any,
@@ -534,7 +543,9 @@ export class ProcessEngineService implements IProcessEngineService {
       throw new Error(`Couldn't execute process: neither id nor key of processDefinition is provided`);
     }
 
-    const process: Model.Types.Process = await this.processModelPersistence.getProcessModelById(key);
+    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
+
+    const process: Model.Types.Process = await this.processModelService.getProcessModelById(executionContextFacade, key);
 
     if (!process) {
       throw new Error(`couldn't execute process: no process with id "${key}" was found`);
@@ -546,7 +557,8 @@ export class ProcessEngineService implements IProcessEngineService {
     // Since the old implementation does not support this, we need to tell the executeProcessService to pick a start event by itself.
     const useDefaultStartEventId: any = undefined;
 
-    const tokenResult: any = await this._executeProcessService.start(context, process, useDefaultStartEventId, correlationId, initialToken);
+    const tokenResult: any =
+      await this._executeProcessService.start(executionContextFacade, process, useDefaultStartEventId, correlationId, initialToken);
 
     return tokenResult;
   }

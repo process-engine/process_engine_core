@@ -1,9 +1,12 @@
-import {ExecutionContext} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 import {IDataMessage, IMessageBusService} from '@essential-projects/messagebus_contracts';
+
+import {InternalServerError} from '@essential-projects/errors_ts';
 
 import {
   EndEventReachedMessage,
+  ExecutionContext,
   IExecuteProcessService,
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -15,7 +18,6 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {ExecutionContextFacade} from './execution_context_facade';
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
 
@@ -51,7 +53,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._eventAggregator;
   }
 
-  public async start(context: ExecutionContext,
+  public async start(executionContextFacade: IExecutionContextFacade,
                      processModel: Model.Types.Process,
                      startEventId: string,
                      correlationId: string,
@@ -64,24 +66,23 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processInstanceId: string = uuid.v4();
 
-    const identity: any = await context.getIdentity(context);
+    const identity: IIdentity = await executionContextFacade.getIdentity();
     const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
-    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(context);
 
-    const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
-    token.caller = caller;
+    const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
+    processToken.caller = caller;
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
-    await this._executeFlowNode(startEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
     const resultToken: any = await processTokenFacade.getOldTokenFormat();
 
-    await this._end(processInstanceId, resultToken, context);
+    await this._end(processInstanceId, resultToken, executionContextFacade);
 
     return resultToken.current;
   }
 
-  public async startAndAwaitSpecificEndEvent(context: ExecutionContext,
+  public async startAndAwaitSpecificEndEvent(executionContextFacade: IExecutionContextFacade,
                                              processModel: Model.Types.Process,
                                              startEventId: string,
                                              correlationId: string,
@@ -91,23 +92,27 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
-        resolve(message);
-      });
+      const subscription: ISubscription =
+        this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
+          resolve(message);
+        });
 
       try {
-        await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
-
+        await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
       } catch (error) {
         // tslint:disable-next-line:max-line-length
         const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorMessage, error);
-        reject(error);
+
+        if (subscription) {
+          subscription.dispose();
+        }
+        reject(new InternalServerError(error.message));
       }
     });
   }
 
-  public async startAndAwaitEndEvent(context: ExecutionContext,
+  public async startAndAwaitEndEvent(executionContextFacade: IExecutionContextFacade,
                                      processModel: Model.Types.Process,
                                      startEventId: string,
                                      correlationId: string,
@@ -136,20 +141,24 @@ export class ExecuteProcessService implements IExecuteProcessService {
       }
 
       try {
-        await this.start(context, processModel, startEventId, correlationId, initialPayload, caller);
+        await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
 
       } catch (error) {
         // tslint:disable-next-line:max-line-length
         const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorMessage, error);
-        reject(error);
+
+        for (const subscription of subscriptions) {
+          subscription.dispose();
+        }
+        reject(new InternalServerError(error.message));
       }
 
     });
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
-                                 token: Runtime.Types.ProcessToken,
+                                 processToken: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
@@ -157,7 +166,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             token,
+                                                                             processToken,
                                                                              processTokenFacade,
                                                                              processModelFacade,
                                                                              executionContextFacade);
@@ -173,13 +182,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private async _end(processInstanceId: string,
                      processToken: any,
-                     context: ExecutionContext): Promise<void> {
+                     executionContextFacade: IExecutionContextFacade): Promise<void> {
     const processEndMessageData: any = {
       event: 'end',
       token: processToken.current,
     };
 
-    const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context);
+    const context: ExecutionContext = executionContextFacade.getExecutionContext();
+
+    // TODO: Refactor messagebus service to use the new context
+    const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context as any);
     this.messageBusService.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }
 

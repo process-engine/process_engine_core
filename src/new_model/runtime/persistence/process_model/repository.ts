@@ -1,6 +1,6 @@
-import { Definitions, IProcessModelPersistence, Model } from '@process-engine/process_engine_contracts';
+import {Definitions, IProcessModelRepository, Model} from '@process-engine/process_engine_contracts';
 
-export class ProcessModelPersistence implements IProcessModelPersistence {
+export class ProcessModelRepository implements IProcessModelRepository {
 
   private _definitions: Array<Definitions> = [];
 
@@ -23,6 +23,8 @@ export class ProcessModelPersistence implements IProcessModelPersistence {
         }
       }
     }
+
+    return undefined;
   }
 
   public async getProcessModels(): Promise<Array<Model.Types.Process>> {

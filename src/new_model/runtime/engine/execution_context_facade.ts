@@ -1,5 +1,5 @@
-import {ExecutionContext} from '@essential-projects/core_contracts';
-import {IExecutionContextFacade} from '@process-engine/process_engine_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
+import {ExecutionContext, IExecutionContextFacade} from '@process-engine/process_engine_contracts';
 
 export class ExecutionContextFacade implements IExecutionContextFacade {
 
@@ -9,16 +9,12 @@ export class ExecutionContextFacade implements IExecutionContextFacade {
     this._context = context;
   }
 
-  private get context(): ExecutionContext {
-    return this._context;
-  }
-
-  public getIdentityToken(): string {
-    return this.context.encryptedToken;
+  public getIdentity(): IIdentity {
+    return this._context.identity;
   }
 
   public getExecutionContext(): ExecutionContext {
-    return this.context;
+    return this._context;
   }
 
 }
