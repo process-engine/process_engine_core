@@ -195,7 +195,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public async start(context: ExecutionContext, source: IEntity): Promise<void> {
 
-    logger.verbose(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`start node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     if (!this.state) {
       this.state = 'start';
@@ -259,7 +259,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
   public changeState(context: ExecutionContext, newState: string, source: INodeInstanceEntity): void {
 
-    logger.verbose(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
+    // logger.verbose(`change state of node, id ${this.id}, key ${this.key}, type ${this.type},  new state: ${newState}`);
 
     const data: any = {
       action: 'changeState',
@@ -274,7 +274,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async wait(context: ExecutionContext): Promise<void> {
-    logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
     this.state = 'wait';
@@ -287,7 +287,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public async execute(context: ExecutionContext): Promise<void> {
-    logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`execute node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     this.state = 'progress';
 
@@ -350,7 +350,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                      applicationId: string,
                      participant: string): Promise<void> {
 
-    logger.verbose(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
+    // logger.verbose(`node event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventType}`);
 
     const map: Map<string, string> = new Map();
     map.set('error', 'bpmn:ErrorEventDefinition');
@@ -423,7 +423,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
                              applicationId: string,
                              participant: string): Promise<void> {
 
-    logger.verbose(`node boundary event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventEntity.type}`);
+    // logger.verbose(`node boundary event, id ${this.id}, key ${this.key}, type ${this.type}, event ${eventEntity.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -557,13 +557,13 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   }
 
   public cancel(context: ExecutionContext): void {
-    logger.verbose(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`node cancel, id ${this.id}, key ${this.key}, type ${this.type}`);
     this.triggerEvent(context, 'cancel', null);
   }
 
   // follow next flow, but not end current node (non interrupting boundaries)
   public async followBoundary(context: ExecutionContext): Promise<void> {
-    logger.verbose(`follow boundary, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`follow boundary, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
     await this._updateToken(internalContext);
@@ -622,7 +622,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
 
     this.state = isTerminateEndEvent ? 'terminate' : 'end';
 
-    logger.verbose(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`${this.state} node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 
@@ -676,7 +676,7 @@ export class NodeInstanceEntity extends Entity implements INodeInstanceEntity {
   public async terminate(context: ExecutionContext): Promise<void> {
     this.state = 'terminate';
 
-    logger.verbose(`terminate node, id ${this.id}, key ${this.key}, type ${this.type}`);
+    // logger.verbose(`terminate node, id ${this.id}, key ${this.key}, type ${this.type}`);
 
     const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
 

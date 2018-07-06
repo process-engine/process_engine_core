@@ -1,22 +1,31 @@
 import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
 
 import {
-  createObjectWithCommonProperties,
   getModelPropertyAsArray,
   setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
+import {parseProcessFlowNodes} from './flow_node_parser';
+import {parseProcessLaneSet} from './process_lane_set_parser';
+import {parseProcessSequenceFlows} from './sequence_flow_parser';
+
 import * as moment from 'moment';
 
-export function parseActivitiesFromProcessData(processData: any): Array<Model.Activities.Activity> {
+export function parseActivitiesFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
   const scriptTasks: Array<Model.Activities.ScriptTask> = parseScriptTasks(processData);
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
+  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
 
-  return Array.prototype.concat(manualTasks, scriptTasks, serviceTasks, userTasks, callActivities);
+  return Array.prototype.concat(manualTasks,
+                                scriptTasks,
+                                serviceTasks,
+                                userTasks,
+                                callActivities,
+                                subProcesses);
 }
 
 function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
@@ -58,6 +67,45 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return dateObj.toDate();
   }
 
+  function parseFormField(formFieldRaw: any): Model.Types.FormField {
+
+    const formField: Model.Types.FormField = new Model.Types.FormField();
+
+    formField.id = formFieldRaw.id;
+    formField.label = formFieldRaw.label;
+    formField.type = formFieldRaw.type;
+    formField.defaultValue = formFieldRaw.defaultValue;
+
+    return formField;
+  }
+
+  function parseFormFields(userTaskRaw: any): Array<Model.Types.FormField> {
+
+    const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
+    if (!extensionElements) {
+      return [];
+    }
+
+    const formDataRaw: any = extensionElements[BpmnTags.CamundaProperty.FormData];
+    if (!formDataRaw) {
+      return [];
+    }
+
+    const formFieldsRaw: any = getModelPropertyAsArray(formDataRaw, BpmnTags.CamundaProperty.FormField);
+    if (!formFieldsRaw) {
+      return [];
+    }
+
+    const formFields: Array<Model.Types.FormField> = [];
+
+    for (const formFieldRaw of formFieldsRaw) {
+      const formField: Model.Types.FormField = parseFormField(formFieldRaw);
+      formFields.push(formField);
+    }
+
+    return formFields;
+  }
+
   for (const userTaskRaw of userTasksRaw) {
     const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
 
@@ -66,6 +114,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTask.candidateGroups = userTaskRaw[BpmnTags.CamundaProperty.CandidateGroups];
     userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
+    userTask.formFields = parseFormFields(userTaskRaw);
 
     userTasks.push(userTask);
   }
@@ -216,6 +265,29 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   }
 
   return callActivities;
+}
+
+function parseSubProcesses(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.SubProcess> {
+
+  const subProcesses: Array<Model.Activities.SubProcess> = [];
+
+  const subProcessesRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SubProcess);
+
+  if (!subProcessesRaw || subProcessesRaw.length === 0) {
+    return [];
+  }
+
+  for (const subProcessRaw of subProcessesRaw) {
+    const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
+
+    subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
+    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors);
+    subProcess.sequenceFlows = parseProcessSequenceFlows(subProcessRaw);
+
+    subProcesses.push(subProcess);
+  }
+
+  return subProcesses;
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {
