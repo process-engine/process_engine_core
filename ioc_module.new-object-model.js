@@ -112,7 +112,7 @@ function registerInContainer(container) {
       'DatastoreService',
       'NodeInstanceEntityTypeService',
       'ApplicationService',
-      'Invoker',
+      'Invoker'
     )
     .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
