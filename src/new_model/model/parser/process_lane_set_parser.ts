@@ -6,33 +6,39 @@ import {
 
 export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
 
-    const laneSetData: any = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
+  const laneSetData: any = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
 
-    if (!laneSetData) {
-      return undefined;
-    }
+  if (!laneSetData) {
+    return undefined;
+  }
 
-    // NOTE: See above, this can be an Object or an Array.
-    const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
+  const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
-    const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
+  const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
 
-    if (!lanesRaw) {
-      return laneSet;
-    }
-
-    for (const laneRaw of lanesRaw) {
-      const lane: Model.Types.Lane = createObjectWithCommonProperties(laneRaw, Model.Types.Lane);
-
-      lane.name = laneRaw.name;
-      lane.flowNodeReferences = laneRaw[BpmnTags.LaneProperty.FlowNodeRef];
-
-      if (laneRaw[BpmnTags.LaneProperty.ChildLaneSet]) {
-        lane.childLaneSet = parseProcessLaneSet(laneRaw);
-      }
-
-      laneSet.lanes.push(lane);
-    }
-
+  if (!lanesRaw) {
     return laneSet;
   }
+
+  for (const laneRaw of lanesRaw) {
+    const lane: Model.Types.Lane = createObjectWithCommonProperties(laneRaw, Model.Types.Lane);
+
+    lane.name = laneRaw.name;
+
+    const flowNodeReferenceTrimmer: any = (reference: string): string => {
+      return reference.trim();
+    };
+
+    const flowNodeReferences: Array<string> = laneRaw[BpmnTags.LaneProperty.FlowNodeRef];
+    const trimmedFlowNodeReferences: Array<string> = flowNodeReferences.map(flowNodeReferenceTrimmer);
+    lane.flowNodeReferences = trimmedFlowNodeReferences;
+
+    if (laneRaw[BpmnTags.LaneProperty.ChildLaneSet]) {
+      lane.childLaneSet = parseProcessLaneSet(laneRaw);
+    }
+
+    laneSet.lanes.push(lane);
+  }
+
+  return laneSet;
+}
