@@ -66,7 +66,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
 
+      const finalResult: any = result === undefined ? null : result;
+
       processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
+      token.payload = finalResult;
+
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
