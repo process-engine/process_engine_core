@@ -6,7 +6,17 @@ export function getModelPropertyAsArray(model: any, elementName: string): any {
     return undefined;
   }
 
-  return Array.isArray(model[elementName]) ? model[elementName] : [model[elementName]];
+  const modelElement: any = model[elementName];
+
+  if (Array.isArray(modelElement)) {
+    return modelElement;
+  }
+
+  if (typeof modelElement === 'string') {
+    return [modelElement.trim()];
+  }
+
+  return [modelElement];
 }
 
 export function createObjectWithCommonProperties<TTargetType extends Model.Base.BaseElement>(
