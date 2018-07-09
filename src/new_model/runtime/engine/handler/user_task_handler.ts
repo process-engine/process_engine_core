@@ -47,10 +47,12 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
         await this.flowNodeInstanceService.resume(executionContextFacade, userTaskInstanceId);
 
         const userTaskResult: any = {
-          form_fields: message.data.token,
+          form_fields: message.data.token === undefined ? null : message.data.token,
         };
 
         processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
+        token.payload = userTaskResult;
+
         const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
 
         await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, userTask.id, userTaskInstanceId);
