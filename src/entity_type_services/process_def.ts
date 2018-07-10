@@ -26,7 +26,6 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {InvocationContainer} from 'addict-ioc';
-import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
 import {BpmnDiagram} from '../bpmn_diagram';
@@ -199,7 +198,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const moddle: BpmnModdle = BpmnModdle();
 
-    return <any> (new BluebirdPromise<BpmnDiagram>((resolve: Function, reject: Function): void => {
+    return new Promise((resolve: Function, reject: Function): void => {
 
       moddle.fromXML(xml, (error: Error, definitions: any) => {
         if (error) {
@@ -210,7 +209,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           resolve(bpmnDiagram);
         }
       });
-    }));
+    });
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {
