@@ -41,7 +41,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _datastoreService: IDatastoreService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
-  private _bpmnModelParser: IModelParser = undefined;
   private _processModelService: IProcessModelService = undefined;
 
   private _container: InvocationContainer;
@@ -49,14 +48,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   constructor(container: InvocationContainer,
               datastoreService: IDatastoreService,
               processRepository: IProcessRepository,
-              invoker: IInvoker,
-              bpmnModelParser: IModelParser) {
+              invoker: IInvoker) {
 
     this._container = container;
     this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;
-    this._bpmnModelParser = bpmnModelParser;
   }
 
   // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
@@ -72,10 +69,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._processRepository;
   }
 
-  private get bpmnModelParser(): IModelParser {
-    return this._bpmnModelParser;
-  }
-
   private get processModelService(): IProcessModelService {
     return this._processModelService;
   }
@@ -84,9 +77,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const processModelPeristanceRepository: IProcessModelRepository =
       await this._container.resolveAsync<IProcessModelRepository>('ProcessModelRepository');
+
+    const bpmnModelParser: IModelParser = await this._container.resolveAsync<IModelParser>('BpmnModelParser');
+
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
   }
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
@@ -116,7 +112,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
     const xml: string = params && params.xml ? params.xml : null;
-    const definitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
 
     const identity: IIdentity = {
       token: context.encryptedToken,
@@ -126,7 +121,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
 
-    await this.processModelService.persistProcessDefinitions(executionContextFacade, definitions);
+    await this.processModelService.persistProcessDefinitions(executionContextFacade, xml);
 
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
