@@ -44,12 +44,16 @@ export class ProcessModelService implements IProcessModelService {
     return this._bpmnModelParser;
   }
 
-  public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {
+  public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade,
+                                         name: string,
+                                         xml: string,
+                                         overwriteExisting: boolean = true,
+                                       ): Promise<void> {
 
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
 
-    return this.processDefinitionRepository.persistProcessDefinitions(definitions);
+    return this.processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
   }
 
   public async getProcessModels(executionContextFacade: IExecutionContextFacade): Promise<Array<Model.Types.Process>> {
