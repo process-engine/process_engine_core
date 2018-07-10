@@ -39,7 +39,7 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('ProcessModelService', ProcessModelService)
-    .dependencies('ProcessModelRepository', 'IamServiceNew', 'BpmnModelParser')
+    .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser')
     .singleton();
 
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)

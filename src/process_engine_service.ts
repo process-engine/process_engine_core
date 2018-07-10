@@ -17,6 +17,7 @@ import {
   IExecuteProcessService,
   IExecutionContextFacade,
   IImportFromFileOptions,
+  IModelParser,
   INodeDefEntity,
   INodeInstanceEntity,
   INodeInstanceEntityTypeService,
@@ -24,10 +25,10 @@ import {
   IParamStart,
   IProcessDefEntity,
   IProcessDefEntityTypeService,
+  IProcessDefinitionRepository,
   IProcessEngineService,
   IProcessEntity,
   IProcessEntry,
-  IProcessModelRepository,
   IProcessModelService,
   IProcessRepository,
   IUserTaskEntity,
@@ -163,11 +164,14 @@ export class ProcessEngineService implements IProcessEngineService {
 
   public async initialize(): Promise<void> {
 
-    const processModelPeristanceRepository: IProcessModelRepository =
-      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelRepository');
+    const processModelPeristanceRepository: IProcessDefinitionRepository =
+      await this._container.resolveAsync<IProcessDefinitionRepository>('ProcessDefinitionRepository');
+
+    const bpmnModelParser: IModelParser = await this._container.resolveAsync<IModelParser>('BpmnModelParser');
+
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
 
     this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
 
