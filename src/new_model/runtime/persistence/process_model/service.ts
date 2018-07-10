@@ -10,6 +10,8 @@ import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 
+import * as clone from 'clone';
+
 export class ProcessModelService implements IProcessModelService {
 
   private _processModelRepository: IProcessModelRepository;
@@ -88,20 +90,26 @@ export class ProcessModelService implements IProcessModelService {
 
     const identity: IIdentity = await executionContextFacade.getIdentity();
 
+    /*
+     * Ensure that this method always returns a copy and not a referece
+     * to the passed process model.
+     */
+    const processModelCopy: Model.Types.Process = clone(processModel);
+
     if (!processModel.laneSet) {
-      return processModel;
+      return processModelCopy;
     }
 
-    processModel.laneSet = await this._filterOutInaccessibleLanes(processModel.laneSet, identity);
-    processModel.flowNodes = this._getFlowNodesForLaneSet(processModel.laneSet, processModel.flowNodes);
+    processModelCopy.laneSet = await this._filterOutInaccessibleLanes(processModelCopy.laneSet, identity);
+    processModelCopy.flowNodes = this._getFlowNodesForLaneSet(processModelCopy.laneSet, processModel.flowNodes);
 
-    const processModelHasAccessibleStartEvent: boolean = this._checkIfProcessModelHasAccessibleStartEvents(processModel);
+    const processModelHasAccessibleStartEvent: boolean = this._checkIfProcessModelHasAccessibleStartEvents(processModelCopy);
 
     if (!processModelHasAccessibleStartEvent) {
       return undefined;
     }
 
-    return processModel;
+    return processModelCopy;
   }
 
   private async _filterOutInaccessibleLanes(laneSet: Model.Types.LaneSet, identity: IIdentity): Promise<Model.Types.LaneSet> {
