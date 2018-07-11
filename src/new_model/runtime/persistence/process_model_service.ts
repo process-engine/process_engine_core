@@ -84,7 +84,9 @@ export class ProcessModelService implements IProcessModelService {
 
     const processModel: Model.Types.Process = await this._getProcessModelById(executionContextFacade, processModelId);
 
-    if (!processModel) {
+    const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(executionContextFacade, processModel);
+
+    if (!filteredProcessModel) {
       throw new ForbiddenError('Access denied');
     }
 
@@ -99,9 +101,7 @@ export class ProcessModelService implements IProcessModelService {
 
       if (process.id === processModelId) {
 
-        const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(executionContextFacade, process);
-
-        return filteredProcessModel;
+        return process;
       }
     }
 
