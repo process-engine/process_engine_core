@@ -35,12 +35,10 @@ function registerInContainer(container) {
     .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
-    .dependencies('FlowNodeInstanceRepository', 'IamServiceNew')
-    .singleton();
+    .dependencies('FlowNodeInstanceRepository', 'IamServiceNew');
 
   container.register('ProcessModelService', ProcessModelService)
-    .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser')
-    .singleton();
+    .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
 
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
     .singleton();
