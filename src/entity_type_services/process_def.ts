@@ -10,7 +10,6 @@ import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-proj
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {IInvoker} from '@essential-projects/invocation_contracts';
 import {
-  Definitions,
   ExecutionContext as NewExecutionContext,
   IExecutionContextFacade,
   IImportFromFileOptions,
@@ -21,13 +20,12 @@ import {
   IParamStart,
   IProcessDefEntity,
   IProcessDefEntityTypeService,
-  IProcessModelRepository,
+  IProcessDefinitionRepository,
   IProcessModelService,
   IProcessRepository,
 } from '@process-engine/process_engine_contracts';
 
 import {InvocationContainer} from 'addict-ioc';
-import * as BluebirdPromise from 'bluebird';
 import * as BpmnModdle from 'bpmn-moddle';
 
 import {BpmnDiagram} from '../bpmn_diagram';
@@ -41,7 +39,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   private _datastoreService: IDatastoreService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
-  private _bpmnModelParser: IModelParser = undefined;
   private _processModelService: IProcessModelService = undefined;
 
   private _container: InvocationContainer;
@@ -49,14 +46,12 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   constructor(container: InvocationContainer,
               datastoreService: IDatastoreService,
               processRepository: IProcessRepository,
-              invoker: IInvoker,
-              bpmnModelParser: IModelParser) {
+              invoker: IInvoker) {
 
     this._container = container;
     this._datastoreService = datastoreService;
     this._processRepository = processRepository;
     this._invoker = invoker;
-    this._bpmnModelParser = bpmnModelParser;
   }
 
   // TODO: Heiko Mathes - replaced lazy datastoreService-injection with regular injection. is this ok?
@@ -72,21 +67,20 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
     return this._processRepository;
   }
 
-  private get bpmnModelParser(): IModelParser {
-    return this._bpmnModelParser;
-  }
-
   private get processModelService(): IProcessModelService {
     return this._processModelService;
   }
 
   public async initialize(): Promise<void> {
 
-    const processModelPeristanceRepository: IProcessModelRepository =
-      await this._container.resolveAsync<IProcessModelRepository>('ProcessModelRepository');
+    const processModelPeristanceRepository: IProcessDefinitionRepository =
+      await this._container.resolveAsync<IProcessDefinitionRepository>('ProcessDefinitionRepository');
+
+    const bpmnModelParser: IModelParser = await this._container.resolveAsync<IModelParser>('BpmnModelParser');
+
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService);
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
   }
 
   public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
@@ -115,8 +109,9 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
+    const name: string = params && params.name ? params.name : null;
     const xml: string = params && params.xml ? params.xml : null;
-    const definitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
+    const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
     const identity: IIdentity = {
       token: context.encryptedToken,
@@ -126,83 +121,14 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
 
-    await this.processModelService.persistProcessDefinitions(executionContextFacade, definitions);
-
-    const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
-
-    const name: string = params && params.name ? params.name : null;
-    const internalName: string = params && params.internalName ? params.internalName : null;
-    const pathString: string = params && params.path ? params.path : null;
-    const category: string = params && params.category ? params.category : null;
-    const module: string = params && params.module ? params.module : null;
-    const readonly: boolean = params && params.readonly ? params.readonly : null;
-
-    if (!xml) {
-      return;
-    }
-
-    const bpmnDiagram: BpmnDiagram = await this.parseBpmnXml(xml);
-    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const processes: any = bpmnDiagram.getProcesses();
-
-    for (const process of processes) {
-      const nameIsInvalid: boolean = (name === undefined || name === null);
-
-      const processName: string = nameIsInvalid ? process.name : name;
-      const processId: string = nameIsInvalid ? process.id : name;
-
-      // query with key
-      const queryParams: IPrivateQueryOptions = {
-        query: {
-          attribute: 'key',
-          operator: '=',
-          value: processId,
-        },
-      };
-      const processDefColl: IEntityCollection<IProcessDefEntity> = await processDef.query(context, queryParams);
-
-      let processDefEntity: IProcessDefEntity = processDefColl && processDefColl.length > 0 ? processDefColl.data[0] as IProcessDefEntity : null;
-
-      let canSave: boolean = false;
-      if (!processDefEntity) {
-        const processDefData: any = {
-          key: processId,
-          defId: bpmnDiagram.definitions.id,
-          counter: 0,
-        };
-
-        processDefEntity = await processDef.createEntity(context, processDefData);
-
-        // always create new processes
-        canSave = true;
-      } else {
-        // check if we can overwrite existing processes
-        canSave = overwriteExisting;
-      }
-
-      if (!canSave) {
-        continue;
-      }
-
-      processDefEntity.name = processName;
-      processDefEntity.xml = xml;
-      processDefEntity.internalName = internalName;
-      processDefEntity.path = pathString;
-      processDefEntity.category = category;
-      processDefEntity.module = module;
-      processDefEntity.readonly = readonly;
-      processDefEntity.counter = processDefEntity.counter + 1;
-
-      await this.invoker.invoke(processDefEntity, 'updateDefinitions', undefined, context, context, { bpmnDiagram: bpmnDiagram });
-      await processDefEntity.save(context, {isNew: false});
-    }
+    await this.processModelService.persistProcessDefinitions(executionContextFacade, name, xml, overwriteExisting);
   }
 
   public parseBpmnXml(xml: string): Promise<BpmnDiagram> {
 
     const moddle: BpmnModdle = BpmnModdle();
 
-    return <any> (new BluebirdPromise<BpmnDiagram>((resolve: Function, reject: Function): void => {
+    return new Promise((resolve: Function, reject: Function): void => {
 
       moddle.fromXML(xml, (error: Error, definitions: any) => {
         if (error) {
@@ -213,7 +139,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
           resolve(bpmnDiagram);
         }
       });
-    }));
+    });
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {

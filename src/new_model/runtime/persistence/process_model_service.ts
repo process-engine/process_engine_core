@@ -1,46 +1,60 @@
 import {
   Definitions,
   IExecutionContextFacade,
-  IProcessModelRepository,
+  IModelParser,
+  IProcessDefinitionRepository,
   IProcessModelService,
   Model,
+  ProcessDefinitionFromRepository,
 } from '@process-engine/process_engine_contracts';
 
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 
+import * as BluebirdPromise from 'bluebird';
 import * as clone from 'clone';
 
 export class ProcessModelService implements IProcessModelService {
 
-  private _processModelRepository: IProcessModelRepository;
+  private _processDefinitionRepository: IProcessDefinitionRepository;
   private _iamService: IIAMService;
+  private _bpmnModelParser: IModelParser = undefined;
 
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
-  constructor(processModelRepository: IProcessModelRepository,
-              iamService: IIAMService) {
+  constructor(processDefinitionRepository: IProcessDefinitionRepository,
+              iamService: IIAMService,
+              bpmnModelParser: IModelParser) {
 
-    this._processModelRepository = processModelRepository;
+    this._processDefinitionRepository = processDefinitionRepository;
     this._iamService = iamService;
+    this._bpmnModelParser = bpmnModelParser;
   }
 
-  private get processModelRepository(): IProcessModelRepository {
-    return this._processModelRepository;
+  private get processDefinitionRepository(): IProcessDefinitionRepository {
+    return this._processDefinitionRepository;
   }
 
   private get iamService(): IIAMService {
     return this._iamService;
   }
 
-  public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade, definitions: Definitions): Promise<void> {
+  private get bpmnModelParser(): IModelParser {
+    return this._bpmnModelParser;
+  }
+
+  public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade,
+                                         name: string,
+                                         xml: string,
+                                         overwriteExisting: boolean = true,
+                                       ): Promise<void> {
 
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
 
-    return this.processModelRepository.persistProcessDefinitions(definitions);
+    return this.processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
   }
 
   public async getProcessModels(executionContextFacade: IExecutionContextFacade): Promise<Array<Model.Types.Process>> {
@@ -48,7 +62,7 @@ export class ProcessModelService implements IProcessModelService {
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
-    const processModelList: Array<Model.Types.Process> = await this.processModelRepository.getProcessModels();
+    const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
 
     const filteredList: Array<Model.Types.Process> = [];
 
@@ -69,11 +83,7 @@ export class ProcessModelService implements IProcessModelService {
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
-    const processModel: Model.Types.Process = await this.processModelRepository.getProcessModelById(processModelId);
-
-    if (!processModel) {
-      throw new NotFoundError(`Process Model with id ${processModelId} not found!`);
-    }
+    const processModel: Model.Types.Process = await this._getProcessModelById(executionContextFacade, processModelId);
 
     const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(executionContextFacade, processModel);
 
@@ -81,7 +91,49 @@ export class ProcessModelService implements IProcessModelService {
       throw new ForbiddenError('Access denied');
     }
 
-    return filteredProcessModel;
+    return processModel;
+  }
+
+  private async _getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
+
+    const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
+
+    for (const process of processModelList) {
+
+      if (process.id === processModelId) {
+
+        return process;
+      }
+    }
+
+    throw new NotFoundError(`Process Model with id ${processModelId} not found!`);
+  }
+
+  private async _getProcessModelList(): Promise<Array<Model.Types.Process>> {
+
+    const definitions: Array<Definitions> = await this._getDefinitionList();
+
+    const allProcessModels: Array<Model.Types.Process> = [];
+
+    for (const definition of definitions) {
+      Array.prototype.push.apply(allProcessModels, definition.processes);
+    }
+
+    return allProcessModels;
+  }
+
+  private async _getDefinitionList(): Promise<Array<Definitions>> {
+
+    const definitionsRaw: Array<ProcessDefinitionFromRepository> = await this.processDefinitionRepository.getProcessDefinitions();
+
+    const definitionsMapper: any = async(rawProcessModelData: ProcessDefinitionFromRepository): Promise<Definitions> => {
+      return this.bpmnModelParser.parseXmlToObjectModel(rawProcessModelData.xml);
+    };
+
+    const definitionsList: Array<Definitions> =
+      await BluebirdPromise.map<ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
+
+    return definitionsList;
   }
 
   private async _filterInaccessibleProcessModelElements(executionContextFacade: IExecutionContextFacade,
