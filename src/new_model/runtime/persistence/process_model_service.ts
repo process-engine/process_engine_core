@@ -91,7 +91,7 @@ export class ProcessModelService implements IProcessModelService {
       throw new ForbiddenError('Access denied');
     }
 
-    return processModel;
+    return filteredProcessModel;
   }
 
   private async _getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
@@ -166,7 +166,7 @@ export class ProcessModelService implements IProcessModelService {
 
   private async _filterOutInaccessibleLanes(laneSet: Model.Types.LaneSet, identity: IIdentity): Promise<Model.Types.LaneSet> {
 
-    const filteredLaneSet: Model.Types.LaneSet = Object.assign({}, laneSet);
+    const filteredLaneSet: Model.Types.LaneSet = clone(laneSet);
     filteredLaneSet.lanes = [];
 
     for (const lane of laneSet.lanes) {
@@ -177,11 +177,13 @@ export class ProcessModelService implements IProcessModelService {
         continue;
       }
 
-      filteredLaneSet.lanes.push(lane);
+      const filteredLane: Model.Types.Lane = clone(lane);
 
-      if (lane.childLaneSet) {
-        lane.childLaneSet = await this._filterOutInaccessibleLanes(lane.childLaneSet, identity);
+      if (filteredLane.childLaneSet) {
+        filteredLane.childLaneSet = await this._filterOutInaccessibleLanes(filteredLane.childLaneSet, identity);
       }
+
+      filteredLaneSet.lanes.push(filteredLane);
     }
 
     return filteredLaneSet;
