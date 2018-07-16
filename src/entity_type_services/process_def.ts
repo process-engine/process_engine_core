@@ -110,7 +110,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
   public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
 
     const name: string = params && params.name ? params.name : null;
-    const internalName: string = params && params.internalName ? params.internalName : null;
     const xml: string = params && params.xml ? params.xml : null;
     const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
 
@@ -122,7 +121,7 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
     const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
 
-    await this.processModelService.persistProcessDefinitions(executionContextFacade, name || internalName, xml, overwriteExisting);
+    await this.processModelService.persistProcessDefinitions(executionContextFacade, name, xml, overwriteExisting);
   }
 
   public parseBpmnXml(xml: string): Promise<BpmnDiagram> {
