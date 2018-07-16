@@ -25,7 +25,6 @@ const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityD
 const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
 const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
 
-const processEngineContractsIocModule = require('@process-engine/process_engine_contracts/ioc_module');
 const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-model');
 
 function registerInContainer(container) {
@@ -34,7 +33,7 @@ function registerInContainer(container) {
     .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
 
   container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('container', 'DatastoreService', 'ProcessRepository', 'Invoker', 'BpmnModelParser');
+    .dependencies('container', 'DatastoreService', 'ProcessRepository', 'Invoker');
 
   container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
     .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')
@@ -116,7 +115,6 @@ function registerInContainer(container) {
     .dependencies('NodeInstanceEntityDependencyHelper')
     .tags(entityDiscoveryTag);
 
-  processEngineContractsIocModule.registerInContainer(container);
   processEngineNewObjectModelIocModule.registerInContainer(container);
 }
 

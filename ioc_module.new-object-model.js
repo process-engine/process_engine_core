@@ -18,9 +18,7 @@ const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 
 const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
-const FlowNodeInstanceRepository = require('./dist/commonjs/index').FlowNodeInstanceRepository;
 const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
-const ProcessModelRepository = require('./dist/commonjs/index').ProcessModelRepository;
 
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 
@@ -36,17 +34,11 @@ function registerInContainer(container) {
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
 
-  container.register('FlowNodeInstanceRepository', FlowNodeInstanceRepository)
-    .singleton();
-
-  container.register('ProcessModelRepository', ProcessModelRepository)
-    .singleton();
-
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
     .dependencies('FlowNodeInstanceRepository', 'IamServiceNew');
 
   container.register('ProcessModelService', ProcessModelService)
-    .dependencies('ProcessModelRepository', 'IamServiceNew');
+    .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
 
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
     .singleton();
