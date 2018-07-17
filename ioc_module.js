@@ -33,7 +33,7 @@ const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
 function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
-    .dependencies('FlowNodeHandlerFactory', 'MessageBusService', 'EventAggregator');
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'ProcessModelService', 'EventAggregator');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
     .dependencies('FlowNodeInstanceRepository', 'IamServiceNew');
