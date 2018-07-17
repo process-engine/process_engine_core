@@ -12,7 +12,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {InvocationContainer} from 'addict-ioc';
 import * as fs from 'fs';
 
-import {IamServiceMock} from '../../iam_service_mock';
+import {IamServiceMock} from '../iam_service_mock';
 import {ExecutionContextFacade} from './engine/index';
 import {ProcessModelService} from './persistence/index';
 
