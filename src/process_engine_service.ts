@@ -15,12 +15,11 @@ import {
   IErrorDeserializer,
   IExecuteProcessService,
   IExecutionContextFacade,
-  IImportFromFileOptions,
+  IImportProcessService,
   IModelParser,
   INodeDefEntity,
   INodeInstanceEntity,
   INodeInstanceEntityTypeService,
-  IParamImportFromXml,
   IParamStart,
   IProcessDefEntity,
   IProcessDefEntityTypeService,
@@ -34,7 +33,7 @@ import {
   IUserTaskMessageData,
   Model,
 } from '@process-engine/process_engine_contracts';
-import {IFactoryAsync, InvocationContainer} from 'addict-ioc';
+import {InvocationContainer} from 'addict-ioc';
 
 import * as debug from 'debug';
 
@@ -54,12 +53,12 @@ export class ProcessEngineService implements IProcessEngineService {
   private _iamService: IIamService = undefined;
   private _processRepository: IProcessRepository = undefined;
   private _datastoreService: IDatastoreService = undefined;
-  private _nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService> = undefined;
   private _nodeInstanceEntityTypeService: INodeInstanceEntityTypeService = undefined;
   private _applicationService: IApplicationService = undefined;
   private _invoker: IInvoker = undefined;
   private _processModelService: IProcessModelService = undefined;
   private _errorDeserializer: IErrorDeserializer = undefined;
+  private _importProcessService: IImportProcessService = undefined;
 
   private _internalContext: ExecutionContext;
   public config: any = undefined;
@@ -74,9 +73,11 @@ export class ProcessEngineService implements IProcessEngineService {
               iamService: IIamService,
               processRepository: IProcessRepository,
               datastoreService: IDatastoreService,
-              nodeInstanceEntityTypeServiceFactory: IFactoryAsync<INodeInstanceEntityTypeService>,
+              nodeInstanceEntityTypeService: INodeInstanceEntityTypeService,
               applicationService: IApplicationService,
-              invoker: IInvoker) {
+              invoker: IInvoker,
+              importProcessService: IImportProcessService,
+            ) {
 
     this._container = container;
     this._messageBusService = messageBusService;
@@ -86,9 +87,10 @@ export class ProcessEngineService implements IProcessEngineService {
     this._iamService = iamService;
     this._processRepository = processRepository;
     this._datastoreService = datastoreService;
-    this._nodeInstanceEntityTypeServiceFactory = nodeInstanceEntityTypeServiceFactory;
+    this._nodeInstanceEntityTypeService = nodeInstanceEntityTypeService;
     this._applicationService = applicationService;
     this._invoker = invoker;
+    this._importProcessService = importProcessService;
   }
 
   private get messageBusService(): IMessageBusService {
@@ -121,6 +123,10 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private get applicationService(): IApplicationService {
     return this._applicationService;
+  }
+
+  private get importProcessService(): IImportProcessService {
+    return this._importProcessService;
   }
 
   private get invoker(): IInvoker {
@@ -171,8 +177,6 @@ export class ProcessEngineService implements IProcessEngineService {
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
     this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
-
-    this._nodeInstanceEntityTypeService = await this._nodeInstanceEntityTypeServiceFactory();
 
     this._initializeDefaultErrorDeserializer();
     await this._initializeMessageBus();
@@ -311,25 +315,13 @@ export class ProcessEngineService implements IProcessEngineService {
 
   private async _initializeProcesses(): Promise<void> {
 
-    const internalContext: ExecutionContext = await this.iamService.createInternalContext('processengine_system');
-    const options: IImportFromFileOptions = {
-      overwriteExisting: true,
-    };
+    const internalContext: NewExecutionContext = new NewExecutionContext({token: ''});
+    const overwriteExisting: boolean = true;
 
     const processes: Array<IProcessEntry> = this.processRepository.getProcessesByCategory('internal');
 
     for (const process of processes) {
-
-      const params: IParamImportFromXml = {
-        xml: process.bpmnXml,
-        internalName: process.name,
-        category: process.category,
-        module: process.module,
-        path: process.path,
-        readonly: process.readonly,
-      };
-
-      await this.processDefEntityTypeService.importBpmnFromXml(internalContext, params, options);
+      await this.importProcessService.importBpmnFromXml(internalContext, process.name, process.bpmnXml, overwriteExisting);
     }
   }
 

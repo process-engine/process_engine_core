@@ -20,6 +20,8 @@ const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
 const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
 
+const ImportProcessService = require('./dist/commonjs/index').ImportProcessService;
+
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 
 const ExecutionContextFacadeFactory = require('./dist/commonjs/index').ExecutionContextFacadeFactory;
@@ -39,6 +41,9 @@ function registerInContainer(container) {
 
   container.register('ProcessModelService', ProcessModelService)
     .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
+
+  container.register('ImportProcessService', ImportProcessService)
+    .dependencies('container', 'BpmnModelParser');
 
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
     .singleton();
@@ -104,9 +109,9 @@ function registerInContainer(container) {
       'DatastoreService',
       'NodeInstanceEntityTypeService',
       'ApplicationService',
-      'Invoker'
+      'Invoker',
+      'ImportProcessService',
     )
-    .injectPromiseLazy('NodeInstanceEntityTypeService')
     .configure('process_engine:process_engine_service')
     .singleton();
 }

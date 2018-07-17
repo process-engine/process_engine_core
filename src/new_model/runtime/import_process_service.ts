@@ -19,16 +19,10 @@ import {ProcessModelService} from './persistence/index';
 export class ImportProcessService implements IImportProcessService {
 
   private _container: InvocationContainer;
-  private _bpmnModelParser: IModelParser;
   private _processModelService: IProcessModelService;
 
-  constructor(container: InvocationContainer, bpmnModelParser: IModelParser) {
+  constructor(container: InvocationContainer) {
     this._container = container;
-    this._bpmnModelParser = bpmnModelParser;
-  }
-
-  private get bpmnModelParser(): IModelParser {
-    return this._bpmnModelParser;
   }
 
   private get processModelService(): IProcessModelService {
@@ -40,9 +34,11 @@ export class ImportProcessService implements IImportProcessService {
     const processModelPeristanceRepository: IProcessDefinitionRepository =
       await this._container.resolveAsync<IProcessDefinitionRepository>('ProcessDefinitionRepository');
 
+    const bpmnModelParser: IModelParser = await this._container.resolveAsync<IModelParser>('BpmnModelParser');
+
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, this.bpmnModelParser);
+    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
   }
 
   public async importBpmnFromXml(context: ExecutionContext, xml: string, name: string, overwriteExisting: boolean = true): Promise<void> {
