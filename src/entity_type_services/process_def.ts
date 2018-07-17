@@ -6,51 +6,19 @@ import {
   IPublicGetOptions,
   IQueryClause,
 } from '@essential-projects/core_contracts';
-import {IDatastoreService, IEntityCollection, IEntityType} from '@essential-projects/data_model_contracts';
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IDatastoreService, IEntityType} from '@essential-projects/data_model_contracts';
 import {IInvoker} from '@essential-projects/invocation_contracts';
-import {
-  ExecutionContext as NewExecutionContext,
-  IExecutionContextFacade,
-  IImportFromFileOptions,
-  IImportFromXmlOptions,
-  IModelParser,
-  IParamImportFromFile,
-  IParamImportFromXml,
-  IParamStart,
-  IProcessDefEntity,
-  IProcessDefEntityTypeService,
-  IProcessDefinitionRepository,
-  IProcessModelService,
-  IProcessRepository,
-} from '@process-engine/process_engine_contracts';
+import {IParamStart, IProcessDefEntity, IProcessDefEntityTypeService} from '@process-engine/process_engine_contracts';
 
-import {InvocationContainer} from 'addict-ioc';
-import * as BpmnModdle from 'bpmn-moddle';
-
-import {BpmnDiagram} from '../bpmn_diagram';
-import {IamServiceMock} from '../iam_service_mock';
-import {ExecutionContextFacade} from '../new_model/runtime/engine/index';
-import {ProcessModelService} from '../new_model/runtime/persistence/index';
-
-// tslint:disable:cyclomatic-complexity
 export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService {
 
   private _datastoreService: IDatastoreService = undefined;
-  private _processRepository: IProcessRepository = undefined;
   private _invoker: IInvoker = undefined;
-  private _processModelService: IProcessModelService = undefined;
 
-  private _container: InvocationContainer;
-
-  constructor(container: InvocationContainer,
-              datastoreService: IDatastoreService,
-              processRepository: IProcessRepository,
+  constructor(datastoreService: IDatastoreService,
               invoker: IInvoker) {
 
-    this._container = container;
     this._datastoreService = datastoreService;
-    this._processRepository = processRepository;
     this._invoker = invoker;
   }
 
@@ -61,86 +29,6 @@ export class ProcessDefEntityTypeService implements IProcessDefEntityTypeService
 
   private get invoker(): IInvoker {
     return this._invoker;
-  }
-
-  private get processRepository(): IProcessRepository {
-    return this._processRepository;
-  }
-
-  private get processModelService(): IProcessModelService {
-    return this._processModelService;
-  }
-
-  public async initialize(): Promise<void> {
-
-    const processModelPeristanceRepository: IProcessDefinitionRepository =
-      await this._container.resolveAsync<IProcessDefinitionRepository>('ProcessDefinitionRepository');
-
-    const bpmnModelParser: IModelParser = await this._container.resolveAsync<IModelParser>('BpmnModelParser');
-
-    // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
-    const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
-  }
-
-  public async importBpmnFromFile(context: ExecutionContext, params: IParamImportFromFile, options?: IImportFromFileOptions): Promise<any> {
-
-    const path: string = params && params.file ? params.file : null;
-    if (path) {
-
-      const xml: string = await this.processRepository.getXmlFromFile(path);
-      const name: string = path.split('/').pop();
-      await this.importBpmnFromXml(
-        context,
-        {
-          name: name,
-          xml: xml,
-          path: path,
-          internalName: name,
-        },
-        options);
-
-      return { result: true };
-
-    }
-
-    throw new Error('file does not exist');
-  }
-
-  public async importBpmnFromXml(context: ExecutionContext, params: IParamImportFromXml, options?: IImportFromXmlOptions): Promise<void> {
-
-    const name: string = params && params.name ? params.name : null;
-    const internalName: string = params && params.internalName ? params.internalName : null;
-    const xml: string = params && params.xml ? params.xml : null;
-    const overwriteExisting: boolean = options && options.hasOwnProperty('overwriteExisting') ? options.overwriteExisting : true;
-
-    const identity: IIdentity = {
-      token: context.encryptedToken,
-    };
-
-    const newExecutionContext: NewExecutionContext = new NewExecutionContext(identity);
-
-    const executionContextFacade: IExecutionContextFacade = new ExecutionContextFacade(newExecutionContext);
-
-    await this.processModelService.persistProcessDefinitions(executionContextFacade, name || internalName, xml, overwriteExisting);
-  }
-
-  public parseBpmnXml(xml: string): Promise<BpmnDiagram> {
-
-    const moddle: BpmnModdle = BpmnModdle();
-
-    return new Promise((resolve: Function, reject: Function): void => {
-
-      moddle.fromXML(xml, (error: Error, definitions: any) => {
-        if (error) {
-          reject(error);
-        } else {
-
-          const bpmnDiagram: BpmnDiagram = new BpmnDiagram(definitions);
-          resolve(bpmnDiagram);
-        }
-      });
-    });
   }
 
   public async start(context: ExecutionContext, params: IParamStart, options?: IPublicGetOptions): Promise<IEntityReference> {

@@ -12,7 +12,6 @@ import {IInvoker} from '@essential-projects/invocation_contracts';
 import {IDataMessage, IMessage, IMessageBusService, IMessageSubscription} from '@essential-projects/messagebus_contracts';
 import {
   ExecutionContext as NewExecutionContext,
-  IBpmnDiagram,
   IErrorDeserializer,
   IExecuteProcessService,
   IExecutionContextFacade,
@@ -207,56 +206,6 @@ export class ProcessEngineService implements IProcessEngineService {
     const userTask: IUserTaskEntity = await userTaskEntityType.getById(userTaskId, context, userTaskEntityQueryOptions);
 
     return userTask.getUserTaskData(context);
-  }
-
-  /*
-   * This creates an entry in the database for the XML of a BPMN diagram.
-   * Checks if the creation was successfull; returns a ProcessDefEntity on success.
-   *
-   * @param context Execution Context for the request.
-   * @param xml The XML body of the BPMN diagram.
-   * @param name The name for the diagram that will be saved.
-   *
-   * @return Promise<IProcessDefEntity> on success; Error if no processes given in XML.
-   */
-  public async createBpmnFromXml(context: ExecutionContext, xml: string, name: string): Promise<IProcessDefEntity> {
-    const bpmnDiagram: IBpmnDiagram = await this.processDefEntityTypeService.parseBpmnXml(xml);
-    const processDef: IEntityType<IProcessDefEntity> = await this.datastoreService.getEntityType<IProcessDefEntity>('ProcessDef');
-    const processes: Array<any> = bpmnDiagram.getProcesses();
-
-    const noProccessFound: boolean = (processes.length === 0);
-    if (noProccessFound) {
-      // TODO: We need an specific Error type here.
-      throw new Error('Model must contain a process.');
-    }
-
-    const nameIsInvalid: boolean = (name === undefined);
-    const diagramName: string = nameIsInvalid ? processes[0].name : name;
-    const diagramKey: string = nameIsInvalid ? processes[0].id : name;
-
-    if (!nameIsInvalid) {
-      const xmlWithCorrectName: string = xml
-                                          .replace(`id="${processes[0].id}"`, `id="${name}"`)
-                                          .replace(`processRef="${processes[0].id}"`, `processRef="${name}"`);
-
-      await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xmlWithCorrectName});
-    } else {
-      await this.processDefEntityTypeService.importBpmnFromXml(context, {name: diagramName, xml: xml});
-    }
-
-    //  TODO: Refactor into private method {{{ //
-    const queryObject: IPrivateQueryOptions = {
-      query: {
-        attribute: 'key',
-        operator: '=',
-        value: diagramKey,
-      },
-    };
-
-    const processDefEntity: IProcessDefEntity = await processDef.findOne(context, queryObject);
-    //  }}} TODO: Refactor into private method //
-
-    return processDefEntity.toPojo(context);
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
