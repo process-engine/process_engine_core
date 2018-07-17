@@ -63,7 +63,7 @@ export class ImportProcessService implements IImportProcessService {
     const name: string = filePath.split('/').pop();
     const xml: string = await this._getXmlFromFile(filePath);
 
-    await this.importBpmnFromXml(context, name, xml, overwriteExisting);
+    await this.importBpmnFromXml(context, xml, name, overwriteExisting);
   }
 
   private async _getXmlFromFile(path: string): Promise<string> {
