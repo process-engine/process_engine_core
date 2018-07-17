@@ -76,5 +76,5 @@ export class ImportProcessService implements IImportProcessService {
         }
       });
     });
-}
+  }
 }

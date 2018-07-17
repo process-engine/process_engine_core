@@ -18,6 +18,7 @@ const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
 
 const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
 const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
+const TimerService = require('./dist/commonjs/index').TimerService;
 
 const ImportProcessService = require('./dist/commonjs/index').ImportProcessService;
 
@@ -40,6 +41,9 @@ function registerInContainer(container) {
 
   container.register('ProcessModelService', ProcessModelService)
     .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
+
+  container.register('TimerService', TimerService)
+    .dependencies('TimerRepository');
 
   container.register('ImportProcessService', ImportProcessService)
     .dependencies('container', 'BpmnModelParser');
