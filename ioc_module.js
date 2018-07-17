@@ -89,7 +89,7 @@ function registerInContainer(container) {
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
 
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('TimingService', 'EventAggregator', 'IamService');
+    .dependencies('TimerService', 'EventAggregator');
 
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
     .dependencies('FlowNodeInstanceService');
