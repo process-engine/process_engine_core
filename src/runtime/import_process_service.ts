@@ -31,14 +31,14 @@ export class ImportProcessService implements IImportProcessService {
 
   public async initialize(): Promise<void> {
 
-    const processModelPeristanceRepository: IProcessDefinitionRepository =
+    const processModelPeristenceRepository: IProcessDefinitionRepository =
       await this._container.resolveAsync<IProcessDefinitionRepository>('ProcessDefinitionRepository');
 
     const bpmnModelParser: IModelParser = await this._container.resolveAsync<IModelParser>('BpmnModelParser');
 
     // TODO: Must be removed, as soon as the process engine can authenticate itself against the external authority.
     const iamService: IamServiceMock = new IamServiceMock();
-    this._processModelService = new ProcessModelService(processModelPeristanceRepository, iamService, bpmnModelParser);
+    this._processModelService = new ProcessModelService(processModelPeristenceRepository, iamService, bpmnModelParser);
   }
 
   public async importBpmnFromXml(context: ExecutionContext, xml: string, name: string, overwriteExisting: boolean = true): Promise<void> {
