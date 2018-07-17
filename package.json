@@ -15,11 +15,9 @@
     "Simon Reymann <simon.reymann@quantusflow.com>"
   ],
   "dependencies": {
-    "@essential-projects/core_contracts": "^2.0.0",
     "@essential-projects/errors_ts": "^1.0.0",
     "@essential-projects/event_aggregator_contracts": "^2.0.0",
     "@essential-projects/iam_contracts": "^3.0.0",
-    "@essential-projects/timing_contracts": "^2.0.0",
     "@process-engine/consumer_api_contracts": "^0.12.1",
     "@process-engine/process_engine_contracts": "feature~remove_old_datastore_implementation",
     "@types/clone": "^0.1.30",
