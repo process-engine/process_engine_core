@@ -40,7 +40,7 @@ function registerInContainer(container) {
     .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
 
   container.register('TimerService', TimerService)
-    .dependencies('TimerRepository');
+    .dependencies('EventAggregator', 'TimerRepository');
 
   container.register('ImportProcessService', ImportProcessService)
     .dependencies('container', 'BpmnModelParser');
