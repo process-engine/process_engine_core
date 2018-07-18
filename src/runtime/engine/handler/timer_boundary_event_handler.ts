@@ -102,7 +102,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
         resolve(nextFlowNodeInfo);
 
       } finally {
-        timerSubscription.dispose();
+        if (timerSubscription) {
+          timerSubscription.dispose();
+        }
       }
     });
   }
