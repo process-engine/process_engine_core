@@ -28,9 +28,6 @@ const ExecutionContextFacadeFactory = require('./dist/commonjs/index').Execution
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
-const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
-const BpmnProcessEntity = require('./dist/commonjs/index').BpmnProcessEntity;
-
 function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
@@ -58,9 +55,6 @@ function registerInContainer(container) {
     .singleton();
 
   container.register('BpmnModelParser', BpmnModelParser);
-
-  container.register('BpmnProcessEntity', BpmnProcessEntity)
-    .tags(entityDiscoveryTag);
 
   container.register('CallActivityHandler', CallActivityHandler)
     .dependencies('ConsumerApiService', 'FlowNodeInstanceService');
