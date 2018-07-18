@@ -72,9 +72,9 @@ export class TimerService implements ITimerService {
                              eventName: string): Promise<string> {
 
     const timerData: any = {
-      timerType: timerType,
-      timerIsoString: timerDate ? timerDate.toISOString() : null,
-      timerRule: timerRule,
+      type: timerType,
+      expirationDate: timerDate || null,
+      rule: timerRule,
       eventName: eventName,
     };
 
@@ -127,6 +127,10 @@ export class TimerService implements ITimerService {
     let isValidTimer: boolean = true;
 
     if (timerIsOneShotTimer) {
+
+      if (!timer.expirationDate) {
+        return false;
+      }
 
       const timerDate: moment.Moment = timer.expirationDate;
       const now: moment.Moment = moment();
