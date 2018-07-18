@@ -120,7 +120,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
         if (subscription) {
           subscription.dispose();
         }
-        reject(new InternalServerError(error.message));
+
+        // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
+        // Otherwise, pass on an anonymous error.
+        if (error.errorCode && error.name) {
+          reject(error);
+        } else {
+          reject(new InternalServerError(error.message));
+        }
       }
     });
   }
@@ -164,7 +171,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
         for (const subscription of subscriptions) {
           subscription.dispose();
         }
-        reject(new InternalServerError(error.message));
+
+        // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
+        // Otherwise, pass on an anonymous error.
+        if (error.errorCode && error.name) {
+          reject(error);
+        } else {
+          reject(new InternalServerError(error.message));
+        }
       }
 
     });
