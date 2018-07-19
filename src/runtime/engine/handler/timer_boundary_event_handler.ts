@@ -1,10 +1,9 @@
-import {ExecutionContext, IIamService} from '@essential-projects/core_contracts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
-import {ITimingRule, ITimingService} from '@essential-projects/timing_contracts';
 import {
   IExecutionContextFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ITimerService,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -23,32 +22,25 @@ enum TimerBpmnType {
 }
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNode> {
-  private _timingService: ITimingService;
+  private _timingService: ITimerService;
   private _eventAggregator: IEventAggregator;
-  private _iamService: IIamService;
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(timingService: ITimingService,
+  constructor(timingService: ITimerService,
               eventAggregator: IEventAggregator,
-              iamService: IIamService,
               decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
     super();
     this._timingService = timingService;
     this._eventAggregator = eventAggregator;
-    this._iamService = iamService;
     this._decoratedHandler = decoratedHandler;
   }
 
-  private get timingService(): ITimingService {
+  private get timerService(): ITimerService {
     return this._timingService;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
-  }
-
-  private get iamService(): IIamService {
-    return this._iamService;
   }
 
   private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
@@ -59,9 +51,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise < NextFlowNodeInfo > {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    return new Promise < NextFlowNodeInfo > (async(resolve: Function, reject: Function): Promise < NextFlowNodeInfo > => {
+    return new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       let timerSubscription: ISubscription;
 
@@ -75,7 +67,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
         let timerHasElapsed: boolean = false;
         let hasHandlerFinished: boolean = false;
 
-        const timerElapsed: any = async(): Promise < void > => {
+        const timerElapsed: any = async(): Promise<void> => {
           if (hasHandlerFinished) {
             return;
           }
@@ -110,14 +102,16 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
         resolve(nextFlowNodeInfo);
 
       } finally {
-        timerSubscription.dispose();
+        if (timerSubscription) {
+          timerSubscription.dispose();
+        }
       }
     });
   }
 
   private _getTimerBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFacade: IProcessModelFacade): Model.Events.BoundaryEvent {
 
-    const boundaryEvents: Array < Model.Events.BoundaryEvent > = processModelFacade.getBoundaryEventsFor(flowNode);
+    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
     const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
       return currentBoundaryEvent.timerEventDefinition !== undefined;
@@ -129,19 +123,17 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
   private async _initializeTimer(flowNode: Model.Events.BoundaryEvent,
                                  timerType: TimerDefinitionType,
                                  timerValue: string,
-                                 timerCallback: Function): Promise < ISubscription > {
+                                 timerCallback: Function): Promise<ISubscription> {
 
     const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
 
-    const context: any = await this.iamService.createInternalContext('processengine_system');
-
     switch (timerType) {
       case TimerDefinitionType.cycle:
-        return this._startCycleTimer(timerValue, timerCallback, callbackEventName, context);
+        return this._startCycleTimer(timerValue, timerCallback, callbackEventName);
       case TimerDefinitionType.date:
-        return this._startDateTimer(timerValue, timerCallback, callbackEventName, context);
+        return this._startDateTimer(timerValue, timerCallback, callbackEventName);
       case TimerDefinitionType.duration:
-        return this._startDurationTimer(timerValue, timerCallback, callbackEventName, context);
+        return this._startDurationTimer(timerValue, timerCallback, callbackEventName);
       default:
     }
   }
@@ -176,12 +168,11 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
   private async _startCycleTimer(timerDefinition: string,
                                  timerCallback: Function,
-                                 callbackEventName: string,
-                                 context: ExecutionContext): Promise < ISubscription > {
+                                 callbackEventName: string): Promise<ISubscription> {
 
     const duration: moment.Duration = moment.duration(timerDefinition);
 
-    const timingRule: ITimingRule = {
+    const timingRule: Runtime.Types.TimingRule = {
       year: duration.years(),
       month: duration.months(),
       date: duration.days(),
@@ -194,15 +185,14 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
       timerCallback();
     });
 
-    await this.timingService.periodic(timingRule, callbackEventName, context);
+    await this.timerService.periodic(timingRule, callbackEventName);
 
     return subscription;
   }
 
   private async _startDurationTimer(timerDefinition: string,
                                     timerCallback: Function,
-                                    callbackEventName: string,
-                                    context: ExecutionContext): Promise < ISubscription > {
+                                    callbackEventName: string): Promise<ISubscription> {
 
     const duration: moment.Duration = moment.duration(timerDefinition);
     const date: moment.Moment = moment().add(duration);
@@ -211,15 +201,14 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
       timerCallback();
     });
 
-    await this.timingService.once(date, callbackEventName, context);
+    await this.timerService.once(date, callbackEventName);
 
     return subscription;
   }
 
   private async _startDateTimer(timerDefinition: string,
                                 timerCallback: Function,
-                                callbackEventName: string,
-                                context: ExecutionContext): Promise < ISubscription > {
+                                callbackEventName: string): Promise<ISubscription> {
 
     const date: moment.Moment = moment(timerDefinition);
 
@@ -227,7 +216,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
       timerCallback();
     });
 
-    await this.timingService.once(date, callbackEventName, context);
+    await this.timerService.once(date, callbackEventName);
 
     return subscription;
   }
