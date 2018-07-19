@@ -1,121 +1,98 @@
 'use strict';
 
-const SubprocessExternalEntity = require('./dist/commonjs/index').SubprocessExternalEntity;
-const SubprocessInternalEntity = require('./dist/commonjs/index').SubprocessInternalEntity;
-const BoundaryEventEntity = require('./dist/commonjs/index').BoundaryEventEntity;
-const EndEventEntity = require('./dist/commonjs/index').EndEventEntity;
-const EventEntity = require('./dist/commonjs/index').EventEntity;
-const ExclusiveGatewayEntity = require('./dist/commonjs/index').ExclusiveGatewayEntity;
-const FlowDefEntity = require('./dist/commonjs/index').FlowDefEntity;
-const LaneEntity = require('./dist/commonjs/index').LaneEntity;
-const NodeDefEntity = require('./dist/commonjs/index').NodeDefEntity;
-const NodeInstanceEntity = require('./dist/commonjs/index').NodeInstanceEntity;
-const ParallelGatewayEntity = require('./dist/commonjs/index').ParallelGatewayEntity;
-const ProcessEntity = require('./dist/commonjs/index').ProcessEntity;
-const ProcessDefEntity = require('./dist/commonjs/index').ProcessDefEntity;
-const ProcessTokenEntity = require('./dist/commonjs/index').ProcessTokenEntity;
-const ScriptTaskEntity = require('./dist/commonjs/index').ScriptTaskEntity;
-const ServiceTaskEntity = require('./dist/commonjs/index').ServiceTaskEntity;
-const StartEventEntity = require('./dist/commonjs/index').StartEventEntity;
-const ThrowEventEntity = require('./dist/commonjs/index').ThrowEventEntity;
-const CatchEventEntity = require('./dist/commonjs/index').CatchEventEntity;
-const UserTaskEntity = require('./dist/commonjs/index').UserTaskEntity;
-const ProcessDefEntityTypeService = require('./dist/commonjs/index').ProcessDefEntityTypeService;
-const entityDiscoveryTag = require('@essential-projects/core_contracts').EntityDiscoveryTag;
-const NodeInstanceEntityDependencyHelper = require('./dist/commonjs/index').NodeInstanceEntityDependencyHelper;
-const NodeInstanceEntityTypeService = require('./dist/commonjs/index').NodeInstanceEntityTypeService;
+const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 
-const processEngineNewObjectModelIocModule = require('./ioc_module.new-object-model');
+const ScriptTaskHandler = require('./dist/commonjs/index').ScriptTaskHandler;
+const StartEventHandler = require('./dist/commonjs/index').StartEventHandler;
+const ExclusiveGatewayHandler = require('./dist/commonjs/index').ExclusiveGatewayHandler;
+const ParallelGatewayHandler = require('./dist/commonjs/index').ParallelGatewayHandler;
+const ServiceTaskHandler = require('./dist/commonjs/index').ServiceTaskHandler;
+const ErrorBoundaryEventHandler = require('./dist/commonjs/index').ErrorBoundaryEventHandler;
+const TimerBoundaryEventHandler = require('./dist/commonjs/index').TimerBoundaryEventHandler;
+const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
+const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
+const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
+const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
+const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
+const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
+
+const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
+const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
+const TimerService = require('./dist/commonjs/index').TimerService;
+
+const ImportProcessService = require('./dist/commonjs/index').ImportProcessService;
+
+const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
+
+const ExecutionContextFacadeFactory = require('./dist/commonjs/index').ExecutionContextFacadeFactory;
+const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
+const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 
 function registerInContainer(container) {
 
-  container.register('NodeInstanceEntityTypeService', NodeInstanceEntityTypeService)
-    .dependencies('DatastoreService', 'MessageBusService', 'IamService', 'EventAggregator', 'FeatureService', 'RoutingService', 'ProcessEngineService');
+  container.register('ExecuteProcessService', ExecuteProcessService)
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'ProcessModelService', 'EventAggregator');
 
-  container.register('ProcessDefEntityTypeService', ProcessDefEntityTypeService)
-    .dependencies('container', 'DatastoreService', 'ProcessRepository', 'Invoker');
+  container.register('FlowNodeInstanceService', FlowNodeInstanceService)
+    .dependencies('FlowNodeInstanceRepository', 'IamServiceNew');
 
-  container.register('NodeInstanceEntityDependencyHelper', NodeInstanceEntityDependencyHelper)
-    .dependencies('MessageBusService', 'EventAggregator', 'IamService', 'NodeInstanceEntityTypeService', 'ProcessEngineService', 'TimingService')
+  container.register('ProcessModelService', ProcessModelService)
+    .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
+
+  container.register('TimerService', TimerService)
+    .dependencies('EventAggregator', 'TimerRepository');
+
+  container.register('ImportProcessService', ImportProcessService)
+    .dependencies('container', 'BpmnModelParser');
+
+  container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
     .singleton();
 
-  container.register('BoundaryEventEntity', BoundaryEventEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
+    .dependencies('container');
 
-  container.register('EndEventEntity', EndEventEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
+    .singleton();
 
-  container.register('EventEntity', EventEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('BpmnModelParser', BpmnModelParser);
 
-  container.register('ExclusiveGatewayEntity', ExclusiveGatewayEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('CallActivityHandler', CallActivityHandler)
+    .dependencies('ConsumerApiService', 'FlowNodeInstanceService');
 
-  container.register('FlowDefEntity', FlowDefEntity)
-    .tags(entityDiscoveryTag);
+  container.register('UserTaskHandler', UserTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService');
 
-  container.register('LaneEntity', LaneEntity)
-    .tags(entityDiscoveryTag);
+  container.register('SubProcessHandler', SubProcessHandler)
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService');
 
-  container.register('NodeDefEntity', NodeDefEntity)
-    .tags(entityDiscoveryTag);
+  container.register('ScriptTaskHandler', ScriptTaskHandler)
+    .dependencies('FlowNodeInstanceService');
 
-  container.register('NodeInstanceEntity', NodeInstanceEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('StartEventHandler', StartEventHandler)
+    .dependencies('FlowNodeInstanceService');
 
-  container.register('ParallelGatewayEntity', ParallelGatewayEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
+    .dependencies('FlowNodeInstanceService');
 
-  container.register('ProcessEntity', ProcessEntity)
-    .dependencies('IamService', 'NodeInstanceEntityTypeService', 'MessageBusService', 'ProcessEngineService')
-    .tags(entityDiscoveryTag);
+  container.register('ParallelGatewayHandler', ParallelGatewayHandler)
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService');
 
-  container.register('ProcessDefEntity', ProcessDefEntity)
-    .dependencies('ProcessDefEntityTypeService', 'ProcessRepository', 'FeatureService', 'MessageBusService', 'RoutingService', 'EventAggregator', 'TimingService', 'ProcessEngineService', 'DatastoreService')
-    .tags(entityDiscoveryTag);
+  container.register('ServiceTaskHandler', ServiceTaskHandler)
+    .dependencies('container', 'FlowNodeInstanceService');
 
-  container.register('ProcessTokenEntity', ProcessTokenEntity)
-    .tags(entityDiscoveryTag);
+  container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
 
-  container.register('ScriptTaskEntity', ScriptTaskEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
+    .dependencies('TimerService', 'EventAggregator');
 
-  container.register('ServiceTaskEntity', ServiceTaskEntity)
-    .dependencies('container', 'NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
+    .dependencies('FlowNodeInstanceService');
 
-  container.register('ThrowEventEntity', ThrowEventEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
+  container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
+    .dependencies('FlowNodeInstanceService');
 
-  container.register('CatchEventEntity', CatchEventEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
-
-  container.register('StartEventEntity', StartEventEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
-
-  container.register('SubprocessInternalEntity', SubprocessInternalEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
-
-  container.register('SubprocessExternalEntity', SubprocessExternalEntity)
-    .dependencies('ConsumerApiService', 'NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
-
-  container.register('UserTaskEntity', UserTaskEntity)
-    .dependencies('NodeInstanceEntityDependencyHelper')
-    .tags(entityDiscoveryTag);
-
-  processEngineNewObjectModelIocModule.registerInContainer(container);
+  container.register('EndEventHandler', EndEventHandler)
+    .dependencies('FlowNodeInstanceService', 'EventAggregator');
 }
 
 module.exports.registerInContainer = registerInContainer;

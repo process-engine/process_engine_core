@@ -1,18 +1,19 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {IDataMessage, IMessageBusService} from '@essential-projects/messagebus_contracts';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 
 import {
   EndEventReachedMessage,
-  ExecutionContext,
   IExecuteProcessService,
   IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
+  IProcessModelService,
   IProcessTokenFacade,
+  IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -30,14 +31,18 @@ const logger: Logger = Logger.createLogger('processengine:execute_process_servic
 export class ExecuteProcessService implements IExecuteProcessService {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _messageBusService: IMessageBusService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _processModelService: IProcessModelService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
 
   constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
-              messageBusService: IMessageBusService,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              processModelService: IProcessModelService,
               eventAggregator: IEventAggregator) {
+
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._messageBusService = messageBusService;
+    this._flowNodeInstanceService = flowNodeInstanceService;
+    this._processModelService = processModelService;
     this._eventAggregator = eventAggregator;
   }
 
@@ -45,8 +50,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._flowNodeHandlerFactory;
   }
 
-  private get messageBusService(): IMessageBusService {
-    return this._messageBusService;
+  private get flowNodeInstanceService(): IFlowNodeInstanceService {
+    return this._flowNodeInstanceService;
+  }
+
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -58,7 +67,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                      startEventId: string,
                      correlationId: string,
                      initialPayload?: any,
-                     caller?: string): Promise<any> {
+                     caller?: string): Promise<IProcessTokenResult> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -79,11 +88,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
-    const resultToken: any = await processTokenFacade.getOldTokenFormat();
+    const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
-    await this._end(processInstanceId, resultToken, executionContextFacade);
+    await this._end(processInstanceId, resultToken);
 
-    return resultToken.current;
+    return resultToken;
   }
 
   public async startAndAwaitSpecificEndEvent(executionContextFacade: IExecutionContextFacade,
@@ -111,7 +120,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
         if (subscription) {
           subscription.dispose();
         }
-        reject(new InternalServerError(error.message));
+
+        // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
+        // Otherwise, pass on an anonymous error.
+        if (error.errorCode && error.name) {
+          reject(error);
+        } else {
+          reject(new InternalServerError(error.message));
+        }
       }
     });
   }
@@ -155,7 +171,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
         for (const subscription of subscriptions) {
           subscription.dispose();
         }
-        reject(new InternalServerError(error.message));
+
+        // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
+        // Otherwise, pass on an anonymous error.
+        if (error.errorCode && error.name) {
+          reject(error);
+        } else {
+          reject(new InternalServerError(error.message));
+        }
       }
 
     });
@@ -184,19 +207,23 @@ export class ExecuteProcessService implements IExecuteProcessService {
     }
   }
 
+  private async _getFinalResult(processTokenFacade: IProcessTokenFacade): Promise<IProcessTokenResult> {
+
+    const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
+
+    return allResults.pop();
+  }
+
   private async _end(processInstanceId: string,
-                     processToken: any,
-                     executionContextFacade: IExecutionContextFacade): Promise<void> {
+                     processTokenResult: IProcessTokenResult): Promise<void> {
+
     const processEndMessageData: any = {
       event: 'end',
-      token: processToken.current,
+      eventId: processTokenResult.flowNodeId,
+      token: processTokenResult.result,
     };
 
-    const context: ExecutionContext = executionContextFacade.getExecutionContext();
-
-    // TODO: Refactor messagebus service to use the new context
-    const processEndMessage: IDataMessage = this.messageBusService.createDataMessage(processEndMessageData, context as any);
-    this.messageBusService.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
+    this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessageData);
   }
 
 }
