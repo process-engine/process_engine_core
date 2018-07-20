@@ -70,6 +70,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
       correlationId = uuid.v4();
     }
 
+    if (initialPayload === undefined || initialPayload === null) {
+      initialPayload = {};
+    }
+
     const identity: IIdentity = await executionContextFacade.getIdentity();
     const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
 
