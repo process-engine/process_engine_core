@@ -8,6 +8,7 @@ const ExclusiveGatewayHandler = require('./dist/commonjs/index').ExclusiveGatewa
 const ParallelGatewayHandler = require('./dist/commonjs/index').ParallelGatewayHandler;
 const ServiceTaskHandler = require('./dist/commonjs/index').ServiceTaskHandler;
 const ErrorBoundaryEventHandler = require('./dist/commonjs/index').ErrorBoundaryEventHandler;
+const MessageBoundaryEventHandler = require('./dist/commonjs/index').MessageBoundaryEventHandler;
 const TimerBoundaryEventHandler = require('./dist/commonjs/index').TimerBoundaryEventHandler;
 const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
@@ -81,6 +82,9 @@ function registerInContainer(container) {
     .dependencies('container', 'FlowNodeInstanceService');
 
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+
+  container.register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
+    .dependencies('EventAggregator');
 
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
     .dependencies('TimerService', 'EventAggregator');
