@@ -1,4 +1,3 @@
-import {IToPojoOptions} from '@essential-projects/core_contracts';
 import {
   ExecutionContext,
   IExecutionContextFacade,
@@ -49,20 +48,12 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     result = await scriptFunction.call(this, tokenData, context);
 
-    let finalResult: any = result;
-    const toPojoOptions: IToPojoOptions = { skipCalculation: true };
-    if (result && typeof result.toPojos === 'function') {
-      finalResult = await result.toPojos(context, toPojoOptions);
-    } else if (result && typeof result.toPojo === 'function') {
-      finalResult = await result.toPojo(context, toPojoOptions);
-    }
-
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
 
-    finalResult = finalResult === undefined ? null : result;
+    result = result === undefined ? null : result;
 
-    await processTokenFacade.addResultForFlowNode(scriptTask.id, finalResult);
-    token.payload = finalResult;
+    await processTokenFacade.addResultForFlowNode(scriptTask.id, result);
+    token.payload = result;
 
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
 
