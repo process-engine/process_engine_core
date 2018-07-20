@@ -93,7 +93,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeInstanceService');
 
   container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
-    .dependencies('FlowNodeInstanceService');
+    .dependencies('FlowNodeInstanceService', 'EventAggregator');
 
   container.register('EndEventHandler', EndEventHandler)
     .dependencies('FlowNodeInstanceService', 'EventAggregator');

@@ -8,22 +8,30 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+
 import {FlowNodeHandler} from './index';
 
-export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.Event> {
+export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
+  private _eventAggregator: IEventAggregator;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
     super();
+    this._eventAggregator = eventAggregator;
     this._flowNodeInstanceService = flowNodeInstanceService;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   private get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNode: Model.Events.Event,
+  protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -32,6 +40,14 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+
+    if (flowNode.messageEventDefinition) {
+
+      const messageName: string =
+        `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageReference}`;
+
+      this.eventAggregator.publish(messageName);
+    }
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
