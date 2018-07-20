@@ -43,7 +43,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     return new Promise<NextFlowNodeInfo>((resolve: Function): void => {
 
       const messageName: string =
-        `/processengine/process/${token.processInstanceId}/message/${messageBoundaryEvent.messageEventDefinition.messageReference}`;
+        `/processengine/process/${token.processInstanceId}/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
 
       const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageName, (message: any) => {
 

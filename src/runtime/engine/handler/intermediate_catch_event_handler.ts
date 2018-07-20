@@ -42,7 +42,7 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
     if (flowNode.messageEventDefinition) {
-      await this._waitForMessage(token.processInstanceId, flowNode.messageEventDefinition.messageReference);
+      await this._waitForMessage(token.processInstanceId, flowNode.messageEventDefinition.messageRef);
     }
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
@@ -64,6 +64,8 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
         if (subscription) {
           subscription.dispose();
         }
+
+        resolve();
       });
     });
   }

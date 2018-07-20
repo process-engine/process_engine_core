@@ -44,7 +44,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     if (flowNode.messageEventDefinition) {
 
       const messageName: string =
-        `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageReference}`;
+        `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageRef}`;
 
       this.eventAggregator.publish(messageName);
     }
