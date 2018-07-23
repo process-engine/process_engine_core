@@ -20,83 +20,13 @@ export function parseEventsFromProcessData(processData: any, errors: Array<Model
 
   const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
 
-  const intermediateCatchEvents: Array<Model.Events.Event> = parseIntermediateCatchEvents(processData);
+  const intermediateThrowEvents: Array<Model.Events.Event> =
+    parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent, true);
 
-  return Array.prototype.concat(startEvents, boundaryEvents, intermediateCatchEvents, endEvents);
-}
+  const intermediateCatchEvents: Array<Model.Events.Event> =
+    parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent, true);
 
-function parseIntermediateCatchEvents(processData: any): Array<Model.Events.IntermediateCatchEvent> {
-  const events: Array<Model.Events.IntermediateCatchEvent> = [];
-
-  const intermediateCatchEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.IntermediateCatchEvent);
-
-  if (!intermediateCatchEventsRaw || intermediateCatchEventsRaw.length === 0) {
-    return [];
-  }
-
-  for (const intermediateCatchEventRaw of intermediateCatchEventsRaw) {
-    // tslint:disable-next-line:max-line-length
-    const event: Model.Events.IntermediateCatchEvent = createObjectWithCommonProperties(intermediateCatchEventRaw, Model.Events.IntermediateCatchEvent);
-
-    event.incoming = getModelPropertyAsArray(intermediateCatchEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(intermediateCatchEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    event.name = intermediateCatchEventRaw.name;
-
-    assignEventDefinitions(event, intermediateCatchEventRaw);
-
-    events.push(event);
-  }
-
-  return events;
-}
-
-function assignEventDefinitions(event: any, eventRaw: any): void {
-
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
-
-}
-
-function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: string, targetPropertyName: string): void {
-  let eventDefinitonValue: any = eventRaw[eventRawTagName];
-  if (eventDefinitonValue === '') {
-    eventDefinitonValue = {};
-  }
-  if (eventDefinitonValue !== undefined && eventDefinitonValue !== null) {
-    event[targetPropertyName] = eventDefinitonValue;
-  }
-}
-
-function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
-
-  const events: Array<Model.Events.BoundaryEvent> = [];
-
-  const boundaryEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
-
-  if (!boundaryEventsRaw || boundaryEventsRaw.length === 0) {
-    return [];
-  }
-
-  for (const boundaryEventRaw of boundaryEventsRaw) {
-    const event: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
-
-    event.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    event.name = boundaryEventRaw.name;
-    event.attachedToRef = boundaryEventRaw.attachedToRef;
-    event.cancelActivity = boundaryEventRaw.cancelActivity || true;
-
-    assignEventDefinitions(event, boundaryEventRaw);
-
-    events.push(event);
-  }
-
-  return events;
+  return Array.prototype.concat(startEvents, endEvents, boundaryEvents, intermediateThrowEvents, intermediateCatchEvents);
 }
 
 /**
@@ -110,7 +40,6 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Model.Events.EndEvent> {
   const events: Array<Model.Events.EndEvent> = [];
 
-  // Build end events
   const endEventsRaw: any = getModelPropertyAsArray(data, BpmnTags.EventElement.EndEvent);
 
   for (const endEventRaw of endEventsRaw) {
@@ -164,33 +93,6 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
   return events;
 }
 
-function parseEventsByType<TEvent extends Model.Events.Event>(
-  data: any,
-  eventType: BpmnTags.EventElement,
-  type: Model.Base.IConstructor<TEvent>,
-): Array<TEvent> {
-
-  const events: Array<TEvent> = [];
-
-  const eventsRaw: Array<any> = getModelPropertyAsArray(data, eventType);
-
-  if (!eventsRaw || eventsRaw.length === 0) {
-    return [];
-  }
-
-  for (const eventRaw of eventsRaw) {
-    let event: TEvent = new type();
-    event = <TEvent> setCommonObjectPropertiesFromData(eventRaw, event);
-    event.name = eventRaw.name;
-    event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    events.push(event);
-  }
-
-  return events;
-}
-
 /**
  * Return the error with the given id from the raw error definition data.
  *
@@ -206,4 +108,83 @@ function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Mo
     }
   }
   throw new NotFoundError(`No error with id ${errorId} found.`);
+}
+
+function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
+
+  const events: Array<Model.Events.BoundaryEvent> = [];
+
+  const boundaryEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
+
+  if (!boundaryEventsRaw || boundaryEventsRaw.length === 0) {
+    return [];
+  }
+
+  for (const boundaryEventRaw of boundaryEventsRaw) {
+    const event: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
+
+    event.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    event.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    event.name = boundaryEventRaw.name;
+    event.attachedToRef = boundaryEventRaw.attachedToRef;
+    event.cancelActivity = boundaryEventRaw.cancelActivity || true;
+
+    assignEventDefinitions(event, boundaryEventRaw);
+
+    events.push(event);
+  }
+
+  return events;
+}
+
+function parseEventsByType<TEvent extends Model.Events.Event>(
+  data: any,
+  eventType: BpmnTags.EventElement,
+  type: Model.Base.IConstructor<TEvent>,
+  parseDefinitions: boolean = false,
+): Array<TEvent> {
+
+  const events: Array<TEvent> = [];
+
+  const eventsRaw: Array<any> = getModelPropertyAsArray(data, eventType);
+
+  if (!eventsRaw || eventsRaw.length === 0) {
+    return [];
+  }
+
+  for (const eventRaw of eventsRaw) {
+    const event: TEvent = createObjectWithCommonProperties<TEvent>(eventRaw, type);
+    event.name = eventRaw.name;
+    event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    if (parseDefinitions) {
+      assignEventDefinitions(event, eventRaw);
+    }
+
+    events.push(event);
+  }
+
+  return events;
+}
+
+function assignEventDefinitions(event: any, eventRaw: any): void {
+
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
+
+}
+
+function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: string, targetPropertyName: string): void {
+  let eventDefinitonValue: any = eventRaw[eventRawTagName];
+  if (eventDefinitonValue === '') {
+    eventDefinitonValue = {};
+  }
+  if (eventDefinitonValue !== undefined && eventDefinitonValue !== null) {
+    event[targetPropertyName] = eventDefinitonValue;
+  }
 }
