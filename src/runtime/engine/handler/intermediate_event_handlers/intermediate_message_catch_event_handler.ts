@@ -40,8 +40,11 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.suspend(executionContextFacade, token, flowNodeInstanceId);
 
     await this._waitForMessage(token.processInstanceId, flowNode.messageEventDefinition.messageRef);
+
+    await this.flowNodeInstanceService.resume(executionContextFacade, flowNodeInstanceId);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
