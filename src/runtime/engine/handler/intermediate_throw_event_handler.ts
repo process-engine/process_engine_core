@@ -8,27 +8,21 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
-
 import {FlowNodeHandler} from './index';
+
+import {IContainer} from 'addict-ioc';
 
 export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
-  private _eventAggregator: IEventAggregator;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _container: IContainer = undefined;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
+  constructor(container: IContainer) {
     super();
-    this._eventAggregator = eventAggregator;
-    this._flowNodeInstanceService = flowNodeInstanceService;
+    this._container = container;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
+  private get container(): IContainer {
+    return this._container;
   }
 
   protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
@@ -37,22 +31,49 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
-
     if (flowNode.messageEventDefinition) {
-
-      const messageName: string =
-        `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageRef}`;
-
-      this.eventAggregator.publish(messageName);
+      return this._executeIntermediateThrowEventByType('IntermediateMessageThrowEventHandler',
+                                                       flowNode,
+                                                       token,
+                                                       processTokenFacade,
+                                                       processModelFacade,
+                                                       executionContextFacade);
     }
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+    // TODO: Default behavior, in case an intermediate event is used that is not yet implemented.
+    // Can probably be removed, once we support Signals and Timers.
+    return this._persistAndContinue(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+  }
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+  private async _executeIntermediateThrowEventByType(eventHandlerName: string,
+                                                     flowNode: Model.Events.IntermediateThrowEvent,
+                                                     token: Runtime.Types.ProcessToken,
+                                                     processTokenFacade: IProcessTokenFacade,
+                                                     processModelFacade: IProcessModelFacade,
+                                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    const eventHandler: FlowNodeHandler<Model.Events.IntermediateThrowEvent> =
+      await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName);
+
+    return eventHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+  }
+
+  private async _persistAndContinue(flowNode: Model.Events.IntermediateThrowEvent,
+                                    token: Runtime.Types.ProcessToken,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+
+    const flowNodeInstanceService: IFlowNodeInstanceService = await this.container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
+
+    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+
+    await flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+
+    await flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+
+    return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 }

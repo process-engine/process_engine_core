@@ -14,3 +14,5 @@ export * from './end_event_handler';
 export * from './call_activity_handler';
 export * from './sub_process_handler';
 export * from './user_task_handler';
+
+export * from './intermediate_event_handlers/index';
