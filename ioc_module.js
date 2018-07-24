@@ -38,10 +38,10 @@ function registerInContainer(container) {
     .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'ProcessModelService', 'EventAggregator');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
-    .dependencies('FlowNodeInstanceRepository', 'IamServiceNew');
+    .dependencies('FlowNodeInstanceRepository', 'IamService');
 
   container.register('ProcessModelService', ProcessModelService)
-    .dependencies('ProcessDefinitionRepository', 'IamServiceNew', 'BpmnModelParser');
+    .dependencies('ProcessDefinitionRepository', 'IamService', 'BpmnModelParser');
 
   container.register('TimerService', TimerService)
     .dependencies('EventAggregator', 'TimerRepository');
