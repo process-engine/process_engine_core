@@ -60,10 +60,13 @@ export class ImportProcessService implements IImportProcessService {
       throw new Error('file does not exist');
     }
 
+    // filePath will be something like "/someFilePath/process_file_name.bpmn"
+    // The part we want to use with the import is "process_file_name".
     const name: string = filePath.split('/').pop();
+    const nameWithoutExtension: string = name.split('.')[0];
     const xml: string = await this._getXmlFromFile(filePath);
 
-    await this.importBpmnFromXml(context, xml, name, overwriteExisting);
+    await this.importBpmnFromXml(context, xml, nameWithoutExtension, overwriteExisting);
   }
 
   private async _getXmlFromFile(path: string): Promise<string> {
