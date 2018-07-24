@@ -5,7 +5,7 @@ import {
   IProcessDefinitionRepository,
   IProcessModelService,
   Model,
-  ProcessDefinitionFromRepository,
+  ProcessDefinitionRaw,
 } from '@process-engine/process_engine_contracts';
 
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
@@ -94,6 +94,11 @@ export class ProcessModelService implements IProcessModelService {
     return filteredProcessModel;
   }
 
+  public async getProcessDefinitionAsXmlById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<ProcessDefinitionRaw> {
+
+    return Promise.resolve({});
+  }
+
   private async _getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
 
     const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
@@ -124,14 +129,14 @@ export class ProcessModelService implements IProcessModelService {
 
   private async _getDefinitionList(): Promise<Array<Definitions>> {
 
-    const definitionsRaw: Array<ProcessDefinitionFromRepository> = await this.processDefinitionRepository.getProcessDefinitions();
+    const definitionsRaw: Array<ProcessDefinitionRaw> = await this.processDefinitionRepository.getProcessDefinitions();
 
-    const definitionsMapper: any = async(rawProcessModelData: ProcessDefinitionFromRepository): Promise<Definitions> => {
+    const definitionsMapper: any = async(rawProcessModelData: ProcessDefinitionRaw): Promise<Definitions> => {
       return this.bpmnModelParser.parseXmlToObjectModel(rawProcessModelData.xml);
     };
 
     const definitionsList: Array<Definitions> =
-      await BluebirdPromise.map<ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
+      await BluebirdPromise.map<ProcessDefinitionRaw, Definitions>(definitionsRaw, definitionsMapper);
 
     return definitionsList;
   }
