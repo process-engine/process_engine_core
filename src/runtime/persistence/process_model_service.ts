@@ -96,7 +96,13 @@ export class ProcessModelService implements IProcessModelService {
 
   public async getProcessDefinitionAsXmlById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<ProcessDefinitionRaw> {
 
-    return Promise.resolve({});
+    const definitionRaw: ProcessDefinitionRaw = await this.processDefinitionRepository.getProcessDefinitionByName(processModelId);
+
+    if (!definitionRaw) {
+      throw new NotFoundError(`Process definition with id ${processModelId} not found!`);
+    }
+
+    return definitionRaw;
   }
 
   private async _getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
@@ -147,10 +153,6 @@ export class ProcessModelService implements IProcessModelService {
 
     const identity: IIdentity = await executionContextFacade.getIdentity();
 
-    /*
-     * Ensure that this method always returns a copy and not a referece
-     * to the passed process model.
-     */
     const processModelCopy: Model.Types.Process = clone(processModel);
 
     if (!processModel.laneSet) {
