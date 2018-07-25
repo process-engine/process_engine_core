@@ -20,6 +20,7 @@ const IntermediateThrowEventHandler = require('./dist/commonjs/index').Intermedi
 const IntermediateMessageCatchEventHandler = require('./dist/commonjs/index').IntermediateMessageCatchEventHandler;
 const IntermediateMessageThrowEventHandler = require('./dist/commonjs/index').IntermediateMessageThrowEventHandler;
 
+const CorrelationService = require('./dist/commonjs/index').CorrelationService;
 const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
 const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
 const TimerService = require('./dist/commonjs/index').TimerService;
@@ -36,6 +37,9 @@ function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
     .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'ProcessModelService', 'EventAggregator');
+
+  container.register('CorrelationService', CorrelationService)
+    .dependencies('FlowNodeInstanceRepository', 'IamService');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
     .dependencies('FlowNodeInstanceRepository', 'IamService');
