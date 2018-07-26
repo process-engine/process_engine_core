@@ -96,19 +96,6 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return formFields;
   }
 
-
-  // <bpmn:userTask id="user_task_1" name="User Task 1">
-  // <bpmn:extensionElements>
-  //   <camunda:formData>
-  //     <camunda:formField id="Sample_Form_Field" label="fuckoff" type="enum" defaultValue="123123">
-  //       <camunda:value id="Value_112r8o7" name="123123" />
-  //       <camunda:value id="Value_1ht5du5" name="123321fg" />
-  //     </camunda:formField>
-  //   </camunda:formData>
-  // </bpmn:extensionElements>
-  // <bpmn:incoming>SequenceFlow_0g81aid</bpmn:incoming>
-  // <bpmn:outgoing>SequenceFlow_11r4brc</bpmn:outgoing>
-  // </bpmn:userTask>
   function parseFormField(formFieldRaw: any): Model.Types.FormField {
 
     const formField: Model.Types.FormField = new Model.Types.FormField();
