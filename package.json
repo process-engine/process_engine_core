@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "15.0.0",
+  "version": "15.1.0",
   "description": "The ProcessEngine core package. ProcessEngine is a tool to bring BPMN diagrams to life in JS.",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -18,8 +18,8 @@
     "@essential-projects/errors_ts": "^1.0.0",
     "@essential-projects/event_aggregator_contracts": "^3.0.0",
     "@essential-projects/iam_contracts": "^3.0.0",
-    "@process-engine/consumer_api_contracts": "^0.13.0",
-    "@process-engine/process_engine_contracts": "^17.0.0",
+    "@process-engine/consumer_api_contracts": "^0.14.0",
+    "@process-engine/process_engine_contracts": "^17.1.0",
     "@types/clone": "^0.1.30",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",

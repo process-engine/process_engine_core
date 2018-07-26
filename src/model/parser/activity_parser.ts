@@ -14,16 +14,16 @@ import * as moment from 'moment';
 export function parseActivitiesFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
+  const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const scriptTasks: Array<Model.Activities.ScriptTask> = parseScriptTasks(processData);
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
-  const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
   const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
 
   return Array.prototype.concat(manualTasks,
+                                userTasks,
                                 scriptTasks,
                                 serviceTasks,
-                                userTasks,
                                 callActivities,
                                 subProcesses);
 }
@@ -56,27 +56,17 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return [];
   }
 
-  function parseDate(value: string): Date {
+  for (const userTaskRaw of userTasksRaw) {
+    const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
 
-    if (!value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid()) {
-      return undefined;
-    }
+    userTask.assignee = userTaskRaw[BpmnTags.CamundaProperty.Assignee];
+    userTask.candidateUsers = userTaskRaw[BpmnTags.CamundaProperty.CandidateUsers];
+    userTask.candidateGroups = userTaskRaw[BpmnTags.CamundaProperty.CandidateGroups];
+    userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
+    userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
+    userTask.formFields = parseFormFields(userTaskRaw);
 
-    const dateObj: moment.Moment = moment(value);
-
-    return dateObj.toDate();
-  }
-
-  function parseFormField(formFieldRaw: any): Model.Types.FormField {
-
-    const formField: Model.Types.FormField = new Model.Types.FormField();
-
-    formField.id = formFieldRaw.id;
-    formField.label = formFieldRaw.label;
-    formField.type = formFieldRaw.type;
-    formField.defaultValue = formFieldRaw.defaultValue;
-
-    return formField;
+    userTasks.push(userTask);
   }
 
   function parseFormFields(userTaskRaw: any): Array<Model.Types.FormField> {
@@ -106,17 +96,40 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     return formFields;
   }
 
-  for (const userTaskRaw of userTasksRaw) {
-    const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
+  function parseFormField(formFieldRaw: any): Model.Types.FormField {
 
-    userTask.assignee = userTaskRaw[BpmnTags.CamundaProperty.Assignee];
-    userTask.candidateUsers = userTaskRaw[BpmnTags.CamundaProperty.CandidateUsers];
-    userTask.candidateGroups = userTaskRaw[BpmnTags.CamundaProperty.CandidateGroups];
-    userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
-    userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
-    userTask.formFields = parseFormFields(userTaskRaw);
+    const formField: Model.Types.FormField = new Model.Types.FormField();
 
-    userTasks.push(userTask);
+    formField.id = formFieldRaw.id;
+    formField.label = formFieldRaw.label;
+    formField.type = formFieldRaw.type;
+    formField.defaultValue = formFieldRaw.defaultValue;
+
+    if (formField.type === 'enum') {
+      const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
+
+      const valueMapper: any = (enumValueRaw: any): Model.Types.EnumValue => {
+        const enumValue: Model.Types.EnumValue = new Model.Types.EnumValue();
+        enumValue.id = enumValueRaw.id;
+        enumValue.name = enumValueRaw.name;
+
+        return enumValue;
+      };
+      formField.enumValues = rawValues.map(valueMapper);
+    }
+
+    return formField;
+  }
+
+  function parseDate(value: string): Date {
+
+    if (!value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid()) {
+      return undefined;
+    }
+
+    const dateObj: moment.Moment = moment(value);
+
+    return dateObj.toDate();
   }
 
   return userTasks;
