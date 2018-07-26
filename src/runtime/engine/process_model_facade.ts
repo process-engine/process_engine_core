@@ -70,7 +70,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
     // Note that is not the desired default behavior.
     // Aside from the ProcessEngineService, no component should ever pass an empty start event to the executeProcessService!
     //
-    // In future versions, passing an empty start event key should result in an error!
+    // In future versions, passing an empty start event id should result in an error!
     if (!startEventId) {
       return startEvents[0];
     }
