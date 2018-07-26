@@ -99,7 +99,7 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
  * @param errorList List of all parsed errors.
  * @param errorId ID of the error.
  * @returns Error that matches the given id.
- * @throws Error if the end event with the given key was not found.
+ * @throws Error if the end event with the given id was not found.
  */
 function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
   for (const currentError of errorList) {
