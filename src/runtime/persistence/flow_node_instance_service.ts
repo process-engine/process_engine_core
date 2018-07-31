@@ -73,6 +73,16 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this.flowNodeInstanceRepository.persistOnExit(token, flowNodeId, flowNodeInstanceId);
   }
 
+  public async persistOnError(executionContextFacade: IExecutionContextFacade,
+                              token: Runtime.Types.ProcessToken,
+                              flowNodeId: string,
+                              flowNodeInstanceId: string,
+                              error: Error,
+                            ): Promise<Runtime.Types.FlowNodeInstance> {
+
+    return this.flowNodeInstanceRepository.persistOnError(token, flowNodeId, flowNodeInstanceId, error);
+  }
+
   public async suspend(executionContextFacade: IExecutionContextFacade,
                        token: Runtime.Types.ProcessToken,
                        flowNodeInstanceId: string,
