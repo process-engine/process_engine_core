@@ -44,13 +44,20 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
     let result: any;
 
-    const scriptFunction: Function = new Function('token', 'context', script);
+    try {
 
-    result = await scriptFunction.call(this, tokenData, context);
+      const scriptFunction: Function = new Function('token', 'context', script);
 
+      result = await scriptFunction.call(this, tokenData, context);
+      result = result === undefined ? null : result;
+
+    } catch (error) {
+
+      await this.flowNodeInstanceService.persistOnError(executionContextFacade, token, scriptTask.id, flowNodeInstanceId, error);
+
+      throw error;
+    }
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
-
-    result = result === undefined ? null : result;
 
     await processTokenFacade.addResultForFlowNode(scriptTask.id, result);
     token.payload = result;
