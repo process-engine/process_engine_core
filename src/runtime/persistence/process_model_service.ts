@@ -57,7 +57,7 @@ export class ProcessModelService implements IProcessModelService {
       });
 
       if (!hasDefinitionMatchingName) {
-        throw new BadRequestError(`The given xml does not contain a process definition with the name "${name}"`);
+        throw new BadRequestError(`The given XML does not contain a process definition with the name "${name}".`);
       }
 
     } catch (error) {
@@ -109,7 +109,7 @@ export class ProcessModelService implements IProcessModelService {
     const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(executionContextFacade, processModel);
 
     if (!filteredProcessModel) {
-      throw new ForbiddenError('Access denied');
+      throw new ForbiddenError('Access denied.');
     }
 
     return filteredProcessModel;
