@@ -61,7 +61,7 @@ export class ProcessModelService implements IProcessModelService {
       }
 
     } catch (error) {
-      throw new UnprocessableEntityError(`The XML for process ${name} could not be parsed.`);
+      throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
     }
   }
 
