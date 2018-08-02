@@ -10,7 +10,7 @@ import {
 
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
-import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
+import {BadRequestError, ForbiddenError, NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 
 import * as BluebirdPromise from 'bluebird';
 import * as clone from 'clone';
@@ -45,6 +45,26 @@ export class ProcessModelService implements IProcessModelService {
     return this._bpmnModelParser;
   }
 
+  private async _validateXml(name: string, xml: string): Promise<void> {
+
+    try {
+      const parsedDefinitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
+
+      const hasDefinitionMatchingName: boolean = parsedDefinitions
+        .processes
+        .some((definition: Model.Types.Process) => {
+          return definition.id === name;
+      });
+
+      if (!hasDefinitionMatchingName) {
+        throw new BadRequestError(`The given XML does not contain a process definition with the name "${name}".`);
+      }
+
+    } catch (error) {
+      throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
+    }
+  }
+
   public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade,
                                          name: string,
                                          xml: string,
@@ -53,6 +73,7 @@ export class ProcessModelService implements IProcessModelService {
 
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
+    await this._validateXml(name, xml);
 
     return this.processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
   }
@@ -88,7 +109,7 @@ export class ProcessModelService implements IProcessModelService {
     const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(executionContextFacade, processModel);
 
     if (!filteredProcessModel) {
-      throw new ForbiddenError('Access denied');
+      throw new ForbiddenError('Access denied.');
     }
 
     return filteredProcessModel;
