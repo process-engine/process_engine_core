@@ -38,7 +38,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      const userTaskInstanceId: string = super.createFlowNodeInstanceId();
+      const userTaskInstanceId: string = this.createFlowNodeInstanceId();
 
       await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, userTask.id, userTaskInstanceId);
 
