@@ -65,6 +65,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
     userTask.formFields = parseFormFields(userTaskRaw);
+    userTask.preferredControl = getPreferedControlForUserTask(userTaskRaw);
 
     userTasks.push(userTask);
   }
@@ -104,6 +105,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     formField.label = formFieldRaw.label;
     formField.type = formFieldRaw.type;
     formField.defaultValue = formFieldRaw.defaultValue;
+    formField.preferredControl = getPreferedControlForUserTask(formFieldRaw);
 
     if (formField.type === 'enum') {
       const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
@@ -187,6 +189,13 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   }
 
   return serviceTasks;
+}
+
+function getPreferedControlForUserTask(userTask: Model.Activities.UserTask): string {
+  const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = userTask.extensionElements.camundaExtensionProperties;
+  const preferedControlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('preferedControl', extensionProperties);
+
+  return preferedControlProperty.value;
 }
 
 function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocation {
