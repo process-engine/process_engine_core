@@ -65,7 +65,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
     userTask.formFields = parseFormFields(userTaskRaw);
-    userTask.preferredControl = getPreferedControlForUserTask(userTaskRaw);
+    userTask.preferedControl = getPreferedControlForUserTask(userTaskRaw);
 
     userTasks.push(userTask);
   }
@@ -105,7 +105,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     formField.label = formFieldRaw.label;
     formField.type = formFieldRaw.type;
     formField.defaultValue = formFieldRaw.defaultValue;
-    formField.preferredControl = getPreferedControlForUserTask(formFieldRaw);
+    formField.preferedControl = getPreferedControlForUserTask(formFieldRaw);
 
     if (formField.type === 'enum') {
       const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
