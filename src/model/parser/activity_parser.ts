@@ -105,7 +105,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     formField.label = formFieldRaw.label;
     formField.type = formFieldRaw.type;
     formField.defaultValue = formFieldRaw.defaultValue;
-    formField.preferredControl = getPreferredControlForUserTask(formFieldRaw);
+    formField.preferredControl = formFieldRaw.preferredControl;
 
     if (formField.type === 'enum') {
       const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
