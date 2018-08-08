@@ -193,28 +193,35 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
 
 function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask): string {
   const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
-  if (extensionElements === undefined) {
+
+  const extensionElementsIsNotExisting: boolean = extensionElements === undefined;
+  if (extensionElementsIsNotExisting) {
     return;
   }
 
   const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
-  if (extensionPropertiesDataRaw === undefined
-   || extensionPropertiesDataRaw.length < 1) {
 
+  const extensionPropertiesDataIsNotExisting: boolean = extensionPropertiesDataRaw === undefined
+                                                     || extensionPropertiesDataRaw.length < 1;
+
+  if (extensionPropertiesDataIsNotExisting) {
     return;
   }
 
   const extensionPropertiesRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
-  if (extensionPropertiesRaw === undefined
-   || extensionPropertiesRaw.length < 1) {
 
+  const extensionPropertiesAreNotExisting: boolean = extensionPropertiesRaw === undefined
+                                                  || extensionPropertiesRaw.length < 1;
+
+  if (extensionPropertiesAreNotExisting) {
     return;
   }
 
   const extensionProperties: any = parseExtensionProperties(extensionPropertiesRaw);
   const preferredControlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('preferredControl', extensionProperties);
 
-  if (preferredControlProperty === undefined) {
+  const preferredControlPropertyIsNotExisting: boolean = preferredControlProperty === undefined;
+  if (preferredControlPropertyIsNotExisting) {
     return;
   }
 
@@ -224,7 +231,8 @@ function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask):
 function parseExtensionProperties(extensionPropertiesRaw: any): any {
   const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = [];
 
-  if (!Array.isArray(extensionPropertiesRaw)) {
+  const extensionPropertiesIsNoArray: boolean = !Array.isArray(extensionPropertiesRaw);
+  if (extensionPropertiesIsNoArray) {
     return [{name: extensionPropertiesRaw.name,
              value: extensionPropertiesRaw.value}];
   }
