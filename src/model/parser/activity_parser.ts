@@ -191,11 +191,52 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   return serviceTasks;
 }
 
-function getPreferredControlForUserTask(userTask: Model.Activities.UserTask): string {
-  const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = userTask.extensionElements.camundaExtensionProperties;
+function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask): string {
+  const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
+  if (extensionElements === undefined) {
+    return;
+  }
+
+  const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
+  if (extensionPropertiesDataRaw === undefined
+   || extensionPropertiesDataRaw.length < 1) {
+
+    return;
+  }
+
+  const extensionPropertiesRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
+  if (extensionPropertiesRaw === undefined
+   || extensionPropertiesRaw.length < 1) {
+
+    return;
+  }
+
+  const extensionProperties: any = parseExtensionProperties(extensionPropertiesRaw);
   const preferredControlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('preferredControl', extensionProperties);
 
+  if (preferredControlProperty === undefined) {
+    return;
+  }
+
   return preferredControlProperty.value;
+}
+
+function parseExtensionProperties(extensionPropertiesRaw: any): any {
+  const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = [];
+
+  if (!Array.isArray(extensionPropertiesRaw)) {
+    return [{name: extensionPropertiesRaw.name,
+             value: extensionPropertiesRaw.value}];
+  }
+
+  for (const extensionPropertyRaw of extensionPropertiesRaw) {
+    const extensionProperty: Model.Base.CamundaExtensionProperty = {name: extensionPropertyRaw.name,
+                                                                    value: extensionPropertyRaw.value};
+
+    extensionProperties.push(extensionProperty);
+  }
+
+  return extensionProperties;
 }
 
 function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocation {
