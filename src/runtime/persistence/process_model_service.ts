@@ -47,18 +47,10 @@ export class ProcessModelService implements IProcessModelService {
 
   private async _validateXml(name: string, xml: string): Promise<void> {
 
+    let parsedDefinitions: Definitions;
+
     try {
-      const parsedDefinitions: Definitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
-
-      const hasDefinitionMatchingName: boolean = parsedDefinitions
-        .processes
-        .some((definition: Model.Types.Process) => {
-          return definition.id === name;
-      });
-
-      if (!hasDefinitionMatchingName) {
-        throw new BadRequestError(`The given XML does not contain a process definition with the name "${name}".`);
-      }
+      parsedDefinitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
 
     } catch (error) {
       throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
@@ -115,12 +107,12 @@ export class ProcessModelService implements IProcessModelService {
     return filteredProcessModel;
   }
 
-  public async getProcessDefinitionAsXmlById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<ProcessDefinitionRaw> {
+  public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<ProcessDefinitionRaw> {
 
-    const definitionRaw: ProcessDefinitionRaw = await this.processDefinitionRepository.getProcessDefinitionByName(processModelId);
+    const definitionRaw: ProcessDefinitionRaw = await this.processDefinitionRepository.getProcessDefinitionByName(name);
 
     if (!definitionRaw) {
-      throw new NotFoundError(`Process definition with id ${processModelId} not found!`);
+      throw new NotFoundError(`Process definition with name "${name}" not found!`);
     }
 
     return definitionRaw;

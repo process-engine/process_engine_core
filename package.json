@@ -19,7 +19,7 @@
     "@essential-projects/event_aggregator_contracts": "^3.0.0",
     "@essential-projects/iam_contracts": "^3.0.0",
     "@process-engine/consumer_api_contracts": "^0.15.0",
-    "@process-engine/process_engine_contracts": "^19.0.0",
+    "@process-engine/process_engine_contracts": "feature~process_definitions_instead_of_process_model",
     "@types/clone": "^0.1.30",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",

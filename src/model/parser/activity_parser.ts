@@ -192,6 +192,11 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
 }
 
 function getPreferredControlForUserTask(userTask: Model.Activities.UserTask): string {
+
+  if (!userTask.extensionElements) {
+    return null;
+  }
+
   const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = userTask.extensionElements.camundaExtensionProperties;
   const preferredControlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('preferredControl', extensionProperties);
 
