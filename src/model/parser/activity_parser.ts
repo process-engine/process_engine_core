@@ -65,6 +65,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
     userTask.formFields = parseFormFields(userTaskRaw);
+    userTask.preferredControl = getPreferredControlForUserTask(userTaskRaw);
 
     userTasks.push(userTask);
   }
@@ -104,6 +105,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     formField.label = formFieldRaw.label;
     formField.type = formFieldRaw.type;
     formField.defaultValue = formFieldRaw.defaultValue;
+    formField.preferredControl = formFieldRaw.preferredControl;
 
     if (formField.type === 'enum') {
       const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
@@ -187,6 +189,62 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   }
 
   return serviceTasks;
+}
+
+function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask): string {
+  const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
+
+  const extensionElementsIsNotExisting: boolean = extensionElements === undefined;
+  if (extensionElementsIsNotExisting) {
+    return;
+  }
+
+  const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
+
+  const extensionPropertiesDataIsNotExisting: boolean = extensionPropertiesDataRaw === undefined
+                                                     || extensionPropertiesDataRaw.length < 1;
+
+  if (extensionPropertiesDataIsNotExisting) {
+    return;
+  }
+
+  const extensionPropertiesRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
+
+  const extensionPropertiesAreNotExisting: boolean = extensionPropertiesRaw === undefined
+                                                  || extensionPropertiesRaw.length < 1;
+
+  if (extensionPropertiesAreNotExisting) {
+    return;
+  }
+
+  const extensionProperties: any = parseExtensionProperties(extensionPropertiesRaw);
+  const preferredControlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('preferredControl', extensionProperties);
+
+  const preferredControlPropertyIsNotExisting: boolean = preferredControlProperty === undefined;
+  if (preferredControlPropertyIsNotExisting) {
+    return;
+  }
+
+  return preferredControlProperty.value;
+}
+
+function parseExtensionProperties(extensionPropertiesRaw: any): any {
+  const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = [];
+
+  const extensionPropertiesIsNoArray: boolean = !Array.isArray(extensionPropertiesRaw);
+  if (extensionPropertiesIsNoArray) {
+    return [{name: extensionPropertiesRaw.name,
+             value: extensionPropertiesRaw.value}];
+  }
+
+  for (const extensionPropertyRaw of extensionPropertiesRaw) {
+    const extensionProperty: Model.Base.CamundaExtensionProperty = {name: extensionPropertyRaw.name,
+                                                                    value: extensionPropertyRaw.value};
+
+    extensionProperties.push(extensionProperty);
+  }
+
+  return extensionProperties;
 }
 
 function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocation {
