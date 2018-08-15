@@ -1,5 +1,5 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
-import {ITimerService} from '@essential-projects/timing_contracts';
+import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {
   IExecutionContextFacade,
   IProcessModelFacade,
@@ -172,7 +172,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
     const duration: moment.Duration = moment.duration(timerDefinition);
 
-    const timingRule: Runtime.Types.TimingRule = {
+    const timingRule: TimerRule = {
       year: duration.years(),
       month: duration.months(),
       date: duration.days(),
