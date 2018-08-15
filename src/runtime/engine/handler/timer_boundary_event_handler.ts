@@ -1,9 +1,9 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {
   IExecutionContextFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  ITimerService,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -22,21 +22,21 @@ enum TimerBpmnType {
 }
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNode> {
-  private _timingService: ITimerService;
+  private _timerService: ITimerService;
   private _eventAggregator: IEventAggregator;
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(timingService: ITimerService,
+  constructor(timerService: ITimerService,
               eventAggregator: IEventAggregator,
               decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
     super();
-    this._timingService = timingService;
+    this._timerService = timerService;
     this._eventAggregator = eventAggregator;
     this._decoratedHandler = decoratedHandler;
   }
 
   private get timerService(): ITimerService {
-    return this._timingService;
+    return this._timerService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -172,7 +172,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
     const duration: moment.Duration = moment.duration(timerDefinition);
 
-    const timingRule: Runtime.Types.TimingRule = {
+    const timingRule: TimerRule = {
       year: duration.years(),
       month: duration.months(),
       date: duration.days(),
