@@ -6,7 +6,6 @@ import {
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-  setCommonObjectPropertiesFromData,
 } from '../type_factory';
 
 import {NotFoundError} from '@essential-projects/errors_ts';
@@ -43,54 +42,50 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
   const endEventsRaw: any = getModelPropertyAsArray(data, BpmnTags.EventElement.EndEvent);
 
   for (const endEventRaw of endEventsRaw) {
-    const event: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
+    const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
 
-    event.name = endEventRaw.name,
-    event.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+    endEvent.name = endEventRaw.name,
+    endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    assignEventDefinitions(endEvent, endEventRaw);
 
     const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
 
     if (eventHasErrorEventDefinition) {
-      const currentError: Model.Types.Error = ((): Model.Types.Error => {
-        const errorIsNotAnonymous: boolean = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
-        if (errorIsNotAnonymous) {
-          /*
-          * If the error is not anonymous, we can look it up in our error definition
-          * list. Otherwise, we will declare the error as an anonymous error
-          * and attach it to the ErrorEndEvent.
-          */
-          const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
-          return getErrorForId(errors, errorId);
-        } else {
-          /*
-          * An anonymous error should not have any reference or error
-          * information.
-          *
-          * TODO: Find out if we can set the structureRef of the Error Object
-          * to undefined here.
-          */
-          const anonymousStructureRef: Model.TypeReferences.StructureReference = {
-            structureId: '',
-          };
+      const currentError: Model.Types.Error = retrieveErrorObjectForErrorEndEvent(endEventRaw, errors);
 
-          return {
-            id: '',
-            structureRef: anonymousStructureRef,
-            errorCode: '',
-            name: '',
-          };
-        }
-      })();
-
-      event.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
-      event.errorEventDefinition.errorReference = currentError;
+      endEvent.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
+      endEvent.errorEventDefinition.errorReference = currentError;
     }
-    events.push(event);
+    events.push(endEvent);
   }
 
   return events;
+}
+
+function retrieveErrorObjectForErrorEndEvent(endEventRaw: any, errors: Array<Model.Types.Error>): Model.Types.Error {
+
+  const errorIsNotAnonymous: boolean = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+
+  if (errorIsNotAnonymous) {
+    const errorId: string = endEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+
+    return getErrorForId(errors, errorId);
+  }
+
+  // TODO: Find out if we can set the structureRef of the Error Object to undefined here.
+  const anonymousStructureRef: Model.TypeReferences.StructureReference = {
+    structureId: '',
+  };
+
+  return {
+    id: '',
+    structureRef: anonymousStructureRef,
+    errorCode: '',
+    name: '',
+  };
 }
 
 /**
@@ -170,13 +165,11 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 }
 
 function assignEventDefinitions(event: any, eventRaw: any): void {
-
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
-
 }
 
 function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: string, targetPropertyName: string): void {
