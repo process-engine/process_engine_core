@@ -31,13 +31,14 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNode: Model.Gateways.ParallelGateway,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Gateways.ParallelGateway>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Gateways.ParallelGateway = flowNodeInfo.flowNode;
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
@@ -52,15 +53,17 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(flowNode);
 
       // all parallel branches are only executed until the join gateway is reached
-      const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> = this._executeParallelBranches(outgoingSequenceFlows,
-                                                                                       joinGateway,
-                                                                                       token,
-                                                                                       processTokenFacade,
-                                                                                       processModelFacade,
-                                                                                       executionContextFacade);
+      const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo<any>>> =
+        this._executeParallelBranches(outgoingSequenceFlows,
+                                      flowNode,
+                                      joinGateway,
+                                      token,
+                                      processTokenFacade,
+                                      processModelFacade,
+                                      executionContextFacade);
 
       // After all parallel branches have been executed, each result is merged on the ProcessTokenFacade
-      const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
+      const nextFlowNodeInfos: Array<NextFlowNodeInfo<any>> = await Promise.all(parallelBranchExecutionPromises);
 
       for (const nextFlowNodeInfo of nextFlowNodeInfos) {
         processTokenFacade.mergeTokenHistory(nextFlowNodeInfo.processTokenFacade);
@@ -70,20 +73,21 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
     } else {
       return undefined;
     }
   }
 
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
+                                   splitGateway: Model.Gateways.ParallelGateway,
                                    joinGateway: Model.Gateways.ParallelGateway,
                                    token: Runtime.Types.ProcessToken,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
-                                   executionContextFacade: IExecutionContextFacade): Array<Promise<NextFlowNodeInfo>> {
+                                   executionContextFacade: IExecutionContextFacade): Array<Promise<NextFlowNodeInfo<any>>> {
 
-    return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
+    return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo<any>> => {
 
       // To have an isolated ProcessToken for each branch, we fork a new ProcessToken from the original one and use it during execution of this branch
       const processTokenForBranch: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
@@ -91,7 +95,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const nextFlowNodeInBranch: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
-      return await this._executeBranchToJoinGateway(nextFlowNodeInBranch,
+      const nextFlowNodeInBranchInfo: NextFlowNodeInfo<Model.Base.FlowNode> =
+        new NextFlowNodeInfo(nextFlowNodeInBranch,
+                             splitGateway,
+                             tokenForBranch,
+                             processTokenForBranch);
+
+      return await this._executeBranchToJoinGateway(nextFlowNodeInBranchInfo,
                                                     joinGateway,
                                                     tokenForBranch,
                                                     processTokenForBranch,
@@ -100,20 +110,22 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     });
   }
 
-  private async _executeBranchToJoinGateway(flowNode: Model.Base.FlowNode,
+  private async _executeBranchToJoinGateway(flowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode>,
                                             joinGateway: Model.Gateways.ParallelGateway,
                                             token: Runtime.Types.ProcessToken,
                                             processTokenFacade: IProcessTokenFacade,
                                             processModelFacade: IProcessModelFacade,
-                                            executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                            executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+
+    const flowNode: Model.Events.IntermediateCatchEvent = flowNodeInfo.flowNode;
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             token,
-                                                                             processTokenFacade,
-                                                                             processModelFacade,
-                                                                             executionContextFacade);
+    const nextFlowNodeInfo: NextFlowNodeInfo<any> = await flowNodeHandler.execute(flowNodeInfo,
+                                                                                  token,
+                                                                                  processTokenFacade,
+                                                                                  processModelFacade,
+                                                                                  executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
       return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
@@ -124,7 +136,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                               executionContextFacade);
     }
 
-    return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
+    return new NextFlowNodeInfo(joinGateway, flowNode, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
   }
 
 }

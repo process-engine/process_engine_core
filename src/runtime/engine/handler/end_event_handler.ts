@@ -31,13 +31,14 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     return this._eventAggregator;
   }
 
-  protected async executeInternally(flowNode: Model.Events.EndEvent,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.EndEvent>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Events.EndEvent = flowNodeInfo.flowNode;
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
@@ -58,6 +59,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       return Promise.reject(errorObject);
     }
 
-    return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+    return new NextFlowNodeInfo(undefined, flowNode, token, processTokenFacade);
   }
 }

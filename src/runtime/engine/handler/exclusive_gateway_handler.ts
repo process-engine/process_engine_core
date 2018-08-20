@@ -23,13 +23,14 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNode: Model.Gateways.ExclusiveGateway,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Gateways.ExclusiveGateway>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Gateways.ExclusiveGateway = flowNodeInfo.flowNode;
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
@@ -48,7 +49,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
     }
 
     // If this is the split gateway, find the SequenceFlow that has a truthy condition
@@ -70,7 +71,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
     }
 
     throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');

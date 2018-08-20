@@ -31,13 +31,14 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.IntermediateThrowEvent>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Events.IntermediateThrowEvent = flowNodeInfo.flowNode;
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
@@ -49,6 +50,6 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
   }
 }

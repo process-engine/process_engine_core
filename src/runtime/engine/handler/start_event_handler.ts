@@ -23,13 +23,14 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNode: Model.Events.StartEvent,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.StartEvent>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Events.StartEvent = flowNodeInfo.flowNode;
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
@@ -37,6 +38,6 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
   }
 }

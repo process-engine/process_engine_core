@@ -24,17 +24,18 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(scriptTask: Model.Activities.ScriptTask,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Activities.ScriptTask>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Activities.ScriptTask = flowNodeInfo.flowNode;
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    const script: string = scriptTask.script;
+    const script: string = flowNode.script;
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
 
     if (!script) {
@@ -53,17 +54,17 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     } catch (error) {
 
-      await this.flowNodeInstanceService.persistOnError(executionContextFacade, token, scriptTask.id, flowNodeInstanceId, error);
+      await this.flowNodeInstanceService.persistOnError(executionContextFacade, token, flowNode.id, flowNodeInstanceId, error);
 
       throw error;
     }
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(scriptTask);
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await processTokenFacade.addResultForFlowNode(scriptTask.id, result);
+    await processTokenFacade.addResultForFlowNode(flowNode.id, result);
     token.payload = result;
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, scriptTask.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
   }
 }

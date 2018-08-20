@@ -31,15 +31,16 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(subProcessNode: Model.Activities.SubProcess,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Activities.SubProcess>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Activities.SubProcess = flowNodeInfo.flowNode;
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, subProcessNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,
     // but results of the SubProcess are not accessible by the original Process before the SubProcess finishes.
@@ -52,7 +53,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // The SubProcess-specific Facade implements the same interface as the regular ProcessModelFacade so that we can pass it
     // through to handlers inside the SubProcess.
 
-    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(subProcessNode);
+    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(flowNode);
     const startEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
     const startEvent: Model.Events.StartEvent = startEvents[0];
 
@@ -60,41 +61,48 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     subProcessTokenFacade.addResultForFlowNode(startEvent.id, initialTokenData.current);
 
-    await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
+    const startEventFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> = new NextFlowNodeInfo(startEvent,
+                                                                                               flowNode,
+                                                                                               token,
+                                                                                               processTokenFacade);
+
+    await this._executeFlowNode(startEventFlowNodeInfo, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
 
     // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
     // and on the original ProcessTokenFacade, so that is is accessible by the original Process
 
     const finalTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcessNode);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
     const finalResult: any = finalTokenData.current === undefined ? null : finalTokenData.current;
 
-    processTokenFacade.addResultForFlowNode(subProcessNode.id, finalResult);
+    processTokenFacade.addResultForFlowNode(flowNode.id, finalResult);
     token.payload = finalResult;
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, subProcessNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
   }
 
-  private async _executeFlowNode(flowNode: Model.Base.FlowNode,
+  private async _executeFlowNode(flowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode>,
                                  token: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
 
+    const flowNode: Model.Base.FlowNode = flowNodeInfo.flowNode;
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             token,
-                                                                             processTokenFacade,
-                                                                             processModelFacade,
-                                                                             executionContextFacade);
+    const nextFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> =
+      await flowNodeHandler.execute(flowNodeInfo,
+                                    token,
+                                    processTokenFacade,
+                                    processModelFacade,
+                                    executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+      await this._executeFlowNode(nextFlowNodeInfo,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,

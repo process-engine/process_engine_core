@@ -4,6 +4,7 @@ import {
   IFlowNodeHandlerFactory,
   IProcessModelFacade,
   Model,
+  NextFlowNodeInfo,
 } from '@process-engine/process_engine_contracts';
 
 import {IContainer} from 'addict-ioc';
@@ -27,11 +28,11 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return this._container;
   }
 
-  public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
+  public async create<TFlowNode extends Model.Base.FlowNode>(flowNodeInfo: NextFlowNodeInfo<TFlowNode>,
                                                              processModelFacade: IProcessModelFacade): Promise<IFlowNodeHandler<TFlowNode>> {
-    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode.bpmnType);
+    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNodeInfo.flowNode.bpmnType);
 
-    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
+    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNodeInfo.flowNode);
 
     if (boundaryEvents.length === 0) {
       return flowNodeHandler;

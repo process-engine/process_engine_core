@@ -41,15 +41,16 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
+  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Activities.CallActivity>,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
 
     const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
+    const flowNode: Model.Activities.CallActivity = flowNodeInfo.flowNode;
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
     const identity: IIdentity = await executionContextFacade.getIdentity();
 
@@ -60,19 +61,19 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     const processInstanceId: string = token.processInstanceId;
-    const startEventId: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
+    const startEventId: string = await this._getAccessibleStartEvent(consumerContext, flowNode.calledReference);
 
     const processStartResponse: ProcessStartResponsePayload =
-      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventId, callActivityNode, tokenData);
+      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventId, flowNode, tokenData);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await processTokenFacade.addResultForFlowNode(callActivityNode.id, processStartResponse.tokenPayload);
+    await processTokenFacade.addResultForFlowNode(flowNode.id, processStartResponse.tokenPayload);
     token.payload = processStartResponse.tokenPayload;
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
   }
 
   private async _getAccessibleStartEvent(consumerContext: ConsumerContext, processModelId: string): Promise<string> {

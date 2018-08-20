@@ -90,7 +90,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
     processToken.caller = caller;
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
-    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
+    const startEventFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> = new NextFlowNodeInfo(startEvent,
+                                                                                               undefined,
+                                                                                               processToken,
+                                                                                               processTokenFacade);
+
+    await this._executeFlowNode(startEventFlowNodeInfo, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
@@ -188,22 +193,24 @@ export class ExecuteProcessService implements IExecuteProcessService {
     });
   }
 
-  private async _executeFlowNode(flowNode: Model.Base.FlowNode,
+  private async _executeFlowNode(flowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode>,
                                  processToken: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  executionContextFacade: IExecutionContextFacade): Promise<void> {
 
+    const flowNode: Model.Base.FlowNode = flowNodeInfo.flowNode;
+
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             processToken,
-                                                                             processTokenFacade,
-                                                                             processModelFacade,
-                                                                             executionContextFacade);
+    const nextFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> = await flowNodeHandler.execute(flowNodeInfo,
+                                                                                                  processToken,
+                                                                                                  processTokenFacade,
+                                                                                                  processModelFacade,
+                                                                                                  executionContextFacade);
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+      await this._executeFlowNode(nextFlowNodeInfo,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,

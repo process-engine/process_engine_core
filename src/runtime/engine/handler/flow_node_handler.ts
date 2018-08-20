@@ -16,41 +16,41 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return uuid.v4();
   }
 
-  public async execute(flowNode: TFlowNode,
+  public async execute(flowNodeInfo: NextFlowNodeInfo<TFlowNode>,
                        token: Runtime.Types.ProcessToken,
                        processTokenFacade: IProcessTokenFacade,
                        processModelFacade: IProcessModelFacade,
-                       executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                       executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
 
-    let nextFlowNode: NextFlowNodeInfo;
+    let nextFlowNode: NextFlowNodeInfo<Model.Base.FlowNode>;
 
     try {
 
       // executeInternally is the method where derived handlers can implement their logic
-      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+      nextFlowNode = await this.executeInternally(flowNodeInfo, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
       //            I would like to set no token result or further specify it to be an error to avoid confusion
-      await processTokenFacade.addResultForFlowNode(flowNode.id, error);
+      await processTokenFacade.addResultForFlowNode(flowNodeInfo.flowNode.id, error);
 
       throw error;
     }
 
     if (!nextFlowNode) {
-      throw new Error(`Next flow node after node with id "${flowNode.id}" could not be found.`);
+      throw new Error(`Next flow node after node with id "${flowNodeInfo.flowNode.id}" could not be found.`);
     }
 
-    await this.afterExecute(flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
+    await this.afterExecute(flowNodeInfo.flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }
 
-  protected async abstract executeInternally(flowNode: TFlowNode,
+  protected async abstract executeInternally(flowNodeInfo: NextFlowNodeInfo<TFlowNode>,
                                              token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
-                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;
+                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>>;
 
   private async afterExecute(flowNode: TFlowNode,
                              nextFlowNode: Model.Base.FlowNode,
