@@ -45,9 +45,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       this.eventAggregator.publish(`/processengine/process/${token.processInstanceId}/terminated`, new TerminateEndEventReachedMessage(flowNode.id, token.payload));
     } else {
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+      this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
     }
 
-    this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
     if (flowNode.errorEventDefinition) {
       const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition.errorReference;

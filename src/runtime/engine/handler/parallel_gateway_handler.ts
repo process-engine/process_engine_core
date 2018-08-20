@@ -14,6 +14,7 @@ import {
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 
 import {FlowNodeHandler} from './index';
+import {InternalServerError} from '@essential-projects/errors_ts';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
@@ -147,7 +148,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     if (this._processWasTerminated) {
       await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeHandler.flowNodeInstanceId);
 
-      return Promise.reject(this._processTerminationMessage);
+      return Promise.reject(new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
     }
 
     if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {

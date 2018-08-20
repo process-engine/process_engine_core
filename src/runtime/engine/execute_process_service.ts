@@ -99,6 +99,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._end(processInstanceId, resultToken);
 
+    if (this._processWasTerminated) {
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`);
+    }
+
     return resultToken;
   }
 
@@ -120,16 +124,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
       try {
         await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
       } catch (error) {
-        const errorMessage: string =
+        const errorLogMessage: string =
           `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
-        logger.error(errorMessage, error);
+        logger.error(errorLogMessage, error);
 
         if (subscription) {
           subscription.dispose();
-        }
-
-        if (this._processWasTerminated) {
-          return reject(new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
         }
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
@@ -173,18 +173,13 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       try {
         await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
-
       } catch (error) {
-        const errorMessage: string =
+        const errorLogMessage: string =
           `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
-        logger.error(errorMessage, error);
+        logger.error(errorLogMessage, error);
 
         for (const subscription of subscriptions) {
           subscription.dispose();
-        }
-
-        if (this._processWasTerminated) {
-          return reject(new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
         }
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
