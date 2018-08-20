@@ -114,11 +114,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
-
-          if (this._processWasTerminated) {
-            return reject(new InternalServerError(`Process was terminted through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
-          }
-
           resolve(message);
         });
 
@@ -131,6 +126,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
         if (subscription) {
           subscription.dispose();
+        }
+
+        if (this._processWasTerminated) {
+          return reject(new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
         }
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
@@ -166,10 +165,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
             existingSubscription.dispose();
           }
 
-          if (this._processWasTerminated) {
-            return reject(new InternalServerError(`Process was terminted through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
-          }
-
           resolve(message);
         });
 
@@ -188,11 +183,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
           subscription.dispose();
         }
 
+        if (this._processWasTerminated) {
+          return reject(new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
+        }
+
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
         if (error.errorCode && error.name) {
           return reject(error);
         }
+
         reject(new InternalServerError(error.message));
       }
 
@@ -201,14 +201,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
 
+    // Branch execution must not continue, if the process was terminated.
+    // So we need to watch out for a terminate end event here aswell.
     const eventName: string = `/processengine/process/${processInstanceId}/terminated`;
 
     return this
-      .eventAggregator
-      .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-        this._processTerminationMessage = message;
-        this._processWasTerminated = true;
-    });
+        .eventAggregator
+        .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+          this._processWasTerminated = true;
+          this._processTerminationMessage = message;
+      });
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
@@ -223,7 +225,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
     if (this._processWasTerminated) {
-      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, processToken, flowNode.id, processToken.processInstanceId);
+      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, processToken, flowNode.id, flowNodeHandler.flowNodeInstanceId);
     } else if (nextFlowNodeInfo.flowNode !== undefined) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,
@@ -246,7 +248,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     let processEndMessage: EventReachedMessage;
 
     if (this._processWasTerminated) {
-      processEndMessage = new TerminateEndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
+      processEndMessage = this._processTerminationMessage;
     } else {
       processEndMessage = new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
     }

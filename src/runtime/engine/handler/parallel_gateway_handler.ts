@@ -22,6 +22,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
   private _processWasTerminated: boolean = false;
+  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
 
   constructor(eventAggregator: IEventAggregator, flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
@@ -48,9 +49,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
@@ -82,12 +81,12 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       }
 
       if (this._processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+        await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
 
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     } else {
@@ -105,6 +104,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         .eventAggregator
         .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
           this._processWasTerminated = true;
+          this._processTerminationMessage = message;
       });
   }
 
@@ -145,9 +145,9 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     if (this._processWasTerminated) {
-      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, token.processInstanceId);
+      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeHandler.flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+      return Promise.reject(this._processTerminationMessage);
     }
 
     if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
