@@ -36,6 +36,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private _eventAggregator: IEventAggregator = undefined;
 
   private _processWasTerminated: boolean = false;
+  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
 
   constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -113,6 +114,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
+
+          if (this._processWasTerminated) {
+            return reject(new InternalServerError(`Process was terminted through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
+          }
+
           resolve(message);
         });
 
@@ -130,10 +136,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
         if (error.errorCode && error.name) {
-          reject(error);
-        } else {
-          reject(new InternalServerError(error.message));
+          return reject(error);
         }
+
+        reject(new InternalServerError(error.message));
       }
     });
   }
@@ -160,6 +166,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
             existingSubscription.dispose();
           }
 
+          if (this._processWasTerminated) {
+            return reject(new InternalServerError(`Process was terminted through TerminateEndEvent "${this._processTerminationMessage.eventId}"`));
+          }
+
           resolve(message);
         });
 
@@ -181,10 +191,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
         if (error.errorCode && error.name) {
-          reject(error);
-        } else {
-          reject(new InternalServerError(error.message));
+          return reject(error);
         }
+        reject(new InternalServerError(error.message));
       }
 
     });
@@ -197,6 +206,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this
       .eventAggregator
       .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+        this._processTerminationMessage = message;
         this._processWasTerminated = true;
     });
   }
