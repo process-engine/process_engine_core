@@ -67,7 +67,7 @@ function registerInContainer(container) {
     .dependencies('EventAggregator', 'FlowNodeInstanceService');
 
   container.register('SubProcessHandler', SubProcessHandler)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService');
 
   container.register('ScriptTaskHandler', ScriptTaskHandler)
     .dependencies('FlowNodeInstanceService');
