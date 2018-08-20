@@ -8,19 +8,30 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
+  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
+
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 
 import {FlowNodeHandler} from './index';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
+  private _eventAggregator: IEventAggregator = undefined;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
+  private _processWasTerminated: boolean = false;
+
+  constructor(eventAggregator: IEventAggregator, flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
+    this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
+  }
+
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
@@ -48,6 +59,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     if (isSplitGateway) {
 
+      const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(token.processInstanceId);
+
       // first find the ParallelGateway that joins the branch back to the original branch
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(flowNode);
 
@@ -68,12 +81,35 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(joinGateway);
 
+      if (processTerminationSubscription) {
+        processTerminationSubscription.dispose();
+      }
+
+      if (this._processWasTerminated) {
+        await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+
+        return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+      }
+
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     } else {
       return undefined;
     }
+  }
+
+  private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
+
+    // Branch execution must not continue, if the process was terminated.
+    // So we need to watch out for a terminate end event here aswell.
+    const eventName: string = `/processengine/process/${processInstanceId}/terminated`;
+
+    return this
+        .eventAggregator
+        .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+          this._processWasTerminated = true;
+      });
   }
 
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
@@ -109,13 +145,16 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             token,
-                                                                             processTokenFacade,
-                                                                             processModelFacade,
-                                                                             executionContextFacade);
+    const nextFlowNodeInfo: NextFlowNodeInfo =
+      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
-    if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
+    if (this._processWasTerminated) {
+      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, token.processInstanceId);
+
+      return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+    }
+
+    if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
       return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                               joinGateway,
                                               nextFlowNodeInfo.token,

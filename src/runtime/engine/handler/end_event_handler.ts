@@ -8,6 +8,7 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
+  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -42,7 +43,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
+    if (flowNode.terminateEventDefinition) {
+      this.eventAggregator.publish(`/processengine/process/${token.processInstanceId}/terminated`, new TerminateEndEventReachedMessage(flowNode.id, token.payload));
+      return Promise.reject();
+    }
+
+    this.eventAggregator.publish(`/processengine/node/${flowNode.id}/end`, new EndEventReachedMessage(flowNode.id, token.payload));
 
     if (flowNode.errorEventDefinition) {
       const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition.errorReference;
@@ -51,10 +57,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
         name: errorEventDefinition.name,
       };
 
-      /*
-       * If the ErrorEndEvent gets encountered, reject the promise
-       * with the defined error object.
-       */
       return Promise.reject(errorObject);
     }
 

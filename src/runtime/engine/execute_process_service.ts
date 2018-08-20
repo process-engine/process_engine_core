@@ -5,18 +5,19 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 
 import {
   EndEventReachedMessage,
+  EventReachedMessage,
   IExecuteProcessService,
   IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
   IProcessModelFacade,
-  IProcessModelService,
   IProcessTokenFacade,
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
   Runtime,
+  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
@@ -32,17 +33,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
-  private _processModelService: IProcessModelService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
+
+  private _processWasTerminated: boolean = false;
 
   constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              processModelService: IProcessModelService,
               eventAggregator: IEventAggregator) {
 
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
-    this._processModelService = processModelService;
     this._eventAggregator = eventAggregator;
   }
 
@@ -52,10 +52,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
-  }
-
-  private get processModelService(): IProcessModelService {
-    return this._processModelService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -90,9 +86,15 @@ export class ExecuteProcessService implements IExecuteProcessService {
     processToken.caller = caller;
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
+    const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(processInstanceId);
+
     await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
+
+    if (processTerminationSubscription) {
+      processTerminationSubscription.dispose();
+    }
 
     await this._end(processInstanceId, resultToken);
 
@@ -117,8 +119,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
       try {
         await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
       } catch (error) {
-        // tslint:disable-next-line:max-line-length
-        const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
+        const errorMessage: string =
+          `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorMessage, error);
 
         if (subscription) {
@@ -168,8 +170,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
 
       } catch (error) {
-        // tslint:disable-next-line:max-line-length
-        const errorMessage: string = `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
+        const errorMessage: string =
+          `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorMessage, error);
 
         for (const subscription of subscriptions) {
@@ -188,6 +190,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
     });
   }
 
+  private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
+
+    const eventName: string = `/processengine/process/${processInstanceId}/terminated`;
+
+    return this
+      .eventAggregator
+      .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+        this._processWasTerminated = true;
+    });
+  }
+
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
                                  processToken: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
@@ -202,7 +215,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                                              processModelFacade,
                                                                              executionContextFacade);
 
-    if (nextFlowNodeInfo.flowNode !== undefined) {
+    if (this._processWasTerminated) {
+      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, processToken, flowNode.id, processToken.processInstanceId);
+    } else if (nextFlowNodeInfo.flowNode !== undefined) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
@@ -221,13 +236,15 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async _end(processInstanceId: string,
                      processTokenResult: IProcessTokenResult): Promise<void> {
 
-    const processEndMessageData: any = {
-      event: 'end',
-      eventId: processTokenResult.flowNodeId,
-      token: processTokenResult.result,
-    };
+    let processEndMessage: EventReachedMessage;
 
-    this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessageData);
+    if (this._processWasTerminated) {
+      processEndMessage = new TerminateEndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
+    } else {
+      processEndMessage = new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
+    }
+
+    this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }
 
 }
