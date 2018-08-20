@@ -65,12 +65,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(flowNode);
 
       // all parallel branches are only executed until the join gateway is reached
-      const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> = this._executeParallelBranches(outgoingSequenceFlows,
-                                                                                       joinGateway,
-                                                                                       token,
-                                                                                       processTokenFacade,
-                                                                                       processModelFacade,
-                                                                                       executionContextFacade);
+      const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
+        this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, executionContextFacade);
 
       // After all parallel branches have been executed, each result is merged on the ProcessTokenFacade
       const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);

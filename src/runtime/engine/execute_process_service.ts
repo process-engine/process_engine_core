@@ -209,11 +209,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await flowNodeHandler.execute(flowNode,
-                                                                             processToken,
-                                                                             processTokenFacade,
-                                                                             processModelFacade,
-                                                                             executionContextFacade);
+    const nextFlowNodeInfo: NextFlowNodeInfo =
+      await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
     if (this._processWasTerminated) {
       await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, processToken, flowNode.id, processToken.processInstanceId);
