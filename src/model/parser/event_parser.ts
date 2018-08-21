@@ -37,32 +37,44 @@ export function parseEventsFromProcessData(processData: any, errors: Array<Model
  * @returns An array of parsed EndEvents.
  */
 function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Model.Events.EndEvent> {
-  const events: Array<Model.Events.EndEvent> = [];
 
   const endEventsRaw: any = getModelPropertyAsArray(data, BpmnTags.EventElement.EndEvent);
 
-  for (const endEventRaw of endEventsRaw) {
-    const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
-
-    endEvent.name = endEventRaw.name,
-    endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    assignEventDefinitions(endEvent, endEventRaw);
-
-    const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
-
-    if (eventHasErrorEventDefinition) {
-
-      const currentError: Model.Types.Error = retrieveErrorObjectForErrorEndEvent(endEventRaw, errors);
-
-      endEvent.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
-      endEvent.errorEventDefinition.errorReference = currentError;
-    }
-    events.push(endEvent);
-  }
+  const events: Array<Model.Events.EndEvent> = endEventsRaw.map((endEventRaw: any) => {
+    return parseEndEvent(endEventRaw, errors);
+  });
 
   return events;
+}
+
+/**
+ * Parses a single EndEvent from the given raw data.
+ *
+ * @param   endEventRaw The raw end event data.
+ * @param   errors      Contains a list of error definitions.
+ *                      If the EndEvent is an ErrorEndEvent, this list is used to retrieve the matching error definition.
+ * @returns             The fully parsed EndEvent.
+ */
+function parseEndEvent(endEventRaw: any, errors: Array<Model.Types.Error>): Model.Events.EndEvent {
+  const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
+
+  endEvent.name = endEventRaw.name,
+  endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+  endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+  assignEventDefinitions(endEvent, endEventRaw);
+
+  const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
+
+  if (eventHasErrorEventDefinition) {
+
+    const currentError: Model.Types.Error = retrieveErrorObjectForErrorEndEvent(endEventRaw, errors);
+
+    endEvent.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
+    endEvent.errorEventDefinition.errorReference = currentError;
+  }
+
+  return endEvent;
 }
 
 /**
