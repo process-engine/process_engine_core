@@ -22,6 +22,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                        processModelFacade: IProcessModelFacade,
                        executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
 
+    const flowNode: TFlowNode = flowNodeInfo.flowNode;
     let nextFlowNode: NextFlowNodeInfo<Model.Base.FlowNode>;
 
     try {
@@ -32,16 +33,16 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
       //            I would like to set no token result or further specify it to be an error to avoid confusion
-      await processTokenFacade.addResultForFlowNode(flowNodeInfo.flowNode.id, error);
+      await processTokenFacade.addResultForFlowNode(flowNode.id, error);
 
       throw error;
     }
 
     if (!nextFlowNode) {
-      throw new Error(`Next flow node after node with id "${flowNodeInfo.flowNode.id}" could not be found.`);
+      throw new Error(`Next flow node after node with id "${flowNode.id}" could not be found.`);
     }
 
-    await this.afterExecute(flowNodeInfo.flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
+    await this.afterExecute(flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }

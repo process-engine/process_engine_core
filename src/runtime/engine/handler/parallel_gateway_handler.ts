@@ -120,14 +120,16 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
-    const nextFlowNodeInfo: NextFlowNodeInfo<any> = await flowNodeHandler.execute(flowNodeInfo,
+    const nextFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> = await flowNodeHandler.execute(flowNodeInfo,
                                                                                   token,
                                                                                   processTokenFacade,
                                                                                   processModelFacade,
                                                                                   executionContextFacade);
 
-    if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
-      return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
+    const nextFlowNode: Model.Base.FlowNode = nextFlowNodeInfo.flowNode;
+
+    if (nextFlowNode !== null && nextFlowNode.id !== joinGateway.id) {
+      return this._executeBranchToJoinGateway(nextFlowNodeInfo,
                                               joinGateway,
                                               nextFlowNodeInfo.token,
                                               nextFlowNodeInfo.processTokenFacade,
