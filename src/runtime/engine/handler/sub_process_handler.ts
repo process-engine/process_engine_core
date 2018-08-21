@@ -75,13 +75,13 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
 
-    // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
-    // and on the original ProcessTokenFacade, so that is is accessible by the original Process
-
-    if (processTerminationSubscription) {
+    const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
+    if (processTerminationSubscriptionIsActive) {
       processTerminationSubscription.dispose();
     }
 
+    // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
+    // and on the original ProcessTokenFacade, so that is is accessible by the original Process
     const finalTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcessNode);

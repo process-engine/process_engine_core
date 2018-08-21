@@ -93,7 +93,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
-    if (processTerminationSubscription) {
+    const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
+    if (processTerminationSubscriptionIsActive) {
       processTerminationSubscription.dispose();
     }
 
@@ -128,7 +129,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
           `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorLogMessage, error);
 
-        if (subscription) {
+        const subscriptionIsActive: boolean = subscription !== undefined;
+        if (subscriptionIsActive) {
           subscription.dispose();
         }
 
@@ -240,16 +242,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return allResults.pop();
   }
 
-  private async _end(processInstanceId: string,
-                     processTokenResult: IProcessTokenResult): Promise<void> {
+  private async _end(processInstanceId: string, processTokenResult: IProcessTokenResult): Promise<void> {
 
-    let processEndMessage: EventReachedMessage;
-
-    if (this._processWasTerminated) {
-      processEndMessage = this._processTerminationMessage;
-    } else {
-      processEndMessage = new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
-    }
+    const  processEndMessage: EventReachedMessage = this._processWasTerminated
+      ? this._processTerminationMessage
+      : new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
 
     this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }

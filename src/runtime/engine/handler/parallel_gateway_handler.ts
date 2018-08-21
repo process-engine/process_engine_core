@@ -77,7 +77,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(joinGateway);
 
-      if (processTerminationSubscription) {
+      const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
+      if (processTerminationSubscriptionIsActive) {
         processTerminationSubscription.dispose();
       }
 
