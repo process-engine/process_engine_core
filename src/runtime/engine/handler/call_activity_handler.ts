@@ -47,9 +47,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, callActivityNode.id, this.flowNodeInstanceId);
 
     const identity: IIdentity = await executionContextFacade.getIdentity();
 
@@ -70,7 +68,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     await processTokenFacade.addResultForFlowNode(callActivityNode.id, processStartResponse.tokenPayload);
     token.payload = processStartResponse.tokenPayload;
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, callActivityNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, callActivityNode.id, this.flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

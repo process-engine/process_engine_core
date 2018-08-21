@@ -39,9 +39,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, serviceTaskNode.id, this.flowNodeInstanceId);
 
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
@@ -71,7 +69,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
       token.payload = finalResult;
 
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, this.flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
 
