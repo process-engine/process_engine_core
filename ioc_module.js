@@ -35,7 +35,7 @@ const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelF
 function registerInContainer(container) {
 
   container.register('ExecuteProcessService', ExecuteProcessService)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'ProcessModelService', 'EventAggregator');
+    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'EventAggregator');
 
   container.register('CorrelationService', CorrelationService)
     .dependencies('FlowNodeInstanceRepository', 'IamService');
@@ -67,7 +67,7 @@ function registerInContainer(container) {
     .dependencies('EventAggregator', 'FlowNodeInstanceService');
 
   container.register('SubProcessHandler', SubProcessHandler)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService');
 
   container.register('ScriptTaskHandler', ScriptTaskHandler)
     .dependencies('FlowNodeInstanceService');
@@ -79,7 +79,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeInstanceService');
 
   container.register('ParallelGatewayHandler', ParallelGatewayHandler)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService');
 
   container.register('ServiceTaskHandler', ServiceTaskHandler)
     .dependencies('container', 'FlowNodeInstanceService');

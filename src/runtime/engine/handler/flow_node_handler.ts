@@ -12,8 +12,10 @@ import * as uuid from 'uuid';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-  protected createFlowNodeInstanceId(): string {
-    return uuid.v4();
+  protected flowNodeInstanceId: string;
+
+  public getInstanceId(): string {
+    return this.flowNodeInstanceId;
   }
 
   public async execute(flowNode: TFlowNode,
@@ -23,6 +25,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                        executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     let nextFlowNode: NextFlowNodeInfo;
+    this.flowNodeInstanceId = this.createFlowNodeInstanceId();
 
     try {
 
@@ -69,5 +72,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     }
 
     await processTokenFacade.evaluateMapperForSequenceFlow(nextSequenceFlow);
+  }
+
+  protected createFlowNodeInstanceId(): string {
+    return uuid.v4();
   }
 }

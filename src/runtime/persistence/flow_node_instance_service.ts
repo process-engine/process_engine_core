@@ -59,7 +59,7 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
                               token: Runtime.Types.ProcessToken,
                               flowNodeId: string,
                               flowNodeInstanceId: string,
-                            ): Promise<Runtime.Types.FlowNodeInstance> {
+                             ): Promise<Runtime.Types.FlowNodeInstance> {
 
     return this.flowNodeInstanceRepository.persistOnEnter(token, flowNodeId, flowNodeInstanceId);
   }
@@ -78,9 +78,18 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
                               flowNodeId: string,
                               flowNodeInstanceId: string,
                               error: Error,
-                            ): Promise<Runtime.Types.FlowNodeInstance> {
+                             ): Promise<Runtime.Types.FlowNodeInstance> {
 
     return this.flowNodeInstanceRepository.persistOnError(token, flowNodeId, flowNodeInstanceId, error);
+  }
+
+  public async persistOnTerminate(executionContextFacade: IExecutionContextFacade,
+                                  token: Runtime.Types.ProcessToken,
+                                  flowNodeId: string,
+                                  flowNodeInstanceId: string,
+                                 ): Promise<Runtime.Types.FlowNodeInstance> {
+
+    return this.flowNodeInstanceRepository.persistOnTerminate(token, flowNodeId, flowNodeInstanceId);
   }
 
   public async suspend(executionContextFacade: IExecutionContextFacade,
