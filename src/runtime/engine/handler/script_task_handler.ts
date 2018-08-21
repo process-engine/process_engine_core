@@ -30,7 +30,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, scriptTask.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(scriptTask.id, this.flowNodeInstanceId, token);
 
     const script: string = scriptTask.script;
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
@@ -51,7 +51,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     } catch (error) {
 
-      await this.flowNodeInstanceService.persistOnError(executionContextFacade, token, scriptTask.id, this.flowNodeInstanceId, error);
+      await this.flowNodeInstanceService.persistOnError(scriptTask.id, this.flowNodeInstanceId, token, error);
 
       throw error;
     }
@@ -60,7 +60,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     await processTokenFacade.addResultForFlowNode(scriptTask.id, result);
     token.payload = result;
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, scriptTask.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(scriptTask.id, this.flowNodeInstanceId, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

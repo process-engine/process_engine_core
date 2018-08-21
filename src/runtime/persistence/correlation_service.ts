@@ -43,8 +43,13 @@ export class CorrelationService implements ICorrelationService {
     const correlations: Array<Runtime.Types.Correlation> = [];
 
     const correlationsContainsMatchingEntry: Function = (flowNode: Runtime.Types.FlowNodeInstance): boolean => {
+
       return correlations.some((correlation: Runtime.Types.Correlation) => {
-        return correlation.id === flowNode.token.correlationId;
+
+        const hasMatchingToken: boolean = flowNode.tokens.some((token: Runtime.Types.ProcessToken): boolean => {
+          return token.correlationId === correlation.id;
+        });
+        return hasMatchingToken;
       });
     };
 
@@ -60,9 +65,11 @@ export class CorrelationService implements ICorrelationService {
 
   private _createCorrelationFromFlowNodeInstance(flowNode: Runtime.Types.FlowNodeInstance): Runtime.Types.Correlation {
 
+    // Note that correlationid and processModelId will be the same for all of the tokens associated with the FNI.
+    // Therefore it doesn't matter which one is being used here.
     const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
-    correlation.id = flowNode.token.correlationId;
-    correlation.processModelId = flowNode.token.processModelId;
+    correlation.id = flowNode.tokens[0].correlationId;
+    correlation.processModelId = flowNode.tokens[0].processModelId;
     correlation.state = flowNode.state;
 
     return correlation;

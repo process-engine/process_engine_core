@@ -37,7 +37,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
     const messageName: string = `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageRef}`;
 
@@ -45,7 +45,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
