@@ -146,7 +146,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     if (this._processWasTerminated) {
-      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeHandler.flowNodeInstanceId);
+      const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
+      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
     }
 
