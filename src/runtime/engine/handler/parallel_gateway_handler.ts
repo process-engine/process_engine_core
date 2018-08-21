@@ -55,7 +55,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo<any>>> =
         this._executeParallelBranches(outgoingSequenceFlows,
-                                      flowNode,
                                       joinGateway,
                                       token,
                                       processTokenFacade,
@@ -80,7 +79,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   }
 
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
-                                   splitGateway: Model.Gateways.ParallelGateway,
                                    joinGateway: Model.Gateways.ParallelGateway,
                                    token: Runtime.Types.ProcessToken,
                                    processTokenFacade: IProcessTokenFacade,
