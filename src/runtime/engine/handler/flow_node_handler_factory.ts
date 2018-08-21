@@ -28,11 +28,11 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return this._container;
   }
 
-  public async create<TFlowNode extends Model.Base.FlowNode>(flowNodeInfo: NextFlowNodeInfo<TFlowNode>,
+  public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
                                                              processModelFacade: IProcessModelFacade): Promise<IFlowNodeHandler<TFlowNode>> {
-    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNodeInfo.flowNode.bpmnType);
+    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode.bpmnType);
 
-    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNodeInfo.flowNode);
+    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
     if (boundaryEvents.length === 0) {
       return flowNodeHandler;
