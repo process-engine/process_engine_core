@@ -40,7 +40,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
-    if (flowNode.terminateEventDefinition) {
+    const flowNodeHasTerminateEventDefinition: boolean = flowNode.terminateEventDefinition !== undefined;
+    if (flowNodeHasTerminateEventDefinition) {
       await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
       this.eventAggregator.publish(`/processengine/process/${token.processInstanceId}/terminated`, new TerminateEndEventReachedMessage(flowNode.id, token.payload));
     } else {
@@ -56,6 +57,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
         name: errorEventDefinition.name,
       };
 
+      // In case of ErrorEndEvents, the Promise managing the process execution
+      // needs to be rejected with the matching error object.
       return Promise.reject(errorObject);
     }
 

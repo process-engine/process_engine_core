@@ -100,7 +100,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     await this._end(processInstanceId, resultToken);
 
     if (this._processWasTerminated) {
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`);
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
     }
 
     return resultToken;
@@ -219,9 +219,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
+    const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
+
     if (this._processWasTerminated) {
       await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, processToken, flowNode.id, flowNodeHandler.flowNodeInstanceId);
-    } else if (nextFlowNodeInfo.flowNode !== undefined) {
+    } else if (nextFlowNodeInfoHasFlowNode) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,

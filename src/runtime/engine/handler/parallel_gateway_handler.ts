@@ -147,10 +147,12 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     if (this._processWasTerminated) {
       await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeHandler.flowNodeInstanceId);
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}"`);
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
     }
 
-    if (nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id) {
+    const continueExecution: boolean =
+      nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id;
+    if (continueExecution) {
       return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                               joinGateway,
                                               nextFlowNodeInfo.token,
