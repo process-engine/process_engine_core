@@ -73,7 +73,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
   private async _getAccessibleStartEvent(consumerContext: ConsumerContext, processModelId: string): Promise<string> {

@@ -92,7 +92,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageBoundaryEvent);
 
-      return resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, flowNode, token, processTokenFacade));
+      return resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
     };
 
     this.subscription = this.eventAggregator.subscribeOnce(messageName, messageReceivedCallback);

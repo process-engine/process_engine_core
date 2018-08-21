@@ -91,7 +91,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
     const startEventFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> = new NextFlowNodeInfo(startEvent,
-                                                                                               undefined,
                                                                                                processToken,
                                                                                                processTokenFacade);
 

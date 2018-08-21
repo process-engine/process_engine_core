@@ -59,6 +59,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       return Promise.reject(errorObject);
     }
 
-    return new NextFlowNodeInfo(undefined, flowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(undefined, token, processTokenFacade);
   }
 }

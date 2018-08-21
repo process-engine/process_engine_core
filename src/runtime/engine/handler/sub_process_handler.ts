@@ -62,7 +62,6 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     subProcessTokenFacade.addResultForFlowNode(startEvent.id, initialTokenData.current);
 
     const startEventFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> = new NextFlowNodeInfo(startEvent,
-                                                                                               flowNode,
                                                                                                token,
                                                                                                processTokenFacade);
 
@@ -82,7 +81,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
   private async _executeFlowNode(flowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode>,

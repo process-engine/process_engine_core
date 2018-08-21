@@ -74,7 +74,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
 
     } else {
 

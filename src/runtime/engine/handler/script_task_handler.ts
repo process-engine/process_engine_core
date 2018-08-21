@@ -65,6 +65,6 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 }

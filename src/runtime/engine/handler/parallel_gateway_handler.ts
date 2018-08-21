@@ -73,7 +73,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     } else {
       return undefined;
     }
@@ -97,7 +97,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const nextFlowNodeInBranchInfo: NextFlowNodeInfo<Model.Base.FlowNode> =
         new NextFlowNodeInfo(nextFlowNodeInBranch,
-                             splitGateway,
                              tokenForBranch,
                              processTokenForBranch);
 
@@ -136,7 +135,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                               executionContextFacade);
     }
 
-    return new NextFlowNodeInfo(joinGateway, flowNode, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
+    return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
   }
 
 }

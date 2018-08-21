@@ -79,6 +79,6 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
     await flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-    return new NextFlowNodeInfo(nextFlowNodeInfo, flowNode, token, processTokenFacade);
+    return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 }

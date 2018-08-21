@@ -49,7 +49,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
 
     // If this is the split gateway, find the SequenceFlow that has a truthy condition
@@ -71,7 +71,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
 
-      return new NextFlowNodeInfo(nextFlowNode, flowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
 
     throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');

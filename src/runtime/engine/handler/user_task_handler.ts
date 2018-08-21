@@ -60,7 +60,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
         this._sendUserTaskFinishedToConsumerApi(flowNode, executionContextFacade);
 
-        resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, flowNode, token, processTokenFacade));
+        resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
       });
 
       await this.flowNodeInstanceService.suspend(executionContextFacade, token, flowNodeInstanceId);
