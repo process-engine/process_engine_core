@@ -31,6 +31,7 @@ const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessSer
 const ExecutionContextFacadeFactory = require('./dist/commonjs/index').ExecutionContextFacadeFactory;
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
+const ProcessTokenFacadeFactory = require('./dist/commonjs/index').ProcessTokenFacadeFactory;
 
 function registerInContainer(container) {
 
@@ -56,6 +57,9 @@ function registerInContainer(container) {
     .dependencies('container');
 
   container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
+    .singleton();
+
+  container.register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
     .singleton();
 
   container.register('BpmnModelParser', BpmnModelParser);
