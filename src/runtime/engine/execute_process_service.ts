@@ -34,7 +34,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
-  private _processModelService: IProcessModelService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
 
   private _processWasTerminated: boolean = false;
@@ -42,12 +41,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              processModelService: IProcessModelService,
               eventAggregator: IEventAggregator) {
 
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
-    this._processModelService = processModelService;
     this._eventAggregator = eventAggregator;
   }
 
@@ -57,10 +54,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
-  }
-
-  private get processModelService(): IProcessModelService {
-    return this._processModelService;
   }
 
   private get eventAggregator(): IEventAggregator {
