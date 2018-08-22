@@ -25,15 +25,15 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     return this._container;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.IntermediateThrowEvent>,
+  protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    if (flowNodeInfo.flowNode.messageEventDefinition) {
+    if (flowNode.messageEventDefinition) {
       return this._executeIntermediateThrowEventByType('IntermediateMessageThrowEventHandler',
-                                                       flowNodeInfo,
+                                                       flowNode,
                                                        token,
                                                        processTokenFacade,
                                                        processModelFacade,
@@ -45,29 +45,27 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     // Note that FlowNodeInstance persistence is usually delegated to the dedicated event handlers
     // ('IntermediateMessageCatchEventHandler', etc). Since this use case addresses events that are not yet supported,
     // this method must handle state persistence by itself.
-    return this._persistAndContinue(flowNodeInfo, token, processTokenFacade, processModelFacade, executionContextFacade);
+    return this._persistAndContinue(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
   }
 
   private async _executeIntermediateThrowEventByType(eventHandlerName: string,
-                                                     flowNodeInfo: NextFlowNodeInfo<Model.Events.IntermediateThrowEvent>,
+                                                     flowNode: Model.Events.IntermediateThrowEvent,
                                                      token: Runtime.Types.ProcessToken,
                                                      processTokenFacade: IProcessTokenFacade,
                                                      processModelFacade: IProcessModelFacade,
-                                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const eventHandler: FlowNodeHandler<Model.Events.IntermediateThrowEvent> =
       await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName);
 
-    return eventHandler.execute(flowNodeInfo, token, processTokenFacade, processModelFacade, executionContextFacade);
+    return eventHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
   }
 
-  private async _persistAndContinue(flowNodeInfo: NextFlowNodeInfo<Model.Events.IntermediateThrowEvent>,
+  private async _persistAndContinue(flowNode: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
-
-    const flowNode: Model.Events.IntermediateThrowEvent = flowNodeInfo.flowNode;
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
     const flowNodeInstanceService: IFlowNodeInstanceService = await this.container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
 

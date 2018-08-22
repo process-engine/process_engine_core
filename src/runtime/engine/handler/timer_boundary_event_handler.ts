@@ -47,16 +47,13 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
     return this._decoratedHandler;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode>,
+  protected async executeInternally(flowNode: Model.Base.FlowNode,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNode: Model.Base.FlowNode = flowNodeInfo.flowNode;
-
-    return new Promise<NextFlowNodeInfo<Model.Base.FlowNode>> (
-      async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> => {
+    return new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       let timerSubscription: ISubscription;
 
@@ -88,12 +85,11 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
         timerSubscription = await this._initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo<Model.Base.FlowNode> =
-          await this.decoratedHandler.execute(flowNodeInfo,
-                                              token,
-                                              processTokenFacade,
-                                              processModelFacade,
-                                              executionContextFacade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(flowNode,
+                                                                                       token,
+                                                                                       processTokenFacade,
+                                                                                       processModelFacade,
+                                                                                       executionContextFacade);
 
         if (timerHasElapsed) {
           return;

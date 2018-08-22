@@ -35,21 +35,19 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
   }
 
   // TODO: Add support for non-interrupting message events.
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.BoundaryEvent>,
+  protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNode: Model.Events.BoundaryEvent = flowNodeInfo.flowNode;
-
-    return new Promise<NextFlowNodeInfo<any>>(async(resolve: Function): Promise<void> => {
+    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       try {
         this._subscribeToMessageEvent(resolve, flowNode, token, processTokenFacade, processModelFacade);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo<any>
-          = await this.decoratedHandler.execute(flowNodeInfo, token, processTokenFacade, processModelFacade, executionContextFacade);
+        const nextFlowNodeInfo: NextFlowNodeInfo
+          = await this.decoratedHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
         if (this.messageReceived) {
           return;

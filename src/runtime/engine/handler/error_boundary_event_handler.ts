@@ -22,18 +22,15 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     return this._decoratedHandler;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<any>,
+  protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
-
-    const flowNode: Model.Events.IntermediateCatchEvent = flowNodeInfo.flowNode;
-
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
     try {
 
-      const nextFlowNodeInfo: NextFlowNodeInfo<any>
-        = await this.decoratedHandler.execute(flowNodeInfo, token, processTokenFacade, processModelFacade, executionContextFacade);
+      const nextFlowNodeInfo: NextFlowNodeInfo
+        = await this.decoratedHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
       return nextFlowNodeInfo;
 
