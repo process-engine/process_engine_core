@@ -8,6 +8,7 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
+  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -31,19 +32,23 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     return this._eventAggregator;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.EndEvent>,
+  protected async executeInternally(flowNode: Model.Events.EndEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    const flowNode: Model.Events.EndEvent = flowNodeInfo.flowNode;
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    const flowNodeHasTerminateEventDefinition: boolean = flowNode.terminateEventDefinition !== undefined;
+    if (flowNodeHasTerminateEventDefinition) {
+      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+      this.eventAggregator.publish(`/processengine/process/${token.processInstanceId}/terminated`, new TerminateEndEventReachedMessage(flowNode.id, token.payload));
+    } else {
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+      this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
+    }
 
-    this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
 
     if (flowNode.errorEventDefinition) {
       const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition.errorReference;
@@ -52,10 +57,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
         name: errorEventDefinition.name,
       };
 
-      /*
-       * If the ErrorEndEvent gets encountered, reject the promise
-       * with the defined error object.
-       */
+      // In case of ErrorEndEvents, the Promise managing the process execution
+      // needs to be rejected with the matching error object.
       return Promise.reject(errorObject);
     }
 

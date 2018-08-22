@@ -12,23 +12,25 @@ import * as uuid from 'uuid';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-  protected createFlowNodeInstanceId(): string {
-    return uuid.v4();
+  protected flowNodeInstanceId: string;
+
+  public getInstanceId(): string {
+    return this.flowNodeInstanceId;
   }
 
-  public async execute(flowNodeInfo: NextFlowNodeInfo<TFlowNode>,
+  public async execute(flowNode: TFlowNode,
                        token: Runtime.Types.ProcessToken,
                        processTokenFacade: IProcessTokenFacade,
                        processModelFacade: IProcessModelFacade,
-                       executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
+                       executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNode: TFlowNode = flowNodeInfo.flowNode;
-    let nextFlowNode: NextFlowNodeInfo<Model.Base.FlowNode>;
+    let nextFlowNode: NextFlowNodeInfo;
+    this.flowNodeInstanceId = this.createFlowNodeInstanceId();
 
     try {
 
       // executeInternally is the method where derived handlers can implement their logic
-      nextFlowNode = await this.executeInternally(flowNodeInfo, token, processTokenFacade, processModelFacade, executionContextFacade);
+      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
@@ -47,11 +49,11 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return nextFlowNode;
   }
 
-  protected async abstract executeInternally(flowNodeInfo: NextFlowNodeInfo<TFlowNode>,
+  protected async abstract executeInternally(flowNode: TFlowNode,
                                              token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
-                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>>;
+                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;
 
   private async afterExecute(flowNode: TFlowNode,
                              nextFlowNode: Model.Base.FlowNode,
@@ -70,5 +72,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     }
 
     await processTokenFacade.evaluateMapperForSequenceFlow(nextSequenceFlow);
+  }
+
+  protected createFlowNodeInstanceId(): string {
+    return uuid.v4();
   }
 }

@@ -33,24 +33,21 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Activities.ServiceTask>,
+  protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<Model.Base.FlowNode>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    const flowNode: Model.Activities.ServiceTask = flowNodeInfo.flowNode;
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, serviceTaskNode.id, this.flowNodeInstanceId);
 
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
-    const isMethodInvocation: boolean = flowNode.invocation instanceof Model.Activities.MethodInvocation;
+    const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     if (isMethodInvocation) {
 
-      const invocation: Model.Activities.MethodInvocation = flowNode.invocation as Model.Activities.MethodInvocation;
+      const invocation: Model.Activities.MethodInvocation = serviceTaskNode.invocation as Model.Activities.MethodInvocation;
 
       const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
@@ -65,14 +62,14 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
-      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
 
       const finalResult: any = result === undefined ? null : result;
 
-      processTokenFacade.addResultForFlowNode(flowNode.id, result);
+      processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
       token.payload = finalResult;
 
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, serviceTaskNode.id, this.flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
 

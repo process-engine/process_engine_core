@@ -31,16 +31,13 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.IntermediateThrowEvent>,
+  protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    const flowNode: Model.Events.IntermediateThrowEvent = flowNodeInfo.flowNode;
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
     const messageName: string = `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageRef}`;
 
@@ -48,7 +45,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

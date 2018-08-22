@@ -23,16 +23,13 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Gateways.ExclusiveGateway>,
+  protected async executeInternally(flowNode: Model.Gateways.ExclusiveGateway,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    const flowNode: Model.Gateways.ExclusiveGateway = flowNodeInfo.flowNode;
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
@@ -47,7 +44,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       // If this is the join gateway, just return the next FlowNode to execute
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
@@ -69,7 +66,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
 
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }

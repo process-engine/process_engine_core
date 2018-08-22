@@ -31,25 +31,22 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return this._flowNodeInstanceService;
   }
 
-  protected async executeInternally(flowNodeInfo: NextFlowNodeInfo<Model.Events.IntermediateCatchEvent>,
+  protected async executeInternally(flowNode: Model.Events.IntermediateCatchEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo<any>> {
+                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceId: string = super.createFlowNodeInstanceId();
-    const flowNode: Model.Events.IntermediateCatchEvent = flowNodeInfo.flowNode;
-
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
-    await this.flowNodeInstanceService.suspend(executionContextFacade, token, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.suspend(executionContextFacade, token, this.flowNodeInstanceId);
 
     await this._waitForMessage(token.processInstanceId, flowNode.messageEventDefinition.messageRef);
 
-    await this.flowNodeInstanceService.resume(executionContextFacade, flowNodeInstanceId);
+    await this.flowNodeInstanceService.resume(executionContextFacade, this.flowNodeInstanceId);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
