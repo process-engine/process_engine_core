@@ -4,7 +4,6 @@ import {
   IFlowNodeHandlerFactory,
   IProcessModelFacade,
   Model,
-  NextFlowNodeInfo,
 } from '@process-engine/process_engine_contracts';
 
 import {IContainer} from 'addict-ioc';
