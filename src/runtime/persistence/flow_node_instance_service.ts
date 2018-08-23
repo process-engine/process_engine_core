@@ -27,6 +27,10 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._iamService;
   }
 
+  public async getFlowNodeInstanceById(flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
+    return this.flowNodeInstanceRepository.getFlowNodeInstanceById(flowNodeInstanceId);
+  }
+
   public async queryByCorrelation(executionContextFacade: IExecutionContextFacade,
                                   correlationId: string,
                                  ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
@@ -39,6 +43,10 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
                                   ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
     return this.flowNodeInstanceRepository.queryByProcessModel(processModelId);
+  }
+
+  public async queryProcessTokensByProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
+    return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstance(processInstanceId);
   }
 
   public async querySuspendedByCorrelation(executionContextFacade: IExecutionContextFacade,
