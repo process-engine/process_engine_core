@@ -52,7 +52,7 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
   }
   public async queryProcessTokensByProcessInstanceId(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
 
-    return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstance(processInstanceId);
+    return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstanceId(processInstanceId);
   }
 
   public async persistOnEnter(flowNodeId: string,
