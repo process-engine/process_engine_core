@@ -50,6 +50,10 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
 
     return this.flowNodeInstanceRepository.querySuspendedByProcessModel(processModelId);
   }
+  public async queryProcessTokensByProcessInstanceId(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
+
+    return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstance(processInstanceId);
+  }
 
   public async persistOnEnter(flowNodeId: string,
                               flowNodeInstanceId: string,

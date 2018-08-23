@@ -12,6 +12,7 @@ import {
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
   IProcessModelFacade,
+  IProcessModelService,
   IProcessTokenFacade,
   IProcessTokenResult,
   Model,
