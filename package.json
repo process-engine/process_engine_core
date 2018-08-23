@@ -20,7 +20,7 @@
     "@essential-projects/iam_contracts": "^3.1.0",
     "@essential-projects/timing_contracts": "^3.0.0",
     "@process-engine/consumer_api_contracts": "^0.15.0",
-    "@process-engine/process_engine_contracts": "^22.0.0",
+    "@process-engine/process_engine_contracts": "^23.0.0",
     "@types/clone": "^0.1.30",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
@@ -46,8 +46,6 @@
   },
   "scripts": {
     "build": "gulp build",
-    "build-doc": "gulp doc",
-    "build-schemas": "gulp typescript-schema",
     "lint": "gulp lint",
     "prepare": "npm run build",
     "test": "gulp test"
