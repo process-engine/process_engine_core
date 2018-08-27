@@ -226,7 +226,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     if (this._processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, processToken, flowNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
     } else if (nextFlowNodeInfoHasFlowNode) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,

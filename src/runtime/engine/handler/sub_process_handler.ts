@@ -50,7 +50,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, subProcessNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(subProcessNode.id, this.flowNodeInstanceId, token);
 
     const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(token.processInstanceId);
 
@@ -91,7 +91,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     processTokenFacade.addResultForFlowNode(subProcessNode.id, finalResult);
     token.payload = finalResult;
 
-    await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, subProcessNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnExit(subProcessNode.id, this.flowNodeInstanceId, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
@@ -122,7 +122,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
       await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
       if (this._processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+        await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
         throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
       }
 

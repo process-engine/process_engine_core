@@ -38,11 +38,11 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, userTask.id, this.flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnEnter(userTask.id, this.flowNodeInstanceId, token);
 
       this.eventAggregator.subscribeOnce(`/processengine/node/${userTask.id}/finish`, async(message: any): Promise<void> => {
 
-        await this.flowNodeInstanceService.resume(executionContextFacade, this.flowNodeInstanceId);
+        await this.flowNodeInstanceService.resume(userTask.id, this.flowNodeInstanceId, token);
 
         const userTaskResult: any = {
           form_fields: message.data.token === undefined ? null : message.data.token,
@@ -53,14 +53,14 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
         const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
 
-        await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, userTask.id, this.flowNodeInstanceId);
+        await this.flowNodeInstanceService.persistOnExit(userTask.id, this.flowNodeInstanceId, token);
 
         this._sendUserTaskFinishedToConsumerApi(userTask, executionContextFacade);
 
         resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
       });
 
-      await this.flowNodeInstanceService.suspend(executionContextFacade, token, this.flowNodeInstanceId);
+      await this.flowNodeInstanceService.suspend(userTask.id, this.flowNodeInstanceId, token);
     });
 
   }

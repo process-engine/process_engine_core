@@ -1,5 +1,4 @@
 import {
-  IExecutionContextFacade,
   IFlowNodeInstanceRepository,
   IFlowNodeInstanceService,
   Runtime,
@@ -27,90 +26,75 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._iamService;
   }
 
-  public async getFlowNodeInstanceById(flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
-    return this.flowNodeInstanceRepository.getFlowNodeInstanceById(flowNodeInstanceId);
+  public async queryByInstanceId(instanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
+
+    return this.flowNodeInstanceRepository.queryByInstanceId(instanceId);
   }
 
-  public async queryByCorrelation(executionContextFacade: IExecutionContextFacade,
-                                  correlationId: string,
-                                 ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+  public async queryByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
     return this.flowNodeInstanceRepository.queryByCorrelation(correlationId);
   }
 
-  public async queryByProcessModel(executionContextFacade: IExecutionContextFacade,
-                                   processModelId: string,
-                                  ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+  public async queryByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
     return this.flowNodeInstanceRepository.queryByProcessModel(processModelId);
   }
 
-  public async queryProcessTokensByProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
-    return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstance(processInstanceId);
-  }
-
-  public async querySuspendedByCorrelation(executionContextFacade: IExecutionContextFacade,
-                                           correlationId: string,
-                                          ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+  public async querySuspendedByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
     return this.flowNodeInstanceRepository.querySuspendedByCorrelation(correlationId);
   }
 
-  public async querySuspendedByProcessModel(executionContextFacade: IExecutionContextFacade,
-                                            processModelId: string,
-                                           ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+  public async querySuspendedByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
     return this.flowNodeInstanceRepository.querySuspendedByProcessModel(processModelId);
   }
+  public async queryProcessTokensByProcessInstanceId(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
 
-  public async persistOnEnter(executionContextFacade: IExecutionContextFacade,
-                              token: Runtime.Types.ProcessToken,
-                              flowNodeId: string,
+    return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstanceId(processInstanceId);
+  }
+
+  public async persistOnEnter(flowNodeId: string,
                               flowNodeInstanceId: string,
+                              token: Runtime.Types.ProcessToken,
                              ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstanceRepository.persistOnEnter(token, flowNodeId, flowNodeInstanceId);
+    return this.flowNodeInstanceRepository.persistOnEnter(flowNodeId, flowNodeInstanceId, token);
   }
 
-  public async persistOnExit(executionContextFacade: IExecutionContextFacade,
-                             token: Runtime.Types.ProcessToken,
-                             flowNodeId: string,
+  public async persistOnExit(flowNodeId: string,
                              flowNodeInstanceId: string,
+                             token: Runtime.Types.ProcessToken,
                             ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstanceRepository.persistOnExit(token, flowNodeId, flowNodeInstanceId);
+    return this.flowNodeInstanceRepository.persistOnExit(flowNodeId, flowNodeInstanceId, token);
   }
 
-  public async persistOnError(executionContextFacade: IExecutionContextFacade,
-                              token: Runtime.Types.ProcessToken,
-                              flowNodeId: string,
+  public async persistOnError(flowNodeId: string,
                               flowNodeInstanceId: string,
+                              token: Runtime.Types.ProcessToken,
                               error: Error,
                              ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstanceRepository.persistOnError(token, flowNodeId, flowNodeInstanceId, error);
+    return this.flowNodeInstanceRepository.persistOnError(flowNodeId, flowNodeInstanceId, token, error);
   }
 
-  public async persistOnTerminate(executionContextFacade: IExecutionContextFacade,
-                                  token: Runtime.Types.ProcessToken,
-                                  flowNodeId: string,
+  public async persistOnTerminate(flowNodeId: string,
                                   flowNodeInstanceId: string,
+                                  token: Runtime.Types.ProcessToken,
                                  ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstanceRepository.persistOnTerminate(token, flowNodeId, flowNodeInstanceId);
+    return this.flowNodeInstanceRepository.persistOnTerminate(flowNodeId, flowNodeInstanceId, token);
   }
 
-  public async suspend(executionContextFacade: IExecutionContextFacade,
-                       token: Runtime.Types.ProcessToken,
-                       flowNodeInstanceId: string,
-                       correlationHash?: string,
-                      ): Promise<Runtime.Types.FlowNodeInstance> {
+  public async suspend(flowNodeId: string, flowNodeInstanceId: string, token: Runtime.Types.ProcessToken): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this.flowNodeInstanceRepository.suspend(token, flowNodeInstanceId, correlationHash);
+    return this.flowNodeInstanceRepository.suspend(flowNodeId, flowNodeInstanceId, token);
   }
 
-  public async resume(executionContextFacade: IExecutionContextFacade, flowNodeInstanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
-    return this.flowNodeInstanceRepository.resume(flowNodeInstanceId);
+  public async resume(flowNodeId: string, flowNodeInstanceId: string, token: Runtime.Types.ProcessToken): Promise<Runtime.Types.FlowNodeInstance> {
+    return this.flowNodeInstanceRepository.resume(flowNodeId, flowNodeInstanceId, token);
   }
 
 }
