@@ -69,11 +69,11 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
     const flowNodeInstanceService: IFlowNodeInstanceService = await this.container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
 
-    await flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }

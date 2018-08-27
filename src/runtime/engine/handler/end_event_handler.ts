@@ -38,14 +38,14 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
     const flowNodeHasTerminateEventDefinition: boolean = flowNode.terminateEventDefinition !== undefined;
     if (flowNodeHasTerminateEventDefinition) {
-      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
       this.eventAggregator.publish(`/processengine/process/${token.processInstanceId}/terminated`, new TerminateEndEventReachedMessage(flowNode.id, token.payload));
     } else {
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
       this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
     }
 

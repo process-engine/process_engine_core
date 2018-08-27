@@ -50,7 +50,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
     const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
@@ -83,12 +83,12 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       }
 
       if (this._processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+        await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
 
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
 
-      await this.flowNodeInstanceService.persistOnExit(executionContextFacade, token, flowNode.id, this.flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     } else {
@@ -148,7 +148,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     if (this._processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this.flowNodeInstanceService.persistOnTerminate(executionContextFacade, token, flowNode.id, flowNodeInstanceId);
+      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, token);
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
     }
 
