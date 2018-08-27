@@ -29,7 +29,7 @@ export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
       return reference.trim();
     };
 
-    const flowNodeReferences: Array<string> = laneRaw[BpmnTags.LaneProperty.FlowNodeRef];
+    const flowNodeReferences: Array<string> = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
     const trimmedFlowNodeReferences: Array<string> = flowNodeReferences.map(flowNodeReferenceTrimmer);
     lane.flowNodeReferences = trimmedFlowNodeReferences;
 
