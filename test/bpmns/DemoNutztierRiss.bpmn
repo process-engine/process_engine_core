@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definition_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.0">
+    <bpmn:collaboration id="Collaboration_1cidyxu" name="">
+        <bpmn:participant id="Participant_0px403d" name="Wolfbüro" processRef="DemoNutztierRiss">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+            </bpmn:extensionElements>
+        </bpmn:participant>
+    </bpmn:collaboration>
+    <bpmn:process id="DemoNutztierRiss" name="DemoNutztierRiss" isExecutable="true">
+        <bpmn:extensionElements>
+            <camunda:executionListener class="" event="" />
+            <camunda:properties />
+        </bpmn:extensionElements>
+        <bpmn:laneSet>
+            <bpmn:lane id="Lane_1xzf0d3" name="VWK">
+                <bpmn:extensionElements>
+                    <camunda:executionListener class="" event="" />
+                    <camunda:properties />
+                </bpmn:extensionElements>
+                <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+                <bpmn:flowNodeRef>VorgangErfassen</bpmn:flowNodeRef>
+                <bpmn:flowNodeRef>Task_01xg9lr</bpmn:flowNodeRef>
+            </bpmn:lane>
+            <bpmn:lane id="Lane_138tmfw" name="VET">
+                <bpmn:extensionElements>
+                    <camunda:executionListener class="" event="" />
+                    <camunda:properties />
+                </bpmn:extensionElements>
+                <bpmn:flowNodeRef>notizSchreiben</bpmn:flowNodeRef>
+                <bpmn:flowNodeRef>Task_00dom74</bpmn:flowNodeRef>
+            </bpmn:lane>
+            <bpmn:lane id="Lane_0j6c9nx" name="ABL">
+                <bpmn:extensionElements>
+                    <camunda:executionListener class="" event="" />
+                    <camunda:properties />
+                </bpmn:extensionElements>
+                <bpmn:flowNodeRef>Task_1tk0lhq</bpmn:flowNodeRef>
+                <bpmn:flowNodeRef>Task_1yzqmfq</bpmn:flowNodeRef>
+                <bpmn:flowNodeRef>EndEvent_05uuvaq</bpmn:flowNodeRef>
+            </bpmn:lane>
+        </bpmn:laneSet>
+        <bpmn:startEvent id="StartEvent_1" name="Nutztierriss eingegangen">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties />
+            </bpmn:extensionElements>
+            <bpmn:outgoing>SequenceFlow_16ogylh</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="SequenceFlow_16ogylh" sourceRef="StartEvent_1" targetRef="VorgangErfassen" />
+        <bpmn:userTask id="VorgangErfassen" name="Vorgang erfassen">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties>
+                    <camunda:property name="preferredControl" value="Form" />
+                </camunda:properties>
+                <camunda:formData>
+                    <camunda:formField id="nummer" label="Vorgangsnummer" type="string" defaultValue="" />
+                    <camunda:formField id="antragsstellerVorname" label="Vorname" type="string" defaultValue="" />
+                    <camunda:formField id="antragsstellerNachname" label="Nachname" type="string" defaultValue="" />
+                    <camunda:formField id="getoeteteTiere" label="Anzahl der getöteten Tiere" type="long" defaultValue="" />
+                    <camunda:formField id="gemeinde" label="Gemeinde/Landkreis" type="string" defaultValue="" />
+                </camunda:formData>
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_16ogylh</bpmn:incoming>
+            <bpmn:outgoing>SequenceFlow_1anahw2</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="SequenceFlow_1anahw2" sourceRef="VorgangErfassen" targetRef="Task_01xg9lr" />
+        <bpmn:sequenceFlow id="SequenceFlow_0jc0guj" sourceRef="Task_01xg9lr" targetRef="Task_00dom74" />
+        <bpmn:userTask id="Task_1tk0lhq" name="Vorgang prüfen">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties>
+                    <camunda:property name="uiName" value="Confirm" />
+                    <camunda:property name="uiConfig" value="${ &#34;message&#34;: &#39;Vorgangsdaten:&#60;br/&#62; &#60;br/&#62;Nummer:&#60;br/&#62;&#39; + token.current.result.nummer + &#39;&#60;br/&#62;Getötete Tiere:&#60;br/&#62;&#39; + token.current.result.getoeteteTiere, &#34;layout&#34;: [ { &#34;key&#34;: &#34;confirm&#34;, &#34;label&#34;: &#34;Freigeben&#34; } ] };" />
+                </camunda:properties>
+                <camunda:formData />
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_1kbwye4</bpmn:incoming>
+            <bpmn:outgoing>SequenceFlow_0ors8lk</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="SequenceFlow_0ors8lk" name="" sourceRef="Task_1tk0lhq" targetRef="Task_1yzqmfq">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+            </bpmn:extensionElements>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="SequenceFlow_1iynauk" sourceRef="Task_1yzqmfq" targetRef="EndEvent_05uuvaq" />
+        <bpmn:serviceTask id="Task_01xg9lr" name="Vorgang anlegen">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties>
+                    <camunda:property name="module" value="HttpService" />
+                    <camunda:property name="method" value="post" />
+                    <camunda:property name="params" value="[&#39;http://localhost:5000/api/vorgaenge/anlegen&#39;, token.history.VorgangErfassen]" />
+                </camunda:properties>
+                <camunda:formData />
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_1anahw2</bpmn:incoming>
+            <bpmn:outgoing>SequenceFlow_0jc0guj</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="Task_1yzqmfq" name="Vorgang freigeben">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+                <camunda:properties />
+                <camunda:properties>
+                    <camunda:property name="module" value="HttpService" />
+                    <camunda:property name="method" value="put" />
+                    <camunda:property name="params" value="[&#39;http://localhost:5000/api/vorgaenge/freigeben&#39;, { &#39;nummer&#39;: token.history.VorgangErfassen.nummer }]" />
+                </camunda:properties>
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_0ors8lk</bpmn:incoming>
+            <bpmn:outgoing>SequenceFlow_1iynauk</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="EndEvent_05uuvaq" name="">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+                <camunda:properties />
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_1iynauk</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="SequenceFlow_0a5vf8w" sourceRef="Task_00dom74" targetRef="notizSchreiben" />
+        <bpmn:serviceTask id="notizSchreiben" name="Notiz an Vorgang schreiben">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties>
+                    <camunda:property name="module" value="HttpService" />
+                    <camunda:property name="method" value="put" />
+                    <camunda:property name="params" value="[&#39;http://localhost:5000/api/vorgaenge/addnotiz&#39;, { &#39;nummer&#39;: token.history.VorgangErfassen.nummer, &#39;notiz&#39;: token.current.notiz }]" />
+                </camunda:properties>
+                <camunda:formData />
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_0a5vf8w</bpmn:incoming>
+            <bpmn:outgoing>SequenceFlow_1kbwye4</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="SequenceFlow_1kbwye4" sourceRef="notizSchreiben" targetRef="Task_1tk0lhq" />
+        <bpmn:userTask id="Task_00dom74" name="Gesprächsnotiz mit Berater eintragen">
+            <bpmn:extensionElements>
+                <camunda:executionListener class="" event="" />
+                <camunda:properties />
+                <camunda:properties>
+                    <camunda:property name="uiName" value="Form" />
+                </camunda:properties>
+                <camunda:formData>
+                    <camunda:formField id="notiz" label="Notiz" type="string" defaultValue="" />
+                </camunda:formData>
+            </bpmn:extensionElements>
+            <bpmn:incoming>SequenceFlow_0jc0guj</bpmn:incoming>
+            <bpmn:outgoing>SequenceFlow_0a5vf8w</bpmn:outgoing>
+        </bpmn:userTask>
+    </bpmn:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1cidyxu">
+            <bpmndi:BPMNShape id="Participant_0px403d_di" bpmnElement="Participant_0px403d">
+                <dc:Bounds x="5" y="4" width="939" height="530" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+                <dc:Bounds x="101" y="65" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="88" y="101" width="64" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Lane_1xzf0d3_di" bpmnElement="Lane_1xzf0d3">
+                <dc:Bounds x="35" y="4" width="909" height="234" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Lane_138tmfw_di" bpmnElement="Lane_138tmfw">
+                <dc:Bounds x="35" y="238" width="909" height="176" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Lane_0j6c9nx_di" bpmnElement="Lane_0j6c9nx">
+                <dc:Bounds x="35" y="414" width="909" height="120" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="SequenceFlow_16ogylh_di" bpmnElement="SequenceFlow_16ogylh">
+                <di:waypoint x="137" y="83" />
+                <di:waypoint x="187" y="83" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="UserTask_1opwini_di" bpmnElement="VorgangErfassen">
+                <dc:Bounds x="187" y="43" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="SequenceFlow_1anahw2_di" bpmnElement="SequenceFlow_1anahw2">
+                <di:waypoint x="287" y="83" />
+                <di:waypoint x="344" y="83" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="ServiceTask_1j8tucv_di" bpmnElement="Task_01xg9lr">
+                <dc:Bounds x="344" y="43" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="SequenceFlow_0jc0guj_di" bpmnElement="SequenceFlow_0jc0guj">
+                <di:waypoint x="394" y="123" />
+                <di:waypoint x="394" y="278" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="UserTask_0d70j7o_di" bpmnElement="Task_00dom74">
+                <dc:Bounds x="344" y="278" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="UserTask_0axtoa5_di" bpmnElement="Task_1tk0lhq">
+                <dc:Bounds x="494" y="444" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="SequenceFlow_0ors8lk_di" bpmnElement="SequenceFlow_0ors8lk">
+                <di:waypoint x="594" y="484" />
+                <di:waypoint x="665" y="484" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="ServiceTask_1j1nhq0_di" bpmnElement="Task_1yzqmfq">
+                <dc:Bounds x="665" y="444" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="EndEvent_05uuvaq_di" bpmnElement="EndEvent_05uuvaq">
+                <dc:Bounds x="830" y="466" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="SequenceFlow_1iynauk_di" bpmnElement="SequenceFlow_1iynauk">
+                <di:waypoint x="765" y="484" />
+                <di:waypoint x="830" y="484" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="SequenceFlow_0a5vf8w_di" bpmnElement="SequenceFlow_0a5vf8w">
+                <di:waypoint x="394" y="278" />
+                <di:waypoint x="394" y="243" />
+                <di:waypoint x="544" y="243" />
+                <di:waypoint x="544" y="278" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="ServiceTask_1jkdkui_di" bpmnElement="notizSchreiben">
+                <dc:Bounds x="494" y="278" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="SequenceFlow_1kbwye4_di" bpmnElement="SequenceFlow_1kbwye4">
+                <di:waypoint x="544" y="358" />
+                <di:waypoint x="544" y="444" />
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>
