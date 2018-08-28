@@ -58,10 +58,11 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     const processInstanceId: string = token.processInstanceId;
+    const correlationId: string = token.correlationId;
     const startEventId: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
 
     const processStartResponse: ProcessStartResponsePayload =
-      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, processInstanceId, startEventId, callActivityNode, tokenData);
+      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, correlationId, processInstanceId, startEventId, callActivityNode, tokenData);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
 
@@ -89,6 +90,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
   }
 
   private async _waitForSubProcessToFinishAndReturnCorrelationId(consumerContext: ConsumerContext,
+                                                                 correlationId: string,
                                                                  processInstanceId: string,
                                                                  startEventId: string,
                                                                  callActivityNode: Model.Activities.CallActivity,
@@ -97,8 +99,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
     const payload: ProcessStartRequestPayload = {
-      // Setting this to undefined, will cause the Consumer API to generate a Correlation ID (UUID).
-      correlationId: undefined,
+      correlationId: correlationId,
       callerId: processInstanceId,
       inputValues: tokenData.current || {},
     };
