@@ -1,33 +1,49 @@
-const fs = require("fs");
-const should = require('should');
+// Framework imports
+import * as fs from 'fs';
+import * as should from 'should';
 
+// ProcessEngine/Essential Project Imports
+import { Model } from '@process-engine/process_engine_contracts';
+
+// Local imports
 import { BpmnModelParser } from '../../../src/model/bpmn_model_parser';
 import { ProcessModelFacade } from '../../../src/runtime/engine';
-import { Model } from '@process-engine/process_engine_contracts';
 
 export class ProcessModelFacadeTestFixture {
 
-    public async createTestObject(bpmnFilename: string): Promise<ProcessModelFacade> {
+    private processModelFacade: ProcessModelFacade;
+
+    public async initialize(bpmnFilename: string): Promise<void> {
         const parser = new BpmnModelParser();
         parser.initialize();
-        const definitions = await parser.parseXmlToObjectModel(fs.readFileSync(bpmnFilename, 'utf8'));
+
+        const bpmnXml = fs.readFileSync(bpmnFilename, 'utf8');
+        const definitions = await parser.parseXmlToObjectModel(bpmnXml);
         const process = definitions.processes[0];
 
-        return new ProcessModelFacade(process);
+        this.processModelFacade = new ProcessModelFacade(process);
     }
 
-    public async assertFlowNodes(flowNodeIds: Array<string>, processModelFacade: ProcessModelFacade): Promise<void> {
-        let currentFlowNode: Model.Base.FlowNode = processModelFacade.getStartEvents()[0];
-        let counter = 0;
-        while (currentFlowNode != null) {
-            should(flowNodeIds[counter]).be.eql(currentFlowNode.id);
+    public async assertFlowNodes(flowNodeIds: Array<string>): Promise<void> {
+        let currentFlowNode: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
+        let flowNodeIdIndex = 0;
 
-            currentFlowNode = processModelFacade.getNextFlowNodeFor(currentFlowNode);
-            counter++;
+        while (this.hasNextNextFlowNode(currentFlowNode)) {
+
+            should(flowNodeIds[flowNodeIdIndex]).be.eql(currentFlowNode.id);
+
+            currentFlowNode = this.processModelFacade.getNextFlowNodeFor(currentFlowNode);
+            flowNodeIdIndex++;
         }
+
+        should(flowNodeIdIndex).be.eql(flowNodeIds.length);
     }
 
-    public getFlowNodeById<TFlowNode extends Model.Base.FlowNode>(id: string, processModelFacade: ProcessModelFacade): TFlowNode {
-        return processModelFacade.getFlowNodeById(id) as TFlowNode;
+    public getFlowNodeById<TFlowNode extends Model.Base.FlowNode>(id: string): TFlowNode {
+        return this.processModelFacade.getFlowNodeById(id) as TFlowNode;
+    }
+
+    private hasNextNextFlowNode(flowNode: Model.Base.FlowNode): boolean {
+        return flowNode != null;
     }
 }
