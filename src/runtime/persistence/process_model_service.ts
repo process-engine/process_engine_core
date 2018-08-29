@@ -5,12 +5,12 @@ import {
   IProcessDefinitionRepository,
   IProcessModelService,
   Model,
-  ProcessDefinitionRaw,
+  Runtime,
 } from '@process-engine/process_engine_contracts';
 
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
-import {BadRequestError, ForbiddenError, NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {ForbiddenError, NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 
 import * as BluebirdPromise from 'bluebird';
 import * as clone from 'clone';
@@ -107,9 +107,9 @@ export class ProcessModelService implements IProcessModelService {
     return filteredProcessModel;
   }
 
-  public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<ProcessDefinitionRaw> {
+  public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<Runtime.Types.ProcessDefinitionRaw> {
 
-    const definitionRaw: ProcessDefinitionRaw = await this.processDefinitionRepository.getProcessDefinitionByName(name);
+    const definitionRaw: Runtime.Types.ProcessDefinitionRaw = await this.processDefinitionRepository.getProcessDefinitionByName(name);
 
     if (!definitionRaw) {
       throw new NotFoundError(`Process definition with name "${name}" not found!`);
@@ -148,14 +148,14 @@ export class ProcessModelService implements IProcessModelService {
 
   private async _getDefinitionList(): Promise<Array<Definitions>> {
 
-    const definitionsRaw: Array<ProcessDefinitionRaw> = await this.processDefinitionRepository.getProcessDefinitions();
+    const definitionsRaw: Array<Runtime.Types.ProcessDefinitionRaw> = await this.processDefinitionRepository.getProcessDefinitions();
 
-    const definitionsMapper: any = async(rawProcessModelData: ProcessDefinitionRaw): Promise<Definitions> => {
+    const definitionsMapper: any = async(rawProcessModelData: Runtime.Types.ProcessDefinitionRaw): Promise<Definitions> => {
       return this.bpmnModelParser.parseXmlToObjectModel(rawProcessModelData.xml);
     };
 
     const definitionsList: Array<Definitions> =
-      await BluebirdPromise.map<ProcessDefinitionRaw, Definitions>(definitionsRaw, definitionsMapper);
+      await BluebirdPromise.map<Runtime.Types.ProcessDefinitionRaw, Definitions>(definitionsRaw, definitionsMapper);
 
     return definitionsList;
   }
