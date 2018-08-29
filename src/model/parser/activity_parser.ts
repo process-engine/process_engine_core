@@ -181,7 +181,7 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
       const invocation: Model.Activities.Invocation = getInvocationForServiceTask(serviceTask);
 
       if (invocation) {
-        serviceTask.invocation = getInvocationForServiceTask(serviceTask);
+        serviceTask.invocation = invocation;
       }
     }
 
