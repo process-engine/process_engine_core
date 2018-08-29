@@ -8,9 +8,10 @@ import {Model} from '@process-engine/process_engine_contracts';
 // Local imports
 import {ProcessModelFacadeTestFixture} from './process_model_facade_test_fixture';
 
-describe('ProcessModelFacade', () => {
+describe('Process Model Facade', () => {
 
-  describe('parse DemoNutztierRiss.bpmn', () => {
+  describe('Parse DemoNutztierRiss.bpmn Diagram', () => {
+
     it('Should parse expected process', async () => {
 
       const fixture = new ProcessModelFacadeTestFixture();
@@ -26,6 +27,17 @@ describe('ProcessModelFacade', () => {
         'Task_1yzqmfq',
         'EndEvent_05uuvaq'
       ]);
+
+      await fixture.assertFlowNodes2([
+          'StartEvent_1',
+          'VorgangErfassen',
+          'Task_01xg9lr',
+          'Task_00dom74',
+          'notizSchreiben',
+          'Task_1tk0lhq',
+          'Task_1yzqmfq',
+          'EndEvent_05uuvaq'
+        ]);
 
       const vorgangAnlegen = fixture.getFlowNodeById<Model.Activities.ServiceTask>('Task_01xg9lr');
       const invocation: Model.Activities.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.MethodInvocation;
