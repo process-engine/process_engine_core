@@ -26,17 +26,11 @@ export class ProcessModelFacadeTestFixture {
 
   public async assertFlowNodes(flowNodeIds: Array<string>): Promise<void> {
     let currentFlowNode: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
-    let flowNodeIdIndex = 0;
 
-    while (this.hasNextNextFlowNode(currentFlowNode)) {
+    let expectedFlowNodeIds = flowNodeIds.slice(0);
+    this.assertFlowNodeSequence(expectedFlowNodeIds, currentFlowNode);
 
-      should(flowNodeIds[flowNodeIdIndex]).be.eql(currentFlowNode.id);
-
-      currentFlowNode = this.processModelFacade.getNextFlowNodeFor(currentFlowNode);
-      flowNodeIdIndex++;
-    }
-
-    should(flowNodeIdIndex).be.eql(flowNodeIds.length);
+    should(expectedFlowNodeIds.length).be.eql(0);
   }
 
   public getFlowNodeById<TFlowNode extends Model.Base.FlowNode>(id: string): TFlowNode {
@@ -45,5 +39,17 @@ export class ProcessModelFacadeTestFixture {
 
   private hasNextNextFlowNode(flowNode: Model.Base.FlowNode): boolean {
     return flowNode != null;
+  }
+
+  private assertFlowNodeSequence(expectedFlowNodeIds: Array<string>, currentFlowNode: Model.Base.FlowNode): void {
+    const expectedFlowNodeId = expectedFlowNodeIds.shift();
+
+    should(expectedFlowNodeId).be.eql(currentFlowNode.id);
+
+    const nextFlowNode = this.processModelFacade.getNextFlowNodeFor(currentFlowNode);
+
+    if (nextFlowNode != null) {
+      this.assertFlowNodeSequence(expectedFlowNodeIds, nextFlowNode);
+    }
   }
 }
