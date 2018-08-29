@@ -2,6 +2,7 @@ import {
   ICorrelationRepository,
   ICorrelationService,
   IFlowNodeInstanceRepository,
+  IProcessDefinitionRepository,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -9,12 +10,15 @@ export class CorrelationService implements ICorrelationService {
 
   private _correlationRepository: ICorrelationRepository;
   private _flowNodeInstanceRepository: IFlowNodeInstanceRepository;
+  private _processDefinitionRepository: IProcessDefinitionRepository;
 
   constructor(correlationRepository: ICorrelationRepository,
-              flowNodeInstanceRepository: IFlowNodeInstanceRepository) {
+              flowNodeInstanceRepository: IFlowNodeInstanceRepository,
+              processDefinitionRepository: IProcessDefinitionRepository) {
 
     this._correlationRepository = correlationRepository;
     this._flowNodeInstanceRepository = flowNodeInstanceRepository;
+    this._processDefinitionRepository = processDefinitionRepository;
   }
 
   private get correlationRepository(): ICorrelationRepository {
@@ -25,12 +29,25 @@ export class CorrelationService implements ICorrelationService {
     return this._flowNodeInstanceRepository;
   }
 
+  private get processDefinitionRepository(): IProcessDefinitionRepository {
+    return this._processDefinitionRepository;
+  }
+
   public async createEntry(correlationId: string, processModelHash: string): Promise<void> {
     return this.correlationRepository.createEntry(correlationId, processModelHash);
   }
 
   public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
-    return this.correlationRepository.getByCorrelationId(correlationId);
+
+    const correlation: Runtime.Types.Correlation = await this.correlationRepository.getByCorrelationId(correlationId);
+
+    const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
+      await this.processDefinitionRepository.getByHash(correlation.processModelHash);
+
+    correlation.processModelId = processDefinition.name;
+    correlation.processModelXml = processDefinition.xml;
+
+    return correlation;
   }
 
   public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {

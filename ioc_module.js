@@ -39,7 +39,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'EventAggregator');
 
   container.register('CorrelationService', CorrelationService)
-    .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository');
+    .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'ProcessDefinitionRepository');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
     .dependencies('FlowNodeInstanceRepository', 'IamService');
