@@ -39,13 +39,32 @@ export class CorrelationService implements ICorrelationService {
 
   public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
 
-    const correlation: Runtime.Types.Correlation = await this.correlationRepository.getByCorrelationId(correlationId);
+    const correlationFromRepo: Runtime.Types.CorrelationFromRepository = await this.correlationRepository.getByCorrelationId(correlationId);
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
-      await this.processDefinitionRepository.getByHash(correlation.processModelHash);
+      await this.processDefinitionRepository.getByHash(correlationFromRepo.processModelHash);
 
+    // TODO: Implement a "queryByStateAndCorrelationId" function into the FlowNodeInstanceRepository.
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getRunningFlowNodeInstances();
+
+    const isActive: boolean = activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
+      // Note: The CorrelationId will be the same for each token of the FlowNodeInstance,
+      // so it doesn't matter which token we use here.
+      return flowNodeInstance.tokens[0].correlationId === correlationFromRepo.id;
+    });
+
+    const correlationState: Runtime.Types.FlowNodeInstanceState =
+      isActive
+        ? Runtime.Types.FlowNodeInstanceState.running
+        : Runtime.Types.FlowNodeInstanceState.finished
+
+    const correlation = new Runtime.Types.Correlation();
+    correlation.id = correlationFromRepo.id;
+    correlation.processModelHash = correlationFromRepo.processModelHash;
     correlation.processModelId = processDefinition.name;
     correlation.processModelXml = processDefinition.xml;
+    correlation.createdAt = correlationFromRepo.createdAt;
+    correlation.state = correlationState;
 
     return correlation;
   }
