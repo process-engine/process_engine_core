@@ -62,21 +62,17 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
-      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
-
       const finalResult: any = result === undefined ? null : result;
 
       processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
       token.payload = finalResult;
 
       await this.flowNodeInstanceService.persistOnExit(serviceTaskNode.id, this.flowNodeInstanceId, token);
-
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
-
-    } else {
-
-      // TODO: implement call to webservice, which is the default in the BPMN spec
     }
 
+    // This must ALWAYS happen, no matter what type of invocation is used!
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
+
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 }
