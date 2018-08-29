@@ -45,18 +45,6 @@ export class ProcessModelService implements IProcessModelService {
     return this._bpmnModelParser;
   }
 
-  private async _validateXml(name: string, xml: string): Promise<void> {
-
-    let parsedDefinitions: Definitions;
-
-    try {
-      parsedDefinitions = await this.bpmnModelParser.parseXmlToObjectModel(xml);
-
-    } catch (error) {
-      throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
-    }
-  }
-
   public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade,
                                          name: string,
                                          xml: string,
@@ -65,7 +53,7 @@ export class ProcessModelService implements IProcessModelService {
 
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
-    await this._validateXml(name, xml);
+    await this._validateDefinition(name, xml);
 
     return this.processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
   }
@@ -81,7 +69,7 @@ export class ProcessModelService implements IProcessModelService {
 
     for (const processModel of processModelList) {
       const filteredProcessModel: Model.Types.Process =
-        await this._filterInaccessibleProcessModelElements(executionContextFacade, processModel);
+        await this._filterInaccessibleProcessModelElements(identity, processModel);
 
       if (filteredProcessModel) {
         filteredList.push(filteredProcessModel);
@@ -96,9 +84,9 @@ export class ProcessModelService implements IProcessModelService {
     const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
-    const processModel: Model.Types.Process = await this._getProcessModelById(executionContextFacade, processModelId);
+    const processModel: Model.Types.Process = await this._getProcessModelById(processModelId);
 
-    const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(executionContextFacade, processModel);
+    const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(identity, processModel);
 
     if (!filteredProcessModel) {
       throw new ForbiddenError('Access denied.');
@@ -109,6 +97,9 @@ export class ProcessModelService implements IProcessModelService {
 
   public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<Runtime.Types.ProcessDefinitionFromRepository> {
 
+    const identity: IIdentity = executionContextFacade.getIdentity();
+    await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
+
     const definitionRaw: Runtime.Types.ProcessDefinitionFromRepository = await this.processDefinitionRepository.getProcessDefinitionByName(name);
 
     if (!definitionRaw) {
@@ -118,21 +109,52 @@ export class ProcessModelService implements IProcessModelService {
     return definitionRaw;
   }
 
-  private async _getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
+  /**
+   * Takes the xml code of a given ProcessDefinition and tries to parse it.
+   * If the parsing is successful, the xml is assumed to be valid.
+   * Otherwise an error is thrown.
+   *
+   * @param name The name of the ProcessDefinition to validate.
+   * @param xml  The xml code of the ProcessDefinition to validate.
+   */
+  private async _validateDefinition(name: string, xml: string): Promise<void> {
+    try {
+      await this.bpmnModelParser.parseXmlToObjectModel(xml);
+    } catch (error) {
+      throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
+    }
+  }
+
+  /**
+   * Retrieves a ProcessModel by its ID.
+   * This is achieved by first retrieving a list of ProcessDefinitions and then
+   * looking for the process that has the matching ID.
+   *
+   * @param   processModelId The ID of the ProcessModel to retrieve.
+   * @returns                The retrieved ProcessModel.
+   */
+  private async _getProcessModelById(processModelId: string): Promise<Model.Types.Process> {
 
     const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
 
-    for (const process of processModelList) {
+    const matchingProcessModel: Model.Types.Process = processModelList.find((processModel: Model.Types.Process): boolean => {
+      return processModel.id === processModelId;
+    });
 
-      if (process.id === processModelId) {
-
-        return process;
-      }
+    if (!matchingProcessModel) {
+      throw new NotFoundError(`ProcessModel with id ${processModelId} not found!`);
     }
 
-    throw new NotFoundError(`Process Model with id ${processModelId} not found!`);
+    return matchingProcessModel;
   }
 
+  /**
+   * Retrieves a list of all stored ProcessModels.
+   * This is achieved by first retrieving all stored Definitions and then
+   * taking all processes belonging to each definition.
+   *
+   * @returns The retrieved ProcessModels.
+   */
   private async _getProcessModelList(): Promise<Array<Model.Types.Process>> {
 
     const definitions: Array<Definitions> = await this._getDefinitionList();
@@ -146,6 +168,11 @@ export class ProcessModelService implements IProcessModelService {
     return allProcessModels;
   }
 
+  /**
+   * Retrieves a list of all stored ProcessDefinitions.
+   *
+   * @returns The retrieved ProcessDefinitions.
+   */
   private async _getDefinitionList(): Promise<Array<Definitions>> {
 
     const definitionsRaw: Array<Runtime.Types.ProcessDefinitionFromRepository> = await this.processDefinitionRepository.getProcessDefinitions();
@@ -160,11 +187,21 @@ export class ProcessModelService implements IProcessModelService {
     return definitionsList;
   }
 
-  private async _filterInaccessibleProcessModelElements(executionContextFacade: IExecutionContextFacade,
+
+  /**
+   * Performs claim checks for each Element of the given ProcessModel.
+   * If the user does not have access to a Element, that Element is filtered out
+   * from the ProcessModel.
+   *
+   * These Elements include both, Lanes and FlowNodes.
+   *
+   * @param   identity       Contains the Users auth identity.
+   * @param   processModelId The ID of the ProcessModel to filter.
+   * @returns                The filtered ProcessModel.
+   */
+  private async _filterInaccessibleProcessModelElements(identity: IIdentity,
                                                         processModel: Model.Types.Process,
                                                        ): Promise<Model.Types.Process> {
-
-    const identity: IIdentity = await executionContextFacade.getIdentity();
 
     const processModelCopy: Model.Types.Process = clone(processModel);
 
@@ -184,6 +221,15 @@ export class ProcessModelService implements IProcessModelService {
     return processModelCopy;
   }
 
+  /**
+   * Performs claim checks for each Lane of the given LaneSet.
+   * If the user does not have access to a Lane, that Element is filtered out
+   * from the LaneSet.
+   *
+   * @param   identity       Contains the Users auth identity.
+   * @param   processModelId The ID of the ProcessModel to filter.
+   * @returns                The filtered ProcessModel.
+   */
   private async _filterOutInaccessibleLanes(laneSet: Model.Types.LaneSet, identity: IIdentity): Promise<Model.Types.LaneSet> {
 
     const filteredLaneSet: Model.Types.LaneSet = clone(laneSet);
@@ -209,6 +255,15 @@ export class ProcessModelService implements IProcessModelService {
     return filteredLaneSet;
   }
 
+  /**
+   * Uses the IAM Service to perform a claim check for the given user and the
+   * given Lane.
+   *
+   * @param   identity Contains the Users identity.
+   * @param   laneName The name of the Lane for which to perform claim check.
+   * @returns          A Promise, which returns "true", if the user does have
+   *                   the claim, or "false", if he does not.
+   */
   private async _checkIfUserCanAccesslane(identity: IIdentity, laneName: string): Promise<boolean> {
     try {
       await this.iamService.ensureHasClaim(identity, laneName);
@@ -219,6 +274,13 @@ export class ProcessModelService implements IProcessModelService {
     }
   }
 
+  /**
+   * Gets a list of FlowNodes that belong to the given LaneSet.
+   *
+   * @param   laneSet   The LaneSet for which to get the FlowNodes.
+   * @param   flowNodes A list of FlowNodes from which to look for matches.
+   * @returns           A list of FlowNodes, which belong to the given LaneSet.
+   */
   private _getFlowNodesForLaneSet(laneSet: Model.Types.LaneSet, flowNodes: Array<Model.Base.FlowNode>): Array<Model.Base.FlowNode> {
 
     const accessibleFlowNodes: Array<Model.Base.FlowNode> = [];
@@ -251,9 +313,16 @@ export class ProcessModelService implements IProcessModelService {
     return accessibleFlowNodes;
   }
 
+  /**
+   * Checks if the given ProcessModel contains at least one accessible StartEvent.
+   *
+   * @param   processModel The ProcessModel to check.
+   * @returns              True, if at least one acccessible StartEvent exists,
+   *                       otherwise false.
+   */
   private _checkIfProcessModelHasAccessibleStartEvents(processModel: Model.Types.Process): boolean {
 
-    // For this check to pass, it is sufficient for the process model to have at least one accessible start event.
+    // For this check to pass, it is sufficient for the ProcessModel to have at least one accessible start event.
     const processModelHasAccessibleStartEvent: boolean = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
       return flowNode instanceof Model.Events.StartEvent;
     });
