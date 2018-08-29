@@ -107,9 +107,9 @@ export class ProcessModelService implements IProcessModelService {
     return filteredProcessModel;
   }
 
-  public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<Runtime.Types.ProcessDefinitionRaw> {
+  public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<Runtime.Types.ProcessDefinitionFromRepository> {
 
-    const definitionRaw: Runtime.Types.ProcessDefinitionRaw = await this.processDefinitionRepository.getProcessDefinitionByName(name);
+    const definitionRaw: Runtime.Types.ProcessDefinitionFromRepository = await this.processDefinitionRepository.getProcessDefinitionByName(name);
 
     if (!definitionRaw) {
       throw new NotFoundError(`Process definition with name "${name}" not found!`);
@@ -148,14 +148,14 @@ export class ProcessModelService implements IProcessModelService {
 
   private async _getDefinitionList(): Promise<Array<Definitions>> {
 
-    const definitionsRaw: Array<Runtime.Types.ProcessDefinitionRaw> = await this.processDefinitionRepository.getProcessDefinitions();
+    const definitionsRaw: Array<Runtime.Types.ProcessDefinitionFromRepository> = await this.processDefinitionRepository.getProcessDefinitions();
 
-    const definitionsMapper: any = async(rawProcessModelData: Runtime.Types.ProcessDefinitionRaw): Promise<Definitions> => {
+    const definitionsMapper: any = async(rawProcessModelData: Runtime.Types.ProcessDefinitionFromRepository): Promise<Definitions> => {
       return this.bpmnModelParser.parseXmlToObjectModel(rawProcessModelData.xml);
     };
 
     const definitionsList: Array<Definitions> =
-      await BluebirdPromise.map<Runtime.Types.ProcessDefinitionRaw, Definitions>(definitionsRaw, definitionsMapper);
+      await BluebirdPromise.map<Runtime.Types.ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
 
     return definitionsList;
   }
