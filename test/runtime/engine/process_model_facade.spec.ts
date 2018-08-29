@@ -1,12 +1,12 @@
 // Framework imports
-import { before, describe, it } from 'mocha';
+import {before, describe, it} from 'mocha';
 import * as should from 'should';
 
 // ProcessEngine/Essential Project Imports
-import { Model } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_engine_contracts';
 
 // Local imports
-import { ProcessModelFacadeTestFixture } from './process_model_facade_test_fixture';
+import {ProcessModelFacadeTestFixture} from './process_model_facade_test_fixture';
 
 describe('ProcessModelFacade', () => {
 
