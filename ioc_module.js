@@ -35,8 +35,15 @@ const ProcessTokenFacadeFactory = require('./dist/commonjs/index').ProcessTokenF
 
 function registerInContainer(container) {
 
-  container.register('ExecuteProcessService', ExecuteProcessService)
-    .dependencies('FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'EventAggregator');
+  container
+    .register('ExecuteProcessService', ExecuteProcessService)
+    .dependencies(
+      'CorrelationService',
+      'EventAggregator',
+      'FlowNodeHandlerFactory',
+      'FlowNodeInstanceService',
+      'ProcessModelService'
+    );
 
   container.register('CorrelationService', CorrelationService)
     .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'ProcessDefinitionRepository');
