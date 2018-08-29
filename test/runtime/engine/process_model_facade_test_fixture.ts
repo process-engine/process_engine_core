@@ -25,20 +25,16 @@ export class ProcessModelFacadeTestFixture {
   }
 
   public async assertFlowNodes(flowNodeIds: Array<string>): Promise<void> {
-    let currentFlowNode: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
+    let startEvent: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
 
     let expectedFlowNodeIds = flowNodeIds.slice(0);
-    this.assertFlowNodeSequence(expectedFlowNodeIds, currentFlowNode);
+    this.assertFlowNodeSequence(expectedFlowNodeIds, startEvent);
 
     should(expectedFlowNodeIds.length).be.eql(0);
   }
 
   public getFlowNodeById<TFlowNode extends Model.Base.FlowNode>(id: string): TFlowNode {
     return this.processModelFacade.getFlowNodeById(id) as TFlowNode;
-  }
-
-  private hasNextNextFlowNode(flowNode: Model.Base.FlowNode): boolean {
-    return flowNode != null;
   }
 
   private assertFlowNodeSequence(expectedFlowNodeIds: Array<string>, currentFlowNode: Model.Base.FlowNode): void {
