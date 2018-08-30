@@ -29,13 +29,60 @@ export class CorrelationService implements ICorrelationService {
 
   public async getAllActiveCorrelations(executionContextFacade: IExecutionContextFacade): Promise<Array<Runtime.Types.Correlation>> {
 
-    const activeState: Runtime.Types.FlowNodeInstanceState = Runtime.Types.FlowNodeInstanceState.running;
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this.flowNodeInstanceRepository.queryByState(activeState);
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(activeFlowNodeInstances);
 
     return activeCorrelations;
+  }
+
+    /**
+   * Queries all "running" and "suspended" FlowNodeInstances from the repository
+   * and returns them as a concatenated result.
+   */
+  private async _getActiveFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+
+    const runningFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this._getRunningFlowNodeInstances();
+
+    const suspendedFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this._getSuspendedFlowNodeInstances();
+
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      Array.prototype.push.apply(runningFlowNodeInstances, suspendedFlowNodeInstances);
+
+    return activeFlowNodeInstances;
+  }
+
+  /**
+   * Queries all running and suspended FlowNodeInstances from the repository
+   * and returns them as a concatenated result.
+   *
+   * @returns A list of all retrieved FlowNodeInstances.
+   */
+  private async _getRunningFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+
+    const runningState: Runtime.Types.FlowNodeInstanceState = Runtime.Types.FlowNodeInstanceState.running;
+
+    const runningFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this.flowNodeInstanceRepository.queryByState(runningState);
+
+    return runningFlowNodeInstances;
+  }
+
+  /**
+   * Returns all running FlowNodeInstances from the repository.
+   *
+   * @returns A list of all retrieved FlowNodeInstances.
+   */
+  private async _getSuspendedFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+
+    const suspendedState: Runtime.Types.FlowNodeInstanceState = Runtime.Types.FlowNodeInstanceState.suspended;
+
+    const suspendedFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this.flowNodeInstanceRepository.queryByState(suspendedState);
+
+    return suspendedFlowNodeInstances;
   }
 
   private _getActiveCorrelationsFromFlowNodeList(flowNodes: Array<Runtime.Types.FlowNodeInstance>): Array<Runtime.Types.Correlation> {
