@@ -27,7 +27,7 @@ export class CorrelationService implements ICorrelationService {
     return this._iamService;
   }
 
-  public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {
+  public async getAllActiveCorrelations(executionContextFacade: IExecutionContextFacade): Promise<Array<Runtime.Types.Correlation>> {
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
