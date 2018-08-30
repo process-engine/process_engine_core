@@ -48,10 +48,9 @@ export class CorrelationService implements ICorrelationService {
     const suspendedFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
       await this._getSuspendedFlowNodeInstances();
 
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
-      Array.prototype.push.apply(runningFlowNodeInstances, suspendedFlowNodeInstances);
+    Array.prototype.push.apply(runningFlowNodeInstances, suspendedFlowNodeInstances);
 
-    return activeFlowNodeInstances;
+    return runningFlowNodeInstances;
   }
 
   /**
