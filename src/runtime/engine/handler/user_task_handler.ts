@@ -40,7 +40,10 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       await this.flowNodeInstanceService.persistOnEnter(userTask.id, this.flowNodeInstanceId, token);
 
-      this.eventAggregator.subscribeOnce(`/processengine/node/${userTask.id}/finish`, async(message: any): Promise<void> => {
+      const finishEvent: string =
+        `/processengine/correlation/${token.correlationId}/processinstance/${token.processInstanceId}/node/${userTask.id}`;
+
+      this.eventAggregator.subscribeOnce(`${event}/finish`, async(message: any): Promise<void> => {
 
         await this.flowNodeInstanceService.resume(userTask.id, this.flowNodeInstanceId, token);
 
@@ -55,7 +58,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
         await this.flowNodeInstanceService.persistOnExit(userTask.id, this.flowNodeInstanceId, token);
 
-        this._sendUserTaskFinishedToConsumerApi(userTask, executionContextFacade);
+        this._sendUserTaskFinishedToConsumerApi(finishEvent);
 
         resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
       });
@@ -65,9 +68,8 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
   }
 
-  private _sendUserTaskFinishedToConsumerApi(userTask: Model.Activities.UserTask,
-                                             executionContextFacade: IExecutionContextFacade): void {
+  private _sendUserTaskFinishedToConsumerApi(finishEvent: string): void {
 
-    this.eventAggregator.publish(`/processengine/node/${userTask.id}/finished`, {});
+    this.eventAggregator.publish(`${finishEvent}/finished`, {});
   }
 }
