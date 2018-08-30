@@ -49,9 +49,9 @@ export function setCommonObjectPropertiesFromData(data: any, instance: Model.Bas
     // which in turn is located in "camunda:properties".
     let camundaProperties: any = extensionData[BpmnTags.CamundaProperty.Properties];
 
-    if (camundaProperties !== undefined) {
+    camundaProperties = filterOutEmptyProperties(camundaProperties);
 
-      camundaProperties = filterOutEmptyProperties(camundaProperties);
+    if (camundaProperties !== undefined) {
 
       // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
       instance.extensionElements.camundaExtensionProperties =
