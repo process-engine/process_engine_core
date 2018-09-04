@@ -57,12 +57,12 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
 
       let timerSubscription: ISubscription;
 
+      const boundaryEvent: Model.Events.BoundaryEvent = this._getTimerBoundaryEvent(flowNode, processModelFacade);
+
+      const timerType: TimerDefinitionType = this._parseTimerDefinitionType(boundaryEvent.timerEventDefinition);
+      const timerValue: string = this._parseTimerDefinitionValue(boundaryEvent.timerEventDefinition);
+
       try {
-
-        const boundaryEvent: Model.Events.BoundaryEvent = this._getTimerBoundaryEvent(flowNode, processModelFacade);
-
-        const timerType: TimerDefinitionType = this._parseTimerDefinitionType(boundaryEvent.timerEventDefinition);
-        const timerValue: string = this._parseTimerDefinitionValue(boundaryEvent.timerEventDefinition);
 
         let timerHasElapsed: boolean = false;
         let hasHandlerFinished: boolean = false;
@@ -102,7 +102,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
         resolve(nextFlowNodeInfo);
 
       } finally {
-        if (timerSubscription) {
+        if (timerSubscription && timerType !== TimerDefinitionType.cycle) {
           timerSubscription.dispose();
         }
       }
@@ -181,7 +181,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
       second: duration.seconds(),
     };
 
-    const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
+    const subscription: ISubscription = this.eventAggregator.subscribe(callbackEventName, () => {
       timerCallback();
     });
 
