@@ -1,4 +1,4 @@
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -40,34 +40,41 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       await this.flowNodeInstanceService.persistOnEnter(userTask.id, this.flowNodeInstanceId, token);
 
-      this.eventAggregator.subscribeOnce(`/processengine/node/${userTask.id}/finish`, async(message: any): Promise<void> => {
+      const finishEvent: string =
+        `/processengine/correlation/${token.correlationId}/processinstance/${token.processInstanceId}/node/${userTask.id}`;
 
-        await this.flowNodeInstanceService.resume(userTask.id, this.flowNodeInstanceId, token);
+      const subscription: ISubscription =
+        this.eventAggregator.subscribeOnce(`${finishEvent}/finish`, async(message: any): Promise<void> => {
 
-        const userTaskResult: any = {
-          form_fields: message.data.token === undefined ? null : message.data.token,
-        };
+          await this.flowNodeInstanceService.resume(userTask.id, this.flowNodeInstanceId, token);
 
-        processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
-        token.payload = userTaskResult;
+          const userTaskResult: any = {
+            form_fields: message.data.token === undefined ? null : message.data.token,
+          };
 
-        const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
+          processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
+          token.payload = userTaskResult;
 
-        await this.flowNodeInstanceService.persistOnExit(userTask.id, this.flowNodeInstanceId, token);
+          const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
 
-        this._sendUserTaskFinishedToConsumerApi(userTask, executionContextFacade);
+          await this.flowNodeInstanceService.persistOnExit(userTask.id, this.flowNodeInstanceId, token);
 
-        resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
-      });
+          this._sendUserTaskFinishedToConsumerApi(finishEvent);
+
+          if (subscription) {
+            subscription.dispose();
+          }
+
+          resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
+        });
 
       await this.flowNodeInstanceService.suspend(userTask.id, this.flowNodeInstanceId, token);
     });
 
   }
 
-  private _sendUserTaskFinishedToConsumerApi(userTask: Model.Activities.UserTask,
-                                             executionContextFacade: IExecutionContextFacade): void {
+  private _sendUserTaskFinishedToConsumerApi(finishEvent: string): void {
 
-    this.eventAggregator.publish(`/processengine/node/${userTask.id}/finished`, {});
+    this.eventAggregator.publish(`${finishEvent}/finished`, {});
   }
 }
