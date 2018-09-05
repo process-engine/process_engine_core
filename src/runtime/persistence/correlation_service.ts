@@ -1,33 +1,75 @@
 import {
+  ICorrelationRepository,
   ICorrelationService,
-  IExecutionContextFacade,
   IFlowNodeInstanceRepository,
+  IProcessDefinitionRepository,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {IIAMService} from '@essential-projects/iam_contracts';
-
 export class CorrelationService implements ICorrelationService {
 
+  private _correlationRepository: ICorrelationRepository;
   private _flowNodeInstanceRepository: IFlowNodeInstanceRepository;
-  private _iamService: IIAMService;
+  private _processDefinitionRepository: IProcessDefinitionRepository;
 
-  constructor(flowNodeInstanceRepository: IFlowNodeInstanceRepository,
-              iamService: IIAMService) {
+  constructor(correlationRepository: ICorrelationRepository,
+              flowNodeInstanceRepository: IFlowNodeInstanceRepository,
+              processDefinitionRepository: IProcessDefinitionRepository) {
 
+    this._correlationRepository = correlationRepository;
     this._flowNodeInstanceRepository = flowNodeInstanceRepository;
-    this._iamService = iamService;
+    this._processDefinitionRepository = processDefinitionRepository;
+  }
+
+  private get correlationRepository(): ICorrelationRepository {
+    return this._correlationRepository;
   }
 
   private get flowNodeInstanceRepository(): IFlowNodeInstanceRepository {
     return this._flowNodeInstanceRepository;
   }
 
-  private get iamService(): IIAMService {
-    return this._iamService;
+  private get processDefinitionRepository(): IProcessDefinitionRepository {
+    return this._processDefinitionRepository;
   }
 
-  public async getAllActiveCorrelations(executionContextFacade: IExecutionContextFacade): Promise<Array<Runtime.Types.Correlation>> {
+  public async createEntry(correlationId: string, processModelHash: string): Promise<void> {
+    return this.correlationRepository.createEntry(correlationId, processModelHash);
+  }
+
+  public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
+
+    const correlationFromRepo: Runtime.Types.CorrelationFromRepository = await this.correlationRepository.getByCorrelationId(correlationId);
+
+    const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
+      await this.processDefinitionRepository.getByHash(correlationFromRepo.processModelHash);
+
+    // TODO: Implement a "queryByStateAndCorrelationId" function into the FlowNodeInstanceRepository.
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getRunningFlowNodeInstances();
+
+    const isActive: boolean = activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
+      // Note: The CorrelationId will be the same for each token of the FlowNodeInstance,
+      // so it doesn't matter which token we use here.
+      return flowNodeInstance.tokens[0].correlationId === correlationFromRepo.id;
+    });
+
+    const correlationState: Runtime.Types.FlowNodeInstanceState =
+      isActive
+        ? Runtime.Types.FlowNodeInstanceState.running
+        : Runtime.Types.FlowNodeInstanceState.finished
+
+    const correlation = new Runtime.Types.Correlation();
+    correlation.id = correlationFromRepo.id;
+    correlation.processModelHash = correlationFromRepo.processModelHash;
+    correlation.processModelId = processDefinition.name;
+    correlation.processModelXml = processDefinition.xml;
+    correlation.createdAt = correlationFromRepo.createdAt;
+    correlation.state = correlationState;
+
+    return correlation;
+  }
+
+  public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
@@ -36,7 +78,7 @@ export class CorrelationService implements ICorrelationService {
     return activeCorrelations;
   }
 
-    /**
+  /**
    * Queries all "running" and "suspended" FlowNodeInstances from the repository
    * and returns them as a concatenated result.
    */
@@ -84,6 +126,11 @@ export class CorrelationService implements ICorrelationService {
     return suspendedFlowNodeInstances;
   }
 
+  /**
+   * Returns all suspended FlowNodeInstances from the repository.
+   *
+   * @returns A list of all retrieved FlowNodeInstances.
+   */
   private _getActiveCorrelationsFromFlowNodeList(flowNodes: Array<Runtime.Types.FlowNodeInstance>): Array<Runtime.Types.Correlation> {
 
     const correlations: Array<Runtime.Types.Correlation> = [];
@@ -109,6 +156,11 @@ export class CorrelationService implements ICorrelationService {
     return correlations;
   }
 
+  /**
+   * Creates a Correlation Object from the given FlowNodeInstance.
+   *
+   * @returns The created Correlation Object.
+   */
   private _createCorrelationFromFlowNodeInstance(flowNode: Runtime.Types.FlowNodeInstance): Runtime.Types.Correlation {
 
     // Note that correlationid and processModelId will be the same for all of the tokens associated with the FNI.

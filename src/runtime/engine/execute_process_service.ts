@@ -6,6 +6,7 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {
   EndEventReachedMessage,
   EventReachedMessage,
+  ICorrelationService,
   IExecuteProcessService,
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -32,28 +33,43 @@ const logger: Logger = Logger.createLogger('processengine:execute_process_servic
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
   private _eventAggregator: IEventAggregator = undefined;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
+
+  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _correlationService: ICorrelationService = undefined;
+  private _processModelService: IProcessModelService = undefined;
 
   private _processWasTerminated: boolean = false;
   private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
 
-  constructor(flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+  constructor(correlationService: ICorrelationService,
+              eventAggregator: IEventAggregator,
+              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              eventAggregator: IEventAggregator) {
+              processModelService: IProcessModelService) {
 
+    this._correlationService = correlationService;
+    this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
-    this._eventAggregator = eventAggregator;
+    this._processModelService = processModelService;
   }
 
   private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
   }
 
+  private get correlationService(): ICorrelationService {
+    return this._correlationService;
+  }
+
   private get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
+  }
+
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -89,6 +105,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
     const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(processInstanceId);
+
+    await this._saveCorrelation(executionContextFacade, correlationId, processModel);
 
     await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
@@ -195,6 +213,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
       }
 
     });
+  }
+
+  private async _saveCorrelation(executionContextFacade: IExecutionContextFacade,
+                                 correlationId: string,
+                                 processModel: Model.Types.Process
+                                ): Promise<void> {
+
+    const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
+      await this.processModelService.getProcessDefinitionAsXmlByName(executionContextFacade, processModel.id);
+
+    await this.correlationService.createEntry(correlationId, processDefinition.hash);
   }
 
   private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
