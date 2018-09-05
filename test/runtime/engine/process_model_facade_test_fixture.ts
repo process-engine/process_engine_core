@@ -37,42 +37,6 @@ export class ProcessModelFacadeTestFixture {
     return this.processModelFacade.getFlowNodeById(id) as TFlowNode;
   }
 
-  /*
-   * I will leave this here as discussion sample:
-   *
-   * This is how I would do it.
-   */
-  public async assertFlowNodes2(flowNodeIds: Array<string>): Promise<void> {
-    const startEvent: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
-
-    const expectedFlowNodeIds = flowNodeIds.slice(0);
-    const totalNoOfFlowNodes: number = this.traverseAndCountFlowNodes(expectedFlowNodeIds, startEvent);
-
-    should(totalNoOfFlowNodes).be.eql(expectedFlowNodeIds.length);
-  }
-
-  private traverseAndCountFlowNodes(flowNodeIds: Array<string>, flowNode: Model.Base.FlowNode): number {
-
-    return this.assertFlowNodeSequence2(flowNodeIds, flowNode, 0);
-  }
-
-  private assertFlowNodeSequence2(flowNodeIds: Array<string>, flowNode: Model.Base.FlowNode, count: number): number {
-
-    const flowNodeIsNull: boolean = flowNode == null;
-    if (flowNodeIsNull) {
-      // if we reach this, count will be equal to the number of flow nodes
-      return count;
-    }
-
-    const [head, ...tail] = flowNodeIds;
-    const expectedFlowNodeId = head;
-
-    should(expectedFlowNodeId).be.eql(flowNode.id);
-
-    const nextFlowNode = this.processModelFacade.getNextFlowNodeFor(flowNode);
-    return this.assertFlowNodeSequence2(tail, nextFlowNode, count + 1);
-  }
-
   private assertFlowNodeSequence(expectedFlowNodeIds: Array<string>, currentFlowNode: Model.Base.FlowNode): void {
     const expectedFlowNodeId = expectedFlowNodeIds.shift();
 
