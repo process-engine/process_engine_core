@@ -14,7 +14,7 @@ describe('Process Model Facade', () => {
 
     it('Should parse expected process', async () => {
 
-      const fixture = new ProcessModelFacadeTestFixture();
+      const fixture: ProcessModelFacadeTestFixture = new ProcessModelFacadeTestFixture();
       await fixture.initialize('./test/bpmns/DemoNutztierRiss.bpmn');
 
       await fixture.assertFlowNodes([
@@ -39,7 +39,7 @@ describe('Process Model Facade', () => {
         'EndEvent_05uuvaq'
       ]);
 
-      const vorgangAnlegen = fixture.getFlowNodeById<Model.Activities.ServiceTask>('Task_01xg9lr');
+      const vorgangAnlegen: Model.Activities.ServiceTask = fixture.getFlowNodeById<Model.Activities.ServiceTask>('Task_01xg9lr');
       const invocation: Model.Activities.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.MethodInvocation;
 
       should(invocation.module).be.eql('HttpService');
