@@ -116,23 +116,27 @@ export class ExecuteProcessService implements IExecuteProcessService {
     await this._saveCorrelation(executionContextFacade, correlationId, processModel);
 
     this.metricsService.writeOnProcessStarted(correlationId, processModel.id, new Date());
-    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
+    try {
+      await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
-    this.metricsService.writeOnProcessFinished(correlationId, processModel.id, new Date());
-    const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
+      this.metricsService.writeOnProcessFinished(correlationId, processModel.id, new Date());
+      const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
-    const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
-    if (processTerminationSubscriptionIsActive) {
-      processTerminationSubscription.dispose();
-    }
+      const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
+      if (processTerminationSubscriptionIsActive) {
+        processTerminationSubscription.dispose();
+      }
 
-    if (this._processWasTerminated) {
-      const error: InternalServerError = new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
+      if (this._processWasTerminated) {
+        throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
+      }
+
+      return resultToken;
+    } catch (error) {
       this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
       throw error;
     }
 
-    return resultToken;
   }
 
   public async startAndAwaitSpecificEndEvent(executionContextFacade: IExecutionContextFacade,
@@ -167,6 +171,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         if (subscriptionIsActive) {
           subscription.dispose();
         }
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
@@ -174,7 +179,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
           return reject(error);
         }
 
-        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
         reject(new InternalServerError(error.message));
       }
     });
@@ -225,6 +229,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         for (const subscription of subscriptions) {
           subscription.dispose();
         }
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
@@ -232,7 +237,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
           return reject(error);
         }
 
-        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
         reject(new InternalServerError(error.message));
       }
 
