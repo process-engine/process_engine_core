@@ -108,14 +108,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnEnter(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
+    await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
+
     await this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
                                                            processToken.processModelId,
                                                            this.flowNodeInstanceId,
                                                            flowNodeInstance.id,
                                                            processToken,
                                                            new Date());
-
-    await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
   }
 
   /**
