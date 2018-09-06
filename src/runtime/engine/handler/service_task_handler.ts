@@ -1,3 +1,4 @@
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   ExecutionContext,
   IExecutionContextFacade,
@@ -16,38 +17,32 @@ import {FlowNodeHandler} from './index';
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+    super(flowNodeInstanceService, metricsService);
 
     this._container = container;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get container(): IContainer {
     return this._container;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(serviceTaskNode: Model.Activities.ServiceTask,
+  protected async executeInternally(serviceTask: Model.Activities.ServiceTask,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(serviceTaskNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(serviceTask, token);
 
     const context: ExecutionContext = executionContextFacade.getExecutionContext();
-    const isMethodInvocation: boolean = serviceTaskNode.invocation instanceof Model.Activities.MethodInvocation;
+    const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
     if (isMethodInvocation) {
 
-      const invocation: Model.Activities.MethodInvocation = serviceTaskNode.invocation as Model.Activities.MethodInvocation;
+      const invocation: Model.Activities.MethodInvocation = serviceTask.invocation as Model.Activities.MethodInvocation;
 
       const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
@@ -57,21 +52,22 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const serviceMethod: Function = serviceInstance[invocation.method];
 
       if (!serviceMethod) {
-        throw new Error(`method "${invocation.method}" is missing`);
+        const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
+        await this.persistOnError(serviceTask, token, error);
+        throw error;
       }
 
       const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
       const finalResult: any = result === undefined ? null : result;
 
-      processTokenFacade.addResultForFlowNode(serviceTaskNode.id, result);
+      processTokenFacade.addResultForFlowNode(serviceTask.id, result);
       token.payload = finalResult;
-
-      await this.flowNodeInstanceService.persistOnExit(serviceTaskNode.id, this.flowNodeInstanceId, token);
     }
 
-    // This must ALWAYS happen, no matter what type of invocation is used!
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTaskNode);
+    await this.persistOnExit(serviceTask, token);
+
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTask);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

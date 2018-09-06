@@ -1,3 +1,6 @@
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -9,48 +12,40 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
-
 import {FlowNodeHandler} from '../index';
 
 export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
-    super();
+  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(flowNode: Model.Events.IntermediateCatchEvent,
+  protected async executeInternally(messageCatchEvent: Model.Events.IntermediateCatchEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
-    await this.flowNodeInstanceService.suspend(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(messageCatchEvent, token);
+    await this.persistOnSuspend(messageCatchEvent, token);
 
-    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(flowNode.messageEventDefinition.messageRef);
+    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(messageCatchEvent.messageEventDefinition.messageRef);
 
-    processTokenFacade.addResultForFlowNode(flowNode.id, receivedMessage.tokenPayload);
+    processTokenFacade.addResultForFlowNode(messageCatchEvent.id, receivedMessage.tokenPayload);
     token.payload = receivedMessage.tokenPayload;
 
-    await this.flowNodeInstanceService.resume(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnResume(messageCatchEvent, token);
 
-    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageCatchEvent);
 
-    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnExit(messageCatchEvent, token);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }

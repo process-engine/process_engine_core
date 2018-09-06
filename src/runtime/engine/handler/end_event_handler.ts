@@ -1,4 +1,5 @@
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
   IExecutionContextFacade,
@@ -18,55 +19,49 @@ import {FlowNodeHandler} from './index';
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _flowNodeInstanceService: IFlowNodeInstanceService;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
+  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(flowNode: Model.Events.EndEvent,
+  protected async executeInternally(endEvent: Model.Events.EndEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(endEvent, token);
 
-    const flowNodeIsTerminateEndEvent: boolean = flowNode.terminateEventDefinition !== undefined;
-    const flowNodeIsErrorEndEvent: boolean = flowNode.errorEventDefinition !== undefined;
-    const flowNodeIsMessageEndEvent: boolean = flowNode.messageEventDefinition !== undefined;
-    const flowNodeIsSignalEndEvent: boolean = flowNode.signalEventDefinition !== undefined;
+    const flowNodeIsTerminateEndEvent: boolean = endEvent.terminateEventDefinition !== undefined;
+    const flowNodeIsErrorEndEvent: boolean = endEvent.errorEventDefinition !== undefined;
+    const flowNodeIsMessageEndEvent: boolean = endEvent.messageEventDefinition !== undefined;
+    const flowNodeIsSignalEndEvent: boolean = endEvent.signalEventDefinition !== undefined;
 
     let errorObj: any;
 
     // Event processing
     if (flowNodeIsTerminateEndEvent) {
-      this._processTerminateEndEvent(flowNode, token);
+      this._processTerminateEndEvent(endEvent, token);
     } else if (flowNodeIsErrorEndEvent) {
-      errorObj = this._processErrorEndEvent(flowNode);
+      errorObj = this._processErrorEndEvent(endEvent);
     } else if (flowNodeIsMessageEndEvent) {
-      this._processMessageEndEvent(flowNode, token);
+      this._processMessageEndEvent(endEvent, token);
     } else if (flowNodeIsSignalEndEvent) {
-      this._processSignalEndEvent(flowNode, token);
+      this._processSignalEndEvent(endEvent, token);
     } else {
-      this._processRegularEndEvent(flowNode, token);
+      this._processRegularEndEvent(endEvent, token);
     }
 
     // Event persisting
     if (flowNodeIsTerminateEndEvent) {
-      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
+      await this.persistOnTerminate(endEvent, token);
     } else {
-      await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+      await this.persistOnExit(endEvent, token);
     }
 
     // Finalization

@@ -1,5 +1,6 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -17,13 +18,14 @@ import {FlowNodeHandler} from './index';
 export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
   private _timerFacade: ITimerFacade;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, timerFacade: ITimerFacade) {
-    super();
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsService,
+              timerFacade: ITimerFacade) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
-    this._flowNodeInstanceService = flowNodeInstanceService;
     this._timerFacade = timerFacade;
   }
 
@@ -31,39 +33,35 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return this._eventAggregator;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
   private get timerFacade(): ITimerFacade {
     return this._timerFacade;
   }
 
-  protected async executeInternally(flowNode: Model.Events.StartEvent,
+  protected async executeInternally(startEvent: Model.Events.StartEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(startEvent, token);
 
-    const flowNodeIsMessageStartEvent: boolean = flowNode.messageEventDefinition !== undefined;
-    const flowNodeIsSignalStartEvent: boolean = flowNode.signalEventDefinition !== undefined;
-    const flowNodeIsTimerStartEvent: boolean = flowNode.timerEventDefinition !== undefined;
+    const flowNodeIsMessageStartEvent: boolean = startEvent.messageEventDefinition !== undefined;
+    const flowNodeIsSignalStartEvent: boolean = startEvent.signalEventDefinition !== undefined;
+    const flowNodeIsTimerStartEvent: boolean = startEvent.timerEventDefinition !== undefined;
 
     // If the StartEvent is not a regular StartEvent,
     // wait for the defined condition to be fulfilled.
     if (flowNodeIsMessageStartEvent) {
-      await this._waitForMessage(flowNode, token, flowNode.messageEventDefinition.messageRef);
+      await this._waitForMessage(startEvent, token, startEvent.messageEventDefinition.messageRef);
     } else if (flowNodeIsSignalStartEvent) {
-      await this._waitForSignal(flowNode, token, flowNode.signalEventDefinition.signalRef);
+      await this._waitForSignal(startEvent, token, startEvent.signalEventDefinition.signalRef);
     } else if (flowNodeIsTimerStartEvent) {
-      await this._waitForTimerToElapse(flowNode, token, flowNode.timerEventDefinition);
+      await this._waitForTimerToElapse(startEvent, token, startEvent.timerEventDefinition);
     }
 
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(startEvent);
 
-    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnExit(startEvent, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
@@ -77,11 +75,11 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * @param token       The current ProcessToken.
    * @param messageName The message to wait for.
    */
-  private async _waitForMessage(flowNode: Model.Events.StartEvent,
+  private async _waitForMessage(startEvent: Model.Events.StartEvent,
                                 token: Runtime.Types.ProcessToken,
                                 messageName: string): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(flowNode.id, this.flowNodeInstanceId, token);
+    await this.flowNodeInstanceService.suspend(startEvent.id, this.flowNodeInstanceId, token);
 
     return new Promise<void>((resolve: Function): void => {
 
@@ -93,7 +91,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
           subscription.dispose();
         }
 
-        await this.flowNodeInstanceService.resume(flowNode.id, this.flowNodeInstanceId, token);
+        await this.flowNodeInstanceService.resume(startEvent.id, this.flowNodeInstanceId, token);
 
         resolve();
       });
@@ -105,15 +103,15 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * designated signal.
    *
    * @async
-   * @param flowNode   The FlowNode containing the StartEvent.
+   * @param startEvent The FlowNode containing the StartEvent.
    * @param token      The current ProcessToken.
    * @param signalName The signal to wait for.
    */
-  private async _waitForSignal(flowNode: Model.Events.StartEvent,
+  private async _waitForSignal(startEvent: Model.Events.StartEvent,
                                token: Runtime.Types.ProcessToken,
                                signalName: string): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(flowNode.id, this.flowNodeInstanceId, token);
+    await this.flowNodeInstanceService.suspend(startEvent.id, this.flowNodeInstanceId, token);
 
     return new Promise<void>((resolve: Function): void => {
 
@@ -125,7 +123,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
           subscription.dispose();
         }
 
-        await this.flowNodeInstanceService.resume(flowNode.id, this.flowNodeInstanceId, token);
+        await this.flowNodeInstanceService.resume(startEvent.id, this.flowNodeInstanceId, token);
 
         resolve();
       });
@@ -137,15 +135,15 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * until the timer has elapsed.
    *
    * @async
-   * @param flowNode The FlowNode containing the StartEvent.
-   * @param token    The current ProcessToken.
+   * @param startEvent The FlowNode containing the StartEvent.
+   * @param token      The current ProcessToken.
    */
-  private async _waitForTimerToElapse(flowNode: Model.Events.StartEvent,
+  private async _waitForTimerToElapse(startEvent: Model.Events.StartEvent,
                                       token: Runtime.Types.ProcessToken,
                                       timerDefinition: Model.EventDefinitions.TimerEventDefinition,
                                      ): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(flowNode.id, this.flowNodeInstanceId, token);
+    await this.flowNodeInstanceService.suspend(startEvent.id, this.flowNodeInstanceId, token);
 
     return new Promise<void> (async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -156,7 +154,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
       const timerElapsed: any = async(): Promise<void> => {
 
-        await this.flowNodeInstanceService.resume(flowNode.id, this.flowNodeInstanceId, token);
+        await this.flowNodeInstanceService.resume(startEvent.id, this.flowNodeInstanceId, token);
 
         const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
 
@@ -167,7 +165,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
         resolve();
       };
 
-      timerSubscription = await this.timerFacade.initializeTimer(flowNode, timerType, timerValue, timerElapsed);
+      timerSubscription = await this.timerFacade.initializeTimer(startEvent, timerType, timerValue, timerElapsed);
     });
   }
 }

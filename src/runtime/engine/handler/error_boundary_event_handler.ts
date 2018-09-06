@@ -1,5 +1,7 @@
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -13,8 +15,8 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-    super();
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService, decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
+    super(flowNodeInstanceService, metricsService);
     this._decoratedHandler = decoratedHandler;
   }
 
@@ -22,7 +24,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     return this._decoratedHandler;
   }
 
-  protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
+  protected async executeInternally(errorBoundaryEvent: Model.Events.BoundaryEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -30,21 +32,21 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     try {
 
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+        = await this.decoratedHandler.execute(errorBoundaryEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
 
       return nextFlowNodeInfo;
 
     } catch (err) {
       // if the decorated handler encountered an error, the next flow node after the ErrorBoundaryEvent is returned
 
-      const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
+      const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(errorBoundaryEvent);
 
       const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
         return currentBoundaryEvent.errorEventDefinition !== undefined;
       });
 
       if (!boundaryEvent) {
-        throw new Error(`ErrorBoundaryEvent attached to node with id "${flowNode.id}" could not be found.`);
+        throw new Error(`ErrorBoundaryEvent attached to node with id "${errorBoundaryEvent.id}" could not be found.`);
       }
 
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);

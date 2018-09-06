@@ -1,3 +1,4 @@
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -18,18 +19,19 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
-  private _eventAggregator: IEventAggregator = undefined;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _eventAggregator: IEventAggregator;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
   private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
+  private _processTerminationMessage: TerminateEndEventReachedMessage;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsService) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -40,20 +42,16 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return this._flowNodeHandlerFactory;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(flowNode: Model.Gateways.ParallelGateway,
+  protected async executeInternally(parallelGateway: Model.Gateways.ParallelGateway,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(parallelGateway, token);
 
-    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(flowNode.id);
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(flowNode.id);
+    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(parallelGateway.id);
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
 
     const isSplitGateway: boolean = incomingSequenceFlows.length < outgoingSequenceFlows.length;
 
@@ -62,7 +60,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(token.processInstanceId);
 
       // first find the ParallelGateway that joins the branch back to the original branch
-      const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(flowNode);
+      const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(parallelGateway);
 
       // The state change must be peformed before starting to execute the parallel branches.
       // Otherwise, the Split gateay will be in a "running" state until every parallel branch has finished execution.
@@ -85,12 +83,16 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       }
 
       if (this._processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
+        await this.persistOnTerminate(parallelGateway, token);
 
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
 
-      return new NextFlowNodeInfo(joinGateway, token, processTokenFacade);
+      await this.persistOnExit(parallelGateway, token);
+
+      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    } else {
+      return undefined;
     }
 
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);

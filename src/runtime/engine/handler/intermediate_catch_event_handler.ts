@@ -1,3 +1,4 @@
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -16,8 +17,8 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
   private _container: IContainer = undefined;
 
-  constructor(container: IContainer) {
-    super();
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+    super(flowNodeInstanceService, metricsService);
     this._container = container;
   }
 
@@ -85,13 +86,11 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    const flowNodeInstanceService: IFlowNodeInstanceService = await this.container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
-
-    await flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(flowNode, token);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 
-    await flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnExit(flowNode, token);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
