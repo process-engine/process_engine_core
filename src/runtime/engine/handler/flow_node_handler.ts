@@ -108,12 +108,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnEnter(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
-                                                     processToken.processModelId,
-                                                     this.flowNodeInstanceId,
-                                                     flowNodeInstance.id,
-                                                     processToken,
-                                                     new Date());
+    await this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
+                                                           processToken.processModelId,
+                                                           this.flowNodeInstanceId,
+                                                           flowNodeInstance.id,
+                                                           processToken,
+                                                           new Date());
 
     await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
   }
@@ -127,12 +127,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnExit(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
-                                                    processToken.processModelId,
-                                                    this.flowNodeInstanceId,
-                                                    flowNodeInstance.id,
-                                                    processToken,
-                                                    new Date());
+    await this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+                                                          processToken.processModelId,
+                                                          this.flowNodeInstanceId,
+                                                          flowNodeInstance.id,
+                                                          processToken,
+                                                          new Date());
 
     await this.flowNodeInstanceService.persistOnExit(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
   }
@@ -146,12 +146,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnTerminate(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
-                                                    processToken.processModelId,
-                                                    this.flowNodeInstanceId,
-                                                    flowNodeInstance.id,
-                                                    processToken,
-                                                    new Date());
+    await this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+                                                          processToken.processModelId,
+                                                          this.flowNodeInstanceId,
+                                                          flowNodeInstance.id,
+                                                          processToken,
+                                                          new Date());
 
     await this.flowNodeInstanceService.persistOnTerminate(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
   }
@@ -165,12 +165,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnError(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken, error: Error): Promise<void> {
 
-    this.metricsService.writeOnFlowNodeInstanceError(processToken.correlationId,
-                                                     processToken.processModelId,
-                                                     this.flowNodeInstanceId,
-                                                     flowNodeInstance.id,
-                                                     error as any,
-                                                     new Date());
+    await this.metricsService.writeOnFlowNodeInstanceError(processToken.correlationId,
+                                                           processToken.processModelId,
+                                                           this.flowNodeInstanceId,
+                                                           flowNodeInstance.id,
+                                                           error as any,
+                                                           new Date());
 
     await this.flowNodeInstanceService.persistOnError(flowNodeInstance.id, this.flowNodeInstanceId, processToken, error);
   }
@@ -185,12 +185,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnSuspend(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    this.metricsService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
-                                                     processToken.processModelId,
-                                                     this.flowNodeInstanceId,
-                                                     flowNodeInstance.id,
-                                                     processToken,
-                                                     new Date());
+    await this.metricsService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
+                                                             processToken.processModelId,
+                                                             this.flowNodeInstanceId,
+                                                             flowNodeInstance.id,
+                                                             processToken,
+                                                             new Date());
 
     await this.flowNodeInstanceService.suspend(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
   }
@@ -204,12 +204,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnResume(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    this.metricsService.writeOnFlowNodeInstanceResume(processToken.correlationId,
-                                                     processToken.processModelId,
-                                                     this.flowNodeInstanceId,
-                                                     flowNodeInstance.id,
-                                                     processToken,
-                                                     new Date());
+    await this.metricsService.writeOnFlowNodeInstanceResume(processToken.correlationId,
+                                                            processToken.processModelId,
+                                                            this.flowNodeInstanceId,
+                                                            flowNodeInstance.id,
+                                                            processToken,
+                                                            new Date());
 
     await this.flowNodeInstanceService.resume(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
   }
