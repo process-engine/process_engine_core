@@ -1,8 +1,8 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
-
+import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
   EventReachedMessage,
@@ -33,47 +33,54 @@ const logger: Logger = Logger.createLogger('processengine:execute_process_servic
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
-  private _eventAggregator: IEventAggregator = undefined;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
+  private _eventAggregator: IEventAggregator;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
-  private _correlationService: ICorrelationService = undefined;
-  private _processModelService: IProcessModelService = undefined;
+  private _flowNodeInstanceService: IFlowNodeInstanceService;
+  private _correlationService: ICorrelationService;
+  private _metricsService: IMetricsService;
+  private _processModelService: IProcessModelService;
 
   private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
+  private _processTerminationMessage: TerminateEndEventReachedMessage;
 
   constructor(correlationService: ICorrelationService,
               eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsService,
               processModelService: IProcessModelService) {
 
     this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
+    this._metricsService = metricsService;
     this._processModelService = processModelService;
-  }
-
-  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
-    return this._flowNodeHandlerFactory;
   }
 
   private get correlationService(): ICorrelationService {
     return this._correlationService;
   }
 
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
+  }
+
+  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
+    return this._flowNodeHandlerFactory;
+  }
+
   private get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
   }
 
-  private get processModelService(): IProcessModelService {
-    return this._processModelService;
+  private get metricsService(): IMetricsService {
+    return this._metricsService;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   public async start(executionContextFacade: IExecutionContextFacade,
@@ -108,8 +115,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._saveCorrelation(executionContextFacade, correlationId, processModel);
 
+    this.metricsService.writeOnProcessStarted(correlationId, processModel.id, new Date());
     await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
+    this.metricsService.writeOnProcessFinished(correlationId, processModel.id, new Date());
     const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
     const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
@@ -118,7 +127,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
     }
 
     if (this._processWasTerminated) {
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
+      const error: InternalServerError = new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
+      this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
+      throw error;
     }
 
     return resultToken;
@@ -163,6 +174,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
           return reject(error);
         }
 
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
         reject(new InternalServerError(error.message));
       }
     });
@@ -220,6 +232,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
           return reject(error);
         }
 
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
         reject(new InternalServerError(error.message));
       }
 

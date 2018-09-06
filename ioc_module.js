@@ -45,6 +45,7 @@ function registerInContainer(container) {
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
+      'MetricsApiService',
       'ProcessModelService'
     );
 

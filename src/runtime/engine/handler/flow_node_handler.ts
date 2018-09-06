@@ -169,7 +169,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                            processToken.processModelId,
                                                            this.flowNodeInstanceId,
                                                            flowNodeInstance.id,
-                                                           error as any,
+                                                           processToken,
+                                                           error,
                                                            new Date());
 
     await this.flowNodeInstanceService.persistOnError(flowNodeInstance.id, this.flowNodeInstanceId, processToken, error);
