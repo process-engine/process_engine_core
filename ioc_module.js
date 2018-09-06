@@ -75,63 +75,58 @@ function registerInContainer(container) {
   container.register('BpmnModelParser', BpmnModelParser);
 
   container.register('CallActivityHandler', CallActivityHandler)
-    .dependencies('ConsumerApiService', 'FlowNodeInstanceService');
+    .dependencies('ConsumerApiService', 'FlowNodeInstanceService', 'MetricsApiService');
 
-  container.register('UserTaskHandler', UserTaskHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService');
+  container.register('EndEventHandler', EndEventHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService');
 
-  container.register('SubProcessHandler', SubProcessHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService');
-
-  container.register('ScriptTaskHandler', ScriptTaskHandler)
-    .dependencies('FlowNodeInstanceService');
-
-  container.register('StartEventHandler', StartEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'TimerFacade');
+  container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
+    .dependencies('FlowNodeInstanceService', 'MetricsApiService');
 
   container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
-    .dependencies('FlowNodeInstanceService');
+    .dependencies('FlowNodeInstanceService', 'MetricsApiService');
 
-  container.register('ParallelGatewayHandler', ParallelGatewayHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService');
+  container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
+    .dependencies('container', 'FlowNodeInstanceService', 'MetricsApiService');
 
-  container.register('ServiceTaskHandler', ServiceTaskHandler)
-    .dependencies('container', 'FlowNodeInstanceService');
+  container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
+    .dependencies('container', 'FlowNodeInstanceService', 'MetricsApiService');
 
-  container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+  container.register('IntermediateMessageCatchEventHandler', IntermediateMessageCatchEventHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService', 'TimerService');
 
   container.register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
     .dependencies('EventAggregator');
 
   container.register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
-    .dependencies('EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('ParallelGatewayHandler', ParallelGatewayHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('ScriptTaskHandler', ScriptTaskHandler)
+    .dependencies('FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('ServiceTaskHandler', ServiceTaskHandler)
+    .dependencies('container', 'FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('StartEventHandler', StartEventHandler)
+    .dependencies('FlowNodeInstanceService', 'MetricsApiService');
+
+  container.register('SubProcessHandler', SubProcessHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'MetricsApiService');
 
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('TimerFacade');
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService', 'TimerService');
 
-  container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
-    .dependencies('container');
-
-  container.register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
-    .dependencies('container');
-
-  container.register('IntermediateMessageCatchEventHandler', IntermediateMessageCatchEventHandler)
-    .dependencies('FlowNodeInstanceService', 'EventAggregator');
-
-  container.register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
-    .dependencies('FlowNodeInstanceService', 'EventAggregator');
-
-  container.register('IntermediateSignalCatchEventHandler', IntermediateSignalCatchEventHandler)
-    .dependencies('FlowNodeInstanceService', 'EventAggregator');
-
-  container.register('IntermediateSignalThrowEventHandler', IntermediateSignalThrowEventHandler)
-    .dependencies('FlowNodeInstanceService', 'EventAggregator');
-
-  container.register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)
-    .dependencies('FlowNodeInstanceService', 'TimerFacade');
-
-  container.register('EndEventHandler', EndEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService');
+  container.register('UserTaskHandler', UserTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'MetricsApiService');
 }
 
 module.exports.registerInContainer = registerInContainer;
