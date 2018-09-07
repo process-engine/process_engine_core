@@ -50,10 +50,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     await this.persistOnEnter(parallelGateway, token);
 
-    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(parallelGateway.id);
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
-
-    const isSplitGateway: boolean = incomingSequenceFlows.length < outgoingSequenceFlows.length;
+    const isSplitGateway: boolean = parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
 
     if (isSplitGateway) {
 
@@ -62,9 +59,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       // first find the ParallelGateway that joins the branch back to the original branch
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(parallelGateway);
 
-      // The state change must be peformed before starting to execute the parallel branches.
-      // Otherwise, the Split gateay will be in a "running" state until every parallel branch has finished execution.
-      await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+      const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
 
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =

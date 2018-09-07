@@ -25,13 +25,12 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     await this.persistOnEnter(exclusiveGateway, token);
 
-    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getIncomingSequenceFlowsFor(exclusiveGateway.id);
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(exclusiveGateway.id);
-
     const currentToken: any = await processTokenFacade.getOldTokenFormat();
     processTokenFacade.addResultForFlowNode(exclusiveGateway.id, currentToken.current);
 
-    const isExclusiveJoinGateway: boolean = incomingSequenceFlows.length > outgoingSequenceFlows.length;
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(exclusiveGateway.id);
+
+    const isExclusiveJoinGateway: boolean = exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
 
     if (isExclusiveJoinGateway) {
 
