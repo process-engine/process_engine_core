@@ -26,7 +26,7 @@
     "@essential-projects/iam_contracts": "^3.1.0",
     "@essential-projects/timing_contracts": "^3.0.0",
     "@process-engine/consumer_api_contracts": "^0.15.0",
-    "@process-engine/process_engine_contracts": "^25.0.0",
+    "@process-engine/process_engine_contracts": "feature~add_query_for_specific_flow_node",
     "@types/clone": "^0.1.30",
     "addict-ioc": "^2.2.8",
     "bluebird": "^3.4.7",
