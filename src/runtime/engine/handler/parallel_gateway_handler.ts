@@ -1,3 +1,6 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+
 import {IMetricsService} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
@@ -12,10 +15,7 @@ import {
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
-
 import {FlowNodeHandler} from './index';
-import {InternalServerError} from '@essential-projects/errors_ts';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
