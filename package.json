@@ -27,7 +27,7 @@
     "@essential-projects/timing_contracts": "3.0.0",
     "@process-engine/consumer_api_contracts": "0.16.1",
     "@process-engine/metrics_api_contracts": "0.1.1",
-    "@process-engine/process_engine_contracts": "25.0.0",
+    "@process-engine/process_engine_contracts": "26.0.0",
     "@types/clone": "0.1.30",
     "addict-ioc": "2.3.7",
     "bluebird": "3.5.1",
