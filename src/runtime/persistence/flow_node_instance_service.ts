@@ -26,32 +26,34 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._iamService;
   }
 
-  public async queryByInstanceId(instanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
+  public async querySpecificFlowNode(correlationId: string, processModelId: string, flowNodeId: string): Promise<Runtime.Types.FlowNodeInstance> {
+    return this.flowNodeInstanceRepository.querySpecificFlowNode(correlationId, processModelId, flowNodeId);
+  }
 
+  public async queryByFlowNodeId(flowNodeId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this.flowNodeInstanceRepository.queryByFlowNodeId(flowNodeId);
+  }
+
+  public async queryByInstanceId(instanceId: string): Promise<Runtime.Types.FlowNodeInstance> {
     return this.flowNodeInstanceRepository.queryByInstanceId(instanceId);
   }
 
   public async queryByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
-
     return this.flowNodeInstanceRepository.queryByCorrelation(correlationId);
   }
 
   public async queryByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
-
     return this.flowNodeInstanceRepository.queryByProcessModel(processModelId);
   }
 
   public async querySuspendedByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
-
     return this.flowNodeInstanceRepository.querySuspendedByCorrelation(correlationId);
   }
 
   public async querySuspendedByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
-
     return this.flowNodeInstanceRepository.querySuspendedByProcessModel(processModelId);
   }
   public async queryProcessTokensByProcessInstanceId(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
-
     return this.flowNodeInstanceRepository.queryProcessTokensByProcessInstanceId(processInstanceId);
   }
 
@@ -89,7 +91,6 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
   }
 
   public async suspend(flowNodeId: string, flowNodeInstanceId: string, token: Runtime.Types.ProcessToken): Promise<Runtime.Types.FlowNodeInstance> {
-
     return this.flowNodeInstanceRepository.suspend(flowNodeId, flowNodeInstanceId, token);
   }
 
