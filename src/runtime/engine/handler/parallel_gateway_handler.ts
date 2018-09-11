@@ -61,6 +61,10 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
 
+      // The state change must be performed before the parallel branches are executed.
+      // Otherwise, the Split Gateway will be in a running state, until all branches have finished.
+      await this.persistOnExit(parallelGateway, token);
+
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
         this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, executionContextFacade);
@@ -83,16 +87,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
 
-      await this.persistOnExit(parallelGateway, token);
-
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
-    } else {
-      return undefined;
+      return new NextFlowNodeInfo(joinGateway, token, processTokenFacade);
     }
 
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
+    // This is a Join-Gateway. Just persist a state change and move on.
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(parallelGateway);
 
-    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnExit(parallelGateway, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
