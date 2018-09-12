@@ -1,5 +1,6 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {
+  eventAggregatorSettings,
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
@@ -7,6 +8,9 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
+  UserTaskFinishedMessage,
+  UserTaskResult,
+  UserTaskWaitingMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -59,7 +63,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
           await this.flowNodeInstanceService.persistOnExit(userTask.id, this.flowNodeInstanceId, token);
 
-          this._sendUserTaskFinishedToConsumerApi(finishEvent);
+          this._sendUserTaskFinishedToConsumerApi(token.correlationId, token.processInstanceId, userTask.id, userTaskResult);
 
           if (subscription) {
             subscription.dispose();
@@ -69,12 +73,30 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
         });
 
       await this.flowNodeInstanceService.suspend(userTask.id, this.flowNodeInstanceId, token);
+      this._sendUserTaskWaitingToConsumerApi(token.correlationId, token.processInstanceId, userTask.id);
     });
 
   }
 
-  private _sendUserTaskFinishedToConsumerApi(finishEvent: string): void {
+  private _sendUserTaskWaitingToConsumerApi(correlationId: string,
+                                            processInstanceId: string,
+                                            userTaskId: string): void {
+    const message: UserTaskWaitingMessage = new UserTaskWaitingMessage();
+    message.correlationId = correlationId;
+    message.processInstanceId = processInstanceId;
+    message.userTaskId = userTaskId;
+    this.eventAggregator.publish(eventAggregatorSettings.paths.userTaskWaiting, message);
+  }
 
-    this.eventAggregator.publish(`${finishEvent}/finished`, {});
+  private _sendUserTaskFinishedToConsumerApi(correlationId: string,
+                                             processInstanceId: string,
+                                             userTaskId: string,
+                                             userTaskResult: UserTaskResult): void {
+    const message: UserTaskFinishedMessage = new UserTaskFinishedMessage();
+    message.correlationId = correlationId;
+    message.processInstanceId = processInstanceId;
+    message.userTaskId = userTaskId;
+    message.userTaskResult = userTaskResult;
+    this.eventAggregator.publish(eventAggregatorSettings.paths.userTaskFinished, message);
   }
 }

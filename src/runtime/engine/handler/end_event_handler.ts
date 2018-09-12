@@ -1,14 +1,15 @@
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {
-  EndEventReachedMessage,
+  eventAggregatorSettings,
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
   NextFlowNodeInfo,
+  ProcessEndedMessage,
+  ProcessTerminatedMessage,
   Runtime,
-  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -43,12 +44,11 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     const flowNodeHasTerminateEventDefinition: boolean = flowNode.terminateEventDefinition !== undefined;
     if (flowNodeHasTerminateEventDefinition) {
       await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
-      this.eventAggregator.publish(`/processengine/process/${token.processInstanceId}/terminated`, new TerminateEndEventReachedMessage(flowNode.id, token.payload));
+      this._sendProcessTerminatedToConsumerApi(token.correlationId, token.processInstanceId, flowNode.id, token.payload);
     } else {
       await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
-      this.eventAggregator.publish(`/processengine/node/${flowNode.id}`, new EndEventReachedMessage(flowNode.id, token.payload));
+      this._sendProcessEndedToConsumerApi(token.correlationId, token.processInstanceId, flowNode.id, token.payload);
     }
-
 
     if (flowNode.errorEventDefinition) {
       const errorEventDefinition: Model.Types.Error = flowNode.errorEventDefinition.errorReference;
@@ -63,5 +63,29 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     }
 
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+  }
+
+  private _sendProcessTerminatedToConsumerApi(correlationId: string,
+                                              processInstanceId: string,
+                                              flowNodeId: string,
+                                              tokenPayload: any): void {
+    const message: ProcessTerminatedMessage = new ProcessTerminatedMessage();
+    message.correlationId = correlationId;
+    message.processInstanceId = processInstanceId;
+    message.flowNodeId = flowNodeId;
+    message.tokenPayload = tokenPayload;
+    this.eventAggregator.publish(eventAggregatorSettings.paths.processTerminated, message);
+  }
+
+  private _sendProcessEndedToConsumerApi(correlationId: string,
+                                         processInstanceId: string,
+                                         flowNodeId: string,
+                                         tokenPayload: any): void {
+    const message: ProcessEndedMessage = new ProcessEndedMessage();
+    message.correlationId = correlationId;
+    message.processInstanceId = processInstanceId;
+    message.flowNodeId = flowNodeId;
+    message.tokenPayload = tokenPayload;
+    this.eventAggregator.publish(eventAggregatorSettings.paths.processEnded, message);
   }
 }
