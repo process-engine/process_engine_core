@@ -5,6 +5,7 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 
 import {
   EndEventReachedMessage,
+  eventAggregatorSettings,
   EventReachedMessage,
   ICorrelationService,
   IExecuteProcessService,
@@ -18,8 +19,9 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
+  ProcessEndedMessage,
+  ProcessTerminatedMessage,
   Runtime,
-  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
@@ -31,17 +33,18 @@ import {Logger} from 'loggerhythm';
 
 const logger: Logger = Logger.createLogger('processengine:execute_process_service');
 
+interface IProcessStateInfo {
+  processTerminationSubscription?: ISubscription;
+  processTerminatedMessage?: ProcessTerminatedMessage;
+}
+
 export class ExecuteProcessService implements IExecuteProcessService {
 
   private _eventAggregator: IEventAggregator = undefined;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
   private _correlationService: ICorrelationService = undefined;
   private _processModelService: IProcessModelService = undefined;
-
-  private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
 
   constructor(correlationService: ICorrelationService,
               eventAggregator: IEventAggregator,
@@ -104,11 +107,18 @@ export class ExecuteProcessService implements IExecuteProcessService {
     processToken.caller = caller;
     processTokenFacade.addResultForFlowNode(startEvent.id, initialPayload);
 
-    const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(processInstanceId);
+    const processStateInfo: IProcessStateInfo = {};
+
+    const processTerminationSubscription: ISubscription = this.eventAggregator
+        .subscribe(eventAggregatorSettings.paths.processTerminated, async(message: ProcessTerminatedMessage): Promise<void> => {
+          if (message.processInstanceId === processInstanceId) {
+            processStateInfo.processTerminatedMessage = message;
+          }
+      });
 
     await this._saveCorrelation(executionContextFacade, correlationId, processModel);
 
-    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade, processStateInfo);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
@@ -117,10 +127,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processTerminationSubscription.dispose();
     }
 
-    await this._end(processInstanceId, resultToken);
+    const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
-    if (this._processWasTerminated) {
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
+    if (processWasTerminated) {
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}."`);
     }
 
     return resultToken;
@@ -134,10 +144,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              initialPayload?: any,
                                              caller?: string): Promise<EndEventReachedMessage> {
 
-    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
+        this.eventAggregator.subscribeOnce(eventAggregatorSettings.paths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
           resolve(message);
         });
 
@@ -217,7 +227,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private async _saveCorrelation(executionContextFacade: IExecutionContextFacade,
                                  correlationId: string,
-                                 processModel: Model.Types.Process
+                                 processModel: Model.Types.Process,
                                 ): Promise<void> {
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
@@ -226,25 +236,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
     await this.correlationService.createEntry(correlationId, processDefinition.hash);
   }
 
-  private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
-
-    // Branch execution must not continue, if the process was terminated.
-    // So we need to watch out for a terminate end event here aswell.
-    const eventName: string = `/processengine/process/${processInstanceId}/terminated`;
-
-    return this
-        .eventAggregator
-        .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-          this._processWasTerminated = true;
-          this._processTerminationMessage = message;
-      });
-  }
-
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
                                  processToken: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
-                                 executionContextFacade: IExecutionContextFacade): Promise<void> {
+                                 executionContextFacade: IExecutionContextFacade,
+                                 processStateInfo: IProcessStateInfo): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
@@ -253,7 +250,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
 
-    if (this._processWasTerminated) {
+    const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
+
+    if (processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
       await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
     } else if (nextFlowNodeInfoHasFlowNode) {
@@ -261,7 +260,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,
-                                  executionContextFacade);
+                                  executionContextFacade,
+                                  processStateInfo);
     }
   }
 
@@ -270,15 +270,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
 
     return allResults.pop();
-  }
-
-  private async _end(processInstanceId: string, processTokenResult: IProcessTokenResult): Promise<void> {
-
-    const  processEndMessage: EventReachedMessage = this._processWasTerminated
-      ? this._processTerminationMessage
-      : new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
-
-    this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }
 
 }
