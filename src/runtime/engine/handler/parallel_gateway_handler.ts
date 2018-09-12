@@ -74,6 +74,10 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       // first find the ParallelGateway that joins the branch back to the original branch
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(flowNode);
 
+      // The state change must be peformed before starting to execute the parallel branches.
+      // Otherwise, the Split gateay will be in a "running" state until every parallel branch has finished execution.
+      await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
         this._executeParallelBranches(outgoingSequenceFlows,
@@ -91,8 +95,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         processTokenFacade.mergeTokenHistory(nextFlowNodeInfo.processTokenFacade);
       }
 
-      const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(joinGateway);
-
       const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
       if (processTerminationSubscriptionIsActive) {
         processTerminationSubscription.dispose();
@@ -106,12 +108,14 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
 
-      await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
-
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
-    } else {
-      return undefined;
+      return new NextFlowNodeInfo(joinGateway, token, processTokenFacade);
     }
+
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
+
+    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
