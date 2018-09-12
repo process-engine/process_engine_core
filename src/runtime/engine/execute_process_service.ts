@@ -4,9 +4,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {InternalServerError} from '@essential-projects/errors_ts';
 
 import {
-  EndEventReachedMessage,
   eventAggregatorSettings,
-  EventReachedMessage,
   ICorrelationService,
   IExecuteProcessService,
   IExecutionContextFacade,
@@ -20,7 +18,6 @@ import {
   Model,
   NextFlowNodeInfo,
   ProcessEndedMessage,
-  ProcessTerminatedMessage,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -35,7 +32,7 @@ const logger: Logger = Logger.createLogger('processengine:execute_process_servic
 
 interface IProcessStateInfo {
   processTerminationSubscription?: ISubscription;
-  processTerminatedMessage?: ProcessTerminatedMessage;
+  processTerminatedMessage?: ProcessEndedMessage;
 }
 
 export class ExecuteProcessService implements IExecuteProcessService {
@@ -110,7 +107,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processStateInfo: IProcessStateInfo = {};
 
     const processTerminationSubscription: ISubscription = this.eventAggregator
-        .subscribe(eventAggregatorSettings.paths.processTerminated, async(message: ProcessTerminatedMessage): Promise<void> => {
+        .subscribe(eventAggregatorSettings.paths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
           if (message.processInstanceId === processInstanceId) {
             processStateInfo.processTerminatedMessage = message;
           }
@@ -142,7 +139,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              correlationId: string,
                                              endEventId: string,
                                              initialPayload?: any,
-                                             caller?: string): Promise<EndEventReachedMessage> {
+                                             caller?: string): Promise<ProcessEndedMessage> {
 
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -179,18 +176,18 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                      startEventId: string,
                                      correlationId: string,
                                      initialPayload?: any,
-                                     caller?: string): Promise<EndEventReachedMessage> {
+                                     caller?: string): Promise<ProcessEndedMessage> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     const endEvents: Array<Model.Events.EndEvent> = processModelFacade.getEndEvents();
     const subscriptions: Array<ISubscription> = [];
 
-    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
       for (const endEvent of endEvents) {
 
         const subscription: ISubscription
-          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: EndEventReachedMessage): Promise<void> => {
+          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: ProcessEndedMessage): Promise<void> => {
 
           for (const existingSubscription of subscriptions) {
             existingSubscription.dispose();
