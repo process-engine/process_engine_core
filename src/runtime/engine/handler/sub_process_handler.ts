@@ -1,4 +1,5 @@
 import {
+  eventAggregatorSettings,
   IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
@@ -7,8 +8,8 @@ import {
   IProcessTokenFacade,
   Model,
   NextFlowNodeInfo,
+  ProcessEndedMessage,
   Runtime,
-  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
@@ -16,14 +17,16 @@ import {IEventAggregator, ISubscription} from '@essential-projects/event_aggrega
 
 import {FlowNodeHandler} from './index';
 
+interface IProcessStateInfo {
+  processTerminationSubscription?: ISubscription;
+  processTerminatedMessage?: ProcessEndedMessage;
+}
+
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
   private _eventAggregator: IEventAggregator = undefined;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
-
-  private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
 
   constructor(eventAggregator: IEventAggregator, flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
@@ -52,7 +55,14 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     await this.flowNodeInstanceService.persistOnEnter(subProcessNode.id, this.flowNodeInstanceId, token);
 
-    const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(token.processInstanceId);
+    const processStateInfo: IProcessStateInfo = {};
+
+    const processTerminationSubscription: ISubscription = this.eventAggregator
+      .subscribeOnce(eventAggregatorSettings.paths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
+        if (message.processInstanceId === token.processInstanceId) {
+          processStateInfo.processTerminatedMessage = message;
+        }
+      });
 
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,
     // but results of the SubProcess are not accessible by the original Process before the SubProcess finishes.
@@ -73,7 +83,12 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     subProcessTokenFacade.addResultForFlowNode(startEvent.id, initialTokenData.current);
 
-    await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent,
+                                token,
+                                subProcessTokenFacade,
+                                subProcessModelFacade,
+                                executionContextFacade,
+                                processStateInfo);
 
     const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
     if (processTerminationSubscriptionIsActive) {
@@ -96,34 +111,23 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
-  private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
-
-    // Branch execution must not continue, if the process was terminated.
-    // So we need to watch out for a terminate end event here aswell.
-    const eventName: string = `/processengine/process/${processInstanceId}/terminated`;
-
-    return this
-        .eventAggregator
-        .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-          this._processWasTerminated = true;
-          this._processTerminationMessage = message;
-      });
-  }
-
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
                                  token: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
-                                 executionContextFacade: IExecutionContextFacade): Promise<void> {
+                                 executionContextFacade: IExecutionContextFacade,
+                                 processStateInfo: IProcessStateInfo): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
-      if (this._processWasTerminated) {
+    const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
+
+    if (processWasTerminated) {
         await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
-        throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
+        throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}".`);
       }
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
@@ -131,7 +135,8 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,
-                                  executionContextFacade);
+                                  executionContextFacade,
+                                  processStateInfo);
     }
   }
 
