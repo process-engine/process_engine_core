@@ -8,7 +8,7 @@ import {
   Model,
   NextFlowNodeInfo,
   ProcessEndedMessage,
-  ProcessTerminatedMessage,
+  ProcessEndType,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -69,11 +69,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                               processInstanceId: string,
                                               flowNodeId: string,
                                               tokenPayload: any): void {
-    const message: ProcessTerminatedMessage = new ProcessTerminatedMessage();
+    const message: ProcessEndedMessage = new ProcessEndedMessage();
     message.correlationId = correlationId;
     message.processInstanceId = processInstanceId;
     message.flowNodeId = flowNodeId;
     message.tokenPayload = tokenPayload;
+    message.endType = ProcessEndType.Terminated;
     this.eventAggregator.publish(eventAggregatorSettings.paths.processTerminated, message);
   }
 
@@ -86,6 +87,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     message.processInstanceId = processInstanceId;
     message.flowNodeId = flowNodeId;
     message.tokenPayload = tokenPayload;
+    message.endType = ProcessEndType.Ended;
     this.eventAggregator.publish(eventAggregatorSettings.paths.processEnded, message);
   }
 }
