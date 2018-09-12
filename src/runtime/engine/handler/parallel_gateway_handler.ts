@@ -76,7 +76,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
-        this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, executionContextFacade);
+        this._executeParallelBranches(outgoingSequenceFlows,
+                                      joinGateway,
+                                      token,
+                                      processTokenFacade,
+                                      processModelFacade,
+                                      executionContextFacade,
+                                      processStateInfo);
 
       // After all parallel branches have been executed, each result is merged on the ProcessTokenFacade
       const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
@@ -113,7 +119,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                    token: Runtime.Types.ProcessToken,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
-                                   executionContextFacade: IExecutionContextFacade): Array<Promise<NextFlowNodeInfo>> {
+                                   executionContextFacade: IExecutionContextFacade,
+                                   processStateInfo: IProcessStateInfo): Array<Promise<NextFlowNodeInfo>> {
 
     return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
 
@@ -128,7 +135,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                                     tokenForBranch,
                                                     processTokenForBranch,
                                                     processModelFacade,
-                                                    executionContextFacade);
+                                                    executionContextFacade,
+                                                    processStateInfo);
     });
   }
 
