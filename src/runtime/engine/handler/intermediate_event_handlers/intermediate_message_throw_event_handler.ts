@@ -1,6 +1,6 @@
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -18,7 +18,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
   private _eventAggregator: IEventAggregator;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
   }

@@ -7,7 +7,7 @@ import {
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -26,7 +26,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
   private _consumerApiService: IConsumerApiService;
 
-  constructor(consumerApiService: IConsumerApiService, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+  constructor(consumerApiService: IConsumerApiService, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
 
     this._consumerApiService = consumerApiService;

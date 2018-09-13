@@ -1,4 +1,4 @@
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -17,7 +17,7 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
   private _container: IContainer = undefined;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
     this._container = container;
   }

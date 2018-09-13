@@ -1,7 +1,7 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -28,7 +28,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              metricsService: IMetricsService) {
+              metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;

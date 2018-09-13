@@ -1,4 +1,4 @@
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -28,7 +28,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              metricsService: IMetricsService) {
+              metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;

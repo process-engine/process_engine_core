@@ -1,6 +1,6 @@
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
 
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -19,7 +19,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
   private _timerFacade: ITimerFacade;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService, timerFacade: ITimerFacade) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi, timerFacade: ITimerFacade) {
     super(flowNodeInstanceService, metricsService);
     this._timerFacade = timerFacade;
   }

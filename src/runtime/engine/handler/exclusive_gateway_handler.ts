@@ -1,4 +1,4 @@
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -13,7 +13,7 @@ import {FlowNodeHandler} from './index';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
   }
 

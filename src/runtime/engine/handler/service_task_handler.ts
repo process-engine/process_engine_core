@@ -1,4 +1,4 @@
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   ExecutionContext,
   IExecutionContextFacade,
@@ -18,7 +18,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
   private _container: IContainer;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
     super(flowNodeInstanceService, metricsService);
 
     this._container = container;

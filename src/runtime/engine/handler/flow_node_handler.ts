@@ -1,4 +1,4 @@
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -17,9 +17,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   protected flowNodeInstanceId: string;
 
   private _flowNodeInstanceService: IFlowNodeInstanceService;
-  private _metricsService: IMetricsService;
+  private _metricsService: IMetricsApi;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._metricsService = metricsService;
   }
@@ -28,7 +28,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this._flowNodeInstanceService;
   }
 
-  protected get metricsService(): IMetricsService {
+  protected get metricsService(): IMetricsApi {
     return this._metricsService;
   }
 

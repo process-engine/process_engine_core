@@ -2,7 +2,7 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
   EventReachedMessage,
@@ -38,7 +38,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _correlationService: ICorrelationService;
-  private _metricsService: IMetricsService;
+  private _metricsService: IMetricsApi;
   private _processModelService: IProcessModelService;
 
   private _processWasTerminated: boolean = false;
@@ -48,7 +48,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
               eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              metricsService: IMetricsService,
+              metricsService: IMetricsApi,
               processModelService: IProcessModelService) {
 
     this._correlationService = correlationService;
@@ -75,7 +75,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._flowNodeInstanceService;
   }
 
-  private get metricsService(): IMetricsService {
+  private get metricsService(): IMetricsApi {
     return this._metricsService;
   }
 

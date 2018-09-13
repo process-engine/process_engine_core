@@ -1,4 +1,4 @@
-import {IMetricsService} from '@process-engine/metrics_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -15,7 +15,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsService, decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi, decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
     super(flowNodeInstanceService, metricsService);
     this._decoratedHandler = decoratedHandler;
   }
