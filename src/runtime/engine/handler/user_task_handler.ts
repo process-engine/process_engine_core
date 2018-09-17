@@ -9,6 +9,7 @@ import {
   NextFlowNodeInfo,
   Runtime,
   UserTaskFinishedMessage,
+  FinishUserTaskMessage,
   UserTaskResult,
   UserTaskWaitingMessage,
 } from '@process-engine/process_engine_contracts';
@@ -44,16 +45,18 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       await this.flowNodeInstanceService.persistOnEnter(userTask.id, this.flowNodeInstanceId, token);
 
-      const finishEvent: string =
-        `/processengine/correlation/${token.correlationId}/processinstance/${token.processInstanceId}/node/${userTask.id}`;
+      const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
+        .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+        .replace(eventAggregatorSettings.routeParams.userTaskId, userTask.id);
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(`${finishEvent}/finish`, async(message: any): Promise<void> => {
+        this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
 
           await this.flowNodeInstanceService.resume(userTask.id, this.flowNodeInstanceId, token);
 
           const userTaskResult: any = {
-            form_fields: message.data.token === undefined ? null : message.data.token,
+            form_fields: message.result === undefined ? null : message.result,
           };
 
           processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
