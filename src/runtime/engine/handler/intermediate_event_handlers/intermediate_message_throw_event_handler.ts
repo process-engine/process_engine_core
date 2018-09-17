@@ -1,4 +1,5 @@
 import {
+  eventAggregatorSettings,
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
@@ -39,9 +40,12 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
-    const messageName: string = `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageRef}`;
+    const intermediateMessageEventName: string = eventAggregatorSettings.routePaths.intermediateMessageEvent
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.messageRef, flowNode.messageEventDefinition.messageRef);
 
-    this.eventAggregator.publish(messageName);
+    // TODO: add message payload as soon as it is required
+    this.eventAggregator.publish(intermediateMessageEventName);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 

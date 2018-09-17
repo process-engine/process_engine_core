@@ -1,4 +1,5 @@
 import {
+  eventAggregatorSettings,
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
@@ -55,9 +56,13 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
 
     return new Promise<void>((resolve: Function): void => {
 
+      const intermediateMessageEventName: string = eventAggregatorSettings.routePaths.intermediateMessageEvent
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
+        .replace(eventAggregatorSettings.routeParams.messageRef, messageReference);
+
       const messageName: string = `/processengine/process/${processInstanceId}/message/${messageReference}`;
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageName, async(message: any) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(intermediateMessageEventName, async(message: any) => {
 
         if (subscription) {
           subscription.dispose();

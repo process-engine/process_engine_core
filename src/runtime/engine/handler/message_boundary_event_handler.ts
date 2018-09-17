@@ -1,5 +1,6 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {
+  eventAggregatorSettings,
   IExecutionContextFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -73,8 +74,9 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     const messageBoundaryEvent: Model.Events.BoundaryEvent = await this._getMessageBoundaryEvent(flowNode, processModelFacade);
 
-    const messageName: string =
-      `/processengine/process/${token.processInstanceId}/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
+    const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageBoundaryEvent
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.messageRef, messageBoundaryEvent.messageEventDefinition.messageRef);
 
     const messageReceivedCallback: any = async(): Promise<void> => {
 
@@ -93,7 +95,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       return resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
     };
 
-    this.subscription = this.eventAggregator.subscribeOnce(messageName, messageReceivedCallback);
+    this.subscription = this.eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback);
   }
 
   private _getMessageBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFacade: IProcessModelFacade): Model.Events.BoundaryEvent {
