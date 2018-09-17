@@ -107,7 +107,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processStateInfo: IProcessStateInfo = {};
 
     const processTerminationSubscription: ISubscription = this.eventAggregator
-        .subscribe(eventAggregatorSettings.paths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
+        .subscribe(eventAggregatorSettings.messagePaths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
           if (message.processInstanceId === processInstanceId) {
             processStateInfo.processTerminatedMessage = message;
           }
@@ -144,7 +144,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(eventAggregatorSettings.paths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
+        this.eventAggregator.subscribeOnce(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
           resolve(message);
         });
 
