@@ -10,6 +10,7 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
+import * as moment from 'moment';
 import * as uuid from 'uuid';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
@@ -110,12 +111,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
 
+    const now: moment.Moment = moment.utc();
+
     await this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
                                                            processToken.processModelId,
                                                            this.flowNodeInstanceId,
                                                            flowNodeInstance.id,
                                                            processToken,
-                                                           new Date());
+                                                           now);
   }
 
   /**
@@ -129,12 +132,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     await this.flowNodeInstanceService.persistOnExit(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
 
+    const now: moment.Moment = moment.utc();
+
     await this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
                                                           processToken.processModelId,
                                                           this.flowNodeInstanceId,
                                                           flowNodeInstance.id,
                                                           processToken,
-                                                          new Date());
+                                                          now);
 
   }
 
@@ -149,12 +154,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     await this.flowNodeInstanceService.persistOnTerminate(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
 
+    const now: moment.Moment = moment.utc();
+
     await this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
                                                           processToken.processModelId,
                                                           this.flowNodeInstanceId,
                                                           flowNodeInstance.id,
                                                           processToken,
-                                                          new Date());
+                                                          now);
   }
 
   /**
@@ -168,15 +175,16 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     await this.flowNodeInstanceService.persistOnError(flowNodeInstance.id, this.flowNodeInstanceId, processToken, error);
 
+    const now: moment.Moment = moment.utc();
+
     await this.metricsService.writeOnFlowNodeInstanceError(processToken.correlationId,
                                                            processToken.processModelId,
                                                            this.flowNodeInstanceId,
                                                            flowNodeInstance.id,
                                                            processToken,
                                                            error,
-                                                           new Date());
+                                                           now);
   }
-
 
   /**
    * Suspends the execution of the given FlowNodeInstance.
@@ -189,12 +197,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     await this.flowNodeInstanceService.suspend(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
 
+    const now: moment.Moment = moment.utc();
+
     await this.metricsService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
                                                              processToken.processModelId,
                                                              this.flowNodeInstanceId,
                                                              flowNodeInstance.id,
                                                              processToken,
-                                                             new Date());
+                                                             now);
   }
 
   /**
@@ -208,12 +218,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     await this.flowNodeInstanceService.resume(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
 
+    const now: moment.Moment = moment.utc();
+
     await this.metricsService.writeOnFlowNodeInstanceResume(processToken.correlationId,
                                                             processToken.processModelId,
                                                             this.flowNodeInstanceId,
                                                             flowNodeInstance.id,
                                                             processToken,
-                                                            new Date());
+                                                            now);
   }
 
   /**

@@ -1,3 +1,7 @@
+import {Logger} from 'loggerhythm';
+import * as moment from 'moment';
+import * as uuid from 'uuid';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -24,10 +28,6 @@ import {
 
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
-
-import * as uuid from 'uuid';
-
-import {Logger} from 'loggerhythm';
 
 const logger: Logger = Logger.createLogger('processengine:execute_process_service');
 
@@ -115,11 +115,13 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._saveCorrelation(executionContextFacade, correlationId, processModel);
 
-    this.metricsService.writeOnProcessStarted(correlationId, processModel.id, new Date());
+    const startTime: moment.Moment = moment.utc();
+    this.metricsService.writeOnProcessStarted(correlationId, processModel.id, startTime);
     try {
       await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
 
-      this.metricsService.writeOnProcessFinished(correlationId, processModel.id, new Date());
+      const endTime: moment.Moment = moment.utc();
+      this.metricsService.writeOnProcessFinished(correlationId, processModel.id, endTime);
       const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
       const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
@@ -133,7 +135,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       return resultToken;
     } catch (error) {
-      this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
+      const errorTime: moment.Moment = moment.utc();
+      this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
       throw error;
     }
 
@@ -171,7 +174,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         if (subscriptionIsActive) {
           subscription.dispose();
         }
-        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
+        const errorTime: moment.Moment = moment.utc();
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
@@ -229,7 +233,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         for (const subscription of subscriptions) {
           subscription.dispose();
         }
-        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, new Date());
+        const errorTime: moment.Moment = moment.utc();
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
