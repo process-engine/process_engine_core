@@ -47,7 +47,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
         .replace(eventAggregatorSettings.routeParams.userTaskId, userTask.id);
 
       const subscription: ISubscription =
@@ -88,7 +88,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     message.correlationId = correlationId;
     message.processInstanceId = processInstanceId;
     message.userTaskId = userTaskId;
-    this.eventAggregator.publish(eventAggregatorSettings.paths.userTaskWaiting, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskWaiting, message);
   }
 
   private _sendUserTaskFinishedToConsumerApi(correlationId: string,
@@ -100,6 +100,6 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     message.processInstanceId = processInstanceId;
     message.userTaskId = userTaskId;
     message.userTaskResult = userTaskResult;
-    this.eventAggregator.publish(eventAggregatorSettings.paths.userTaskFinished, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
   }
 }
