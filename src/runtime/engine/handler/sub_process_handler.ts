@@ -28,7 +28,9 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+              flowNodeInstanceService: IFlowNodeInstanceService) {
     super();
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
@@ -57,11 +59,12 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const processStateInfo: IProcessStateInfo = {};
 
+    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+
     const processTerminationSubscription: ISubscription = this.eventAggregator
-      .subscribeOnce(eventAggregatorSettings.paths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
-        if (message.processInstanceId === token.processInstanceId) {
-          processStateInfo.processTerminatedMessage = message;
-        }
+      .subscribeOnce(processTerminatedEvent, async(message: ProcessEndedMessage): Promise<void> => {
+        processStateInfo.processTerminatedMessage = message;
       });
 
     // Create a child Facade for the ProcessToken, so that results of the Process are accessible by the SubProcess,

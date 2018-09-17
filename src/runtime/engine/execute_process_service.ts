@@ -106,11 +106,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processStateInfo: IProcessStateInfo = {};
 
+    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
+
     const processTerminationSubscription: ISubscription = this.eventAggregator
-        .subscribe(eventAggregatorSettings.messagePaths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
-          if (message.processInstanceId === processInstanceId) {
-            processStateInfo.processTerminatedMessage = message;
-          }
+      .subscribe(processTerminatedEvent, async(message: ProcessEndedMessage): Promise<void> => {
+          processStateInfo.processTerminatedMessage = message;
       });
 
     await this._saveCorrelation(executionContextFacade, correlationId, processModel);

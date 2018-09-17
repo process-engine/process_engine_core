@@ -64,12 +64,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const processStateInfo: IProcessStateInfo = {};
 
+      const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+
       const processTerminationSubscription: ISubscription = this.eventAggregator
-      .subscribeOnce(eventAggregatorSettings.paths.processTerminated, async(message: ProcessEndedMessage): Promise<void> => {
-        if (message.processInstanceId === token.processInstanceId) {
+        .subscribeOnce(processTerminatedEvent, async(message: ProcessEndedMessage): Promise<void> => {
           processStateInfo.processTerminatedMessage = message;
-        }
-    });
+        });
 
       // first find the ParallelGateway that joins the branch back to the original branch
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(flowNode);
