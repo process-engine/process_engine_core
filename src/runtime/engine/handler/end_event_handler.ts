@@ -75,7 +75,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     message.flowNodeId = flowNodeId;
     message.tokenPayload = tokenPayload;
     message.endType = ProcessEndType.Terminated;
+
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
+    
+    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
+    this.eventAggregator.publish(processTerminatedEvent, message);
   }
 
   private _sendProcessEndedToConsumerApi(correlationId: string,
@@ -88,6 +93,11 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     message.flowNodeId = flowNodeId;
     message.tokenPayload = tokenPayload;
     message.endType = ProcessEndType.Ended;
+
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
+    
+    const processEndedEvent: string = eventAggregatorSettings.routePaths.processEnded
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
+    this.eventAggregator.publish(processEndedEvent, message);
   }
 }

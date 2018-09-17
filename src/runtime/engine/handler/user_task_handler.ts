@@ -1,6 +1,7 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {
   eventAggregatorSettings,
+  FinishUserTaskMessage,
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
@@ -9,7 +10,6 @@ import {
   NextFlowNodeInfo,
   Runtime,
   UserTaskFinishedMessage,
-  FinishUserTaskMessage,
   UserTaskResult,
   UserTaskWaitingMessage,
 } from '@process-engine/process_engine_contracts';
@@ -88,6 +88,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     message.correlationId = correlationId;
     message.processInstanceId = processInstanceId;
     message.userTaskId = userTaskId;
+
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskWaiting, message);
   }
 
@@ -100,6 +101,13 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     message.processInstanceId = processInstanceId;
     message.userTaskId = userTaskId;
     message.userTaskResult = userTaskResult;
+
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
+
+    const userTaskFinishedEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
+      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.userTaskId, userTaskId);
+    this.eventAggregator.publish(userTaskFinishedEvent, message);
   }
 }
