@@ -48,13 +48,19 @@ export class TimerFacade implements ITimerFacade {
   }
 
   public parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
-    if (eventDefinition[TimerBpmnType.Duration]) {
+
+    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    if (timerIsDuration) {
       return TimerDefinitionType.duration;
     }
-    if (eventDefinition[TimerBpmnType.Cycle]) {
+
+    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+    if (timerIsCyclic) {
       return TimerDefinitionType.cycle;
     }
-    if (eventDefinition[TimerBpmnType.Date]) {
+
+    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+    if (timerIsDate) {
       return TimerDefinitionType.date;
     }
 
@@ -62,13 +68,19 @@ export class TimerFacade implements ITimerFacade {
   }
 
   public parseTimerDefinitionValue(eventDefinition: any): string {
-    if (eventDefinition[TimerBpmnType.Duration]) {
+
+    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    if (timerIsDuration) {
       return eventDefinition[TimerBpmnType.Duration]._;
     }
-    if (eventDefinition[TimerBpmnType.Cycle]) {
+
+    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+    if (timerIsCyclic) {
       return eventDefinition[TimerBpmnType.Cycle]._;
     }
-    if (eventDefinition[TimerBpmnType.Date]) {
+
+    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+    if (timerIsDate) {
       return eventDefinition[TimerBpmnType.Date]._;
     }
 

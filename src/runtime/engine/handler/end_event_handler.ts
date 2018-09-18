@@ -42,35 +42,35 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
-    const isTerminateEndEvent: boolean = flowNode.terminateEventDefinition !== undefined;
-    const isErrorEndEvent: boolean = flowNode.errorEventDefinition !== undefined;
-    const isMessageEndEvent: boolean = flowNode.messageEventDefinition !== undefined;
-    const isSignalEndEvent: boolean = flowNode.signalEventDefinition !== undefined;
+    const flowNodeIsTerminateEndEvent: boolean = flowNode.terminateEventDefinition !== undefined;
+    const flowNodeIsErrorEndEvent: boolean = flowNode.errorEventDefinition !== undefined;
+    const flowNodeIsMessageEndEvent: boolean = flowNode.messageEventDefinition !== undefined;
+    const flowNodeIsSignalEndEvent: boolean = flowNode.signalEventDefinition !== undefined;
 
     let errorObj: any;
 
     // Event processing
-    if (isTerminateEndEvent) {
+    if (flowNodeIsTerminateEndEvent) {
       this._processTerminateEndEvent(flowNode, token);
-    } else if (isErrorEndEvent) {
+    } else if (flowNodeIsErrorEndEvent) {
       errorObj = this._processErrorEndEvent(flowNode);
-    } else if (isMessageEndEvent) {
+    } else if (flowNodeIsMessageEndEvent) {
       this._processMessageEndEvent(flowNode, token);
-    } else if (isSignalEndEvent) {
+    } else if (flowNodeIsSignalEndEvent) {
       this._processSignalEndEvent(flowNode, token);
     } else {
       this._processRegularEndEvent(flowNode, token);
     }
 
     // Event persisting
-    if (isTerminateEndEvent) {
+    if (flowNodeIsTerminateEndEvent) {
       await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
     } else {
       await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
     }
 
     // Finalization
-    if (isErrorEndEvent) {
+    if (flowNodeIsErrorEndEvent) {
       // ErrorEndEvents need to cause Promise rejection with the matching error object.
       return Promise.reject(errorObj);
     }
@@ -93,7 +93,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     const payload: MessageEndEventReachedMessage = new MessageEndEventReachedMessage(flowNode.id, token.payload);
     this.eventAggregator.publish(messageName, payload);
 
-    // End the process regularly.
     this._processRegularEndEvent(flowNode, token);
   }
 
@@ -112,7 +111,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     const payload: SignalEndEventReachedMessage = new SignalEndEventReachedMessage(flowNode.id, token.payload);
     this.eventAggregator.publish(messageName, payload);
 
-    // End the process regularly.
     this._processRegularEndEvent(flowNode, token);
   }
 
