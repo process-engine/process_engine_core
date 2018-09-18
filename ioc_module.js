@@ -84,7 +84,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeInstanceService');
 
   container.register('StartEventHandler', StartEventHandler)
-    .dependencies('FlowNodeInstanceService', 'TimerFacade');
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'TimerFacade');
 
   container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
     .dependencies('FlowNodeInstanceService');
@@ -119,7 +119,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeInstanceService', 'TimerFacade');
 
   container.register('EndEventHandler', EndEventHandler)
-    .dependencies('FlowNodeInstanceService', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodeInstanceService');
 }
 
 module.exports.registerInContainer = registerInContainer;
