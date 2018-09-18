@@ -117,8 +117,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processTerminationSubscription.dispose();
     }
 
-    await this._end(processInstanceId, resultToken);
-
     if (this._processWasTerminated) {
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
     }
@@ -283,15 +281,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
 
     return allResults.pop();
-  }
-
-  private async _end(processInstanceId: string, processTokenResult: IProcessTokenResult): Promise<void> {
-
-    const processEndMessage: EventReachedMessage = this._processWasTerminated
-      ? this._processTerminationMessage
-      : new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
-
-    // this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }
 
 }
