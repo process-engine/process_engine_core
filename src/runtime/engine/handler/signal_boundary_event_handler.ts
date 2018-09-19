@@ -6,7 +6,7 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
-  SignalEndEventReachedMessage,
+  SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -76,7 +76,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
 
     const signalName: string = `/processengine/process/signal/${signalBoundaryEvent.signalEventDefinition.signalRef}`;
 
-    const signalReceivedCallback: any = async(signal: SignalEndEventReachedMessage): Promise<void> => {
+    const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
 
       if (this.handlerHasFinished) {
         return;

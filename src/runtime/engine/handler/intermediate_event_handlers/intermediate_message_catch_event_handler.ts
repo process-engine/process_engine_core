@@ -3,7 +3,7 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
-  MessageEndEventReachedMessage, // TODO: Rename to `MessageEventReachedMessage`
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -41,7 +41,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
     await this.flowNodeInstanceService.suspend(flowNode.id, this.flowNodeInstanceId, token);
 
-    const receivedMessage: MessageEndEventReachedMessage = await this._waitForMessage(flowNode.messageEventDefinition.messageRef);
+    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(flowNode.messageEventDefinition.messageRef);
 
     processTokenFacade.addResultForFlowNode(flowNode.id, receivedMessage.tokenPayload);
     token.payload = receivedMessage.tokenPayload;
@@ -55,13 +55,13 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _waitForMessage(messageReference: string): Promise<MessageEndEventReachedMessage> {
+  private async _waitForMessage(messageReference: string): Promise<MessageEventReachedMessage> {
 
-    return new Promise<MessageEndEventReachedMessage>((resolve: Function): void => {
+    return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
       const messageName: string = `/processengine/process/message/${messageReference}`;
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageName, async(message: MessageEndEventReachedMessage) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageName, async(message: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();

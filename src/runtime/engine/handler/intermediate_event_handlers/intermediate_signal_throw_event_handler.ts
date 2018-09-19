@@ -6,7 +6,7 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
-  SignalEndEventReachedMessage,
+  SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
@@ -41,7 +41,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
     const signalName: string = `/processengine/process/signal/${flowNode.signalEventDefinition.signalRef}`;
-    const payload: SignalEndEventReachedMessage = new SignalEndEventReachedMessage(flowNode.id, token);
+    const payload: SignalEventReachedMessage = new SignalEventReachedMessage(flowNode.id, token);
 
     this.eventAggregator.publish(signalName, payload);
 

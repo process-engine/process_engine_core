@@ -3,7 +3,7 @@ import {
   IExecutionContextFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  MessageEndEventReachedMessage, // TODO: Rename to `MessageEventReachedMessage`
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -76,7 +76,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     const messageName: string = `/processengine/process/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
 
-    const messageReceivedCallback: any = async(message: MessageEndEventReachedMessage): Promise<void> => {
+    const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 
       if (this.handlerHasFinished) {
         return;
