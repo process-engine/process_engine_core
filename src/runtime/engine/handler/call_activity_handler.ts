@@ -59,7 +59,12 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     await this.persistOnSuspend(callActivity, token);
 
     const processStartResponse: ProcessStartResponsePayload =
-      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, correlationId, processInstanceId, startEventId, callActivity, tokenData);
+      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext,
+                                                                  correlationId,
+                                                                  processInstanceId,
+                                                                  startEventId,
+                                                                  callActivity,
+                                                                  tokenData);
 
     await this.persistOnResume(callActivity, token);
 
@@ -107,7 +112,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
    *                          SubProcess specified in the CallActivtiy.
    * @param processInstanceId The ID of the current ProcessInstance.
    * @param startEventId      The StartEvent by which to start the SubProcess.
-   * @param flowNode          The CallActivity, containing the infos about the
+   * @param callActivity      The CallActivity, containing the infos about the
    *                          SubProcess to start.
    * @param tokenData         The current ProcessToken.
    */
@@ -115,7 +120,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                                                  correlationId: string,
                                                                  processInstanceId: string,
                                                                  startEventId: string,
-                                                                 flowNode: Model.Activities.CallActivity,
+                                                                 callActivity: Model.Activities.CallActivity,
                                                                  tokenData: any): Promise<ProcessStartResponsePayload> {
 
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
@@ -126,7 +131,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       inputValues: tokenData.current || {},
     };
 
-    const processModelId: string = flowNode.calledReference;
+    const processModelId: string = callActivity.calledReference;
 
     const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, processModelId, startEventId, payload, startCallbackType);
