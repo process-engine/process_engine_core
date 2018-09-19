@@ -113,12 +113,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    await this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
-                                                           processToken.processModelId,
-                                                           this.flowNodeInstanceId,
-                                                           flowNodeInstance.id,
-                                                           processToken,
-                                                           now);
+    this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
+                                                     processToken.processModelId,
+                                                     this.flowNodeInstanceId,
+                                                     flowNodeInstance.id,
+                                                     processToken,
+                                                     now);
   }
 
   /**
@@ -134,12 +134,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    await this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
-                                                          processToken.processModelId,
-                                                          this.flowNodeInstanceId,
-                                                          flowNodeInstance.id,
-                                                          processToken,
-                                                          now);
+    this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+                                                    processToken.processModelId,
+                                                    this.flowNodeInstanceId,
+                                                    flowNodeInstance.id,
+                                                    processToken,
+                                                    now);
 
   }
 
@@ -156,12 +156,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    await this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
-                                                          processToken.processModelId,
-                                                          this.flowNodeInstanceId,
-                                                          flowNodeInstance.id,
-                                                          processToken,
-                                                          now);
+    this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+                                                    processToken.processModelId,
+                                                    this.flowNodeInstanceId,
+                                                    flowNodeInstance.id,
+                                                    processToken,
+                                                    now);
   }
 
   /**
@@ -177,13 +177,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    await this.metricsService.writeOnFlowNodeInstanceError(processToken.correlationId,
-                                                           processToken.processModelId,
-                                                           this.flowNodeInstanceId,
-                                                           flowNodeInstance.id,
-                                                           processToken,
-                                                           error,
-                                                           now);
+    this.metricsService.writeOnFlowNodeInstanceError(processToken.correlationId,
+                                                     processToken.processModelId,
+                                                     this.flowNodeInstanceId,
+                                                     flowNodeInstance.id,
+                                                     processToken,
+                                                     error,
+                                                     now);
   }
 
   /**
@@ -199,12 +199,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    await this.metricsService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
-                                                             processToken.processModelId,
-                                                             this.flowNodeInstanceId,
-                                                             flowNodeInstance.id,
-                                                             processToken,
-                                                             now);
+    this.metricsService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
+                                                       processToken.processModelId,
+                                                       this.flowNodeInstanceId,
+                                                       flowNodeInstance.id,
+                                                       processToken,
+                                                       now);
   }
 
   /**
@@ -220,12 +220,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    await this.metricsService.writeOnFlowNodeInstanceResume(processToken.correlationId,
-                                                            processToken.processModelId,
-                                                            this.flowNodeInstanceId,
-                                                            flowNodeInstance.id,
-                                                            processToken,
-                                                            now);
+    this.metricsService.writeOnFlowNodeInstanceResume(processToken.correlationId,
+                                                      processToken.processModelId,
+                                                      this.flowNodeInstanceId,
+                                                      flowNodeInstance.id,
+                                                      processToken,
+                                                      now);
   }
 
   /**
