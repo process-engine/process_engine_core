@@ -6,6 +6,7 @@ import {
   Model,
   NextFlowNodeInfo,
   Runtime,
+  SignalEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -75,12 +76,15 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
 
     const signalName: string = `/processengine/process/signal/${signalBoundaryEvent.signalEventDefinition.signalRef}`;
 
-    const signalReceivedCallback: any = async(): Promise<void> => {
+    const signalReceivedCallback: any = async(signal: SignalEndEventReachedMessage): Promise<void> => {
 
       if (this.handlerHasFinished) {
         return;
       }
       this.signalReceived = true;
+
+      processTokenFacade.addResultForFlowNode(flowNode.id, signal.tokenPayload);
+      token.payload = signal.tokenPayload;
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute
@@ -89,7 +93,9 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(signalBoundaryEvent);
 
-      return resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
+      const nextFlowNodeInfo: NextFlowNodeInfo = new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade);
+
+      return resolveFunc(nextFlowNodeInfo);
     };
 
     this.subscription = this.eventAggregator.subscribeOnce(signalName, signalReceivedCallback);

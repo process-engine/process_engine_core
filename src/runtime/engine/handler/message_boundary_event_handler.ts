@@ -3,6 +3,7 @@ import {
   IExecutionContextFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  MessageEndEventReachedMessage, // TODO: Rename to `MessageEventReachedMessage`
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -75,12 +76,15 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     const messageName: string = `/processengine/process/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
 
-    const messageReceivedCallback: any = async(): Promise<void> => {
+    const messageReceivedCallback: any = async(message: MessageEndEventReachedMessage): Promise<void> => {
 
       if (this.handlerHasFinished) {
         return;
       }
       this.messageReceived = true;
+
+      processTokenFacade.addResultForFlowNode(flowNode.id, message.tokenPayload);
+      token.payload = message.tokenPayload;
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute
@@ -89,7 +93,9 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageBoundaryEvent);
 
-      return resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
+      const nextFlowNodeInfo: NextFlowNodeInfo = new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade);
+
+      return resolveFunc(nextFlowNodeInfo);
     };
 
     this.subscription = this.eventAggregator.subscribeOnce(messageName, messageReceivedCallback);
