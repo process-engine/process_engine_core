@@ -5,11 +5,11 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
-  MessageEndEventReachedMessage,
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
-  SignalEndEventReachedMessage,
+  SignalEventReachedMessage,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
@@ -90,7 +90,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     // Send message to processes that may be waiting for it.
     const messageName: string = `/processengine/process/message/${flowNode.messageEventDefinition.messageRef}`;
-    const payload: MessageEndEventReachedMessage = new MessageEndEventReachedMessage(flowNode.id, token.payload);
+    const payload: MessageEventReachedMessage = new MessageEventReachedMessage(flowNode.id, token.payload);
     this.eventAggregator.publish(messageName, payload);
 
     this._processRegularEndEvent(flowNode, token);
@@ -108,7 +108,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     // Send message to processes that may be waiting for it.
     const messageName: string = `/processengine/process/signal/${flowNode.signalEventDefinition.signalRef}`;
-    const payload: SignalEndEventReachedMessage = new SignalEndEventReachedMessage(flowNode.id, token.payload);
+    const payload: SignalEventReachedMessage = new SignalEventReachedMessage(flowNode.id, token.payload);
     this.eventAggregator.publish(messageName, payload);
 
     this._processRegularEndEvent(flowNode, token);
