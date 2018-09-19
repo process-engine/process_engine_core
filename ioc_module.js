@@ -9,6 +9,7 @@ const ParallelGatewayHandler = require('./dist/commonjs/index').ParallelGatewayH
 const ServiceTaskHandler = require('./dist/commonjs/index').ServiceTaskHandler;
 const ErrorBoundaryEventHandler = require('./dist/commonjs/index').ErrorBoundaryEventHandler;
 const MessageBoundaryEventHandler = require('./dist/commonjs/index').MessageBoundaryEventHandler;
+const SignalBoundaryEventHandler = require('./dist/commonjs/index').SignalBoundaryEventHandler;
 const TimerBoundaryEventHandler = require('./dist/commonjs/index').TimerBoundaryEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
@@ -19,13 +20,13 @@ const IntermediateCatchEventHandler = require('./dist/commonjs/index').Intermedi
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
 const IntermediateMessageCatchEventHandler = require('./dist/commonjs/index').IntermediateMessageCatchEventHandler;
 const IntermediateMessageThrowEventHandler = require('./dist/commonjs/index').IntermediateMessageThrowEventHandler;
+const IntermediateSignalCatchEventHandler = require('./dist/commonjs/index').IntermediateSignalCatchEventHandler;
+const IntermediateSignalThrowEventHandler = require('./dist/commonjs/index').IntermediateSignalThrowEventHandler;
 const IntermediateTimerCatchEventHandler = require('./dist/commonjs/index').IntermediateTimerCatchEventHandler;
 
 const CorrelationService = require('./dist/commonjs/index').CorrelationService;
 const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
 const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
-
-const ImportProcessService = require('./dist/commonjs/index').ImportProcessService;
 
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 
@@ -33,6 +34,7 @@ const ExecutionContextFacadeFactory = require('./dist/commonjs/index').Execution
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
 const ProcessModelFacadeFactory = require('./dist/commonjs/index').ProcessModelFacadeFactory;
 const ProcessTokenFacadeFactory = require('./dist/commonjs/index').ProcessTokenFacadeFactory;
+const TimerFacade = require('./dist/commonjs/index').TimerFacade;
 
 function registerInContainer(container) {
 
@@ -55,9 +57,6 @@ function registerInContainer(container) {
   container.register('ProcessModelService', ProcessModelService)
     .dependencies('ProcessDefinitionRepository', 'IamService', 'BpmnModelParser');
 
-  container.register('ImportProcessService', ImportProcessService)
-    .dependencies('container', 'BpmnModelParser');
-
   container.register('ExecutionContextFacadeFactory', ExecutionContextFacadeFactory)
     .singleton();
 
@@ -69,6 +68,9 @@ function registerInContainer(container) {
 
   container.register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
     .singleton();
+
+  container.register('TimerFacade', TimerFacade)
+    .dependencies('EventAggregator', 'TimerService');
 
   container.register('BpmnModelParser', BpmnModelParser);
 
@@ -85,7 +87,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeInstanceService');
 
   container.register('StartEventHandler', StartEventHandler)
-    .dependencies('FlowNodeInstanceService');
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'TimerFacade');
 
   container.register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
     .dependencies('FlowNodeInstanceService');
@@ -98,11 +100,14 @@ function registerInContainer(container) {
 
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
 
+  container.register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
+    .dependencies('EventAggregator');
+
   container.register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
     .dependencies('EventAggregator');
 
   container.register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('TimerService', 'EventAggregator');
+    .dependencies('TimerFacade');
 
   container.register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
     .dependencies('container');
@@ -116,11 +121,17 @@ function registerInContainer(container) {
   container.register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
     .dependencies('FlowNodeInstanceService', 'EventAggregator');
 
+  container.register('IntermediateSignalCatchEventHandler', IntermediateSignalCatchEventHandler)
+    .dependencies('FlowNodeInstanceService', 'EventAggregator');
+
+  container.register('IntermediateSignalThrowEventHandler', IntermediateSignalThrowEventHandler)
+    .dependencies('FlowNodeInstanceService', 'EventAggregator');
+
   container.register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'TimerService');
+    .dependencies('FlowNodeInstanceService', 'TimerFacade');
 
   container.register('EndEventHandler', EndEventHandler)
-    .dependencies('FlowNodeInstanceService', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodeInstanceService');
 }
 
 module.exports.registerInContainer = registerInContainer;

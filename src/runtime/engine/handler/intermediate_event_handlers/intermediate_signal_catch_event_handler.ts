@@ -3,17 +3,17 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
-  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
+  SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 
 import {FlowNodeHandler} from '../index';
 
-export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
+export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
@@ -41,10 +41,10 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
     await this.flowNodeInstanceService.suspend(flowNode.id, this.flowNodeInstanceId, token);
 
-    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(flowNode.messageEventDefinition.messageRef);
+    const receivedSignal: SignalEventReachedMessage = await this._waitForSignal(flowNode.signalEventDefinition.signalRef);
 
-    processTokenFacade.addResultForFlowNode(flowNode.id, receivedMessage.tokenPayload);
-    token.payload = receivedMessage.tokenPayload;
+    processTokenFacade.addResultForFlowNode(flowNode.id, receivedSignal.tokenPayload);
+    token.payload = receivedSignal.tokenPayload;
 
     await this.flowNodeInstanceService.resume(flowNode.id, this.flowNodeInstanceId, token);
 
@@ -55,19 +55,19 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _waitForMessage(messageReference: string): Promise<MessageEventReachedMessage> {
+  private async _waitForSignal(signalReference: string): Promise<SignalEventReachedMessage> {
 
-    return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
+    return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
-      const messageName: string = `/processengine/process/message/${messageReference}`;
+      const signalName: string = `/processengine/process/signal/${signalReference}`;
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageName, async(message: MessageEventReachedMessage) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalName, async(signal: SignalEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
         }
 
-        return resolve(message);
+        return resolve(signal);
       });
     });
   }
