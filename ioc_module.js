@@ -9,6 +9,7 @@ const ParallelGatewayHandler = require('./dist/commonjs/index').ParallelGatewayH
 const ServiceTaskHandler = require('./dist/commonjs/index').ServiceTaskHandler;
 const ErrorBoundaryEventHandler = require('./dist/commonjs/index').ErrorBoundaryEventHandler;
 const MessageBoundaryEventHandler = require('./dist/commonjs/index').MessageBoundaryEventHandler;
+const SignalBoundaryEventHandler = require('./dist/commonjs/index').SignalBoundaryEventHandler;
 const TimerBoundaryEventHandler = require('./dist/commonjs/index').TimerBoundaryEventHandler;
 const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
@@ -96,6 +97,9 @@ function registerInContainer(container) {
     .dependencies('container', 'FlowNodeInstanceService');
 
   container.register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+
+  container.register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
+    .dependencies('EventAggregator');
 
   container.register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
     .dependencies('EventAggregator');
