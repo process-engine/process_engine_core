@@ -117,8 +117,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processTerminationSubscription.dispose();
     }
 
-    await this._end(processInstanceId, resultToken);
-
     if (this._processWasTerminated) {
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`);
     }
@@ -136,8 +134,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
+      if (!correlationId) {
+        correlationId = uuid.v4();
+      }
+
+      const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEventId}`;
+
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(`/processengine/node/${endEventId}`, async(message: EndEventReachedMessage): Promise<void> => {
+        this.eventAggregator.subscribeOnce(subscriptionName, async(message: EndEventReachedMessage): Promise<void> => {
           resolve(message);
         });
 
@@ -177,10 +181,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const subscriptions: Array<ISubscription> = [];
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
+
+      if (!correlationId) {
+        correlationId = uuid.v4();
+      }
+
       for (const endEvent of endEvents) {
 
-        const subscription: ISubscription
-          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: EndEventReachedMessage): Promise<void> => {
+        const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEvent.id}`;
+
+        const subscription: ISubscription =
+          this.eventAggregator.subscribeOnce(subscriptionName, async(message: EndEventReachedMessage): Promise<void> => {
 
           for (const existingSubscription of subscriptions) {
             existingSubscription.dispose();
@@ -217,7 +228,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private async _saveCorrelation(executionContextFacade: IExecutionContextFacade,
                                  correlationId: string,
-                                 processModel: Model.Types.Process
+                                 processModel: Model.Types.Process,
                                 ): Promise<void> {
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
@@ -270,15 +281,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
 
     return allResults.pop();
-  }
-
-  private async _end(processInstanceId: string, processTokenResult: IProcessTokenResult): Promise<void> {
-
-    const  processEndMessage: EventReachedMessage = this._processWasTerminated
-      ? this._processTerminationMessage
-      : new EndEventReachedMessage(processTokenResult.flowNodeId, processTokenResult.result);
-
-    this.eventAggregator.publish(`/processengine/process/${processInstanceId}`, processEndMessage);
   }
 
 }

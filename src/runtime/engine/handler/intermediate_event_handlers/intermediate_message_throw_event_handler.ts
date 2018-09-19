@@ -3,6 +3,7 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -39,9 +40,10 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
-    const messageName: string = `/processengine/process/${token.processInstanceId}/message/${flowNode.messageEventDefinition.messageRef}`;
+    const messageName: string = `/processengine/process/message/${flowNode.messageEventDefinition.messageRef}`;
+    const payload: MessageEventReachedMessage = new MessageEventReachedMessage(flowNode.id, token);
 
-    this.eventAggregator.publish(messageName);
+    this.eventAggregator.publish(messageName, payload);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 

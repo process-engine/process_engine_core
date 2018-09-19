@@ -20,10 +20,10 @@ export function parseEventsFromProcessData(processData: any, errors: Array<Model
   const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
 
   const intermediateThrowEvents: Array<Model.Events.Event> =
-    parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent, true);
+    parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent);
 
   const intermediateCatchEvents: Array<Model.Events.Event> =
-    parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent, true);
+    parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent);
 
   return Array.prototype.concat(startEvents, endEvents, boundaryEvents, intermediateThrowEvents, intermediateCatchEvents);
 }
@@ -157,7 +157,6 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
   data: any,
   eventType: BpmnTags.EventElement,
   type: Model.Base.IConstructor<TEvent>,
-  parseDefinitions: boolean = false,
 ): Array<TEvent> {
 
   const events: Array<TEvent> = [];
@@ -174,9 +173,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-    if (parseDefinitions) {
-      assignEventDefinitions(event, eventRaw);
-    }
+    assignEventDefinitions(event, eventRaw);
 
     events.push(event);
   }

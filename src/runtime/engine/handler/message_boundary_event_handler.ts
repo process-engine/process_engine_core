@@ -73,8 +73,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     const messageBoundaryEvent: Model.Events.BoundaryEvent = await this._getMessageBoundaryEvent(flowNode, processModelFacade);
 
-    const messageName: string =
-      `/processengine/process/${token.processInstanceId}/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
+    const messageName: string = `/processengine/process/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
 
     const messageReceivedCallback: any = async(): Promise<void> => {
 
