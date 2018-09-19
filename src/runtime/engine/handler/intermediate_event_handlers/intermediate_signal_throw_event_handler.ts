@@ -3,17 +3,17 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
-  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
+  SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 
 import {FlowNodeHandler} from '../index';
 
-export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
+export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
@@ -40,10 +40,10 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
 
-    const messageName: string = `/processengine/process/message/${flowNode.messageEventDefinition.messageRef}`;
-    const payload: MessageEventReachedMessage = new MessageEventReachedMessage(flowNode.id, token);
+    const signalName: string = `/processengine/process/signal/${flowNode.signalEventDefinition.signalRef}`;
+    const payload: SignalEventReachedMessage = new SignalEventReachedMessage(flowNode.id, token);
 
-    this.eventAggregator.publish(messageName, payload);
+    this.eventAggregator.publish(signalName, payload);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 

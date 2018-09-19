@@ -40,6 +40,15 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
                                                        executionContextFacade);
     }
 
+    if (flowNode.signalEventDefinition) {
+      return this._executeIntermediateCatchEventByType('IntermediateSignalCatchEventHandler',
+                                                       flowNode,
+                                                       token,
+                                                       processTokenFacade,
+                                                       processModelFacade,
+                                                       executionContextFacade);
+    }
+
     if (flowNode.timerEventDefinition) {
       return this._executeIntermediateCatchEventByType('IntermediateTimerCatchEventHandler',
                                                        flowNode,

@@ -121,10 +121,10 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
 
-      if (this._processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
-        throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
-      }
+    if (this._processWasTerminated) {
+      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
+    }
 
     if (nextFlowNodeInfo.flowNode !== undefined) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
