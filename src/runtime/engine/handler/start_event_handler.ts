@@ -79,7 +79,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
                                 token: Runtime.Types.ProcessToken,
                                 messageName: string): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(startEvent.id, this.flowNodeInstanceId, token);
+    await this.persistOnSuspend(startEvent, token);
 
     return new Promise<void>((resolve: Function): void => {
 
@@ -91,7 +91,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
           subscription.dispose();
         }
 
-        await this.flowNodeInstanceService.resume(startEvent.id, this.flowNodeInstanceId, token);
+        await this.persistOnResume(startEvent, token);
 
         resolve();
       });
@@ -111,7 +111,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
                                token: Runtime.Types.ProcessToken,
                                signalName: string): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(startEvent.id, this.flowNodeInstanceId, token);
+    await this.persistOnSuspend(startEvent, token);
 
     return new Promise<void>((resolve: Function): void => {
 
@@ -123,7 +123,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
           subscription.dispose();
         }
 
-        await this.flowNodeInstanceService.resume(startEvent.id, this.flowNodeInstanceId, token);
+        await this.persistOnResume(startEvent, token);
 
         resolve();
       });
@@ -143,7 +143,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
                                       timerDefinition: Model.EventDefinitions.TimerEventDefinition,
                                      ): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(startEvent.id, this.flowNodeInstanceId, token);
+    await this.persistOnSuspend(startEvent, token);
 
     return new Promise<void> (async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -154,7 +154,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
       const timerElapsed: any = async(): Promise<void> => {
 
-        await this.flowNodeInstanceService.resume(startEvent.id, this.flowNodeInstanceId, token);
+        await this.persistOnResume(startEvent, token);
 
         const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
 

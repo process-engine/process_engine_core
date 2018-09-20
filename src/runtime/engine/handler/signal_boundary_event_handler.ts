@@ -1,6 +1,9 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -21,8 +24,11 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
 
   private subscription: ISubscription;
 
-  constructor(eventAggregator: IEventAggregator, decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-    super();
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsApi,
+              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
     this._decoratedHandler = decoratedHandler;
   }
