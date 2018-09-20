@@ -45,7 +45,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       await this.flowNodeInstanceService.persistOnEnter(userTask.id, this.flowNodeInstanceId, token);
 
-      const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
+      const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.finishUserTask
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
         .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
         .replace(eventAggregatorSettings.routeParams.userTaskId, userTask.id);
