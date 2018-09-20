@@ -1,3 +1,4 @@
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeHandler,
@@ -18,18 +19,19 @@ import {FlowNodeHandler} from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
-  private _eventAggregator: IEventAggregator = undefined;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _eventAggregator: IEventAggregator;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
   private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage = undefined;
+  private _processTerminationMessage: TerminateEndEventReachedMessage;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeHandlerFactory: IFlowNodeHandlerFactory, flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -40,17 +42,13 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     return this._flowNodeHandlerFactory;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(subProcessNode: Model.Activities.SubProcess,
+  protected async executeInternally(subProcess: Model.Activities.SubProcess,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(subProcessNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(subProcess, token);
 
     const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(token.processInstanceId);
 
@@ -65,7 +63,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // The SubProcess-specific Facade implements the same interface as the regular ProcessModelFacade so that we can pass it
     // through to handlers inside the SubProcess.
 
-    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(subProcessNode);
+    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(subProcess);
     const startEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
     const startEvent: Model.Events.StartEvent = startEvents[0];
 
@@ -84,14 +82,14 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // and on the original ProcessTokenFacade, so that is is accessible by the original Process
     const finalTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcessNode);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcess);
 
     const finalResult: any = finalTokenData.current === undefined ? null : finalTokenData.current;
 
-    processTokenFacade.addResultForFlowNode(subProcessNode.id, finalResult);
+    processTokenFacade.addResultForFlowNode(subProcess.id, finalResult);
     token.payload = finalResult;
 
-    await this.flowNodeInstanceService.persistOnExit(subProcessNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnExit(subProcess, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

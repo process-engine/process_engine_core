@@ -1,6 +1,8 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -21,8 +23,11 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
   private subscription: ISubscription;
 
-  constructor(eventAggregator: IEventAggregator, decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-    super();
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsApi,
+              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
     this._decoratedHandler = decoratedHandler;
   }
@@ -36,7 +41,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
   }
 
   // TODO: Add support for non-interrupting message events.
-  protected async executeInternally(flowNode: Model.Events.BoundaryEvent,
+  protected async executeInternally(messageBoundaryEvent: Model.Events.BoundaryEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -45,10 +50,10 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       try {
-        this._subscribeToMessageEvent(resolve, flowNode, token, processTokenFacade, processModelFacade);
+        this._subscribeToMessageEvent(resolve, messageBoundaryEvent, token, processTokenFacade, processModelFacade);
 
         const nextFlowNodeInfo: NextFlowNodeInfo
-          = await this.decoratedHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+          = await this.decoratedHandler.execute(messageBoundaryEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
 
         if (this.messageReceived) {
           return;
