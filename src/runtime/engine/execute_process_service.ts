@@ -145,8 +145,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
-          resolve(message);
+        this.eventAggregator.subscribe(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
+          if (message.correlationId === correlationId) {
+            resolve(message);
+          }
         });
 
       try {
@@ -187,15 +189,21 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
       for (const endEvent of endEvents) {
 
-        const subscription: ISubscription
-          = this.eventAggregator.subscribeOnce(`/processengine/node/${endEvent.id}`, async(message: ProcessEndedMessage): Promise<void> => {
+        const subscription: ISubscription =
+          this.eventAggregator.subscribe(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
+            const isCorrectEndEvent: boolean =
+              message.correlationId === correlationId
+              && endEvent.id === message.flowNodeId;
 
-          for (const existingSubscription of subscriptions) {
-            existingSubscription.dispose();
-          }
+            if (isCorrectEndEvent) {
 
-          resolve(message);
-        });
+              for (const existingSubscription of subscriptions) {
+                existingSubscription.dispose();
+              }
+
+              resolve(message);
+            }
+          });
 
         subscriptions.push(subscription);
       }
