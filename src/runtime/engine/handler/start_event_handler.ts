@@ -1,40 +1,171 @@
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ITimerFacade,
   Model,
   NextFlowNodeInfo,
   Runtime,
+  TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
 
 export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> {
 
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _eventAggregator: IEventAggregator;
+  private _timerFacade: ITimerFacade;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
-    this._flowNodeInstanceService = flowNodeInstanceService;
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsApi,
+              timerFacade: ITimerFacade) {
+    super(flowNodeInstanceService, metricsService);
+    this._eventAggregator = eventAggregator;
+    this._timerFacade = timerFacade;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
-  protected async executeInternally(flowNode: Model.Events.StartEvent,
+  private get timerFacade(): ITimerFacade {
+    return this._timerFacade;
+  }
+
+  protected async executeInternally(startEvent: Model.Events.StartEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(startEvent, token);
 
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(flowNode);
+    const flowNodeIsMessageStartEvent: boolean = startEvent.messageEventDefinition !== undefined;
+    const flowNodeIsSignalStartEvent: boolean = startEvent.signalEventDefinition !== undefined;
+    const flowNodeIsTimerStartEvent: boolean = startEvent.timerEventDefinition !== undefined;
 
-    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+    // If the StartEvent is not a regular StartEvent,
+    // wait for the defined condition to be fulfilled.
+    if (flowNodeIsMessageStartEvent) {
+      await this._waitForMessage(startEvent, token, startEvent.messageEventDefinition.messageRef);
+    } else if (flowNodeIsSignalStartEvent) {
+      await this._waitForSignal(startEvent, token, startEvent.signalEventDefinition.signalRef);
+    } else if (flowNodeIsTimerStartEvent) {
+      await this._waitForTimerToElapse(startEvent, token, startEvent.timerEventDefinition);
+    }
+
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(startEvent);
+
+    await this.persistOnExit(startEvent, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+  }
+
+  /**
+   * Creates a subscription on the EventAggregator and waits to receive the
+   * designated message.
+   *
+   * @async
+   * @param flowNode    The FlowNode containing the StartEvent.
+   * @param token       The current ProcessToken.
+   * @param messageName The message to wait for.
+   */
+  private async _waitForMessage(startEvent: Model.Events.StartEvent,
+                                token: Runtime.Types.ProcessToken,
+                                messageName: string): Promise<void> {
+
+    await this.persistOnSuspend(startEvent, token);
+
+    return new Promise<void>((resolve: Function): void => {
+
+      const event: string = `/processengine/process/message/${messageName}`;
+
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(event, async(message: any) => {
+
+        if (subscription) {
+          subscription.dispose();
+        }
+
+        await this.persistOnResume(startEvent, token);
+
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Creates a subscription on the EventAggregator and waits to receive the
+   * designated signal.
+   *
+   * @async
+   * @param startEvent The FlowNode containing the StartEvent.
+   * @param token      The current ProcessToken.
+   * @param signalName The signal to wait for.
+   */
+  private async _waitForSignal(startEvent: Model.Events.StartEvent,
+                               token: Runtime.Types.ProcessToken,
+                               signalName: string): Promise<void> {
+
+    await this.persistOnSuspend(startEvent, token);
+
+    return new Promise<void>((resolve: Function): void => {
+
+      const event: string = `/processengine/process/signal/${signalName}`;
+
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(event, async(message: any) => {
+
+        if (subscription) {
+          subscription.dispose();
+        }
+
+        await this.persistOnResume(startEvent, token);
+
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * If a timed StartEvent is used, this will delay the events execution
+   * until the timer has elapsed.
+   *
+   * @async
+   * @param startEvent The FlowNode containing the StartEvent.
+   * @param token      The current ProcessToken.
+   */
+  private async _waitForTimerToElapse(startEvent: Model.Events.StartEvent,
+                                      token: Runtime.Types.ProcessToken,
+                                      timerDefinition: Model.EventDefinitions.TimerEventDefinition,
+                                     ): Promise<void> {
+
+    await this.persistOnSuspend(startEvent, token);
+
+    return new Promise<void> (async(resolve: Function, reject: Function): Promise<void> => {
+
+      let timerSubscription: ISubscription;
+
+      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(timerDefinition);
+      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(timerDefinition);
+
+      const timerElapsed: any = async(): Promise<void> => {
+
+        await this.persistOnResume(startEvent, token);
+
+        const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
+
+        if (cancelSubscription) {
+          timerSubscription.dispose();
+        }
+
+        resolve();
+      };
+
+      timerSubscription = await this.timerFacade.initializeTimer(startEvent, timerType, timerValue, timerElapsed);
+    });
   }
 }

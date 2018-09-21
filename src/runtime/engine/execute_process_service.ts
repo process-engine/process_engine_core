@@ -1,8 +1,12 @@
+import {Logger} from 'loggerhythm';
+import * as moment from 'moment';
+import * as uuid from 'uuid';
+
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
-
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   ICorrelationService,
@@ -24,10 +28,6 @@ import {
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
 
-import * as uuid from 'uuid';
-
-import {Logger} from 'loggerhythm';
-
 const logger: Logger = Logger.createLogger('processengine:execute_process_service');
 
 interface IProcessStateInfo {
@@ -37,43 +37,51 @@ interface IProcessStateInfo {
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
-  private _eventAggregator: IEventAggregator = undefined;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory = undefined;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
-  private _correlationService: ICorrelationService = undefined;
-  private _processModelService: IProcessModelService = undefined;
+  private _eventAggregator: IEventAggregator;
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+
+  private _flowNodeInstanceService: IFlowNodeInstanceService;
+  private _correlationService: ICorrelationService;
+  private _metricsService: IMetricsApi;
+  private _processModelService: IProcessModelService;
 
   constructor(correlationService: ICorrelationService,
               eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsApi,
               processModelService: IProcessModelService) {
 
     this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
+    this._metricsService = metricsService;
     this._processModelService = processModelService;
-  }
-
-  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
-    return this._flowNodeHandlerFactory;
   }
 
   private get correlationService(): ICorrelationService {
     return this._correlationService;
   }
 
+  private get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
+  }
+
+  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
+    return this._flowNodeHandlerFactory;
+  }
+
   private get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
   }
 
-  private get processModelService(): IProcessModelService {
-    return this._processModelService;
+  private get metricsService(): IMetricsApi {
+    return this._metricsService;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
+  private get processModelService(): IProcessModelService {
+    return this._processModelService;
   }
 
   public async start(executionContextFacade: IExecutionContextFacade,
@@ -116,22 +124,33 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._saveCorrelation(executionContextFacade, correlationId, processModel);
 
-    await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade, processStateInfo);
+    const startTime: moment.Moment = moment.utc();
+    this.metricsService.writeOnProcessStarted(correlationId, processModel.id, startTime);
+    try {
+      await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade, processStateInfo);
 
-    const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
+      const endTime: moment.Moment = moment.utc();
+      this.metricsService.writeOnProcessFinished(correlationId, processModel.id, endTime);
+      const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
-    const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
-    if (processTerminationSubscriptionIsActive) {
-      processTerminationSubscription.dispose();
+      const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
+      if (processTerminationSubscriptionIsActive) {
+        processTerminationSubscription.dispose();
+      }
+
+      const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
+
+      if (processWasTerminated) {
+        throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}."`);
+      }
+
+      return resultToken;
+    } catch (error) {
+      const errorTime: moment.Moment = moment.utc();
+      this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
+      throw error;
     }
 
-    const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
-
-    if (processWasTerminated) {
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}."`);
-    }
-
-    return resultToken;
   }
 
   public async startAndAwaitSpecificEndEvent(executionContextFacade: IExecutionContextFacade,
@@ -144,11 +163,18 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
+      if (!correlationId) {
+        correlationId = uuid.v4();
+      }
+
+      // TODO: Route needs refactoring
+      // We need to match the event by the processInstanceId, rather than the processModelId, because
+      // the ProcessInstanceId is the only truly unique id we have.
+      const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEventId}`;
+
       const subscription: ISubscription =
-        this.eventAggregator.subscribe(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
-          if (message.correlationId === correlationId) {
-            resolve(message);
-          }
+        this.eventAggregator.subscribeOnce(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
+          resolve(message);
         });
 
       try {
@@ -162,6 +188,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         if (subscriptionIsActive) {
           subscription.dispose();
         }
+        const errorTime: moment.Moment = moment.utc();
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
@@ -185,6 +213,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const endEvents: Array<Model.Events.EndEvent> = processModelFacade.getEndEvents();
     const subscriptions: Array<ISubscription> = [];
+
+    if (!correlationId) {
+      correlationId = uuid.v4();
+    }
+
+    // We need to match the event by the processInstanceId, rather than the processModelId, because
+    // the ProcessInstanceId is the only truly unique id we have.
+    // const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEvent.id}`;
 
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
       for (const endEvent of endEvents) {
@@ -218,6 +254,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         for (const subscription of subscriptions) {
           subscription.dispose();
         }
+        const errorTime: moment.Moment = moment.utc();
+        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.

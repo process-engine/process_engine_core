@@ -1,55 +1,56 @@
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
-
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 
 import {FlowNodeHandler} from '../index';
 
 export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, eventAggregator: IEventAggregator) {
-    super();
+  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
+  protected async executeInternally(messageThrowEvent: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(messageThrowEvent, token);
 
     const intermediateMessageEventName: string = eventAggregatorSettings.routePaths.intermediateMessageEvent
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.messageRef, flowNode.messageEventDefinition.messageRef);
+      .replace(eventAggregatorSettings.routeParams.messageRef, messageThrowEvent.messageEventDefinition.messageRef);
 
-    // TODO: add message payload as soon as it is required
-    this.eventAggregator.publish(intermediateMessageEventName);
+    // TODO: Replace the message string in the contracts project with this one.
+    const messageName: string = `/processengine/process/message/${messageThrowEvent.messageEventDefinition.messageRef}`;
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+    // TODO: reintroduce MessageEventReachedMessage
+    // const payload: MessageEventReachedMessage = new MessageEventReachedMessage(messageThrowEvent.id, token);
 
-    await this.flowNodeInstanceService.persistOnExit(flowNode.id, this.flowNodeInstanceId, token);
+    // this.eventAggregator.publish(intermediateMessageEventName, token);
+    this.eventAggregator.publish(messageName, token);
+
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageThrowEvent);
+
+    await this.persistOnExit(messageThrowEvent, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

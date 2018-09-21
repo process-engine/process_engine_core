@@ -7,6 +7,7 @@ import {
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IExecutionContextFacade,
   IFlowNodeInstanceService,
@@ -24,30 +25,24 @@ import {FlowNodeHandler} from './index';
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApiService;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
 
-  constructor(consumerApiService: IConsumerApiService, flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
+  constructor(consumerApiService: IConsumerApiService, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, metricsService);
 
     this._consumerApiService = consumerApiService;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get consumerApiService(): IConsumerApiService {
     return this._consumerApiService;
   }
 
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  protected async executeInternally(callActivityNode: Model.Activities.CallActivity,
+  protected async executeInternally(callActivity: Model.Activities.CallActivity,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
 
-    await this.flowNodeInstanceService.persistOnEnter(callActivityNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnEnter(callActivity, token);
 
     const identity: IIdentity = await executionContextFacade.getIdentity();
 
@@ -59,28 +54,46 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const processInstanceId: string = token.processInstanceId;
     const correlationId: string = token.correlationId;
-    const startEventId: string = await this._getAccessibleStartEvent(consumerContext, callActivityNode.calledReference);
+    const startEventId: string = await this._getAccessibleStartEvent(consumerContext, callActivity.calledReference);
+
+    await this.persistOnSuspend(callActivity, token);
 
     const processStartResponse: ProcessStartResponsePayload =
-      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext, correlationId, processInstanceId, startEventId, callActivityNode, tokenData);
+      await this._waitForSubProcessToFinishAndReturnCorrelationId(consumerContext,
+                                                                  correlationId,
+                                                                  processInstanceId,
+                                                                  startEventId,
+                                                                  callActivity,
+                                                                  tokenData);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivityNode);
+    await this.persistOnResume(callActivity, token);
 
-    await processTokenFacade.addResultForFlowNode(callActivityNode.id, processStartResponse.tokenPayload);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(callActivity);
+
+    await processTokenFacade.addResultForFlowNode(callActivity.id, processStartResponse.tokenPayload);
     token.payload = processStartResponse.tokenPayload;
 
-    await this.flowNodeInstanceService.persistOnExit(callActivityNode.id, this.flowNodeInstanceId, token);
+    await this.persistOnExit(callActivity, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
+  /**
+   * Retrieves the first accessible StartEvent for the ProcessModel with the
+   * given ID.
+   *
+   * @async
+   * @param   consumerContext The users auth context.
+   * @param   processModelId  The ID of the ProcesssModel for which to get an
+   *                          accessible StartEvent.
+   * @returns                 The retrieved StartEvent.
+   */
   private async _getAccessibleStartEvent(consumerContext: ConsumerContext, processModelId: string): Promise<string> {
 
     const processModel: ProcessModel = await this.consumerApiService.getProcessModelById(consumerContext, processModelId);
 
     /*
-     * Pick the first accessible start event;
-     * note: If the user cannot access the process model and/or its start events,
+     * Note: If the user cannot access the process model and/or its start events,
      * the Consumer API will already have thrown an HTTP Unauthorized error,
      * so we do not need to handle those cases here.
      */
@@ -89,11 +102,25 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return startEventId;
   }
 
+  /**
+   * Uses the ConsumerAPI to execute the ProcessModel defined in the
+   * CallActivity FlowNode.
+   *
+   * @async
+   * @param consumerContext   The users auth context.
+   * @param correlationId     The ID of the Correlation in which to run the
+   *                          SubProcess specified in the CallActivtiy.
+   * @param processInstanceId The ID of the current ProcessInstance.
+   * @param startEventId      The StartEvent by which to start the SubProcess.
+   * @param callActivity      The CallActivity, containing the infos about the
+   *                          SubProcess to start.
+   * @param tokenData         The current ProcessToken.
+   */
   private async _waitForSubProcessToFinishAndReturnCorrelationId(consumerContext: ConsumerContext,
                                                                  correlationId: string,
                                                                  processInstanceId: string,
                                                                  startEventId: string,
-                                                                 callActivityNode: Model.Activities.CallActivity,
+                                                                 callActivity: Model.Activities.CallActivity,
                                                                  tokenData: any): Promise<ProcessStartResponsePayload> {
 
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
@@ -104,7 +131,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       inputValues: tokenData.current || {},
     };
 
-    const processModelId: string = callActivityNode.calledReference;
+    const processModelId: string = callActivity.calledReference;
 
     const result: ProcessStartResponsePayload =
       await this.consumerApiService.startProcessInstance(consumerContext, processModelId, startEventId, payload, startCallbackType);

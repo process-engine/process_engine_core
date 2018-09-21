@@ -1,4 +1,5 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   FinishUserTaskMessage,
@@ -18,21 +19,15 @@ import {FlowNodeHandler} from './index';
 
 export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> {
 
-  private _eventAggregator: IEventAggregator = undefined;
-  private _flowNodeInstanceService: IFlowNodeInstanceService = undefined;
+  private _eventAggregator: IEventAggregator;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService) {
-    super();
+  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, metricsService);
     this._eventAggregator = eventAggregator;
-    this._flowNodeInstanceService = flowNodeInstanceService;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
-  }
-
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
   }
 
   protected async executeInternally(userTask: Model.Activities.UserTask,
@@ -43,7 +38,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      await this.flowNodeInstanceService.persistOnEnter(userTask.id, this.flowNodeInstanceId, token);
+      await this.persistOnEnter(userTask, token);
 
       const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.finishUserTask
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
@@ -53,7 +48,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
 
-          await this.flowNodeInstanceService.resume(userTask.id, this.flowNodeInstanceId, token);
+          await this.persistOnResume(userTask, token);
 
           const userTaskResult: any = {
             form_fields: message.result === undefined ? null : message.result,
@@ -64,7 +59,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
           const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
 
-          await this.flowNodeInstanceService.persistOnExit(userTask.id, this.flowNodeInstanceId, token);
+          await this.persistOnExit(userTask, token);
 
           this._sendUserTaskFinishedToConsumerApi(token.correlationId, token.processInstanceId, userTask.id, userTaskResult);
 
@@ -75,7 +70,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
           resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
         });
 
-      await this.flowNodeInstanceService.suspend(userTask.id, this.flowNodeInstanceId, token);
+      await this.persistOnSuspend(userTask, token);
       this._sendUserTaskWaitingToConsumerApi(token.correlationId, token.processInstanceId, userTask.id);
     });
 
