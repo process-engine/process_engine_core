@@ -1,6 +1,7 @@
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -30,7 +31,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     if (flowNode.messageEventDefinition) {
       return this._executeIntermediateThrowEventByType('IntermediateMessageThrowEventHandler',
@@ -38,7 +39,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                                        token,
                                                        processTokenFacade,
                                                        processModelFacade,
-                                                       executionContextFacade);
+                                                       identity);
     }
 
     if (flowNode.signalEventDefinition) {
@@ -47,7 +48,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                                        token,
                                                        processTokenFacade,
                                                        processModelFacade,
-                                                       executionContextFacade);
+                                                       identity);
     }
 
     // TODO: Default behavior, in case an unsupported intermediate event is used.
@@ -55,7 +56,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     // Note that FlowNodeInstance persistence is usually delegated to the dedicated event handlers
     // ('IntermediateMessageCatchEventHandler', etc). Since this use case addresses events that are not yet supported,
     // this method must handle state persistence by itself.
-    return this._persistAndContinue(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+    return this._persistAndContinue(flowNode, token, processTokenFacade, processModelFacade, identity);
   }
 
   private async _executeIntermediateThrowEventByType(eventHandlerName: string,
@@ -63,19 +64,19 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                                      token: Runtime.Types.ProcessToken,
                                                      processTokenFacade: IProcessTokenFacade,
                                                      processModelFacade: IProcessModelFacade,
-                                                     executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const eventHandler: FlowNodeHandler<Model.Events.IntermediateThrowEvent> =
       await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName);
 
-    return eventHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+    return eventHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
   }
 
   private async _persistAndContinue(flowNode: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(flowNode, token);
 

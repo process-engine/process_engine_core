@@ -1,6 +1,7 @@
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -15,7 +16,9 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi, decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
+              metricsService: IMetricsApi,
+              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
     super(flowNodeInstanceService, metricsService);
     this._decoratedHandler = decoratedHandler;
   }
@@ -28,11 +31,11 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
     try {
 
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(errorBoundaryEvent, token, processTokenFacade, processModelFacade, executionContextFacade);
+        = await this.decoratedHandler.execute(errorBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
 
       return nextFlowNodeInfo;
 
