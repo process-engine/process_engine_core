@@ -1,6 +1,5 @@
 import {
   Definitions,
-  IExecutionContextFacade,
   IModelParser,
   IProcessDefinitionRepository,
   IProcessModelService,
@@ -45,22 +44,20 @@ export class ProcessModelService implements IProcessModelService {
     return this._bpmnModelParser;
   }
 
-  public async persistProcessDefinitions(executionContextFacade: IExecutionContextFacade,
+  public async persistProcessDefinitions(identity: IIdentity,
                                          name: string,
                                          xml: string,
                                          overwriteExisting: boolean = true,
                                        ): Promise<void> {
 
-    const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
     await this._validateDefinition(name, xml);
 
     return this.processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
   }
 
-  public async getProcessModels(executionContextFacade: IExecutionContextFacade): Promise<Array<Model.Types.Process>> {
+  public async getProcessModels(identity: IIdentity): Promise<Array<Model.Types.Process>> {
 
-    const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
@@ -79,9 +76,8 @@ export class ProcessModelService implements IProcessModelService {
     return filteredList;
   }
 
-  public async getProcessModelById(executionContextFacade: IExecutionContextFacade, processModelId: string): Promise<Model.Types.Process> {
+  public async getProcessModelById(identity: IIdentity, processModelId: string): Promise<Model.Types.Process> {
 
-    const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const processModel: Model.Types.Process = await this._getProcessModelById(processModelId);
@@ -95,9 +91,8 @@ export class ProcessModelService implements IProcessModelService {
     return filteredProcessModel;
   }
 
-  public async getProcessDefinitionAsXmlByName(executionContextFacade: IExecutionContextFacade, name: string): Promise<Runtime.Types.ProcessDefinitionFromRepository> {
+  public async getProcessDefinitionAsXmlByName(identity: IIdentity, name: string): Promise<Runtime.Types.ProcessDefinitionFromRepository> {
 
-    const identity: IIdentity = executionContextFacade.getIdentity();
     await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const definitionRaw: Runtime.Types.ProcessDefinitionFromRepository = await this.processDefinitionRepository.getProcessDefinitionByName(name);
@@ -186,7 +181,6 @@ export class ProcessModelService implements IProcessModelService {
 
     return definitionsList;
   }
-
 
   /**
    * Performs claim checks for each Element of the given ProcessModel.

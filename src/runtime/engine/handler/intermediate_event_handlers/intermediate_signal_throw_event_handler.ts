@@ -1,8 +1,8 @@
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -31,7 +31,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(flowNode, token);
 

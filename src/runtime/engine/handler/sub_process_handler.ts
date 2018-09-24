@@ -1,6 +1,7 @@
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
@@ -46,7 +47,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(subProcess, token);
 
@@ -71,7 +72,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     subProcessTokenFacade.addResultForFlowNode(startEvent.id, initialTokenData.current);
 
-    await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, executionContextFacade);
+    await this._executeFlowNode(startEvent, token, subProcessTokenFacade, subProcessModelFacade, identity);
 
     const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
     if (processTerminationSubscriptionIsActive) {
@@ -112,12 +113,12 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                  token: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
-                                 executionContextFacade: IExecutionContextFacade): Promise<void> {
+                                 identity: IIdentity): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
 
     if (this._processWasTerminated) {
       await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, this.flowNodeInstanceId, token);
@@ -129,7 +130,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,
-                                  executionContextFacade);
+                                  identity);
     }
   }
 

@@ -1,6 +1,7 @@
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeInstanceService,
   IProcessModelFacade,
@@ -37,13 +38,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                        token: Runtime.Types.ProcessToken,
                        processTokenFacade: IProcessTokenFacade,
                        processModelFacade: IProcessModelFacade,
-                       executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                       identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     let nextFlowNode: NextFlowNodeInfo;
     this.flowNodeInstanceId = this.createFlowNodeInstanceId();
 
     try {
-      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, identity);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
@@ -89,7 +90,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                              token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
-                                             executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo>;
+                                             identity: IIdentity): Promise<NextFlowNodeInfo>;
 
   /**
    * Creates an instance ID for the FlowNode that this handler is responsible for.

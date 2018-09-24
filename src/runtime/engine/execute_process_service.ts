@@ -9,10 +9,8 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
-  EventReachedMessage,
   ICorrelationService,
   IExecuteProcessService,
-  IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
@@ -83,7 +81,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._processModelService;
   }
 
-  public async start(executionContextFacade: IExecutionContextFacade,
+  public async start(identity: IIdentity,
                      processModel: Model.Types.Process,
                      startEventId: string,
                      correlationId: string,
@@ -104,7 +102,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
       initialPayload = {};
     }
 
-    const identity: IIdentity = await executionContextFacade.getIdentity();
     const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
 
     const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialPayload);
@@ -113,12 +110,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(processInstanceId);
 
-    await this._saveCorrelation(executionContextFacade, correlationId, processModel);
+    await this._saveCorrelation(identity, correlationId, processModel);
 
     const startTime: moment.Moment = moment.utc();
     this.metricsService.writeOnProcessStarted(correlationId, processModel.id, startTime);
     try {
-      await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, executionContextFacade);
+      await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, identity);
 
       const endTime: moment.Moment = moment.utc();
       this.metricsService.writeOnProcessFinished(correlationId, processModel.id, endTime);
@@ -142,7 +139,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   }
 
-  public async startAndAwaitSpecificEndEvent(executionContextFacade: IExecutionContextFacade,
+  public async startAndAwaitSpecificEndEvent(identity: IIdentity,
                                              processModel: Model.Types.Process,
                                              startEventId: string,
                                              correlationId: string,
@@ -164,7 +161,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         });
 
       try {
-        await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
+        await this.start(identity, processModel, startEventId, correlationId, initialPayload, caller);
       } catch (error) {
         const errorLogMessage: string =
           `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
@@ -188,7 +185,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     });
   }
 
-  public async startAndAwaitEndEvent(executionContextFacade: IExecutionContextFacade,
+  public async startAndAwaitEndEvent(identity: IIdentity,
                                      processModel: Model.Types.Process,
                                      startEventId: string,
                                      correlationId: string,
@@ -224,7 +221,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       }
 
       try {
-        await this.start(executionContextFacade, processModel, startEventId, correlationId, initialPayload, caller);
+        await this.start(identity, processModel, startEventId, correlationId, initialPayload, caller);
       } catch (error) {
         const errorLogMessage: string =
           `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
@@ -248,13 +245,13 @@ export class ExecuteProcessService implements IExecuteProcessService {
     });
   }
 
-  private async _saveCorrelation(executionContextFacade: IExecutionContextFacade,
+  private async _saveCorrelation(identity: IIdentity,
                                  correlationId: string,
                                  processModel: Model.Types.Process,
                                 ): Promise<void> {
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
-      await this.processModelService.getProcessDefinitionAsXmlByName(executionContextFacade, processModel.id);
+      await this.processModelService.getProcessDefinitionAsXmlByName(identity, processModel.id);
 
     await this.correlationService.createEntry(correlationId, processDefinition.hash);
   }
@@ -277,12 +274,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                  processToken: Runtime.Types.ProcessToken,
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
-                                 executionContextFacade: IExecutionContextFacade): Promise<void> {
+                                 identity: IIdentity): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, executionContextFacade);
+      await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, identity);
 
     const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
 
@@ -294,7 +291,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,
-                                  executionContextFacade);
+                                  identity);
     }
   }
 
