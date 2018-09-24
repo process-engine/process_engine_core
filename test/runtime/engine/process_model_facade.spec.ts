@@ -21,7 +21,7 @@ describe('Process Model Facade', () => {
         'notizSchreiben',
         'Task_1tk0lhq',
         'Task_1yzqmfq',
-        'EndEvent_05uuvaq'
+        'EndEvent_05uuvaq',
       ]);
 
       await fixture.assertFlowNodes([
@@ -42,5 +42,5 @@ describe('Process Model Facade', () => {
       should(invocation.method).be.eql('post');
       should(invocation.params).be.eql('[\'http://localhost:5000/api/vorgaenge/anlegen\', token.history.VorgangErfassen]');
     });
-  })
+  });
 });

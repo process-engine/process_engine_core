@@ -41,7 +41,7 @@ export class ProcessModelFacadeTestFixture {
 
     const nextFlowNode: Model.Base.FlowNode = this.processModelFacade.getNextFlowNodeFor(currentFlowNode);
 
-    if (nextFlowNode !== null) {
+    if (nextFlowNode) {
       this.assertFlowNodeSequence(expectedFlowNodeIds, nextFlowNode);
     }
   }
