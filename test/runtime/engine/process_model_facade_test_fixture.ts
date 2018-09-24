@@ -1,14 +1,10 @@
-// Framework imports
 import * as fs from 'fs';
 import * as should from 'should';
 
-// ProcessEngine/Essential Project Imports
-import {Model, Definitions} from '@process-engine/process_engine_contracts';
+import {Definitions, Model} from '@process-engine/process_engine_contracts';
 
-// Local imports
 import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
 import {ProcessModelFacade} from '../../../src/runtime/engine';
-import {Process} from '@process-engine/process_engine_contracts/dist/model/types';
 
 export class ProcessModelFacadeTestFixture {
 
@@ -20,15 +16,15 @@ export class ProcessModelFacadeTestFixture {
 
     const bpmnXml: string = fs.readFileSync(bpmnFilename, 'utf8');
     const definitions: Definitions = await parser.parseXmlToObjectModel(bpmnXml);
-    const process: Process = definitions.processes[0];
+    const process: Model.Types.Process = definitions.processes[0];
 
     this.processModelFacade = new ProcessModelFacade(process);
   }
 
   public async assertFlowNodes(flowNodeIds: Array<string>): Promise<void> {
-    let startEvent: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
+    const startEvent: Model.Base.FlowNode = this.processModelFacade.getStartEvents()[0];
 
-    let expectedFlowNodeIds: string[] = flowNodeIds.slice(0);
+    const expectedFlowNodeIds: Array<string> = flowNodeIds.slice(0);
     this.assertFlowNodeSequence(expectedFlowNodeIds, startEvent);
 
     should(expectedFlowNodeIds.length).be.eql(0);
@@ -45,7 +41,7 @@ export class ProcessModelFacadeTestFixture {
 
     const nextFlowNode: Model.Base.FlowNode = this.processModelFacade.getNextFlowNodeFor(currentFlowNode);
 
-    if (nextFlowNode != null) {
+    if (nextFlowNode !== null) {
       this.assertFlowNodeSequence(expectedFlowNodeIds, nextFlowNode);
     }
   }
