@@ -1,7 +1,7 @@
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  ExecutionContext,
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -22,12 +22,11 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(scriptTask, token);
 
     const script: string = scriptTask.script;
-    const context: ExecutionContext = executionContextFacade.getExecutionContext();
 
     if (!script) {
       return undefined;
@@ -38,9 +37,9 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     try {
 
-      const scriptFunction: Function = new Function('token', 'context', script);
+      const scriptFunction: Function = new Function('token', 'identity', script);
 
-      result = await scriptFunction.call(this, tokenData, context);
+      result = await scriptFunction.call(this, tokenData, identity);
       result = result === undefined ? null : result;
 
     } catch (error) {

@@ -1,9 +1,10 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   FinishUserTaskMessage,
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -34,7 +35,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 

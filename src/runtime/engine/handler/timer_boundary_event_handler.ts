@@ -1,8 +1,8 @@
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -41,7 +41,7 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     return new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
@@ -79,7 +79,7 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
                                                                                        token,
                                                                                        processTokenFacade,
                                                                                        processModelFacade,
-                                                                                       executionContextFacade);
+                                                                                       identity);
 
         if (timerHasElapsed) {
           return;

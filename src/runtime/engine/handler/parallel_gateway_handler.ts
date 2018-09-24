@@ -1,10 +1,10 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IExecutionContextFacade,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
@@ -50,7 +50,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(parallelGateway, token);
 
@@ -84,7 +84,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                       token,
                                       processTokenFacade,
                                       processModelFacade,
-                                      executionContextFacade,
+                                      identity,
                                       processStateInfo);
 
       // After all parallel branches have been executed, each result is merged on the ProcessTokenFacade
@@ -123,7 +123,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                    token: Runtime.Types.ProcessToken,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
-                                   executionContextFacade: IExecutionContextFacade,
+                                   identity: IIdentity,
                                    processStateInfo: IProcessStateInfo): Array<Promise<NextFlowNodeInfo>> {
 
     return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
@@ -139,7 +139,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                                     tokenForBranch,
                                                     processTokenForBranch,
                                                     processModelFacade,
-                                                    executionContextFacade,
+                                                    identity,
                                                     processStateInfo);
     });
   }
@@ -149,13 +149,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                             token: Runtime.Types.ProcessToken,
                                             processTokenFacade: IProcessTokenFacade,
                                             processModelFacade: IProcessModelFacade,
-                                            executionContextFacade: IExecutionContextFacade,
+                                            identity: IIdentity,
                                             processStateInfo: IProcessStateInfo): Promise<NextFlowNodeInfo> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, executionContextFacade);
+      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
 
     const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
@@ -173,7 +173,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                               nextFlowNodeInfo.token,
                                               nextFlowNodeInfo.processTokenFacade,
                                               processModelFacade,
-                                              executionContextFacade,
+                                              identity,
                                               processStateInfo);
     }
 
