@@ -46,7 +46,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
       const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
-      const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, context, tokenData) || [];
+      const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
 
       const serviceMethod: Function = serviceInstance[invocation.method];
 
