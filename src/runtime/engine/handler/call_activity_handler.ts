@@ -1,4 +1,6 @@
 
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {
   IConsumerApi,
   ProcessModel,
@@ -6,9 +8,9 @@ import {
   ProcessStartResponsePayload,
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -16,8 +18,6 @@ import {
   NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
-
-import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeHandler} from './index';
 
@@ -39,11 +39,9 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(callActivity, token);
-
-    const identity: IIdentity = await executionContextFacade.getIdentity();
 
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 

@@ -1,7 +1,7 @@
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  ExecutionContext,
-  IExecutionContextFacade,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -32,11 +32,10 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    executionContextFacade: IExecutionContextFacade): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(serviceTask, token);
 
-    const context: ExecutionContext = executionContextFacade.getExecutionContext();
     const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
