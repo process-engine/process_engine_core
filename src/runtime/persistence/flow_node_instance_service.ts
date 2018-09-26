@@ -8,22 +8,14 @@ import {IIAMService} from '@essential-projects/iam_contracts';
 
 export class FlowNodeInstanceService implements IFlowNodeInstanceService {
 
-  private _flowNodeInstanceRepository: IFlowNodeInstanceRepository;
-  private _iamService: IIAMService;
+  private flowNodeInstanceRepository: IFlowNodeInstanceRepository;
+  private iamService: IIAMService;
 
   constructor(flowNodeInstanceRepository: IFlowNodeInstanceRepository,
               iamService: IIAMService) {
 
-    this._flowNodeInstanceRepository = flowNodeInstanceRepository;
-    this._iamService = iamService;
-  }
-
-  private get flowNodeInstanceRepository(): IFlowNodeInstanceRepository {
-    return this._flowNodeInstanceRepository;
-  }
-
-  private get iamService(): IIAMService {
-    return this._iamService;
+    this.flowNodeInstanceRepository = flowNodeInstanceRepository;
+    this.iamService = iamService;
   }
 
   public async querySpecificFlowNode(correlationId: string, processModelId: string, flowNodeId: string): Promise<Runtime.Types.FlowNodeInstance> {
@@ -40,6 +32,12 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
 
   public async queryByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this.flowNodeInstanceRepository.queryByCorrelation(correlationId);
+  }
+
+  public async queryByCorrelationAndState(correlationId: string,
+                                          state: Runtime.Types.FlowNodeInstanceState,
+                                         ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this.flowNodeInstanceRepository.queryByCorrelationAndState(correlationId, state);
   }
 
   public async queryByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
