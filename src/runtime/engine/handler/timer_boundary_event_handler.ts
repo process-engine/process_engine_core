@@ -1,6 +1,7 @@
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeInstanceService,
@@ -21,10 +22,11 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNo
   private _timerFacade: ITimerFacade;
 
 constructor(flowNodeInstanceService: IFlowNodeInstanceService,
+            loggingApiService: ILoggingApi,
             metricsService: IMetricsApi,
             timerFacade: ITimerFacade,
             decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-    super(flowNodeInstanceService, metricsService);
+    super(flowNodeInstanceService, loggingApiService, metricsService);
     this._decoratedHandler = decoratedHandler;
     this._timerFacade = timerFacade;
   }

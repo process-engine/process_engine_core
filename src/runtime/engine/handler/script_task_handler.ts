@@ -1,5 +1,6 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeInstanceService,
@@ -14,8 +15,8 @@ import {FlowNodeHandler} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, metricsService);
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, loggingApiService: ILoggingApi, metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, loggingApiService, metricsService);
   }
 
   protected async executeInternally(scriptTask: Model.Activities.ScriptTask,

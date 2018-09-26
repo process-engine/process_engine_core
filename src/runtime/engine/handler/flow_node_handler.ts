@@ -1,5 +1,6 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeHandler,
@@ -19,19 +20,25 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   protected flowNodeInstanceId: string;
 
   private _flowNodeInstanceService: IFlowNodeInstanceService;
-  private _metricsService: IMetricsApi;
+  private _loggingApiService: ILoggingApi;
+  private _metricsApiService: IMetricsApi;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService, loggingApiService: ILoggingApi, metricsApiService: IMetricsApi) {
     this._flowNodeInstanceService = flowNodeInstanceService;
-    this._metricsService = metricsService;
+    this._loggingApiService = loggingApiService;
+    this._metricsApiService = metricsApiService;
   }
 
   protected get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
   }
 
-  protected get metricsService(): IMetricsApi {
-    return this._metricsService;
+  protected get loggingApiService(): ILoggingApi {
+    return this._loggingApiService;
+  }
+
+  protected get metricsApiService(): IMetricsApi {
+    return this._metricsApiService;
   }
 
   public async execute(flowNode: TFlowNode,
@@ -114,12 +121,20 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    this.metricsService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
+    this.metricsApiService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
                                                      processToken.processModelId,
                                                      this.flowNodeInstanceId,
                                                      flowNodeInstance.id,
                                                      processToken,
                                                      now);
+
+    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                               processToken.processModelId,
+                                               processToken.processInstanceId,
+                                               this.flowNodeInstanceId,
+                                               flowNodeInstance.id,
+                                               LogLevel.info,
+                                               'Flow Node execution started.');
   }
 
   /**
@@ -135,13 +150,20 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+    this.metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
                                                     processToken.processModelId,
                                                     this.flowNodeInstanceId,
                                                     flowNodeInstance.id,
                                                     processToken,
                                                     now);
 
+    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                               processToken.processModelId,
+                                               processToken.processInstanceId,
+                                               this.flowNodeInstanceId,
+                                               flowNodeInstance.id,
+                                               LogLevel.info,
+                                               'Flow Node execution finished.');
   }
 
   /**
@@ -157,12 +179,20 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    this.metricsService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+    this.metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
                                                     processToken.processModelId,
                                                     this.flowNodeInstanceId,
                                                     flowNodeInstance.id,
                                                     processToken,
                                                     now);
+
+    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                               processToken.processModelId,
+                                               processToken.processInstanceId,
+                                               this.flowNodeInstanceId,
+                                               flowNodeInstance.id,
+                                               LogLevel.error,
+                                               'Flow Node execution terminated.');
   }
 
   /**
@@ -178,13 +208,21 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    this.metricsService.writeOnFlowNodeInstanceError(processToken.correlationId,
+    this.metricsApiService.writeOnFlowNodeInstanceError(processToken.correlationId,
                                                      processToken.processModelId,
                                                      this.flowNodeInstanceId,
                                                      flowNodeInstance.id,
                                                      processToken,
                                                      error,
                                                      now);
+
+    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                               processToken.processModelId,
+                                               processToken.processInstanceId,
+                                               this.flowNodeInstanceId,
+                                               flowNodeInstance.id,
+                                               LogLevel.error,
+                                              `Flow Node execution failed: ${error.message}`);
   }
 
   /**
@@ -200,12 +238,20 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    this.metricsService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
+    this.metricsApiService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
                                                        processToken.processModelId,
                                                        this.flowNodeInstanceId,
                                                        flowNodeInstance.id,
                                                        processToken,
                                                        now);
+
+    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                               processToken.processModelId,
+                                               processToken.processInstanceId,
+                                               this.flowNodeInstanceId,
+                                               flowNodeInstance.id,
+                                               LogLevel.info,
+                                               'Flow Node execution suspended.');
   }
 
   /**
@@ -221,12 +267,20 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     const now: moment.Moment = moment.utc();
 
-    this.metricsService.writeOnFlowNodeInstanceResume(processToken.correlationId,
+    this.metricsApiService.writeOnFlowNodeInstanceResume(processToken.correlationId,
                                                       processToken.processModelId,
                                                       this.flowNodeInstanceId,
                                                       flowNodeInstance.id,
                                                       processToken,
                                                       now);
+
+    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                               processToken.processModelId,
+                                               processToken.processInstanceId,
+                                               this.flowNodeInstanceId,
+                                               flowNodeInstance.id,
+                                               LogLevel.info,
+                                               'Flow Node execution resumed.');
   }
 
   /**
