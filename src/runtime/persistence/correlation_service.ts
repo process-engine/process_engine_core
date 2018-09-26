@@ -9,7 +9,6 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 export class CorrelationService implements ICorrelationService {
-
   private correlationRepository: ICorrelationRepository;
   private flowNodeInstanceRepository: IFlowNodeInstanceRepository;
   private processDefinitionRepository: IProcessDefinitionRepository;
@@ -25,6 +24,15 @@ export class CorrelationService implements ICorrelationService {
 
   public async createEntry(correlationId: string, processModelHash: string): Promise<void> {
     return this.correlationRepository.createEntry(correlationId, processModelHash);
+  }
+
+  public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {
+
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
+
+    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(activeFlowNodeInstances);
+
+    return activeCorrelations;
   }
 
   public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
@@ -53,13 +61,8 @@ export class CorrelationService implements ICorrelationService {
     return correlation;
   }
 
-  public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
-
-    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(activeFlowNodeInstances);
-
-    return activeCorrelations;
+  public async getCorrelationsForProcessModel(processModelId: string): Promise<Array<Runtime.Types.Correlation>> {
+    throw new Error("Method not implemented.");
   }
 
   /**
@@ -83,6 +86,7 @@ export class CorrelationService implements ICorrelationService {
    * Queries all running and suspended FlowNodeInstances from the repository
    * and returns them as a concatenated result.
    *
+   * @async
    * @returns A list of all retrieved FlowNodeInstances.
    */
   private async _getRunningFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
@@ -98,6 +102,7 @@ export class CorrelationService implements ICorrelationService {
   /**
    * Returns all running FlowNodeInstances from the repository.
    *
+   * @async
    * @returns A list of all retrieved FlowNodeInstances.
    */
   private async _getSuspendedFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
@@ -113,6 +118,7 @@ export class CorrelationService implements ICorrelationService {
   /**
    * Returns all suspended FlowNodeInstances from the repository.
    *
+   * @async
    * @returns A list of all retrieved FlowNodeInstances.
    */
   private async _getActiveCorrelationsFromFlowNodeList(flowNodes: Array<Runtime.Types.FlowNodeInstance>): Promise<Array<Runtime.Types.Correlation>> {
@@ -139,6 +145,7 @@ export class CorrelationService implements ICorrelationService {
   /**
    * Creates a Correlation Object from the given FlowNodeInstance.
    *
+   * @async
    * @returns The created Correlation Object.
    */
   private async _createCorrelationFromFlowNodeInstance(flowNode: Runtime.Types.FlowNodeInstance): Promise<Runtime.Types.Correlation> {
@@ -153,6 +160,16 @@ export class CorrelationService implements ICorrelationService {
     return correlation;
   }
 
+  /**
+   * Retrieves all entries from the correlation repository that have th
+   *  matching correlation ID.
+   * Afterwards, the associated ProcessModelHashes are used to retrieve the
+   * corresponding ProcessModels.
+   *
+   * @async
+   * @param   correlationId The correlationId for which to get the ProcessModels.
+   * @returns               The retrieved ProcessModels.
+   */
   private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.ProcessDefinitionFromRepository>> {
 
     const correlations: Array<Runtime.Types.CorrelationFromRepository> = await this.correlationRepository.getByCorrelationId(correlationId);
@@ -164,5 +181,4 @@ export class CorrelationService implements ICorrelationService {
 
     return processDefinitions;
   }
-
 }
