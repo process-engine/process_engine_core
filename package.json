@@ -26,7 +26,7 @@
     "@essential-projects/iam_contracts": "3.1.0",
     "@essential-projects/timing_contracts": "3.0.0",
     "@process-engine/consumer_api_contracts": "0.17.0",
-    "@process-engine/logging_api_contracts": "feature~add_process_instance_id",
+    "@process-engine/logging_api_contracts": "0.2.0",
     "@process-engine/metrics_api_contracts": "0.2.0",
     "@process-engine/process_engine_contracts": "feature~inspect_correlation_features",
     "@types/clone": "0.1.30",

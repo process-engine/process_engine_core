@@ -8,7 +8,17 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
+/**
+ * Groups ProcessModelHashes by their associated CorrelationId.
+ *
+ * Only use internally.
+ */
+type GroupedProcessModelHashes = {
+  [correlationId: string]: Array<string>,
+};
+
 export class CorrelationService implements ICorrelationService {
+
   private correlationRepository: ICorrelationRepository;
   private flowNodeInstanceRepository: IFlowNodeInstanceRepository;
   private processDefinitionRepository: IProcessDefinitionRepository;
@@ -22,8 +32,8 @@ export class CorrelationService implements ICorrelationService {
     this.processDefinitionRepository = processDefinitionRepository;
   }
 
-  public async createEntry(correlationId: string, processModelHash: string): Promise<void> {
-    return this.correlationRepository.createEntry(correlationId, processModelHash);
+  public async createEntry(correlationId: string, processInstanceId: string, processModelId: string, processModelHash: string): Promise<void> {
+    return this.correlationRepository.createEntry(correlationId, processInstanceId, processModelId, processModelHash);
   }
 
   public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {
@@ -35,34 +45,144 @@ export class CorrelationService implements ICorrelationService {
     return activeCorrelations;
   }
 
-  public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
+  public async getAll(): Promise<Array<Runtime.Types.Correlation>> {
 
-    // These will already be sorted by their createdAt value, with the oldest one at the top.
-    const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> = await this.correlationRepository.getByCorrelationId(correlationId);
-
-    const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
-    correlation.id = correlationId;
-    correlation.createdAt = correlationsFromRepo[0].createdAt;
-    correlation.processModels = await this._getProcessDefinitionsForCorrelation(correlationId);
+    const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> = await this.correlationRepository.getAll();
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
-    const correlationHasActiveFlowNodeInstances: boolean =
-      activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
-        return flowNodeInstance.correlationId === correlationId;
+    const groupedProcessModelhashes: GroupedProcessModelHashes = this._groupProcessModelHashes(correlationsFromRepo);
+
+    const correlations: Array<Runtime.Types.Correlation> =
+      await bluebird.map(correlationsFromRepo, (correlation: Runtime.Types.CorrelationFromRepository) => {
+        const matchingProcessModelHashes: Array<string> = groupedProcessModelhashes[correlation.id];
+
+        return this._mapCorrelation(correlation, activeFlowNodeInstances, matchingProcessModelHashes);
       });
 
-    if (correlationHasActiveFlowNodeInstances) {
-      correlation.state = Runtime.Types.FlowNodeInstanceState.running;
-    } else {
-      correlation.state = Runtime.Types.FlowNodeInstanceState.finished;
-    }
+    return correlations;
+  }
+
+  public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
+
+    // NOTE:
+    // These will already be ordered by their createdAt value, with the oldest one at the top.
+    const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> = await this.correlationRepository.getByCorrelationId(correlationId);
+
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
+
+    const processModelHashes: Array<string> = correlationsFromRepo.map((entry: Runtime.Types.CorrelationFromRepository) => {
+      return entry.processModelHash;
+    });
+
+    const correlation: Runtime.Types.Correlation =
+      await this._mapCorrelation(correlationsFromRepo[0], activeFlowNodeInstances, processModelHashes);
 
     return correlation;
   }
 
-  public async getCorrelationsForProcessModel(processModelId: string): Promise<Array<Runtime.Types.Correlation>> {
-    throw new Error("Method not implemented.");
+  public async getByProcessModelId(processModelId: string): Promise<Array<Runtime.Types.Correlation>> {
+
+    const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      await this.correlationRepository.getByProcessModelId(processModelId);
+
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
+
+    const correlations: Array<Runtime.Types.Correlation> =
+      await bluebird.map(correlationsFromRepo, (correlation: Runtime.Types.CorrelationFromRepository) => {
+        return this._mapCorrelation(correlation, activeFlowNodeInstances);
+      });
+
+    return correlations;
+  }
+
+  public async getByProcessInstanceId(processInstanceId: string): Promise<Runtime.Types.Correlation> {
+
+    const correlationFromRepo: Runtime.Types.CorrelationFromRepository =
+      await this.correlationRepository.getByProcessInstanceId(processInstanceId);
+
+    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
+
+    const correlation: Runtime.Types.Correlation =
+      await this._mapCorrelation(correlationFromRepo, activeFlowNodeInstances, [correlationFromRepo.processModelHash]);
+
+    return correlation;
+  }
+
+  /**
+   * Takes a list of CorrelationFromRepository objects and groups the
+   * ProcessModelHashes associated with them by their respecitve CorrelationId.
+   *
+   * @param   correlations The Correlations to group.
+   * @returns              The grouped ProcessModelHashes.
+   */
+  private _groupProcessModelHashes(correlations: Array<Runtime.Types.CorrelationFromRepository>): GroupedProcessModelHashes {
+
+    const groupedHashes: GroupedProcessModelHashes = {};
+
+    for (const correlation of correlations) {
+
+      const groupHasNoMatchingEntry: boolean = !groupedHashes[correlation.id];
+
+      if (groupHasNoMatchingEntry) {
+        groupedHashes[correlation.id] = [];
+      }
+
+      groupedHashes[correlation.id].push(correlation.processModelHash);
+    }
+
+    return groupedHashes;
+  }
+
+  /**
+   * Maps a given CorrelationFromRepository into a Correlation object,
+   * using the given data as a base.
+   *
+   * @param   correlationFromRepo     The Correlation to map.
+   * @param   activeFlowNodeInstances A list of active FlowNodeInstances. This is
+   *                                  used to determine the Correlation's state.
+   * @param   processModelHashes      A list of hashes associated with the given
+   *                                  Correlation. This is used to retrieve all
+   *                                  ProcessModels associated with the Correlation.
+   * @returns                         The mapped Correlation.
+   */
+  private async _mapCorrelation(correlationFromRepo: Runtime.Types.CorrelationFromRepository,
+                                activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+                                processModelHashes?: Array<string>,
+                               ): Promise<Runtime.Types.Correlation> {
+
+    const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
+    correlation.id = correlationFromRepo.id;
+    correlation.createdAt = correlationFromRepo.createdAt;
+
+    const correlationHasActiveFlowNodeInstances: boolean =
+      activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
+        return flowNodeInstance.correlationId === correlationFromRepo.id;
+      });
+
+    correlation.state = correlationHasActiveFlowNodeInstances
+      ? Runtime.Types.FlowNodeInstanceState.running
+      : Runtime.Types.FlowNodeInstanceState.finished;
+
+    if (processModelHashes) {
+      const processDefinitions: Array<Runtime.Types.ProcessDefinitionFromRepository> =
+        await bluebird.map(processModelHashes, (hash: string) => {
+          return this.processDefinitionRepository.getByHash(hash);
+        });
+
+      correlation.processModels = processDefinitions.map((entry: Runtime.Types.ProcessDefinitionFromRepository) => {
+        const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
+        processModel.name = entry.name;
+        processModel.xml = entry.xml;
+        processModel.hash = correlationFromRepo.processModelHash;
+        processModel.processInstanceId = correlationFromRepo.processInstanceId;
+        processModel.createdAt = correlationFromRepo.createdAt;
+
+        return processModel;
+      });
+    }
+
+    return correlation;
   }
 
   /**

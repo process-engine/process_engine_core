@@ -90,7 +90,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(processInstanceId);
 
-    await this._saveCorrelation(identity, correlationId, processModel);
+    await this._saveCorrelation(identity, processInstanceId, correlationId, processModel.id);
 
     const startTime: moment.Moment = moment.utc();
     this.loggingApiService.writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.info, `Process instance started.`);
@@ -243,13 +243,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private async _saveCorrelation(identity: IIdentity,
                                  correlationId: string,
-                                 processModel: Model.Types.Process,
+                                 processInstanceId: string,
+                                 processModelId: string,
                                 ): Promise<void> {
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
-      await this.processModelService.getProcessDefinitionAsXmlByName(identity, processModel.id);
+      await this.processModelService.getProcessDefinitionAsXmlByName(identity, processModelId);
 
-    await this.correlationService.createEntry(correlationId, processDefinition.hash);
+    await this.correlationService.createEntry(correlationId, processInstanceId, processDefinition.name, processDefinition.hash);
   }
 
   private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
