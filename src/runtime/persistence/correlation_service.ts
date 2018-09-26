@@ -36,7 +36,7 @@ export class CorrelationService implements ICorrelationService {
     return this.correlationRepository.createEntry(correlationId, processInstanceId, processModelId, processModelHash);
   }
 
-  public async getAllActiveCorrelations(): Promise<Array<Runtime.Types.Correlation>> {
+  public async getActive(): Promise<Array<Runtime.Types.Correlation>> {
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
