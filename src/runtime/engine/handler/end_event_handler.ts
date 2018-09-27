@@ -181,9 +181,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _notifyAboutRegularEnd(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
     // Publish regular success messsage.
     const eventName: string = eventAggregatorSettings.routePaths.endEventReached
-      .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-      .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-      .replace(eventAggregatorSettings.routeParams.endEventId, flowNode.id);
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
 
     const message: EndEventReachedMessage = new EndEventReachedMessage(token.correlationId,
                                                                        token.processModelId,
