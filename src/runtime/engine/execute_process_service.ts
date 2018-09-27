@@ -8,8 +8,8 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  eventAggregatorSettings,
   EndEventReachedMessage,
+  eventAggregatorSettings,
   ICorrelationService,
   IExecuteProcessService,
   IFlowNodeHandler,
@@ -23,6 +23,7 @@ import {
   NextFlowNodeInfo,
   ProcessEndedMessage,
   Runtime,
+  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
@@ -32,7 +33,7 @@ const logger: Logger = Logger.createLogger('processengine:execute_process_servic
 
 interface IProcessStateInfo {
   processTerminationSubscription?: ISubscription;
-  processTerminatedMessage?: ProcessEndedMessage;
+  processTerminatedMessage?: TerminateEndEventReachedMessage;
 }
 
 export class ExecuteProcessService implements IExecuteProcessService {
@@ -44,6 +45,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private _correlationService: ICorrelationService;
   private _metricsService: IMetricsApi;
   private _processModelService: IProcessModelService;
+
+  // TODO: CAUTION! this is just a workaround to be able to subscribe to the new
+  // messages routes without having to refactor all the startProcess methods in
+  // this service! Please get rid of this class variable ASAP.
+  private _processInstanceId: string;
 
   constructor(correlationService: ICorrelationService,
               eventAggregator: IEventAggregator,
@@ -84,6 +90,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this._processModelService;
   }
 
+  private _getProcessInstanceId(): string {
+    if (!this._processInstanceId) {
+      this._processInstanceId = uuid.v4();
+    }
+
+    return this._processInstanceId;
+  }
+
   public async start(identity: IIdentity,
                      processModel: Model.Types.Process,
                      startEventId: string,
@@ -95,7 +109,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
 
-    const processInstanceId: string = uuid.v4();
+    const processInstanceId: string = this._getProcessInstanceId();
 
     if (!correlationId) {
       correlationId = uuid.v4();
@@ -113,11 +127,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processStateInfo: IProcessStateInfo = {};
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
     const processTerminationSubscription: ISubscription = this.eventAggregator
-      .subscribe(processTerminatedEvent, async(message: ProcessEndedMessage): Promise<void> => {
+      .subscribe(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
           processStateInfo.processTerminatedMessage = message;
       });
 
@@ -158,7 +172,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              correlationId: string,
                                              endEventId: string,
                                              initialPayload?: any,
-                                             caller?: string): Promise<ProcessEndedMessage> {
+                                             caller?: string): Promise<EndEventReachedMessage> {
 
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -166,15 +180,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
         correlationId = uuid.v4();
       }
 
-      // TODO: Route needs refactoring
-      // We need to match the event by the processInstanceId, rather than the processModelId, because
-      // the ProcessInstanceId is the only truly unique id we have.
-      const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEventId}`;
+      const processInstanceId: string = this._getProcessInstanceId();
+
+      const processEndEvent: string = eventAggregatorSettings.routePaths.endEventReached
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
-          resolve(message);
-        });
+        this.eventAggregator.subscribe(processEndEvent,
+          async(message: EndEventReachedMessage): Promise<void> => {
+            const isAwaitedEndEvent: boolean = message.flowNodeId === endEventId;
+            if (isAwaitedEndEvent) {
+              resolve(message);
+            }
+          });
 
       try {
         await this.start(identity, processModel, startEventId, correlationId, initialPayload, caller);
@@ -217,31 +235,22 @@ export class ExecuteProcessService implements IExecuteProcessService {
       correlationId = uuid.v4();
     }
 
+    const processInstanceId: string = this._getProcessInstanceId();
+
     // We need to match the event by the processInstanceId, rather than the processModelId, because
     // the ProcessInstanceId is the only truly unique id we have.
     // const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEvent.id}`;
 
     return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
-      for (const endEvent of endEvents) {
 
-        const subscription: ISubscription =
-          this.eventAggregator.subscribe(eventAggregatorSettings.messagePaths.processEnded, async(message: ProcessEndedMessage): Promise<void> => {
-            const isCorrectEndEvent: boolean =
-              message.correlationId === correlationId
-              && endEvent.id === message.flowNodeId;
+      const processEndEvent: string = eventAggregatorSettings.routePaths.endEventReached
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
-            if (isCorrectEndEvent) {
-
-              for (const existingSubscription of subscriptions) {
-                existingSubscription.dispose();
-              }
-
-              resolve(message);
-            }
+      const subscription: ISubscription =
+        this.eventAggregator.subscribeOnce(processEndEvent,
+          async(message: EndEventReachedMessage): Promise<void> => {
+            resolve(message);
           });
-
-        subscriptions.push(subscription);
-      }
 
       try {
         await this.start(identity, processModel, startEventId, correlationId, initialPayload, caller);
@@ -250,9 +259,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
           `An error occured while trying to execute process model with id "${processModel.id}" in correlation "${correlationId}".`;
         logger.error(errorLogMessage, error);
 
-        for (const subscription of subscriptions) {
-          subscription.dispose();
-        }
+        subscription.dispose();
+
         const errorTime: moment.Moment = moment.utc();
         this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
