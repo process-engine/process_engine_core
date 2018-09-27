@@ -1,5 +1,7 @@
 import * as bluebird from 'bluebird';
 
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import {
   ICorrelationRepository,
   ICorrelationService,
@@ -32,8 +34,12 @@ export class CorrelationService implements ICorrelationService {
     this.processDefinitionRepository = processDefinitionRepository;
   }
 
-  public async createEntry(correlationId: string, processInstanceId: string, processModelId: string, processModelHash: string): Promise<void> {
-    return this.correlationRepository.createEntry(correlationId, processInstanceId, processModelId, processModelHash);
+  public async createEntry(identity: IIdentity,
+                           correlationId: string,
+                           processInstanceId: string,
+                           processModelId: string,
+                           processModelHash: string): Promise<void> {
+    return this.correlationRepository.createEntry(identity, correlationId, processInstanceId, processModelId, processModelHash);
   }
 
   public async getActive(): Promise<Array<Runtime.Types.Correlation>> {
@@ -166,6 +172,7 @@ export class CorrelationService implements ICorrelationService {
 
     const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
     correlation.id = correlationFromRepo.id;
+    correlation.identity = correlationFromRepo.identity;
     correlation.createdAt = correlationFromRepo.createdAt;
 
     const correlationHasActiveFlowNodeInstances: boolean =

@@ -250,7 +250,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
       await this.processModelService.getProcessDefinitionAsXmlByName(identity, processModelId);
 
-    await this.correlationService.createEntry(correlationId, processInstanceId, processDefinition.name, processDefinition.hash);
+    await this
+      .correlationService
+      .createEntry(identity, correlationId, processInstanceId, processDefinition.name, processDefinition.hash);
   }
 
   private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
