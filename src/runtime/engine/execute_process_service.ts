@@ -90,7 +90,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(processInstanceId);
 
-    await this._saveCorrelation(identity, processInstanceId, correlationId, processModel.id);
+    await this._saveCorrelation(identity, correlationId, processInstanceId, processModel.id);
 
     const startTime: moment.Moment = moment.utc();
     this.loggingApiService.writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.info, `Process instance started.`);
