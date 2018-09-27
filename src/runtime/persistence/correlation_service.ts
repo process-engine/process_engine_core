@@ -277,7 +277,7 @@ export class CorrelationService implements ICorrelationService {
 
     for (const flowNode of flowNodes) {
       if (!correlationsContainsMatchingEntry(flowNode)) {
-        const correlation: Runtime.Types.Correlation = await this._createCorrelationFromFlowNodeInstance(flowNode);
+        const correlation: Runtime.Types.Correlation = await this._createCorrelationFromActiveFlowNodeInstance(flowNode);
         correlations.push(correlation);
       }
     }
@@ -291,13 +291,13 @@ export class CorrelationService implements ICorrelationService {
    * @async
    * @returns The created Correlation Object.
    */
-  private async _createCorrelationFromFlowNodeInstance(flowNodeInstance: Runtime.Types.FlowNodeInstance): Promise<Runtime.Types.Correlation> {
+  private async _createCorrelationFromActiveFlowNodeInstance(flowNodeInstance: Runtime.Types.FlowNodeInstance): Promise<Runtime.Types.Correlation> {
 
     // Note that correlationid and processModelId will be the same for all of the tokens associated with the FNI.
     // Therefore it doesn't matter which one is being used here.
     const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
     correlation.id = flowNodeInstance.tokens[0].correlationId;
-    correlation.state = flowNodeInstance.state;
+    correlation.state = Runtime.Types.FlowNodeInstanceState.running;
     correlation.identity = flowNodeInstance.tokens[0].identity;
     correlation.createdAt = flowNodeInstance.tokens[0].createdAt;
     correlation.processModels = await this._getProcessDefinitionsForCorrelation(flowNodeInstance.correlationId);
