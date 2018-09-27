@@ -10,6 +10,7 @@ import {
   NextFlowNodeInfo,
   Runtime,
   SignalEventReachedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from '../index';
@@ -35,10 +36,19 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     await this.persistOnEnter(flowNode, token);
 
-    const signalName: string = `/processengine/process/signal/${flowNode.signalEventDefinition.signalRef}`;
-    const payload: SignalEventReachedMessage = new SignalEventReachedMessage(flowNode.id, token);
+    const signalReference: string = flowNode.signalEventDefinition.signalRef;
+    
+    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
 
-    this.eventAggregator.publish(signalName, payload);
+    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalReference,
+                                                                               token.correlationId,
+                                                                               token.processModelId,
+                                                                               token.processInstanceId,
+                                                                               flowNode.id,
+                                                                               token.payload);
+
+    this.eventAggregator.publish(signalEventName, message);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
 

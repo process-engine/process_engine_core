@@ -39,8 +39,8 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
 
     const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(messageCatchEvent.messageEventDefinition.messageRef);
 
-    processTokenFacade.addResultForFlowNode(messageCatchEvent.id, receivedMessage.tokenPayload);
-    token.payload = receivedMessage.tokenPayload;
+    processTokenFacade.addResultForFlowNode(messageCatchEvent.id, receivedMessage.currentToken);
+    token.payload = receivedMessage.currentToken;
 
     await this.persistOnResume(messageCatchEvent, token);
 
@@ -55,13 +55,10 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
-      const intermediateMessageEventName: string = eventAggregatorSettings.routePaths.intermediateMessageEvent
+      const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
         .replace(eventAggregatorSettings.routeParams.messageRef, messageReference);
 
-      // TODO: Replace the message string in the contracts project with this one.
-      const messageName: string = `/processengine/process/message/${messageReference}`;
-
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(intermediateMessageEventName, async(message: any) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();

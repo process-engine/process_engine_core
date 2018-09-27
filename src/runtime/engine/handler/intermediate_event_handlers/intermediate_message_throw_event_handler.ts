@@ -36,17 +36,19 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.persistOnEnter(messageThrowEvent, token);
 
-    const intermediateMessageEventName: string = eventAggregatorSettings.routePaths.intermediateMessageEvent
-      .replace(eventAggregatorSettings.routeParams.messageRef, messageThrowEvent.messageEventDefinition.messageRef);
+    const messageReference: string = messageThrowEvent.messageEventDefinition.messageRef;
+    
+    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+      .replace(eventAggregatorSettings.routeParams.messageRef, messageReference);
 
-    // TODO: Replace the message string in the contracts project with this one.
-    const messageName: string = `/processengine/process/message/${messageThrowEvent.messageEventDefinition.messageRef}`;
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
+                                                                               token.correlationId,
+                                                                               token.processModelId,
+                                                                               token.processInstanceId,
+                                                                               messageThrowEvent.id,
+                                                                               token.payload);
 
-    // TODO: reintroduce MessageEventReachedMessage
-    // const payload: MessageEventReachedMessage = new MessageEventReachedMessage(messageThrowEvent.id, token);
-
-    // this.eventAggregator.publish(intermediateMessageEventName, token);
-    this.eventAggregator.publish(messageName, token);
+    this.eventAggregator.publish(messageEventName, message);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageThrowEvent);
 
