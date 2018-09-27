@@ -3,6 +3,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -80,7 +81,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
 
     const signalBoundaryEvent: Model.Events.BoundaryEvent = await this._getSignalBoundaryEvent(flowNode, processModelFacade);
 
-    const signalName: string = `/processengine/process/signal/${signalBoundaryEvent.signalEventDefinition.signalRef}`;
+    const signalBoundaryEventName: string = eventAggregatorSettings.routePaths.signalEventReached
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalBoundaryEvent.signalEventDefinition.signalRef);
 
     const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
 
@@ -89,8 +91,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
       }
       this.signalReceived = true;
 
-      processTokenFacade.addResultForFlowNode(flowNode.id, signal.tokenPayload);
-      token.payload = signal.tokenPayload;
+      processTokenFacade.addResultForFlowNode(flowNode.id, signal.currentToken);
+      token.payload = signal.currentToken;
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute
@@ -104,7 +106,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
       return resolveFunc(nextFlowNodeInfo);
     };
 
-    this.subscription = this.eventAggregator.subscribeOnce(signalName, signalReceivedCallback);
+    this.subscription = this.eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback);
   }
 
   private _getSignalBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFacade: IProcessModelFacade): Model.Events.BoundaryEvent {

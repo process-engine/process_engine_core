@@ -12,8 +12,8 @@ import {
   NextFlowNodeInfo,
   Runtime,
   UserTaskFinishedMessage,
+  UserTaskReachedMessage,
   UserTaskResult,
-  UserTaskWaitingMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
@@ -62,7 +62,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
           await this.persistOnExit(userTask, token);
 
-          this._sendUserTaskFinishedToConsumerApi(token.correlationId, token.processInstanceId, userTask.id, userTaskResult);
+          this._sendUserTaskFinishedToConsumerApi(userTask.id, token, userTaskResult);
 
           if (subscription) {
             subscription.dispose();
@@ -72,38 +72,42 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
         });
 
       await this.persistOnSuspend(userTask, token);
-      this._sendUserTaskWaitingToConsumerApi(token.correlationId, token.processInstanceId, userTask.id);
+      this._sendUserTaskWaitingToConsumerApi(userTask.id, token);
     });
 
   }
 
-  private _sendUserTaskWaitingToConsumerApi(correlationId: string,
-                                            processInstanceId: string,
-                                            userTaskId: string): void {
-    const message: UserTaskWaitingMessage = new UserTaskWaitingMessage();
-    message.correlationId = correlationId;
-    message.processInstanceId = processInstanceId;
-    message.userTaskId = userTaskId;
+  private _sendUserTaskWaitingToConsumerApi(userTaskId: string, token: Runtime.Types.ProcessToken): void {
 
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskWaiting, message);
+    const message: UserTaskReachedMessage = new UserTaskReachedMessage(token.correlationId,
+                                                                       token.processModelId,
+                                                                       token.processInstanceId,
+                                                                       userTaskId,
+                                                                       this.flowNodeInstanceId,
+                                                                       token.payload);
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
   }
 
-  private _sendUserTaskFinishedToConsumerApi(correlationId: string,
-                                             processInstanceId: string,
-                                             userTaskId: string,
+  private _sendUserTaskFinishedToConsumerApi(userTaskId: string,
+                                             token: Runtime.Types.ProcessToken,
                                              userTaskResult: UserTaskResult): void {
-    const message: UserTaskFinishedMessage = new UserTaskFinishedMessage();
-    message.correlationId = correlationId;
-    message.processInstanceId = processInstanceId;
-    message.userTaskId = userTaskId;
-    message.userTaskResult = userTaskResult;
+
+    const message: UserTaskFinishedMessage = new UserTaskFinishedMessage(userTaskResult,
+                                                                         token.correlationId,
+                                                                         token.processModelId,
+                                                                         token.processInstanceId,
+                                                                         userTaskId,
+                                                                         this.flowNodeInstanceId,
+                                                                         token.payload);
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
 
     const userTaskFinishedEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
       .replace(eventAggregatorSettings.routeParams.userTaskId, userTaskId);
+
     this.eventAggregator.publish(userTaskFinishedEvent, message);
   }
 }

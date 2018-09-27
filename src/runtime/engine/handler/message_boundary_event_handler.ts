@@ -81,11 +81,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     const messageBoundaryEvent: Model.Events.BoundaryEvent = await this._getMessageBoundaryEvent(flowNode, processModelFacade);
 
-    const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageBoundaryEvent
-      .replace(eventAggregatorSettings.routeParams.messageRef, messageBoundaryEvent.messageEventDefinition.messageRef);
-
-    // TODO: Replace the message in the contracts package with this one
-    const messageName: string = `/processengine/process/message/${messageBoundaryEvent.messageEventDefinition.messageRef}`;
+    const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageBoundaryEvent.messageEventDefinition.messageRef);
 
     const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 
@@ -94,8 +91,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       }
       this.messageReceived = true;
 
-      processTokenFacade.addResultForFlowNode(flowNode.id, message.tokenPayload);
-      token.payload = message.tokenPayload;
+      processTokenFacade.addResultForFlowNode(flowNode.id, message.currentToken);
+      token.payload = message.currentToken;
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute

@@ -22,7 +22,7 @@ import {FlowNodeHandler} from './index';
 
 interface IProcessStateInfo {
   processTerminationSubscription?: ISubscription;
-  processTerminatedMessage?: ProcessEndedMessage;
+  processTerminatedMessage?: TerminateEndEventReachedMessage;
 }
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
@@ -60,11 +60,11 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const processStateInfo: IProcessStateInfo = {};
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
 
     const processTerminationSubscription: ISubscription = this.eventAggregator
-      .subscribeOnce(processTerminatedEvent, async(message: ProcessEndedMessage): Promise<void> => {
+      .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
         processStateInfo.processTerminatedMessage = message;
       });
 

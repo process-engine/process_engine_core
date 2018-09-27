@@ -56,7 +56,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
       const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-        .replace(eventAggregatorSettings.routeParams.messageRef, messageReference);
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
 
       const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 

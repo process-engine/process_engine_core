@@ -12,7 +12,6 @@ import {
   IProcessTokenFacade,
   Model,
   NextFlowNodeInfo,
-  ProcessEndedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -21,7 +20,7 @@ import {FlowNodeHandler} from './index';
 
 interface IProcessStateInfo {
   processTerminationSubscription?: ISubscription;
-  processTerminatedMessage?: ProcessEndedMessage;
+  processTerminatedMessage?: TerminateEndEventReachedMessage;
 }
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
@@ -60,11 +59,11 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       const processStateInfo: IProcessStateInfo = {};
 
-      const processTerminatedEvent: string = eventAggregatorSettings.routePaths.processTerminated
+      const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
         .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
 
       const processTerminationSubscription: ISubscription = this.eventAggregator
-        .subscribeOnce(processTerminatedEvent, async(message: ProcessEndedMessage): Promise<void> => {
+        .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
           processStateInfo.processTerminatedMessage = message;
         });
 
