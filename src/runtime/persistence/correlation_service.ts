@@ -291,14 +291,16 @@ export class CorrelationService implements ICorrelationService {
    * @async
    * @returns The created Correlation Object.
    */
-  private async _createCorrelationFromFlowNodeInstance(flowNode: Runtime.Types.FlowNodeInstance): Promise<Runtime.Types.Correlation> {
+  private async _createCorrelationFromFlowNodeInstance(flowNodeInstance: Runtime.Types.FlowNodeInstance): Promise<Runtime.Types.Correlation> {
 
     // Note that correlationid and processModelId will be the same for all of the tokens associated with the FNI.
     // Therefore it doesn't matter which one is being used here.
     const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
-    correlation.id = flowNode.tokens[0].correlationId;
-    correlation.state = flowNode.state;
-    correlation.processModels = await this._getProcessDefinitionsForCorrelation(flowNode.correlationId);
+    correlation.id = flowNodeInstance.tokens[0].correlationId;
+    correlation.state = flowNodeInstance.state;
+    correlation.identity = flowNodeInstance.tokens[0].identity;
+    correlation.createdAt = flowNodeInstance.tokens[0].createdAt;
+    correlation.processModels = await this._getProcessDefinitionsForCorrelation(flowNodeInstance.correlationId);
 
     return correlation;
   }
@@ -310,16 +312,27 @@ export class CorrelationService implements ICorrelationService {
    * corresponding ProcessModels.
    *
    * @async
-   * @param   correlationId The correlationId for which to get the ProcessModels.
-   * @returns               The retrieved ProcessModels.
+   * @param   correlationId     The correlationId for which to get the ProcessModels.
+   * @returns                   The retrieved ProcessModels.
    */
-  private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.ProcessDefinitionFromRepository>> {
+  private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.CorrelationProcessModel>> {
 
     const correlations: Array<Runtime.Types.CorrelationFromRepository> = await this.correlationRepository.getByCorrelationId(correlationId);
 
-    const processDefinitions: Array<Runtime.Types.ProcessDefinitionFromRepository> =
-      await bluebird.map(correlations, (correlation: Runtime.Types.CorrelationFromRepository) => {
-        return this.processDefinitionRepository.getByHash(correlation.processModelHash);
+    const processDefinitions: Array<Runtime.Types.CorrelationProcessModel> =
+      await bluebird.map(correlations, async(correlation: Runtime.Types.CorrelationFromRepository) => {
+
+        const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
+          await this.processDefinitionRepository.getByHash(correlation.processModelHash);
+
+        const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
+        processModel.name = processDefinition.name;
+        processModel.hash = processDefinition.hash;
+        processModel.xml = processDefinition.xml;
+        processModel.createdAt = processDefinition.createdAt;
+        processModel.processInstanceId = correlation.processInstanceId;
+
+        return processModel;
       });
 
     return processDefinitions;
