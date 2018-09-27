@@ -21,7 +21,6 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
-  ProcessEndedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -174,7 +173,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                              initialPayload?: any,
                                              caller?: string): Promise<EndEventReachedMessage> {
 
-    return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       if (!correlationId) {
         correlationId = uuid.v4();
@@ -224,7 +223,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                      startEventId: string,
                                      correlationId: string,
                                      initialPayload?: any,
-                                     caller?: string): Promise<ProcessEndedMessage> {
+                                     caller?: string): Promise<EndEventReachedMessage> {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -241,7 +240,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     // the ProcessInstanceId is the only truly unique id we have.
     // const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEvent.id}`;
 
-    return new Promise<ProcessEndedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processEndEvent: string = eventAggregatorSettings.routePaths.endEventReached
         .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
