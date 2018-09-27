@@ -149,6 +149,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                          flowNode.id,
                                                                                          token.payload);
     this.eventAggregator.publish(eventName, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
   /**
@@ -180,6 +181,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    */
   private _notifyAboutRegularEnd(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
     // Publish regular success messsage.
+
     const eventName: string = eventAggregatorSettings.routePaths.endEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
 
@@ -189,6 +191,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                        flowNode.id,
                                                                        token.payload);
     this.eventAggregator.publish(eventName, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
 
 }
