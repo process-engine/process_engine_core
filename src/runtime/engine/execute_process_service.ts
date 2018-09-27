@@ -41,8 +41,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private readonly _metricsApiService: IMetricsApi;
   private readonly _processModelService: IProcessModelService;
 
-  private processWasTerminated: boolean = false;
-  private processTerminationMessage: TerminateEndEventReachedMessage;
+  private _processWasTerminated: boolean = false;
+  private _processTerminationMessage: TerminateEndEventReachedMessage;
 
   constructor(correlationService: ICorrelationService,
               eventAggregator: IEventAggregator,
@@ -113,8 +113,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         processTerminationSubscription.dispose();
       }
 
-      if (this.processWasTerminated) {
-        const message: string = `Process was terminated through TerminateEndEvent "${this.processTerminationMessage.eventId}."`;
+      if (this._processWasTerminated) {
+        const message: string = `Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}."`;
         this
           ._loggingApiService
           .writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.error, message);
@@ -264,8 +264,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return this
         ._eventAggregator
         .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-          this.processWasTerminated = true;
-          this.processTerminationMessage = message;
+          this._processWasTerminated = true;
+          this._processTerminationMessage = message;
       });
   }
 
@@ -282,7 +282,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
 
-    if (this.processWasTerminated) {
+    if (this._processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
       await this._flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
     } else if (nextFlowNodeInfoHasFlowNode) {
