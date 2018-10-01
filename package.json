@@ -28,7 +28,7 @@
     "@process-engine/consumer_api_contracts": "0.17.0",
     "@process-engine/logging_api_contracts": "0.2.1",
     "@process-engine/metrics_api_contracts": "0.2.1",
-    "@process-engine/process_engine_contracts": "feature~inspect_correlation_features",
+    "@process-engine/process_engine_contracts": "28.0.0",
     "@types/clone": "0.1.30",
     "addict-ioc": "2.3.7",
     "bluebird": "3.5.1",
