@@ -6,6 +6,7 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
@@ -37,13 +38,14 @@ interface IProcessStateInfo {
 
 export class ExecuteProcessService implements IExecuteProcessService {
 
-  private _eventAggregator: IEventAggregator;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+  private readonly _eventAggregator: IEventAggregator;
+  private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
-  private _flowNodeInstanceService: IFlowNodeInstanceService;
-  private _correlationService: ICorrelationService;
-  private _metricsService: IMetricsApi;
-  private _processModelService: IProcessModelService;
+  private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
+  private readonly _correlationService: ICorrelationService;
+  private readonly _loggingApiService: ILoggingApi;
+  private readonly _metricsApiService: IMetricsApi;
+  private readonly _processModelService: IProcessModelService;
 
   // TODO: CAUTION! this is just a workaround to be able to subscribe to the new
   // messages routes without having to refactor all the startProcess methods in
@@ -54,47 +56,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
               eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
-              metricsService: IMetricsApi,
+              loggingApiService: ILoggingApi,
+              metricsApiService: IMetricsApi,
               processModelService: IProcessModelService) {
 
     this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
-    this._metricsService = metricsService;
+    this._loggingApiService = loggingApiService;
+    this._metricsApiService = metricsApiService;
     this._processModelService = processModelService;
-  }
-
-  private get correlationService(): ICorrelationService {
-    return this._correlationService;
-  }
-
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
-  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
-    return this._flowNodeHandlerFactory;
-  }
-
-  private get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
-  }
-
-  private get metricsService(): IMetricsApi {
-    return this._metricsService;
-  }
-
-  private get processModelService(): IProcessModelService {
-    return this._processModelService;
-  }
-
-  private _getProcessInstanceId(): string {
-    if (!this._processInstanceId) {
-      this._processInstanceId = uuid.v4();
-    }
-
-    return this._processInstanceId;
   }
 
   public async start(identity: IIdentity,
@@ -108,7 +80,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
 
-    const processInstanceId: string = this._getProcessInstanceId();
+    const processInstanceId: string = this._processInstanceId;
 
     if (!correlationId) {
       correlationId = uuid.v4();
@@ -129,20 +101,27 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
-    const processTerminationSubscription: ISubscription = this.eventAggregator
-      .subscribe(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+    const processTerminationSubscription: ISubscription = this._eventAggregator
+      .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
           processStateInfo.processTerminatedMessage = message;
       });
 
-    await this._saveCorrelation(identity, correlationId, processModel);
+    await this._saveCorrelation(identity, correlationId, processInstanceId, processModel.id);
 
     const startTime: moment.Moment = moment.utc();
-    this.metricsService.writeOnProcessStarted(correlationId, processModel.id, startTime);
+    this._loggingApiService.writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.info, `Process instance started.`);
+    this._metricsApiService.writeOnProcessStarted(correlationId, processModel.id, startTime);
+
     try {
       await this._executeFlowNode(startEvent, processToken, processTokenFacade, processModelFacade, identity, processStateInfo);
 
       const endTime: moment.Moment = moment.utc();
-      this.metricsService.writeOnProcessFinished(correlationId, processModel.id, endTime);
+
+      this
+        ._loggingApiService
+        .writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.info, `Process instance finished.`);
+      this._metricsApiService.writeOnProcessFinished(correlationId, processModel.id, endTime);
+
       const resultToken: IProcessTokenResult = await this._getFinalResult(processTokenFacade);
 
       const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
@@ -153,13 +132,21 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
       if (processWasTerminated) {
-        throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}."`);
+        const message: string = `Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}."`;
+        this
+          ._loggingApiService
+          .writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.error, message);
+        throw new InternalServerError(message);
       }
 
       return resultToken;
     } catch (error) {
       const errorTime: moment.Moment = moment.utc();
-      this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
+      this
+        ._loggingApiService
+        .writeLogForProcessModel(correlationId, processModel.id, processInstanceId, LogLevel.error, error.message);
+      this._metricsApiService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
+
       throw error;
     }
 
@@ -179,19 +166,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
         correlationId = uuid.v4();
       }
 
-      const processInstanceId: string = this._getProcessInstanceId();
+      const processInstanceId: string = this._processInstanceId;
 
       const processEndEvent: string = eventAggregatorSettings.routePaths.endEventReached
         .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
-      const subscription: ISubscription =
-        this.eventAggregator.subscribe(processEndEvent,
-          async(message: EndEventReachedMessage): Promise<void> => {
-            const isAwaitedEndEvent: boolean = message.flowNodeId === endEventId;
-            if (isAwaitedEndEvent) {
-              resolve(message);
-            }
-          });
+      const messageReceivedCallback: Function = async(message: EndEventReachedMessage): Promise<void> => {
+        const isAwaitedEndEvent: boolean = message.flowNodeId === endEventId;
+        if (isAwaitedEndEvent) {
+          resolve(message);
+        }
+      };
+
+      const subscription: ISubscription = this._eventAggregator.subscribe(processEndEvent, messageReceivedCallback);
 
       try {
         await this.start(identity, processModel, startEventId, correlationId, initialPayload, caller);
@@ -205,7 +192,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
           subscription.dispose();
         }
         const errorTime: moment.Moment = moment.utc();
-        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
+        this._metricsApiService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
@@ -234,11 +221,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       correlationId = uuid.v4();
     }
 
-    const processInstanceId: string = this._getProcessInstanceId();
-
-    // We need to match the event by the processInstanceId, rather than the processModelId, because
-    // the ProcessInstanceId is the only truly unique id we have.
-    // const subscriptionName: string = `/processengine/correlation/${correlationId}/process/${processModel.id}/node/${endEvent.id}`;
+    const processInstanceId: string = this._processInstanceId;
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -246,7 +229,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(processEndEvent,
+        this._eventAggregator.subscribeOnce(processEndEvent,
           async(message: EndEventReachedMessage): Promise<void> => {
             resolve(message);
           });
@@ -261,7 +244,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         subscription.dispose();
 
         const errorTime: moment.Moment = moment.utc();
-        this.metricsService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
+        this._metricsApiService.writeOnProcessError(correlationId, processModel.id, error, errorTime);
 
         // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
         // Otherwise, pass on an anonymous error.
@@ -277,13 +260,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   private async _saveCorrelation(identity: IIdentity,
                                  correlationId: string,
-                                 processModel: Model.Types.Process,
+                                 processInstanceId: string,
+                                 processModelId: string,
                                 ): Promise<void> {
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
-      await this.processModelService.getProcessDefinitionAsXmlByName(identity, processModel.id);
+      await this._processModelService.getProcessDefinitionAsXmlByName(identity, processModelId);
 
-    await this.correlationService.createEntry(correlationId, processDefinition.hash);
+    await this
+      ._correlationService
+      .createEntry(identity, correlationId, processInstanceId, processDefinition.name, processDefinition.hash);
   }
 
   private async _executeFlowNode(flowNode: Model.Base.FlowNode,
@@ -293,7 +279,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                  identity: IIdentity,
                                  processStateInfo: IProcessStateInfo): Promise<void> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, identity);
@@ -304,7 +290,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     if (processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
+      await this._flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
     } else if (nextFlowNodeInfoHasFlowNode) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,

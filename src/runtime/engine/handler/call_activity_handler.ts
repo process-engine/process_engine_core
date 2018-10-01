@@ -9,6 +9,7 @@ import {
   StartCallbackType,
 } from '@process-engine/consumer_api_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeInstanceService,
@@ -25,8 +26,11 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
   private _consumerApiService: IConsumerApi;
 
-  constructor(consumerApiService: IConsumerApi, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, metricsService);
+  constructor(consumerApiService: IConsumerApi,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
+              metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, loggingApiService, metricsService);
 
     this._consumerApiService = consumerApiService;
   }
