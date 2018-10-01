@@ -16,9 +16,9 @@ import * as clone from 'clone';
 
 export class ProcessModelService implements IProcessModelService {
 
-  private _processDefinitionRepository: IProcessDefinitionRepository;
-  private _iamService: IIAMService;
-  private _bpmnModelParser: IModelParser = undefined;
+  private readonly _processDefinitionRepository: IProcessDefinitionRepository;
+  private readonly _iamService: IIAMService;
+  private readonly _bpmnModelParser: IModelParser = undefined;
 
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
@@ -32,33 +32,21 @@ export class ProcessModelService implements IProcessModelService {
     this._bpmnModelParser = bpmnModelParser;
   }
 
-  private get processDefinitionRepository(): IProcessDefinitionRepository {
-    return this._processDefinitionRepository;
-  }
-
-  private get iamService(): IIAMService {
-    return this._iamService;
-  }
-
-  private get bpmnModelParser(): IModelParser {
-    return this._bpmnModelParser;
-  }
-
   public async persistProcessDefinitions(identity: IIdentity,
                                          name: string,
                                          xml: string,
                                          overwriteExisting: boolean = true,
                                        ): Promise<void> {
 
-    await this.iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
+    await this._iamService.ensureHasClaim(identity, this._canWriteProcessModelClaim);
     await this._validateDefinition(name, xml);
 
-    return this.processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
+    return this._processDefinitionRepository.persistProcessDefinitions(name, xml, overwriteExisting);
   }
 
   public async getProcessModels(identity: IIdentity): Promise<Array<Model.Types.Process>> {
 
-    await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
+    await this._iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
 
@@ -78,7 +66,7 @@ export class ProcessModelService implements IProcessModelService {
 
   public async getProcessModelById(identity: IIdentity, processModelId: string): Promise<Model.Types.Process> {
 
-    await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
+    await this._iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
     const processModel: Model.Types.Process = await this._getProcessModelById(processModelId);
 
@@ -93,9 +81,9 @@ export class ProcessModelService implements IProcessModelService {
 
   public async getProcessDefinitionAsXmlByName(identity: IIdentity, name: string): Promise<Runtime.Types.ProcessDefinitionFromRepository> {
 
-    await this.iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
+    await this._iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
 
-    const definitionRaw: Runtime.Types.ProcessDefinitionFromRepository = await this.processDefinitionRepository.getProcessDefinitionByName(name);
+    const definitionRaw: Runtime.Types.ProcessDefinitionFromRepository = await this._processDefinitionRepository.getProcessDefinitionByName(name);
 
     if (!definitionRaw) {
       throw new NotFoundError(`Process definition with name "${name}" not found!`);
@@ -114,7 +102,7 @@ export class ProcessModelService implements IProcessModelService {
    */
   private async _validateDefinition(name: string, xml: string): Promise<void> {
     try {
-      await this.bpmnModelParser.parseXmlToObjectModel(xml);
+      await this._bpmnModelParser.parseXmlToObjectModel(xml);
     } catch (error) {
       throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
     }
@@ -170,10 +158,10 @@ export class ProcessModelService implements IProcessModelService {
    */
   private async _getDefinitionList(): Promise<Array<Definitions>> {
 
-    const definitionsRaw: Array<Runtime.Types.ProcessDefinitionFromRepository> = await this.processDefinitionRepository.getProcessDefinitions();
+    const definitionsRaw: Array<Runtime.Types.ProcessDefinitionFromRepository> = await this._processDefinitionRepository.getProcessDefinitions();
 
     const definitionsMapper: any = async(rawProcessModelData: Runtime.Types.ProcessDefinitionFromRepository): Promise<Definitions> => {
-      return this.bpmnModelParser.parseXmlToObjectModel(rawProcessModelData.xml);
+      return this._bpmnModelParser.parseXmlToObjectModel(rawProcessModelData.xml);
     };
 
     const definitionsList: Array<Definitions> =
@@ -260,7 +248,7 @@ export class ProcessModelService implements IProcessModelService {
    */
   private async _checkIfUserCanAccesslane(identity: IIdentity, laneName: string): Promise<boolean> {
     try {
-      await this.iamService.ensureHasClaim(identity, laneName);
+      await this._iamService.ensureHasClaim(identity, laneName);
 
       return true;
     } catch (error) {

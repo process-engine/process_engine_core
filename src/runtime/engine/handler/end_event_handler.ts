@@ -1,6 +1,7 @@
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
@@ -21,8 +22,11 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
   private _eventAggregator: IEventAggregator;
 
-  constructor(eventAggregator: IEventAggregator, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, metricsService);
+  constructor(eventAggregator: IEventAggregator,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
+              metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, loggingApiService, metricsService);
     this._eventAggregator = eventAggregator;
   }
 

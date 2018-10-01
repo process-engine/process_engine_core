@@ -1,6 +1,7 @@
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeInstanceService,
@@ -22,9 +23,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
               timerFacade: ITimerFacade) {
-    super(flowNodeInstanceService, metricsService);
+    super(flowNodeInstanceService, loggingApiService, metricsService);
     this._eventAggregator = eventAggregator;
     this._timerFacade = timerFacade;
   }

@@ -1,5 +1,6 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeInstanceService,
@@ -18,8 +19,8 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
   private _container: IContainer = undefined;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, metricsService);
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, loggingApiService: ILoggingApi, metricsService: IMetricsApi) {
+    super(flowNodeInstanceService, loggingApiService, metricsService);
     this._container = container;
   }
 

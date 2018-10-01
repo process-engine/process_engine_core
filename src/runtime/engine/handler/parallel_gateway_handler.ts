@@ -2,6 +2,7 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeHandler,
@@ -28,8 +29,9 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
               metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, metricsService);
+    super(flowNodeInstanceService, loggingApiService, metricsService);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
   }
