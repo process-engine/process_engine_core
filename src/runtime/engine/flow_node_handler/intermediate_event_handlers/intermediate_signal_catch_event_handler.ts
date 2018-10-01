@@ -4,6 +4,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -11,7 +12,6 @@ import {
   NextFlowNodeInfo,
   Runtime,
   SignalEventReachedMessage,
-  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from '../index';

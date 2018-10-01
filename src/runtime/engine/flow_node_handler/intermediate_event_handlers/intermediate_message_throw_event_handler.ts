@@ -4,19 +4,19 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
-  SignalEventReachedMessage,
-  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from '../index';
 
-export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
+export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
   private _eventAggregator: IEventAggregator;
 
@@ -32,31 +32,31 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     return this._eventAggregator;
   }
 
-  protected async executeInternally(flowNode: Model.Events.IntermediateThrowEvent,
+  protected async executeInternally(messageThrowEvent: Model.Events.IntermediateThrowEvent,
                                     token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(flowNode, token);
+    await this.persistOnEnter(messageThrowEvent, token);
 
-    const signalReference: string = flowNode.signalEventDefinition.signalRef;
-    
-    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
+    const messageReference: string = messageThrowEvent.messageEventDefinition.messageRef;
 
-    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalReference,
+    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
+
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
                                                                                token.correlationId,
                                                                                token.processModelId,
                                                                                token.processInstanceId,
-                                                                               flowNode.id,
+                                                                               messageThrowEvent.id,
                                                                                token.payload);
 
-    this.eventAggregator.publish(signalEventName, message);
+    this.eventAggregator.publish(messageEventName, message);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageThrowEvent);
 
-    await this.persistOnExit(flowNode, token);
+    await this.persistOnExit(messageThrowEvent, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

@@ -95,12 +95,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     const eventName: string = eventAggregatorSettings.routePaths.messageEventReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
 
-    const message: TerminateEndEventReachedMessage = new MessageEventReachedMessage(messageReference,
-                                                                                   token.correlationId,
-                                                                                   token.processModelId,
-                                                                                   token.processInstanceId,
-                                                                                   flowNode.id,
-                                                                                   token.payload);
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
+                                                                               token.correlationId,
+                                                                               token.processModelId,
+                                                                               token.processInstanceId,
+                                                                               flowNode.id,
+                                                                               token.payload);
     this.eventAggregator.publish(eventName, message);
 
     this._notifyAboutRegularEnd(flowNode, token);
@@ -122,12 +122,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     const eventName: string = eventAggregatorSettings.routePaths.signalEventReached
       .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
 
-    const message: TerminateEndEventReachedMessage = new SignalEventReachedMessage(signalReference,
-                                                                                   token.correlationId,
-                                                                                   token.processModelId,
-                                                                                   token.processInstanceId,
-                                                                                   flowNode.id,
-                                                                                   token.payload);
+    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalReference,
+                                                                             token.correlationId,
+                                                                             token.processModelId,
+                                                                             token.processInstanceId,
+                                                                             flowNode.id,
+                                                                             token.payload);
     this.eventAggregator.publish(eventName, message);
 
     this._notifyAboutRegularEnd(flowNode, token);
@@ -153,7 +153,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                          flowNode.id,
                                                                                          token.payload);
     this.eventAggregator.publish(eventName, message);
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
   /**
@@ -184,18 +183,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param token    The current ProcessToken.
    */
   private _notifyAboutRegularEnd(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
-    // Publish regular success messsage.
 
-    const eventName: string = eventAggregatorSettings.routePaths.endEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+    // Publish regular success messsage.
+    const processEndMessageName: string = eventAggregatorSettings.routePaths.endEventReached
+      .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
+      .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId);
 
     const message: EndEventReachedMessage = new EndEventReachedMessage(token.correlationId,
                                                                        token.processModelId,
                                                                        token.processInstanceId,
                                                                        flowNode.id,
                                                                        token.payload);
-    this.eventAggregator.publish(eventName, message);
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
+    this.eventAggregator.publish(processEndMessageName, message);
   }
 
 }
