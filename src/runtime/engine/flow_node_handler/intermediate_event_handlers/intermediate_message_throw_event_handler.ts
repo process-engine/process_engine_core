@@ -4,6 +4,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -39,10 +40,19 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.persistOnEnter(messageThrowEvent, token);
 
-    const messageName: string = `/processengine/process/message/${messageThrowEvent.messageEventDefinition.messageRef}`;
-    const payload: MessageEventReachedMessage = new MessageEventReachedMessage(messageThrowEvent.id, token);
+    const messageReference: string = messageThrowEvent.messageEventDefinition.messageRef;
 
-    this.eventAggregator.publish(messageName, payload);
+    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
+
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
+                                                                               token.correlationId,
+                                                                               token.processModelId,
+                                                                               token.processInstanceId,
+                                                                               messageThrowEvent.id,
+                                                                               token.payload);
+
+    this.eventAggregator.publish(messageEventName, message);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageThrowEvent);
 

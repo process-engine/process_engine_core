@@ -5,6 +5,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
@@ -18,13 +19,15 @@ import {
 
 import {FlowNodeHandler} from './index';
 
+interface IProcessStateInfo {
+  processTerminationSubscription?: ISubscription;
+  processTerminatedMessage?: TerminateEndEventReachedMessage;
+}
+
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
-
-  private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -56,7 +59,15 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     if (isSplitGateway) {
 
-      const processTerminationSubscription: ISubscription = this._createProcessTerminationSubscription(token.processInstanceId);
+      const processStateInfo: IProcessStateInfo = {};
+
+      const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+
+      const processTerminationSubscription: ISubscription = this.eventAggregator
+        .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+          processStateInfo.processTerminatedMessage = message;
+        });
 
       // first find the ParallelGateway that joins the branch back to the original branch
       const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(parallelGateway);
@@ -69,7 +80,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
-        this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, identity);
+        this._executeParallelBranches(outgoingSequenceFlows,
+                                      joinGateway,
+                                      token,
+                                      processTokenFacade,
+                                      processModelFacade,
+                                      identity,
+                                      processStateInfo);
 
       // After all parallel branches have been executed, each result is merged on the ProcessTokenFacade
       const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
@@ -83,8 +100,10 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         processTerminationSubscription.dispose();
       }
 
-      if (this._processWasTerminated) {
-        await this.persistOnTerminate(parallelGateway, token);
+      const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
+
+      if (processWasTerminated) {
+        await this.flowNodeInstanceService.persistOnTerminate(parallelGateway.id, this.flowNodeInstanceId, token);
 
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
@@ -100,26 +119,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
-  private _createProcessTerminationSubscription(processInstanceId: string): ISubscription {
-
-    // Branch execution must not continue, if the process was terminated.
-    // So we need to watch out for a terminate end event here aswell.
-    const eventName: string = `/processengine/process/${processInstanceId}/terminated`;
-
-    return this
-        .eventAggregator
-        .subscribeOnce(eventName, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-          this._processWasTerminated = true;
-          this._processTerminationMessage = message;
-      });
-  }
-
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
                                    joinGateway: Model.Gateways.ParallelGateway,
                                    token: Runtime.Types.ProcessToken,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity): Array<Promise<NextFlowNodeInfo>> {
+                                   identity: IIdentity,
+                                   processStateInfo: IProcessStateInfo): Array<Promise<NextFlowNodeInfo>> {
 
     return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
 
@@ -134,7 +140,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                                     tokenForBranch,
                                                     processTokenForBranch,
                                                     processModelFacade,
-                                                    identity);
+                                                    identity,
+                                                    processStateInfo);
     });
   }
 
@@ -143,17 +150,20 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                             token: Runtime.Types.ProcessToken,
                                             processTokenFacade: IProcessTokenFacade,
                                             processModelFacade: IProcessModelFacade,
-                                            identity: IIdentity): Promise<NextFlowNodeInfo> {
+                                            identity: IIdentity,
+                                            processStateInfo: IProcessStateInfo): Promise<NextFlowNodeInfo> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
 
-    if (this._processWasTerminated) {
+    const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
+
+    if (processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
       await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, token);
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminationMessage.eventId}".`);
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}".`);
     }
 
     const continueExecution: boolean =
@@ -164,7 +174,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                               nextFlowNodeInfo.token,
                                               nextFlowNodeInfo.processTokenFacade,
                                               processModelFacade,
-                                              identity);
+                                              identity,
+                                              processStateInfo);
     }
 
     return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);

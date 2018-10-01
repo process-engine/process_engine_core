@@ -4,6 +4,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -42,8 +43,8 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
 
     const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(messageCatchEvent.messageEventDefinition.messageRef);
 
-    processTokenFacade.addResultForFlowNode(messageCatchEvent.id, receivedMessage.tokenPayload);
-    token.payload = receivedMessage.tokenPayload;
+    processTokenFacade.addResultForFlowNode(messageCatchEvent.id, receivedMessage.currentToken);
+    token.payload = receivedMessage.currentToken;
 
     await this.persistOnResume(messageCatchEvent, token);
 
@@ -58,9 +59,10 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
-      const messageName: string = `/processengine/process/message/${messageReference}`;
+      const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageName, async(message: MessageEventReachedMessage) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();

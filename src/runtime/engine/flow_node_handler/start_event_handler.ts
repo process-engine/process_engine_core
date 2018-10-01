@@ -4,13 +4,16 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
+  MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
+  SignalEventReachedMessage,
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
@@ -85,9 +88,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     return new Promise<void>((resolve: Function): void => {
 
-      const event: string = `/processengine/process/message/${messageName}`;
+      const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(event, async(message: any) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
@@ -117,9 +121,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     return new Promise<void>((resolve: Function): void => {
 
-      const event: string = `/processengine/process/signal/${signalName}`;
+      const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
+        .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(event, async(message: any) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalEventName, async(message: SignalEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();

@@ -4,6 +4,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -42,8 +43,8 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
 
     const receivedSignal: SignalEventReachedMessage = await this._waitForSignal(flowNode.signalEventDefinition.signalRef);
 
-    processTokenFacade.addResultForFlowNode(flowNode.id, receivedSignal.tokenPayload);
-    token.payload = receivedSignal.tokenPayload;
+    processTokenFacade.addResultForFlowNode(flowNode.id, receivedSignal.currentToken);
+    token.payload = receivedSignal.currentToken;
 
     await this.persistOnResume(flowNode, token);
 
@@ -58,9 +59,10 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
 
     return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
-      const signalName: string = `/processengine/process/signal/${signalReference}`;
+      const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
+        .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalName, async(signal: SignalEventReachedMessage) => {
+      const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();

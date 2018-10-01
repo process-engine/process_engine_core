@@ -5,6 +5,7 @@ import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
+  eventAggregatorSettings,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -89,9 +90,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _sendMessage(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
 
     // Send message to processes that may be waiting for it.
-    const messageName: string = `/processengine/process/message/${flowNode.messageEventDefinition.messageRef}`;
-    const payload: MessageEventReachedMessage = new MessageEventReachedMessage(flowNode.id, token.payload);
-    this.eventAggregator.publish(messageName, payload);
+    const messageReference: string = flowNode.messageEventDefinition.messageRef;
+
+    const eventName: string = eventAggregatorSettings.routePaths.messageEventReached
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
+
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
+                                                                               token.correlationId,
+                                                                               token.processModelId,
+                                                                               token.processInstanceId,
+                                                                               flowNode.id,
+                                                                               token.payload);
+    this.eventAggregator.publish(eventName, message);
 
     this._notifyAboutRegularEnd(flowNode, token);
   }
@@ -107,9 +117,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _sendSignal(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
 
     // Send message to processes that may be waiting for it.
-    const messageName: string = `/processengine/process/signal/${flowNode.signalEventDefinition.signalRef}`;
-    const payload: SignalEventReachedMessage = new SignalEventReachedMessage(flowNode.id, token.payload);
-    this.eventAggregator.publish(messageName, payload);
+    const signalReference: string = flowNode.signalEventDefinition.signalRef;
+
+    const eventName: string = eventAggregatorSettings.routePaths.signalEventReached
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
+
+    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalReference,
+                                                                             token.correlationId,
+                                                                             token.processModelId,
+                                                                             token.processInstanceId,
+                                                                             flowNode.id,
+                                                                             token.payload);
+    this.eventAggregator.publish(eventName, message);
 
     this._notifyAboutRegularEnd(flowNode, token);
   }
@@ -123,10 +142,17 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    */
   private _notifyAboutTermination(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
 
-    // Publish termination message to cancel all FlowNodeInstance executions and finish with an error.
-    const event: string = `/processengine/process/${token.processInstanceId}/terminated`;
-    const payload: TerminateEndEventReachedMessage = new TerminateEndEventReachedMessage(flowNode.id, token.payload);
-    this.eventAggregator.publish(event, payload);
+    // Publish termination message to cancel all FlowNodeInstance executions and
+    // finish with an error.
+    const eventName: string = eventAggregatorSettings.routePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+
+    const message: TerminateEndEventReachedMessage = new TerminateEndEventReachedMessage(token.correlationId,
+                                                                                         token.processModelId,
+                                                                                         token.processInstanceId,
+                                                                                         flowNode.id,
+                                                                                         token.payload);
+    this.eventAggregator.publish(eventName, message);
   }
 
   /**
@@ -157,9 +183,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param token    The current ProcessToken.
    */
   private _notifyAboutRegularEnd(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
+
     // Publish regular success messsage.
-    const event: string = `/processengine/correlation/${token.correlationId}/process/${token.processModelId}/node/${flowNode.id}`;
-    const payload: EndEventReachedMessage = new EndEventReachedMessage(flowNode.id, token.payload);
-    this.eventAggregator.publish(event, payload);
+    const processEndMessageName: string = eventAggregatorSettings.routePaths.endEventReached
+      .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
+      .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId);
+
+    const message: EndEventReachedMessage = new EndEventReachedMessage(token.correlationId,
+                                                                       token.processModelId,
+                                                                       token.processInstanceId,
+                                                                       flowNode.id,
+                                                                       token.payload);
+    this.eventAggregator.publish(processEndMessageName, message);
   }
+
 }
