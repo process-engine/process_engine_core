@@ -153,6 +153,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                          flowNode.id,
                                                                                          token.payload);
     this.eventAggregator.publish(eventName, message);
+
+    // Send global message about a reached TerminateEndEvent
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
   /**
@@ -195,6 +198,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                        flowNode.id,
                                                                        token.payload);
     this.eventAggregator.publish(processEndMessageName, message);
+
+    // Send global message about a reached EndEvent
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
 
 }

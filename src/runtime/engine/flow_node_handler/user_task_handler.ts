@@ -105,11 +105,15 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
                                                                          this.flowNodeInstanceId,
                                                                          token.payload);
 
+    // FlowNode-specific notification
     const userTaskFinishedEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
       .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
       .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
       .replace(eventAggregatorSettings.routeParams.userTaskId, userTaskId);
 
     this.eventAggregator.publish(userTaskFinishedEvent, message);
+
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
   }
 }
