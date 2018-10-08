@@ -173,6 +173,12 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   for (const serviceTaskRaw of serviceTasksRaw) {
     const serviceTask: Model.Activities.ServiceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
 
+    serviceTask.type = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external'
+      ? Model.Activities.ServiceTaskType.external
+      : Model.Activities.ServiceTaskType.internal;
+
+    serviceTask.topic = serviceTasksRaw[BpmnTags.CamundaProperty.Topic];
+
     // Check if the extension properties contain invocations.
     if (serviceTask.extensionElements &&
         serviceTask.extensionElements.camundaExtensionProperties &&
@@ -251,16 +257,22 @@ function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask):
 
   const extensionParameters: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
 
-  const methodInvocation: Model.Activities.MethodInvocation = getMethodInvocationForServiceTask(extensionParameters);
+  const methodInvocation: Model.Activities.MethodInvocation = getMethodInvocation(extensionParameters);
 
-  if (!methodInvocation) {
-    return getServiceInvocationForServiceTask(extensionParameters);
+  if (methodInvocation) {
+    return methodInvocation;
   }
 
-  return methodInvocation;
+  const externalTaskInvocation: Model.Activities.ExternalTaskInvocation = getExternalTaskInvocation(extensionParameters);
+
+  if (externalTaskInvocation) {
+    return externalTaskInvocation;
+  }
+
+  return getServiceInvocation(extensionParameters);
 }
 
-function getMethodInvocationForServiceTask(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.MethodInvocation {
+function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.MethodInvocation {
 
   const methodInvocation: Model.Activities.MethodInvocation = new Model.Activities.MethodInvocation();
 
@@ -280,7 +292,28 @@ function getMethodInvocationForServiceTask(extensionProperties: Array<Model.Base
   return methodInvocation;
 }
 
-function getServiceInvocationForServiceTask(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.WebServiceInvocation {
+function getExternalTaskInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.ExternalTaskInvocation {
+
+  const externalTaskInvocation: Model.Activities.ExternalTaskInvocation = new Model.Activities.ExternalTaskInvocation();
+
+  const urlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('url', extensionProperties);
+  const methodProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
+  const headersProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('headers', extensionProperties);
+  const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+
+  if (!(urlProperty && methodProperty)) {
+    return undefined;
+  }
+
+  externalTaskInvocation.url = urlProperty.value;
+  externalTaskInvocation.method = methodProperty.value;
+  externalTaskInvocation.headers = headersProperty ? headersProperty.value : '{}';
+  externalTaskInvocation.payload = payloadProperty ? payloadProperty.value : '{}';
+
+  return externalTaskInvocation;
+}
+
+function getServiceInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.WebServiceInvocation {
 
   const serviceInvocation: Model.Activities.WebServiceInvocation = new Model.Activities.WebServiceInvocation();
 
@@ -296,9 +329,9 @@ function getServiceInvocationForServiceTask(extensionProperties: Array<Model.Bas
   return serviceInvocation;
 }
 
-function findExtensionPropertyByName(
-  propertyName: string,
-  extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Base.CamundaExtensionProperty {
+function findExtensionPropertyByName(propertyName: string,
+                                     extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
+                                    ): Model.Base.CamundaExtensionProperty {
 
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
@@ -380,10 +413,7 @@ function determineCallActivityMappingType(callActivity: Model.Activities.CallAct
   return callActivity;
 }
 
-function createActivityInstance<TActivity extends Model.Activities.Activity>(
-  data: any,
-  type: Model.Base.IConstructor<TActivity>,
-): TActivity {
+function createActivityInstance<TActivity extends Model.Activities.Activity>(data: any, type: Model.Base.IConstructor<TActivity>): TActivity {
 
   let instance: TActivity = new type();
   instance = <TActivity> setCommonObjectPropertiesFromData(data, instance);
