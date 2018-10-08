@@ -177,7 +177,7 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
       ? Model.Activities.ServiceTaskType.external
       : Model.Activities.ServiceTaskType.internal;
 
-    serviceTask.topic = serviceTasksRaw[BpmnTags.CamundaProperty.Topic];
+    serviceTask.topic = serviceTaskRaw[BpmnTags.CamundaProperty.Topic];
 
     // Check if the extension properties contain invocations.
     if (serviceTask.extensionElements &&
