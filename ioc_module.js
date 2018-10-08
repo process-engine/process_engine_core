@@ -115,7 +115,7 @@ function registerInContainer(container) {
     .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container.register('ServiceTaskHandler', ServiceTaskHandler)
-    .dependencies('container', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+    .dependencies('container', 'EventAggregator', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container.register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
     .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');

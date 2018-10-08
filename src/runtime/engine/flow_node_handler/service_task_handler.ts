@@ -1,5 +1,9 @@
+import {Logger} from 'loggerhythm';
+
+import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {IExternalTaskRepository, ExternalTaskErrorMessage, ExternalTaskSuccessMessage} from '@process-engine/external_task_api_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
@@ -15,14 +19,25 @@ import {IContainer} from 'addict-ioc';
 
 import {FlowNodeHandler} from './index';
 
+const logger: Logger = Logger.createLogger('processengine:runtime:service_task');
+
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
+  private _eventAggregator: IEventAggregator;
+  private _externalTaskRepository: IExternalTaskRepository;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, loggingApiService: ILoggingApi, metricsService: IMetricsApi) {
+  constructor(container: IContainer,
+              eventAggregator: IEventAggregator,
+              externalTaskRepository: IExternalTaskRepository,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
+              metricsService: IMetricsApi) {
     super(flowNodeInstanceService, loggingApiService, metricsService);
 
     this._container = container;
+    this._eventAggregator = eventAggregator;
+    this._externalTaskRepository = externalTaskRepository;
   }
 
   private get container(): IContainer {
@@ -37,8 +52,49 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     await this.persistOnEnter(serviceTask, token);
 
+    let result: any;
+
+    const isInternalTask: boolean = serviceTask.type !== Model.Activities.ServiceTaskType.external;
+
+    if (isInternalTask) {
+      logger.verbose('Execute internal ServiceTask');
+      result = await this._executeInternally(serviceTask, token, processTokenFacade, identity);
+    } else {
+      logger.verbose('Execute external ServiceTask');
+      result = await this._executeExternally(serviceTask, token);
+    }
+
+    processTokenFacade.addResultForFlowNode(serviceTask.id, result);
+    token.payload = result;
+
+    await this.persistOnExit(serviceTask, token);
+
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTask);
+
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+  }
+
+  /**
+   * Executes the given ServiceTask internally.
+   * The ServiceTaskHandler handles all execution.
+   *
+   * @async
+   * @param   serviceTask        The ServiceTask to execute.
+   * @param   token              The current ProcessToken.
+   * @param   processTokenFacade The Facade for accessing all ProcessTokens of the
+   *                             currently running ProcessInstance.
+   * @param   identity           The identity that started the ProcessInstance.
+   * @returns                    The ServiceTask's result.
+   */
+  private async _executeInternally(serviceTask: Model.Activities.ServiceTask,
+                                   token: Runtime.Types.ProcessToken,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   identity: IIdentity): Promise<any> {
+
     const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
+
+    let finalResult: any;
 
     if (isMethodInvocation) {
 
@@ -59,16 +115,56 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
-      const finalResult: any = result === undefined ? null : result;
-
-      processTokenFacade.addResultForFlowNode(serviceTask.id, result);
-      token.payload = finalResult;
+      finalResult = result;
     }
 
-    await this.persistOnExit(serviceTask, token);
+    return finalResult;
+  }
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTask);
+  /**
+   * Creates a new ExternalTask and delegates its execution to an
+   * external Service.
+   * The handler will be suspended, until the ExternalTask has finished.
+   *
+   * @async
+   * @param   serviceTask The ServiceTask to execute.
+   * @param   token       The current ProcessToken.
+   * @returns             The ServiceTask's result.
+   */
+  private async _executeExternally(serviceTask: Model.Activities.ServiceTask,
+                                   token: Runtime.Types.ProcessToken): Promise<any> {
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
+
+      const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
+
+      const messageReceivedCallback: Function = async(message: any): Promise<void> => {
+
+        await this.persistOnResume(serviceTask, token);
+
+        if (subscription) {
+          subscription.dispose();
+        }
+
+        if (message.error) {
+          logger.error(`External processing of ServiceTask failed!`, message.error);
+          await this.persistOnError(serviceTask, token, message.error);
+
+          throw message.error;
+        }
+
+        logger.verbose('External processing of the ServiceTask finished successfully.');
+        resolve(message.result);
+      };
+
+      const subscription: ISubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
+
+      logger.verbose('Persist ServiceTask as ExternalTask.');
+      await this
+        ._externalTaskRepository
+        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, serviceTask.invocation);
+
+      logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
+    });
   }
 }
