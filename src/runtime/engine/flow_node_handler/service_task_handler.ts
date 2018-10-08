@@ -3,7 +3,7 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {IExternalTaskRepository, ExternalTaskErrorMessage, ExternalTaskSuccessMessage} from '@process-engine/external_task_api_contracts';
+import {IExternalTaskRepository} from '@process-engine/external_task_api_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
