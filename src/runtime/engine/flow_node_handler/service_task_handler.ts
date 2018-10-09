@@ -164,6 +164,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
         ._externalTaskRepository
         .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, serviceTask.invocation);
 
+      await this.persistOnSuspend(serviceTask, token);
+
       logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
     });
   }
