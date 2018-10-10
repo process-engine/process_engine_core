@@ -54,9 +54,14 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     let result: any;
 
+    const serviceTaskHasNoInvocation: boolean = serviceTask.invocation === undefined;
+
     const isInternalTask: boolean = serviceTask.type !== Model.Activities.ServiceTaskType.external;
 
-    if (isInternalTask) {
+    if (serviceTaskHasNoInvocation) {
+      logger.verbose('ServiceTask has no invocation. Skipping execution.');
+      result = {};
+    } else if (isInternalTask) {
       logger.verbose('Execute internal ServiceTask');
       result = await this._executeInternally(serviceTask, token, processTokenFacade, identity);
     } else {
