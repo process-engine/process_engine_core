@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -97,33 +98,34 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                    identity: IIdentity): Promise<any> {
 
     const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
-    let finalResult: any;
+    if (!isMethodInvocation) {
+      const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
+      logger.error(notSupportedErrorMessage);
 
-    if (isMethodInvocation) {
-
-      const invocation: Model.Activities.MethodInvocation = serviceTask.invocation as Model.Activities.MethodInvocation;
-
-      const serviceInstance: any = await this.container.resolveAsync(invocation.module);
-
-      const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
-      const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
-
-      const serviceMethod: Function = serviceInstance[invocation.method];
-
-      if (!serviceMethod) {
-        const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
-        await this.persistOnError(serviceTask, token, error);
-        throw error;
-      }
-
-      const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
-
-      finalResult = result;
+      throw new UnprocessableEntityError(notSupportedErrorMessage);
     }
 
-    return finalResult;
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+
+    const invocation: Model.Activities.MethodInvocation = serviceTask.invocation as Model.Activities.MethodInvocation;
+
+    const serviceInstance: any = await this.container.resolveAsync(invocation.module);
+
+    const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
+    const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
+
+    const serviceMethod: Function = serviceInstance[invocation.method];
+
+    if (!serviceMethod) {
+      const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
+      await this.persistOnError(serviceTask, token, error);
+      throw error;
+    }
+
+    const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
+
+    return result;
   }
 
   /**
@@ -138,6 +140,15 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    */
   private async _executeExternally(serviceTask: Model.Activities.ServiceTask,
                                    token: Runtime.Types.ProcessToken): Promise<any> {
+
+    const isExternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.ExternalTaskInvocation;
+
+    if (!isExternalTaskInvocation) {
+      const notSupportedErrorMessage: string = 'External ServiceTasks must use ExternalTaskInvocations!';
+      logger.error(notSupportedErrorMessage);
+
+      throw new UnprocessableEntityError(notSupportedErrorMessage);
+    }
 
     return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
 
