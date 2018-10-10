@@ -263,13 +263,7 @@ function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask):
     return methodInvocation;
   }
 
-  const externalTaskInvocation: Model.Activities.ExternalTaskInvocation = getExternalTaskInvocation(extensionParameters);
-
-  if (externalTaskInvocation) {
-    return externalTaskInvocation;
-  }
-
-  return getServiceInvocation(extensionParameters);
+  return getExternalTaskInvocation(extensionParameters);
 }
 
 function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.MethodInvocation {
@@ -311,22 +305,6 @@ function getExternalTaskInvocation(extensionProperties: Array<Model.Base.Camunda
   externalTaskInvocation.payload = payloadProperty ? payloadProperty.value : '{}';
 
   return externalTaskInvocation;
-}
-
-function getServiceInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.WebServiceInvocation {
-
-  const serviceInvocation: Model.Activities.WebServiceInvocation = new Model.Activities.WebServiceInvocation();
-
-  const moduleProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('service', extensionProperties);
-
-  // If no service property is provided, this is not a valid web service invocation.
-  if (!moduleProperty) {
-    return undefined;
-  }
-
-  serviceInvocation.service = moduleProperty.value;
-
-  return serviceInvocation;
 }
 
 function findExtensionPropertyByName(propertyName: string,
