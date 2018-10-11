@@ -143,7 +143,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
-    if (!isInternalTaskInvocation) {
+    if (isInternalTaskInvocation) {
       const notSupportedErrorMessage: string = 'External ServiceTasks cannot perform MethodInvocations!';
       logger.error(notSupportedErrorMessage);
 
