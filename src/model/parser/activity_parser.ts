@@ -257,13 +257,7 @@ function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask):
 
   const extensionParameters: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
 
-  const methodInvocation: Model.Activities.MethodInvocation = getMethodInvocation(extensionParameters);
-
-  if (methodInvocation) {
-    return methodInvocation;
-  }
-
-  return getExternalTaskInvocation(extensionParameters);
+  return getMethodInvocation(extensionParameters);
 }
 
 function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.MethodInvocation {
@@ -284,27 +278,6 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
   methodInvocation.params = paramsProperty ? paramsProperty.value : '[]';
 
   return methodInvocation;
-}
-
-function getExternalTaskInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.ExternalTaskInvocation {
-
-  const externalTaskInvocation: Model.Activities.ExternalTaskInvocation = new Model.Activities.ExternalTaskInvocation();
-
-  const urlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('url', extensionProperties);
-  const methodProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
-  const headersProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('headers', extensionProperties);
-  const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
-
-  if (!(urlProperty && methodProperty)) {
-    return undefined;
-  }
-
-  externalTaskInvocation.url = urlProperty.value;
-  externalTaskInvocation.method = methodProperty.value;
-  externalTaskInvocation.headers = headersProperty ? headersProperty.value : '{}';
-  externalTaskInvocation.payload = payloadProperty ? payloadProperty.value : '{}';
-
-  return externalTaskInvocation;
 }
 
 function findExtensionPropertyByName(propertyName: string,

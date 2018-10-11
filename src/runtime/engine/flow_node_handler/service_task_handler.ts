@@ -141,10 +141,10 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   private async _executeExternally(serviceTask: Model.Activities.ServiceTask,
                                    token: Runtime.Types.ProcessToken): Promise<any> {
 
-    const isExternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.ExternalTaskInvocation;
+    const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
-    if (!isExternalTaskInvocation) {
-      const notSupportedErrorMessage: string = 'External ServiceTasks must use ExternalTaskInvocations!';
+    if (!isInternalTaskInvocation) {
+      const notSupportedErrorMessage: string = 'External ServiceTasks cannot perform MethodInvocations!';
       logger.error(notSupportedErrorMessage);
 
       throw new UnprocessableEntityError(notSupportedErrorMessage);
@@ -178,7 +178,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
         ._externalTaskRepository
-        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, serviceTask.invocation);
+        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token);
 
       await this.persistOnSuspend(serviceTask, token);
 
