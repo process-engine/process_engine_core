@@ -59,15 +59,15 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     const isInternalTask: boolean = serviceTask.type !== Model.Activities.ServiceTaskType.external;
 
-    if (serviceTaskHasNoInvocation) {
+    if (serviceTaskHasNoInvocation && isInternalTask) {
       logger.verbose('ServiceTask has no invocation. Skipping execution.');
       result = {};
     } else if (isInternalTask) {
       logger.verbose('Execute internal ServiceTask');
-      result = await this._executeInternally(serviceTask, token, processTokenFacade, identity);
+      result = await this._executeInternalServiceTask(serviceTask, token, processTokenFacade, identity);
     } else {
       logger.verbose('Execute external ServiceTask');
-      result = await this._executeExternally(serviceTask, token);
+      result = await this._executeExternalServiceTask(serviceTask, token);
     }
 
     processTokenFacade.addResultForFlowNode(serviceTask.id, result);
@@ -92,10 +92,10 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @param   identity           The identity that started the ProcessInstance.
    * @returns                    The ServiceTask's result.
    */
-  private async _executeInternally(serviceTask: Model.Activities.ServiceTask,
-                                   token: Runtime.Types.ProcessToken,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   identity: IIdentity): Promise<any> {
+  private async _executeInternalServiceTask(serviceTask: Model.Activities.ServiceTask,
+                                            token: Runtime.Types.ProcessToken,
+                                            processTokenFacade: IProcessTokenFacade,
+                                            identity: IIdentity): Promise<any> {
 
     const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
@@ -138,8 +138,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @param   token       The current ProcessToken.
    * @returns             The ServiceTask's result.
    */
-  private async _executeExternally(serviceTask: Model.Activities.ServiceTask,
-                                   token: Runtime.Types.ProcessToken): Promise<any> {
+  private async _executeExternalServiceTask(serviceTask: Model.Activities.ServiceTask,
+                                            token: Runtime.Types.ProcessToken): Promise<any> {
 
     const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
