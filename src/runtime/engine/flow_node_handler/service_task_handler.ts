@@ -29,11 +29,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   private _externalTaskRepository: IExternalTaskRepository;
 
   constructor(container: IContainer,
-              eventAggregator: IEventAggregator,
-              externalTaskRepository: IExternalTaskRepository,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi) {
+    eventAggregator: IEventAggregator,
+    externalTaskRepository: IExternalTaskRepository,
+    flowNodeInstanceService: IFlowNodeInstanceService,
+    loggingApiService: ILoggingApi,
+    metricsService: IMetricsApi) {
     super(flowNodeInstanceService, loggingApiService, metricsService);
 
     this._container = container;
@@ -46,10 +46,10 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   }
 
   protected async executeInternally(serviceTask: Model.Activities.ServiceTask,
-                                    token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(serviceTask, token);
 
@@ -93,9 +93,9 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @returns                    The ServiceTask's result.
    */
   private async _executeInternalServiceTask(serviceTask: Model.Activities.ServiceTask,
-                                            token: Runtime.Types.ProcessToken,
-                                            processTokenFacade: IProcessTokenFacade,
-                                            identity: IIdentity): Promise<any> {
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    identity: IIdentity): Promise<any> {
 
     const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
@@ -139,7 +139,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @returns             The ServiceTask's result.
    */
   private async _executeExternalServiceTask(serviceTask: Model.Activities.ServiceTask,
-                                            token: Runtime.Types.ProcessToken): Promise<any> {
+    token: Runtime.Types.ProcessToken): Promise<any> {
 
     const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
@@ -150,11 +150,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       throw new UnprocessableEntityError(notSupportedErrorMessage);
     }
 
-    return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
+    return new Promise(async (resolve: Function, reject: Function): Promise<any> => {
 
       const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
 
-      const messageReceivedCallback: Function = async(message: any): Promise<void> => {
+      const messageReceivedCallback: Function = async (message: any): Promise<void> => {
 
         await this.persistOnResume(serviceTask, token);
 
@@ -178,7 +178,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
         ._externalTaskRepository
-        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token);
+        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token.identity, token);
 
       await this.persistOnSuspend(serviceTask, token);
 
