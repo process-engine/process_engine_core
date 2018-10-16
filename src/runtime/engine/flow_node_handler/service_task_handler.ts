@@ -28,7 +28,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   private _eventAggregator: IEventAggregator;
   private _externalTaskRepository: IExternalTaskRepository;
 
-  constructor(container: IContainer,
+  constructor(
+    container: IContainer,
     eventAggregator: IEventAggregator,
     externalTaskRepository: IExternalTaskRepository,
     flowNodeInstanceService: IFlowNodeInstanceService,
@@ -45,7 +46,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     return this._container;
   }
 
-  protected async executeInternally(serviceTask: Model.Activities.ServiceTask,
+  protected async executeInternally(
+    serviceTask: Model.Activities.ServiceTask,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -92,7 +94,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @param   identity           The identity that started the ProcessInstance.
    * @returns                    The ServiceTask's result.
    */
-  private async _executeInternalServiceTask(serviceTask: Model.Activities.ServiceTask,
+  private async _executeInternalServiceTask(
+    serviceTask: Model.Activities.ServiceTask,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     identity: IIdentity): Promise<any> {
@@ -138,7 +141,8 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @param   token       The current ProcessToken.
    * @returns             The ServiceTask's result.
    */
-  private async _executeExternalServiceTask(serviceTask: Model.Activities.ServiceTask,
+  private async _executeExternalServiceTask(
+    serviceTask: Model.Activities.ServiceTask,
     token: Runtime.Types.ProcessToken): Promise<any> {
 
     const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
