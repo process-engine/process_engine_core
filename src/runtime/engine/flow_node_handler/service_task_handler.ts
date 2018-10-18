@@ -186,6 +186,9 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       await this.persistOnSuspend(serviceTask, token);
 
+      const externalTaskCreatedEventName = `/externaltask/topic/${serviceTask.topic}/created`;
+      this._eventAggregator.publish(externalTaskCreatedEventName);
+
       logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
     });
   }
