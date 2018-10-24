@@ -266,14 +266,20 @@ function parseExtensionProperties(extensionPropertiesRaw: any): any {
 
 function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): string {
 
-  const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
-  const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+  if (serviceTask.extensionElements &&
+    serviceTask.extensionElements.camundaExtensionProperties &&
+    serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-  if (!payloadProperty) {
-    return undefined;
+    const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
+    const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+
+    if (payloadProperty) {
+
+      return payloadProperty.value;
+    }
   }
 
-  return payloadProperty.value;
+  return undefined;
 }
 
 function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocation {
