@@ -69,7 +69,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       result = await this._executeInternalServiceTask(serviceTask, token, processTokenFacade, identity);
     } else {
       logger.verbose('Execute external ServiceTask');
-      result = await this._executeExternalServiceTask(serviceTask, token);
+      result = await this._executeExternalServiceTask(serviceTask, token, processTokenFacade, identity);
     }
 
     processTokenFacade.addResultForFlowNode(serviceTask.id, result);
@@ -139,11 +139,16 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @async
    * @param   serviceTask The ServiceTask to execute.
    * @param   token       The current ProcessToken.
+   * @param   processTokenFacade The Facade for accessing all ProcessTokens of the
+   *                             currently running ProcessInstance.
+   * @param   identity           The identity that started the ProcessInstance.
    * @returns             The ServiceTask's result.
    */
   private async _executeExternalServiceTask(
     serviceTask: Model.Activities.ServiceTask,
-    token: Runtime.Types.ProcessToken): Promise<any> {
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    identity: IIdentity): Promise<any> {
 
     const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
@@ -179,10 +184,13 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
 
+      const tokenData: any = await processTokenFacade.getOldTokenFormat();
+      const payload = this._getPayload(serviceTask, token, tokenData, identity);
+
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
         ._externalTaskRepository
-        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token.identity, token.payload);
+        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token.identity, payload);
 
       await this.persistOnSuspend(serviceTask, token);
 
@@ -191,5 +199,19 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
     });
+  }
+
+  private _getPayload(serviceTask: Model.Activities.ServiceTask, token: Runtime.Types.ProcessToken, tokenData: any, identity: IIdentity): any {
+
+    const isPayloadInServiceTask = serviceTask.payload !== undefined;
+
+    if (isPayloadInServiceTask) {
+
+      const evaluatePayloadFunction: Function = new Function('context', 'token', `return ${serviceTask.payload}`);
+      return evaluatePayloadFunction.call(tokenData, identity, tokenData);
+    } else {
+
+      return token.payload;
+    }
   }
 }
