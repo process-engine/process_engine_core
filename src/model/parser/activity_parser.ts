@@ -273,7 +273,9 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
     const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
     const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
 
-    if (payloadProperty) {
+    const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
+
+    if (payloadPropertyHasValue) {
 
       return payloadProperty.value;
     }
