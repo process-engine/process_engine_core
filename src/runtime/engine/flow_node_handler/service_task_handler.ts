@@ -137,12 +137,12 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * The handler will be suspended, until the ExternalTask has finished.
    *
    * @async
-   * @param   serviceTask The ServiceTask to execute.
-   * @param   token       The current ProcessToken.
+   * @param   serviceTask        The ServiceTask to execute.
+   * @param   token              The current ProcessToken.
    * @param   processTokenFacade The Facade for accessing all ProcessTokens of the
    *                             currently running ProcessInstance.
    * @param   identity           The identity that started the ProcessInstance.
-   * @returns             The ServiceTask's result.
+   * @returns                    The ServiceTask's result.
    */
   private async _executeExternalServiceTask(
     serviceTask: Model.Activities.ServiceTask,
@@ -159,11 +159,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       throw new UnprocessableEntityError(notSupportedErrorMessage);
     }
 
-    return new Promise(async (resolve: Function, reject: Function): Promise<any> => {
+    return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
 
       const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
 
-      const messageReceivedCallback: Function = async (message: any): Promise<void> => {
+      const messageReceivedCallback: Function = async(message: any): Promise<void> => {
 
         await this.persistOnResume(serviceTask, token);
 
@@ -185,7 +185,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
 
       const tokenData: any = await processTokenFacade.getOldTokenFormat();
-      const payload = this._getPayload(serviceTask, token, tokenData, identity);
+      const payload: boolean = this._getPayload(serviceTask, token, tokenData, identity);
 
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
@@ -194,7 +194,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       await this.persistOnSuspend(serviceTask, token);
 
-      const externalTaskCreatedEventName = `/externaltask/topic/${serviceTask.topic}/created`;
+      const externalTaskCreatedEventName: string = `/externaltask/topic/${serviceTask.topic}/created`;
       this._eventAggregator.publish(externalTaskCreatedEventName);
 
       logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
@@ -203,11 +203,12 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
   private _getPayload(serviceTask: Model.Activities.ServiceTask, token: Runtime.Types.ProcessToken, tokenData: any, identity: IIdentity): any {
 
-    const isPayloadInServiceTask = serviceTask.payload !== undefined;
+    const isPayloadInServiceTask: boolean = serviceTask.payload !== undefined;
 
     if (isPayloadInServiceTask) {
 
       const evaluatePayloadFunction: Function = new Function('context', 'token', `return ${serviceTask.payload}`);
+
       return evaluatePayloadFunction.call(tokenData, identity, tokenData);
     } else {
 

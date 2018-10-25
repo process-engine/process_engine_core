@@ -20,12 +20,16 @@ export function parseActivitiesFromProcessData(processData: any, errors: Array<M
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
   const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
 
-  return Array.prototype.concat(manualTasks,
-    userTasks,
-    scriptTasks,
-    serviceTasks,
-    callActivities,
-    subProcesses);
+  return Array
+    .prototype
+    .concat(
+      manualTasks,
+      userTasks,
+      scriptTasks,
+      serviceTasks,
+      callActivities,
+      subProcesses,
+    );
 }
 
 function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
@@ -173,7 +177,7 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   for (const serviceTaskRaw of serviceTasksRaw) {
     const serviceTask: Model.Activities.ServiceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
 
-    const isExternalTask = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external'
+    const isExternalTask: boolean = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external';
     if (isExternalTask) {
 
       serviceTask.type = Model.Activities.ServiceTaskType.external;
@@ -196,8 +200,6 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
       }
     }
 
-
-
     serviceTasks.push(serviceTask);
   }
 
@@ -214,8 +216,8 @@ function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask):
 
   const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
 
-  const extensionPropertiesDataIsNotExisting: boolean = extensionPropertiesDataRaw === undefined
-    || extensionPropertiesDataRaw.length < 1;
+  const extensionPropertiesDataIsNotExisting: boolean =
+    extensionPropertiesDataRaw === undefined || extensionPropertiesDataRaw.length < 1;
 
   if (extensionPropertiesDataIsNotExisting) {
     return;
@@ -223,8 +225,8 @@ function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask):
 
   const extensionPropertiesRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
 
-  const extensionPropertiesAreNotExisting: boolean = extensionPropertiesRaw === undefined
-    || extensionPropertiesRaw.length < 1;
+  const extensionPropertiesAreNotExisting: boolean =
+    extensionPropertiesRaw === undefined || extensionPropertiesRaw.length < 1;
 
   if (extensionPropertiesAreNotExisting) {
     return;
@@ -248,14 +250,14 @@ function parseExtensionProperties(extensionPropertiesRaw: any): any {
   if (extensionPropertiesIsNoArray) {
     return [{
       name: extensionPropertiesRaw.name,
-      value: extensionPropertiesRaw.value
+      value: extensionPropertiesRaw.value,
     }];
   }
 
   for (const extensionPropertyRaw of extensionPropertiesRaw) {
     const extensionProperty: Model.Base.CamundaExtensionProperty = {
       name: extensionPropertyRaw.name,
-      value: extensionPropertyRaw.value
+      value: extensionPropertyRaw.value,
     };
 
     extensionProperties.push(extensionProperty);
@@ -266,7 +268,8 @@ function parseExtensionProperties(extensionPropertiesRaw: any): any {
 
 function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): string {
 
-  if (serviceTask.extensionElements &&
+  if (
+    serviceTask.extensionElements &&
     serviceTask.extensionElements.camundaExtensionProperties &&
     serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
@@ -311,7 +314,8 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
   return methodInvocation;
 }
 
-function findExtensionPropertyByName(propertyName: string,
+function findExtensionPropertyByName(
+  propertyName: string,
   extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
 ): Model.Base.CamundaExtensionProperty {
 
@@ -337,7 +341,7 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
       // NOTE: There is also a CMMN type, which is not supported yet.
       callActivity.type = Model.Activities.CallActivityType.BPMN;
       callActivity.calledReference = callActivityRaw.calledElement;
-      callActivity.bindingType = <Model.Activities.CallActivityBindingType>callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
+      callActivity.bindingType = <Model.Activities.CallActivityBindingType> callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
 
       if (callActivity.bindingType === Model.Activities.CallActivityBindingType.version) {
         callActivity.calledElementVersion = callActivityRaw[BpmnTags.CamundaProperty.CalledElementVersion];
@@ -398,7 +402,7 @@ function determineCallActivityMappingType(callActivity: Model.Activities.CallAct
 function createActivityInstance<TActivity extends Model.Activities.Activity>(data: any, type: Model.Base.IConstructor<TActivity>): TActivity {
 
   let instance: TActivity = new type();
-  instance = <TActivity>setCommonObjectPropertiesFromData(data, instance);
+  instance = <TActivity> setCommonObjectPropertiesFromData(data, instance);
 
   instance.incoming = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowIncoming) || [];
   instance.outgoing = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowOutgoing) || [];
