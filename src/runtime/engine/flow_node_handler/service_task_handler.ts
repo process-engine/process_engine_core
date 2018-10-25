@@ -69,7 +69,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       result = await this._executeInternalServiceTask(serviceTask, token, processTokenFacade, identity);
     } else {
       logger.verbose('Execute external ServiceTask');
-      result = await this._executeExternalServiceTask(serviceTask, token);
+      result = await this._executeExternalServiceTask(serviceTask, token, processTokenFacade, identity);
     }
 
     processTokenFacade.addResultForFlowNode(serviceTask.id, result);
@@ -137,13 +137,18 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * The handler will be suspended, until the ExternalTask has finished.
    *
    * @async
-   * @param   serviceTask The ServiceTask to execute.
-   * @param   token       The current ProcessToken.
-   * @returns             The ServiceTask's result.
+   * @param   serviceTask        The ServiceTask to execute.
+   * @param   token              The current ProcessToken.
+   * @param   processTokenFacade The Facade for accessing all ProcessTokens of the
+   *                             currently running ProcessInstance.
+   * @param   identity           The identity that started the ProcessInstance.
+   * @returns                    The ServiceTask's result.
    */
   private async _executeExternalServiceTask(
     serviceTask: Model.Activities.ServiceTask,
-    token: Runtime.Types.ProcessToken): Promise<any> {
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    identity: IIdentity): Promise<any> {
 
     const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
@@ -154,11 +159,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       throw new UnprocessableEntityError(notSupportedErrorMessage);
     }
 
-    return new Promise(async (resolve: Function, reject: Function): Promise<any> => {
+    return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
 
       const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
 
-      const messageReceivedCallback: Function = async (message: any): Promise<void> => {
+      const messageReceivedCallback: Function = async(message: any): Promise<void> => {
 
         await this.persistOnResume(serviceTask, token);
 
@@ -179,17 +184,39 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
 
+      const tokenData: any = await processTokenFacade.getOldTokenFormat();
+      const payload: boolean = this._getPayloadForServiceTask(serviceTask, token, tokenData, identity);
+
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
         ._externalTaskRepository
-        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token.identity, token.payload);
+        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token.identity, payload);
 
       await this.persistOnSuspend(serviceTask, token);
 
-      const externalTaskCreatedEventName = `/externaltask/topic/${serviceTask.topic}/created`;
+      const externalTaskCreatedEventName: string = `/externaltask/topic/${serviceTask.topic}/created`;
       this._eventAggregator.publish(externalTaskCreatedEventName);
 
       logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
     });
+  }
+
+  private _getPayloadForServiceTask(
+    serviceTask: Model.Activities.ServiceTask,
+    token: Runtime.Types.ProcessToken,
+    tokenData: any,
+    identity: IIdentity): any {
+
+    const isPayloadInServiceTask: boolean = serviceTask.payload !== undefined;
+
+    if (isPayloadInServiceTask) {
+
+      const evaluatePayloadFunction: Function = new Function('context', 'token', `return ${serviceTask.payload}`);
+
+      return evaluatePayloadFunction.call(tokenData, identity, tokenData);
+    } else {
+
+      return token.payload;
+    }
   }
 }
