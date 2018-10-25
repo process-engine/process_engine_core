@@ -185,7 +185,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
 
       const tokenData: any = await processTokenFacade.getOldTokenFormat();
-      const payload: boolean = this._getPayload(serviceTask, token, tokenData, identity);
+      const payload: boolean = this._getPayloadForServiceTask(serviceTask, token, tokenData, identity);
 
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
@@ -201,7 +201,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     });
   }
 
-  private _getPayload(serviceTask: Model.Activities.ServiceTask, token: Runtime.Types.ProcessToken, tokenData: any, identity: IIdentity): any {
+  private _getPayloadForServiceTask(
+    serviceTask: Model.Activities.ServiceTask,
+    token: Runtime.Types.ProcessToken,
+    tokenData: any,
+    identity: IIdentity): any {
 
     const isPayloadInServiceTask: boolean = serviceTask.payload !== undefined;
 
