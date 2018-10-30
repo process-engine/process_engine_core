@@ -100,17 +100,18 @@ Ref: https://gitmoji.carloscuesta.me/
 | Description              | Glyphe               | Emoji  |
 |--------------------------|----------------------|--------|
 | Bugfix                   | `:bug:`              | 🐛     |
+| Fixing Security Issues   | `:lock:`             | 🔒     |
 | Configuration releated   | `:wrench:`           | 🔧     |
 | Cosmetic                 | `:lipstick:`         | 💄     |
 | Dependencies Downgrade   | `:arrow_down:`       | ⬇️     |
 | Dependencies Upgrade     | `:arrow_up:`         | ⬆️     |
 | Formatting               | `:art:`              | 🎨     |
-| Improving Performance    | `:zap:`              | ⚡️     |
+| Improving Performance    | `:zap:`              | ⚡️      |
 | Initial commit           | `:tada:`             | 🎉     |
 | Linter                   | `:rotating_light:`   | 🚨     |
 | Miscellaneous            | `:package:`          | 📦     |
 | New Feature              | `:sparkles:`         | ✨     |
-| Refactoring Code         | `:recycle:`          | ♻️     |
+| Refactoring Code         | `:recycle:`          | ♻️      |
 | Releasing / Version tags | `:bookmark:`         | 🔖     |
 | Removing Stuff           | `:fire:`             | 🔥     |
 | Tests                    | `:white_check_mark:` | ✅     |
