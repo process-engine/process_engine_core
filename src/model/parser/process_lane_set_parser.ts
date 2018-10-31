@@ -32,8 +32,8 @@ export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
 
     const flowNodeReferences: Array<string> = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
 
-    const flowNodeReferenceUndefined: boolean = flowNodeReferences === undefined;
-    if (flowNodeReferenceUndefined) {
+    const laneHasNoFlowNodes: boolean = flowNodeReferences === undefined || flowNodeReferences.length === 0;
+    if (laneHasNoFlowNodes) {
       return laneSet;
     }
 
