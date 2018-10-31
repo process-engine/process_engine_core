@@ -15,6 +15,7 @@ export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
   const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
   const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
+  laneSet.lanes = [];
 
   if (!lanesRaw) {
     return laneSet;
@@ -30,6 +31,12 @@ export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
     };
 
     const flowNodeReferences: Array<string> = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
+
+    const laneHasNoFlowNodes: boolean = flowNodeReferences === undefined || flowNodeReferences.length === 0;
+    if (laneHasNoFlowNodes) {
+      return laneSet;
+    }
+
     const trimmedFlowNodeReferences: Array<string> = flowNodeReferences.map(flowNodeReferenceTrimmer);
     lane.flowNodeReferences = trimmedFlowNodeReferences;
 
