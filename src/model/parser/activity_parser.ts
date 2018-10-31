@@ -20,12 +20,16 @@ export function parseActivitiesFromProcessData(processData: any, errors: Array<M
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
   const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
 
-  return Array.prototype.concat(manualTasks,
-                                userTasks,
-                                scriptTasks,
-                                serviceTasks,
-                                callActivities,
-                                subProcesses);
+  return Array
+    .prototype
+    .concat(
+      manualTasks,
+      userTasks,
+      scriptTasks,
+      serviceTasks,
+      callActivities,
+      subProcesses,
+    );
 }
 
 function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
@@ -173,21 +177,26 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
   for (const serviceTaskRaw of serviceTasksRaw) {
     const serviceTask: Model.Activities.ServiceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
 
-    serviceTask.type = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external'
-      ? Model.Activities.ServiceTaskType.external
-      : Model.Activities.ServiceTaskType.internal;
+    const isExternalTask: boolean = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external';
+    if (isExternalTask) {
 
-    serviceTask.topic = serviceTaskRaw[BpmnTags.CamundaProperty.Topic];
+      serviceTask.type = Model.Activities.ServiceTaskType.external;
+      serviceTask.topic = serviceTaskRaw[BpmnTags.CamundaProperty.Topic];
+      serviceTask.payload = getPayloadForExternalTask(serviceTask);
+    } else {
 
-    // Check if the extension properties contain invocations.
-    if (serviceTask.extensionElements &&
+      serviceTask.type = Model.Activities.ServiceTaskType.internal;
+
+      // Check if the extension properties contain invocations.
+      if (serviceTask.extensionElements &&
         serviceTask.extensionElements.camundaExtensionProperties &&
         serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-      const invocation: Model.Activities.Invocation = getInvocationForServiceTask(serviceTask);
+        const invocation: Model.Activities.Invocation = getInvocationForServiceTask(serviceTask);
 
-      if (invocation) {
-        serviceTask.invocation = invocation;
+        if (invocation) {
+          serviceTask.invocation = invocation;
+        }
       }
     }
 
@@ -207,8 +216,8 @@ function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask):
 
   const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
 
-  const extensionPropertiesDataIsNotExisting: boolean = extensionPropertiesDataRaw === undefined
-                                                     || extensionPropertiesDataRaw.length < 1;
+  const extensionPropertiesDataIsNotExisting: boolean =
+    extensionPropertiesDataRaw === undefined || extensionPropertiesDataRaw.length < 1;
 
   if (extensionPropertiesDataIsNotExisting) {
     return;
@@ -216,8 +225,8 @@ function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask):
 
   const extensionPropertiesRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
 
-  const extensionPropertiesAreNotExisting: boolean = extensionPropertiesRaw === undefined
-                                                  || extensionPropertiesRaw.length < 1;
+  const extensionPropertiesAreNotExisting: boolean =
+    extensionPropertiesRaw === undefined || extensionPropertiesRaw.length < 1;
 
   if (extensionPropertiesAreNotExisting) {
     return;
@@ -239,18 +248,43 @@ function parseExtensionProperties(extensionPropertiesRaw: any): any {
 
   const extensionPropertiesIsNoArray: boolean = !Array.isArray(extensionPropertiesRaw);
   if (extensionPropertiesIsNoArray) {
-    return [{name: extensionPropertiesRaw.name,
-             value: extensionPropertiesRaw.value}];
+    return [{
+      name: extensionPropertiesRaw.name,
+      value: extensionPropertiesRaw.value,
+    }];
   }
 
   for (const extensionPropertyRaw of extensionPropertiesRaw) {
-    const extensionProperty: Model.Base.CamundaExtensionProperty = {name: extensionPropertyRaw.name,
-                                                                    value: extensionPropertyRaw.value};
+    const extensionProperty: Model.Base.CamundaExtensionProperty = {
+      name: extensionPropertyRaw.name,
+      value: extensionPropertyRaw.value,
+    };
 
     extensionProperties.push(extensionProperty);
   }
 
   return extensionProperties;
+}
+
+function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): string {
+
+  if (
+    serviceTask.extensionElements &&
+    serviceTask.extensionElements.camundaExtensionProperties &&
+    serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
+
+    const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
+    const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+
+    const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
+
+    if (payloadPropertyHasValue) {
+
+      return payloadProperty.value;
+    }
+  }
+
+  return undefined;
 }
 
 function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocation {
@@ -280,9 +314,10 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
   return methodInvocation;
 }
 
-function findExtensionPropertyByName(propertyName: string,
-                                     extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
-                                    ): Model.Base.CamundaExtensionProperty {
+function findExtensionPropertyByName(
+  propertyName: string,
+  extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
+): Model.Base.CamundaExtensionProperty {
 
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
