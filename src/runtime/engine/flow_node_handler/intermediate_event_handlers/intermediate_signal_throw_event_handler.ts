@@ -40,12 +40,12 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     await this.persistOnEnter(flowNode, token);
 
-    const signalReference: string = flowNode.signalEventDefinition.signalRef;
+    const signalName: string = flowNode.signalEventDefinition.name;
 
     const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
 
-    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalReference,
+    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalName,
                                                                              token.correlationId,
                                                                              token.processModelId,
                                                                              token.processInstanceId,

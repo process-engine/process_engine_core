@@ -41,7 +41,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
     await this.persistOnEnter(flowNode, token);
     await this.persistOnSuspend(flowNode, token);
 
-    const receivedSignal: SignalEventReachedMessage = await this._waitForSignal(flowNode.signalEventDefinition.signalRef);
+    const receivedSignal: SignalEventReachedMessage = await this._waitForSignal(flowNode.signalEventDefinition.name);
 
     processTokenFacade.addResultForFlowNode(flowNode.id, receivedSignal.currentToken);
     token.payload = receivedSignal.currentToken;
@@ -55,12 +55,12 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _waitForSignal(signalReference: string): Promise<SignalEventReachedMessage> {
+  private async _waitForSignal(signalToWaitFor: string): Promise<SignalEventReachedMessage> {
 
     return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-        .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
+        .replace(eventAggregatorSettings.routeParams.signalReference, signalToWaitFor);
 
       const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
 

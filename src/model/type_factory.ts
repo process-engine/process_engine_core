@@ -103,7 +103,7 @@ function filterOutEmptyProperties(camundaProperties: any): any {
 
   if (filteredProperties.length === 1) {
     // Usually, when only a single property is declared on an element,
-    //the parsed result would look something like this:
+    // the parsed result would look something like this:
     //
     // { 'camunda:properties': 'someValue' }
     //

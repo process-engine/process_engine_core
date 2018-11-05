@@ -84,7 +84,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     const messageBoundaryEvent: Model.Events.BoundaryEvent = await this._getMessageBoundaryEvent(flowNode, processModelFacade);
 
     const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageBoundaryEvent.messageEventDefinition.messageRef);
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageBoundaryEvent.messageEventDefinition.name);
 
     const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 

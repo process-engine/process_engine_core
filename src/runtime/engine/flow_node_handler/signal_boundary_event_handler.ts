@@ -84,7 +84,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
     const signalBoundaryEvent: Model.Events.BoundaryEvent = await this._getSignalBoundaryEvent(flowNode, processModelFacade);
 
     const signalBoundaryEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalBoundaryEvent.signalEventDefinition.signalRef);
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalBoundaryEvent.signalEventDefinition.name);
 
     const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
 
