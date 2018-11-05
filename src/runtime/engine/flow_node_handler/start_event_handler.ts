@@ -57,9 +57,9 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     // If the StartEvent is not a regular StartEvent,
     // wait for the defined condition to be fulfilled.
     if (flowNodeIsMessageStartEvent) {
-      await this._waitForMessage(startEvent, token, startEvent.messageEventDefinition.messageRef);
+      await this._waitForMessage(startEvent, token, startEvent.messageEventDefinition.name);
     } else if (flowNodeIsSignalStartEvent) {
-      await this._waitForSignal(startEvent, token, startEvent.signalEventDefinition.signalRef);
+      await this._waitForSignal(startEvent, token, startEvent.signalEventDefinition.name);
     } else if (flowNodeIsTimerStartEvent) {
       await this._waitForTimerToElapse(startEvent, token, startEvent.timerEventDefinition);
     }
