@@ -72,10 +72,10 @@ function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Arr
 function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.EventDefinitions.EventDefinition> {
 
   const messageDefinitions: Array<Model.EventDefinitions.MessageEventDefinition> =
-  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.EventDefinitions.SignalEventDefinition);
+  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.EventDefinitions.MessageEventDefinition);
 
   const signalDefinitions: Array<Model.EventDefinitions.MessageEventDefinition> =
-  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.EventDefinitions.MessageEventDefinition);
+  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.EventDefinitions.SignalEventDefinition);
 
   return Array.prototype.concat(messageDefinitions, signalDefinitions);
 }

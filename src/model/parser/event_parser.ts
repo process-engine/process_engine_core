@@ -146,7 +146,7 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
   const eventDefinitonValue: any = eventRaw[eventRawTagName];
 
   const eventHasNoMatchingDefinition: boolean = eventDefinitonValue === undefined;
-  if (!eventHasNoMatchingDefinition) {
+  if (eventHasNoMatchingDefinition) {
     return;
   }
 
@@ -160,10 +160,13 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
       event[targetPropertyName] = retrieveErrorObject(eventRaw);
       break;
     case 'messageEventDefinition':
-    event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);
-    break;
+      event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);
+      break;
     case 'signalEventDefinition':
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
+      break;
+    case 'timerEventDefinition':
+      event[targetPropertyName] = eventDefinitonValue;
       break;
     default:
       event[targetPropertyName] = {};
