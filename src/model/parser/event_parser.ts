@@ -150,11 +150,6 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
     return;
   }
 
-  const eventDefinitionIsEmpty: boolean = eventDefinitonValue === '';
-  if (eventDefinitionIsEmpty) {
-    event[targetPropertyName] = {};
-  }
-
   switch (targetPropertyName) {
     case 'errorEventDefinition':
       event[targetPropertyName] = retrieveErrorObject(eventRaw);
@@ -198,7 +193,7 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
   if (errorIsNotAnonymous) {
     const errorId: string = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
-    return getErrorById(errors, errorId);
+    return getErrorById(errorId);
   }
 
   // TODO: Find out if we can set the structureRef of the Error Object to undefined here.
@@ -217,14 +212,13 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
 /**
  * Return the error with the given id from the raw error definition data.
  *
- * @param errorList List of all parsed errors.
- * @param errorId   ID of the error to find.
- * @returns         The retrieved Error.
- * @throws          404, if no matching error was found.
+ * @param errorId ID of the error to find.
+ * @returns       The retrieved Error.
+ * @throws        404, if no matching error was found.
  */
-function getErrorById(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
+function getErrorById(errorId: string): Model.Types.Error {
 
-  const matchingError: Model.Types.Error = errorList.find((entry: Model.Types.Error): boolean => {
+  const matchingError: Model.Types.Error = errors.find((entry: Model.Types.Error): boolean => {
     return entry.id === errorId;
   });
 
