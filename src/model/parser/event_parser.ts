@@ -10,12 +10,21 @@ import {
 
 import {NotFoundError} from '@essential-projects/errors_ts';
 
-export function parseEventsFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Events.Event> {
+let errors: Array<Model.Types.Error> = [];
+let eventDefinitions: Array<Model.EventDefinitions.EventDefinition> = [];
 
-  const startEvents: Array<Model.Events.StartEvent>
-    = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
+export function parseEventsFromProcessData(
+  processData: any,
+  parsedErrors: Array<Model.Types.Error>,
+  parsedEventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+): Array<Model.Events.Event> {
 
-  const endEvents: Array<Model.Events.EndEvent> = parseEndEvents(processData, errors);
+  errors = parsedErrors;
+  eventDefinitions = parsedEventDefinitions;
+
+  const startEvents: Array<Model.Events.StartEvent> = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
+
+  const endEvents: Array<Model.Events.EndEvent> = parseEndEvents(processData);
 
   const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
 
@@ -32,16 +41,16 @@ export function parseEventsFromProcessData(processData: any, errors: Array<Model
  * Parse all EndEvents of a process.
  * ErrorEndEvents will get their Errors attached to them.
  *
- * @param data Parsed process definition data.
- * @param errors List of process errors.
- * @returns An array of parsed EndEvents.
+ * @param processData Parsed process definition data.
+ * @param errors      List of process errors.
+ * @returns           An array of parsed EndEvents.
  */
-function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Model.Events.EndEvent> {
+function parseEndEvents(processData: any): Array<Model.Events.EndEvent> {
 
-  const endEventsRaw: any = getModelPropertyAsArray(data, BpmnTags.EventElement.EndEvent);
+  const endEventsRaw: any = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
 
   const events: Array<Model.Events.EndEvent> = endEventsRaw.map((endEventRaw: any) => {
-    return parseEndEvent(endEventRaw, errors);
+    return parseEndEvent(endEventRaw);
   });
 
   return events;
@@ -55,7 +64,8 @@ function parseEndEvents(data: any, errors: Array<Model.Types.Error>): Array<Mode
  *                      If the EndEvent is an ErrorEndEvent, this list is used to retrieve the matching error definition.
  * @returns             The fully parsed EndEvent.
  */
-function parseEndEvent(endEventRaw: any, errors: Array<Model.Types.Error>): Model.Events.EndEvent {
+function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
+
   const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
 
   endEvent.name = endEventRaw.name,
@@ -64,65 +74,7 @@ function parseEndEvent(endEventRaw: any, errors: Array<Model.Types.Error>): Mode
 
   assignEventDefinitions(endEvent, endEventRaw);
 
-  const eventHasErrorEventDefinition: boolean = endEventRaw.hasOwnProperty(BpmnTags.FlowElementProperty.ErrorEventDefinition);
-
-  if (eventHasErrorEventDefinition) {
-
-    const currentError: Model.Types.Error = retrieveErrorObjectForErrorEndEvent(endEventRaw, errors);
-
-    endEvent.errorEventDefinition = new Model.EventDefinitions.ErrorEventDefinition();
-    endEvent.errorEventDefinition.errorReference = currentError;
-  }
-
   return endEvent;
-}
-
-/**
- * Retrieves the error definition from the given error list, that belongs to the given error end event.
- * If the error is anonymous, an empty error object is returned.
- *
- * @param   endEventRaw The raw ErrorEndEvent.
- * @param   errors      The list of error definitions.
- * @returns             The matching error definition.
- */
-function retrieveErrorObjectForErrorEndEvent(errorEndEventRaw: any, errors: Array<Model.Types.Error>): Model.Types.Error {
-
-  const errorIsNotAnonymous: boolean = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
-
-  if (errorIsNotAnonymous) {
-    const errorId: string = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
-
-    return getErrorForId(errors, errorId);
-  }
-
-  // TODO: Find out if we can set the structureRef of the Error Object to undefined here.
-  const anonymousStructureRef: Model.TypeReferences.StructureReference = {
-    structureId: '',
-  };
-
-  return {
-    id: '',
-    structureRef: anonymousStructureRef,
-    errorCode: '',
-    name: '',
-  };
-}
-
-/**
- * Return the error with the given id from the raw error definition data.
- *
- * @param errorList List of all parsed errors.
- * @param errorId ID of the error.
- * @returns Error that matches the given id.
- * @throws Error if the end event with the given id was not found.
- */
-function getErrorForId(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
-  for (const currentError of errorList) {
-    if (currentError.id === errorId) {
-      return currentError;
-    }
-  }
-  throw new NotFoundError(`No error with id ${errorId} found.`);
 }
 
 function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
@@ -189,12 +141,93 @@ function assignEventDefinitions(event: any, eventRaw: any): void {
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
 }
 
-function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: string, targetPropertyName: string): void {
-  let eventDefinitonValue: any = eventRaw[eventRawTagName];
-  if (eventDefinitonValue === '') {
-    eventDefinitonValue = {};
+function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnTags.FlowElementProperty, targetPropertyName: string): void {
+
+  const eventDefinitonValue: any = eventRaw[eventRawTagName];
+
+  const eventHasNoMatchingDefinition: boolean = eventDefinitonValue === undefined;
+  if (!eventHasNoMatchingDefinition) {
+    return;
   }
-  if (eventDefinitonValue !== undefined && eventDefinitonValue !== null) {
-    event[targetPropertyName] = eventDefinitonValue;
+
+  const eventDefinitionIsEmpty: boolean = eventDefinitonValue === '';
+  if (eventDefinitionIsEmpty) {
+    event[targetPropertyName] = {};
   }
+
+  switch (targetPropertyName) {
+    case 'errorEventDefinition':
+      event[targetPropertyName] = retrieveErrorObject(eventRaw);
+      break;
+    case 'messageEventDefinition':
+    event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);
+    break;
+    case 'signalEventDefinition':
+      event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
+      break;
+    default:
+      event[targetPropertyName] = {};
+      break;
+  }
+}
+
+function getDefinitionForEvent<TEventDefinition extends Model.EventDefinitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
+
+  const matchingEventDefintion: Model.EventDefinitions.EventDefinition =
+    eventDefinitions.find((entry: Model.EventDefinitions.EventDefinition): boolean => {
+      return entry.id === eventDefinitionId;
+    });
+
+  return <TEventDefinition> matchingEventDefintion;
+}
+
+/**
+ * Retrieves the error definition from the given error list, that belongs to the given error end event.
+ * If the error is anonymous, an empty error object is returned.
+ *
+ * @param   endEventRaw The raw ErrorEndEvent.
+ * @returns             The matching error definition.
+ */
+function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
+
+  const errorIsNotAnonymous: boolean = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+
+  if (errorIsNotAnonymous) {
+    const errorId: string = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+
+    return getErrorById(errors, errorId);
+  }
+
+  // TODO: Find out if we can set the structureRef of the Error Object to undefined here.
+  const anonymousStructureRef: Model.TypeReferences.StructureReference = {
+    structureId: '',
+  };
+
+  return {
+    id: '',
+    structureRef: anonymousStructureRef,
+    errorCode: '',
+    name: '',
+  };
+}
+
+/**
+ * Return the error with the given id from the raw error definition data.
+ *
+ * @param errorList List of all parsed errors.
+ * @param errorId   ID of the error to find.
+ * @returns         The retrieved Error.
+ * @throws          404, if no matching error was found.
+ */
+function getErrorById(errorList: Array<Model.Types.Error>, errorId: string): Model.Types.Error {
+
+  const matchingError: Model.Types.Error = errorList.find((entry: Model.Types.Error): boolean => {
+    return entry.id === errorId;
+  });
+
+  if (!matchingError) {
+    throw new NotFoundError(`No error with id ${errorId} found.`);
+  }
+
+  return matchingError;
 }

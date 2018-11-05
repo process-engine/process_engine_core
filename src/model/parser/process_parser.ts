@@ -25,11 +25,12 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
     process.name = processRaw.name;
     process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
 
-    const bpmnErrors: Array<Model.Types.Error> = ExtractErrorsFromObjectModel(parsedObjectModel);
+    const bpmnErrors: Array<Model.Types.Error> = parseErrorsFromProcessModel(parsedObjectModel);
+    const eventDefinitions: Array<Model.EventDefinitions.EventDefinition> = parseEventDefinitionsFromObjectModel(parsedObjectModel);
 
     process.laneSet = Parser.parseProcessLaneSet(processRaw);
     process.sequenceFlows = Parser.parseProcessSequenceFlows(processRaw);
-    process.flowNodes = Parser.parseProcessFlowNodes(processRaw, bpmnErrors);
+    process.flowNodes = Parser.parseProcessFlowNodes(processRaw, bpmnErrors, eventDefinitions);
 
     processes.push(process);
   }
@@ -41,9 +42,10 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
  * Extract the error definitions from the process model.
  *
  * @param parsedObjectModel Object model of the parsed xml process definition.
- * @returns A list of all parsed error definitions; an empty list is returned, if no errors are present.
+ * @returns                 A list of all parsed error definitions.
+ *                          Returns an empty list, if no errors are defined.
  */
-function ExtractErrorsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
+function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
 
   const errors: Array<Model.Types.Error> = [];
   const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
@@ -65,4 +67,43 @@ function ExtractErrorsFromObjectModel(parsedObjectModel: IParsedObjectModel): Ar
   }
 
   return errors;
+}
+
+function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.EventDefinitions.EventDefinition> {
+
+  const messageDefinitions: Array<Model.EventDefinitions.MessageEventDefinition> =
+  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.EventDefinitions.SignalEventDefinition);
+
+  const signalDefinitions: Array<Model.EventDefinitions.MessageEventDefinition> =
+  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.EventDefinitions.MessageEventDefinition);
+
+  return Array.prototype.concat(messageDefinitions, signalDefinitions);
+}
+
+function parseEventDefinitionTypeFromObjectModel<TEventDefinition>(
+  parsedObjectModel: IParsedObjectModel,
+  tagName: BpmnTags.CommonElement,
+  typeFactory: Model.Base.IConstructor<TEventDefinition>,
+): Array<TEventDefinition> {
+
+  const eventDefinitions: Array<TEventDefinition> = [];
+
+  const rawDefinitions: Array<any> = getModelPropertyAsArray(parsedObjectModel, tagName);
+
+  const collaborationHasNoMatchingDefinitions: boolean = !rawDefinitions || rawDefinitions.length === 0;
+  if (collaborationHasNoMatchingDefinitions) {
+    return eventDefinitions;
+  }
+
+  for (const rawDefinition of rawDefinitions) {
+    const newDefinition: TEventDefinition = new typeFactory();
+
+    (newDefinition as any).id = rawDefinition.id;
+    (newDefinition as any).name = rawDefinition.name;
+
+    eventDefinitions.push(newDefinition);
+  }
+
+  return eventDefinitions;
+
 }

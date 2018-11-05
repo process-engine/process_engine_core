@@ -11,14 +11,18 @@ import {parseProcessSequenceFlows} from './sequence_flow_parser';
 
 import * as moment from 'moment';
 
-export function parseActivitiesFromProcessData(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.Activity> {
+export function parseActivitiesFromProcessData(
+  processData: any,
+  errors: Array<Model.Types.Error>,
+  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
   const userTasks: Array<Model.Activities.UserTask> = parseUserTasks(processData);
   const scriptTasks: Array<Model.Activities.ScriptTask> = parseScriptTasks(processData);
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
-  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors);
+  const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors, eventDefinitions);
 
   return Array
     .prototype
@@ -357,7 +361,11 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   return callActivities;
 }
 
-function parseSubProcesses(processData: any, errors: Array<Model.Types.Error>): Array<Model.Activities.SubProcess> {
+function parseSubProcesses(
+  processData: any,
+  errors: Array<Model.Types.Error>,
+  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
 
@@ -371,7 +379,7 @@ function parseSubProcesses(processData: any, errors: Array<Model.Types.Error>): 
     const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
 
     subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
-    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors);
+    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors, eventDefinitions);
     subProcess.sequenceFlows = parseProcessSequenceFlows(subProcessRaw);
 
     subProcesses.push(subProcess);
