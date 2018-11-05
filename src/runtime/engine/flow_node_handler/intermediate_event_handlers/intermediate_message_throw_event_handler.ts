@@ -40,12 +40,12 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.persistOnEnter(messageThrowEvent, token);
 
-    const messageReference: string = messageThrowEvent.messageEventDefinition.messageRef;
+    const messageName: string = messageThrowEvent.messageEventDefinition.name;
 
     const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
                                                                                token.correlationId,
                                                                                token.processModelId,
                                                                                token.processInstanceId,

@@ -41,7 +41,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     await this.persistOnEnter(messageCatchEvent, token);
     await this.persistOnSuspend(messageCatchEvent, token);
 
-    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(messageCatchEvent.messageEventDefinition.messageRef);
+    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(messageCatchEvent.messageEventDefinition.name);
 
     processTokenFacade.addResultForFlowNode(messageCatchEvent.id, receivedMessage.currentToken);
     token.payload = receivedMessage.currentToken;
@@ -55,12 +55,12 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _waitForMessage(messageReference: string): Promise<MessageEventReachedMessage> {
+  private async _waitForMessage(messageToWaitFor: string): Promise<MessageEventReachedMessage> {
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
       const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageToWaitFor);
 
       const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 

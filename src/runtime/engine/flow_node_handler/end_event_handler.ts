@@ -90,12 +90,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _sendMessage(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
 
     // Send message to processes that may be waiting for it.
-    const messageReference: string = flowNode.messageEventDefinition.messageRef;
+    const messageName: string = flowNode.messageEventDefinition.name;
 
     const eventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageReference);
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageReference,
+    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
                                                                                token.correlationId,
                                                                                token.processModelId,
                                                                                token.processInstanceId,
@@ -117,12 +117,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _sendSignal(flowNode: Model.Events.EndEvent, token: Runtime.Types.ProcessToken): void {
 
     // Send message to processes that may be waiting for it.
-    const signalReference: string = flowNode.signalEventDefinition.signalRef;
+    const signalName: string = flowNode.signalEventDefinition.name;
 
     const eventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalReference);
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
 
-    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalReference,
+    const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalName,
                                                                              token.correlationId,
                                                                              token.processModelId,
                                                                              token.processInstanceId,
