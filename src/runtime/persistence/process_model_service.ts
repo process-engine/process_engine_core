@@ -226,7 +226,7 @@ export class ProcessModelService implements IProcessModelService {
       }
 
       const filteredLane: Model.Types.Lane = clone(lane);
-
+      console.log('FILTERED LANE', filteredLane);
       if (filteredLane.childLaneSet) {
         filteredLane.childLaneSet = await this._filterOutInaccessibleLanes(filteredLane.childLaneSet, identity);
       }
