@@ -29,7 +29,7 @@
     "@process-engine/external_task_api_contracts": "0.5.0",
     "@process-engine/logging_api_contracts": "~0.3.0",
     "@process-engine/metrics_api_contracts": "~0.3.0",
-    "@process-engine/process_engine_contracts": "32.0.0",
+    "@process-engine/process_engine_contracts": "feature~add_send_receive_task",
     "@types/clone": "0.1.30",
     "addict-ioc": "~2.5.1",
     "bluebird": "3.5.2",
