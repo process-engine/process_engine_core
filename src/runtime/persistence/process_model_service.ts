@@ -216,7 +216,6 @@ export class ProcessModelService implements IProcessModelService {
 
     const filteredLaneSet: Model.Types.LaneSet = clone(laneSet);
     filteredLaneSet.lanes = [];
-    console.log('LANESET', laneSet);
 
     for (const lane of laneSet.lanes) {
 
@@ -227,7 +226,7 @@ export class ProcessModelService implements IProcessModelService {
       }
 
       const filteredLane: Model.Types.Lane = clone(lane);
-      console.log('FILTERED LANE', filteredLane);
+
       if (filteredLane.childLaneSet) {
         filteredLane.childLaneSet = await this._filterOutInaccessibleLanes(filteredLane.childLaneSet, identity);
       }
@@ -275,9 +274,11 @@ export class ProcessModelService implements IProcessModelService {
       // Consider a user who can only access sublane B.
       // If we were to allow him access to all references stored in lane A, he would also be granted access to the elements
       // from lane C, since they are contained within the reference set of lane A!
-      if (lane.childLaneSet) {
+      const isChildLaneSetNotEmpty: boolean = lane.childLaneSet !== undefined && lane.childLaneSet.lanes.length > 0;
+
+      if (isChildLaneSetNotEmpty) {
         const accessibleChildLaneFlowNodes: Array<Model.Base.FlowNode> =
-          this._getFlowNodesForLaneSet(lane.childLaneSet, flowNodes);
+        this._getFlowNodesForLaneSet(lane.childLaneSet, flowNodes);
 
         accessibleFlowNodes.push(...accessibleChildLaneFlowNodes);
       } else {
