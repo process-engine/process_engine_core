@@ -216,6 +216,7 @@ export class ProcessModelService implements IProcessModelService {
 
     const filteredLaneSet: Model.Types.LaneSet = clone(laneSet);
     filteredLaneSet.lanes = [];
+    console.log('LANESET', laneSet);
 
     for (const lane of laneSet.lanes) {
 
