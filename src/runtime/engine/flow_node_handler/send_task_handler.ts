@@ -55,10 +55,10 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
     await this._sendMessage(sendTaskActivity.messageEventDefinition.name, sendTaskActivity.id, token);
 
+    console.log(`waiting for a response`);
     await confirmationPromise;
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(sendTaskActivity);
-    console.log(`next flow node info: ${nextFlowNodeInfo}`);
     await this.persistOnExit(sendTaskActivity, token);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
@@ -81,6 +81,7 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                                                     token.processInstanceId,
                                                                     sendTaskFlowNodeId,
                                                                     token.payload);
+    console.log(`msgevent: ${messageEventName} content: ${JSON.stringify(messageToSend)}`);
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 
@@ -88,13 +89,15 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     const messageReceivedPromise: Promise<MessageEventReachedMessage> = new Promise<MessageEventReachedMessage>((resolve: Function): void => {
      const messageEventName: string = eventAggregatorSettings
       .routePaths
-      .sendTaskReceived
+      .receiveTaskReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageToWaitFor);
 
      const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
         if (subscription) {
           subscription.dispose();
         }
+
+        console.log('RECEIVED')
 
         resolve(message);
       });

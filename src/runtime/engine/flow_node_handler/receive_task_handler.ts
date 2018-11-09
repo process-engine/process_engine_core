@@ -45,7 +45,10 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
       throw new Error('Message definition unset.');
     }
 
+    console.log('waiting for message');
     await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);
+
+    console.log('send answear');
     await this._sendMessage(receiveTaskActivity.messageEventDefinition.name, receiveTaskActivity.id, token);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(receiveTaskActivity);
@@ -61,7 +64,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     const messageEventName: string =
       eventAggregatorSettings
         .routePaths
-        .sendTaskReached
+        .receiveTaskReached
         .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
     const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
@@ -79,7 +82,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     const messageReceivedPromise: Promise<MessageEventReachedMessage> = new Promise<MessageEventReachedMessage>((resolve: Function): void => {
       const messageEventName: string = eventAggregatorSettings
         .routePaths
-        .sendTaskReceived
+        .sendTaskReached
         .replace(eventAggregatorSettings.routeParams.messageReference, messageToWaitFor);
 
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
