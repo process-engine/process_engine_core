@@ -37,7 +37,6 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
     await this.persistOnEnter(sendTaskActivity, token);
-    console.log(`THIS IS THE NOT PUBLISHED IMPLEMENTATION111111111111111111111`);
 
     const noMessageDefinitionProvided: boolean = sendTaskActivity.messageEventDefinition === undefined;
     if (noMessageDefinitionProvided) {
