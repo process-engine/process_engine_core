@@ -1,19 +1,72 @@
-# Process Engine Execution PoC
+# ProcessEngineCore
 
-## FlowNodeHandlerFactory
+The `ProcessEngineCore` package handles the parsing, execution and storage
+of `ProcessModels`.
 
-Inside the factory, the mapping between types of BPMN-elements and their respective handlers is done.
+It consists of two main namespaces:
+- `Model` - handles the parsing of ProcessModels
+- `Runtime` - handles the execution and storage of ProcessModels
 
-The factory maps the various bpmn-types to their respective handlers.
+## Model
 
-It also creates handlers for any BoundaryEvent that may be attached to the FlowNode.
-These additional handlers are chained to their parent handler by using decorators.
+This namespace contains the `BpmnModelParser`, which implements the
+`IModelParser` interface from the `@process-engine/process_engine_contracts`
+package.
+
+It is used for reading the raw XML of a BPMN file and converting it into
+a JSON-based object structure, which can be interpreted by the ProcessEngine.
+
+To make it easier to understand, the Parser is divided into several smaller
+parsers, each designed to parse a certain part of the BPMNs raw xml.
+
+## Runtime
+
+The runtime namespace contains the entire logic necessary for executing and
+storing ProcessModels.
+
+It contains numerous services, handlers and facades to accomplish this task.
+The most important ones will now be explained.
+
+### ExecuteProcessService
+
+Whenever you want to start a new instance for a ProcessModel,
+this is the service you will need.
+
+It contains the entire operative necessary for handling a Process instances'
+execution.
+
+You can start a Process instance by simply calling its `start` method.
+This method wraps the entire process execution in a Promise, so if you do not
+want your application to wait until the process is finished, you must not `await`
+this Promise.
+
+### FlowNodeHandlers
+
+Each BPMN-type has its own handler.
+These handlers are named after the respective type they are supposed to handle
+and are derived from the `FlowNodeHandler` base class.
+
+The `ExecuteProcessService` will delegate the execution of each FlowNode instance
+to a matching `FlowNodeHandler`.
+For example, a `ScriptTask` will be run by the `ScriptTaskHandler`,
+a `ServiceTask` by the `ServiceTaskHandler`, etc.
+
+Mapping each BPMN type to a handler is done by the `FlowNodeHandlerFactory`.
+
+### FlowNodeHandlerFactory
+
+The factory maps the various BPMN-types to their respective handlers.
+
+It also creates handlers for any BoundaryEvent that may be attached to the
+FlowNode.
+
+These additional handlers are attached to their parent handler by decorators.
 
 Example:
 
-The FlowNode is a ScriptTask and there are to BoundaryEvents attached to it:
-* a TimerBoundaryEvent
-* and an ErrorBoundaryEvent
+Lets say we have a `ScriptTask` with two BoundaryEvents attached to it:
+* a `TimerBoundaryEvent`
+* an `ErrorBoundaryEvent`
 
 In this scenario, three handlers will be created.
 Calling `execute` on the returned handler will produce the following call stack:
@@ -22,49 +75,71 @@ Calling `execute` on the returned handler will produce the following call stack:
   * ErrorBoundaryEventHandler.execute
     * ScriptTaskHandler.execute
 
-The order in which the BoundaryEvent-handlers are chained to the original handler is also important.
+The order in which the BoundaryEvent-handlers are chained to the original handler
+is also important.
 
-In this case, the TimerBoundaryEvent-handler has to start its timers as fast as possible.
+In this case, the `TimerBoundaryEventHandler` has to start its timers as fast
+as possible.
 
-If the ScriptTask encounters an error, the ErrorBoundaryEvent-handler must have the ability to handle it and decide which FlowNode to execute next.
-On the other hand, the ErrorBoundaryEvent-handler would not want to handle an error that related to the TimerBoundaryEvent.
+If the ScriptTask encounters an error, the `ErrorBoundaryEventHandler` must have
+the ability to handle it and decide which FlowNode to execute next.
 
-The factory is build to prevent such conflicts. However, the original `FlowNodeHandler` (in this case the `ScriptTaskHandler`) will always be called last.
+On the other hand, the `ErrorBoundaryEventHandler` would not want to handle an
+error that is related to the `TimerBoundaryEvent`.
 
-## FlowNodeHandler
+The factory is build to prevent such conflicts.
+It does this, by making sure that each decorator is run *before* the actual
+FlowNode is executed.
 
-The FlowNodeHandler is the base class for all handlers. It provides an abstract `executeInternally`-method for the derived handler to implement its logic.
+### FlowNodeHandler
 
-The base class also offers a private hook `afterExecute` that is executed after each FlowNode execution, that is not exposed to derived classes.
-It can be used to perform tasks like saving progress or exporting metrics (things that are done identically for all FlowNodeHandlers).
+The `FlowNodeHandler` is the base class for all handlers.
+It provides an abstract `executeInternally`-method, where the derived handlers
+can implement their logic.
 
-## ProcessTokenFacade
+The base class also offers a private hook `afterExecute` that is executed after
+each FlowNode instance has finished.
 
-The `ProcessTokenFacade` identifies and returns any information stored in the `ProcessToken` that we require for our current use case.
+It can be used to perform tasks like saving the progress for a Process or
+exporting metrics, in short: Things common to all FlowNode instances.
 
-This ensures that each `FlowNode` only gets the information that it actually needs, instead of the
-entire process token history.
+### ProcessTokenFacade
+
+The `ProcessTokenFacade` manages the `ProcessToken` for the process that is
+currently being run.
+It allows each FlowNodeInstance to query information from the ProcessToken that
+is relevant for its specific UseCase.
+
+This guarantees that each FlowNode instance only gets the information that it
+actually needs, instead of the entire `ProcessToken` history.
 
 It performs the following tasks:
-* store each FlowNode execution result, using the `addResultForFlowNode` method.
-* split process tokens, using `getProcessTokenFacadeForParallelBranch`
-* merge process tokens, using `mergeTokenHistory`
+* store each FlowNode instance result, using the `addResultForFlowNode` method
+* split ProcessTokens, using `getProcessTokenFacadeForParallelBranch`
+* merge several ProcessTokens together, using `mergeTokenHistory`
 * For backwards compatibility:
-  * get a process token in the old format, using `getOldTokenFormat`
-  * evaluate mappers on `FlowNodes` and `SequenceFlows`, using the methods evaluateMapperForFlowNode` or `evaluateMapperForSequenceFlow`
+  * get a ProcessToken in the old format, using `getOldTokenFormat`.
+  This will provide you with a structure that resembles the old
+  `token.current`/`token.history` structure.
 
-## ProcessModelFacade
+### ProcessModelFacade
 
-The `ProcessModelFacade` provides access to the elements of a given process. These elements can be FlowNodes, SequenceFlows or any other object that is contained in the object model.
+The `ProcessModelFacade` provides access to the elements of a given ProcessModel.
+These elements can be FlowNodes, SequenceFlows or any other object that is
+contained within the ProcessModel.
 
-### SubProcessModelFacade
+A FlowNode instance, for example, can use this Facade to determine the FlowNode
+that is to be executed next.
+Or a Split-Gateway can use it to find its corresponding Join-Gateway.
 
-The `SubProcessModelFacade` provides access to the elements of a given SubProcess. 
-It is created, using the parent processes `ProcessModelFacade`.
-This allows the SubProcess to access its parent process.
+#### SubProcessModelFacade
 
-The SubProcessModelFacade implements the same `IProcessModelFacade` interface as the normal facade, so that it can be passed through to handlers without them knowing they're executed inside a SubProcess.
+The `SubProcessModelFacade` provides access to the elements of a given
+SubProcess.
+It is created, using the parent process' `ProcessModelFacade`.
+This allows the SubProcess to access its parent ProcessModel as well.
 
-## ExecutionContextFacade
-
-To get a better understanding of the use cases where we actually use the ExecutionContext, it is also represented by a facade.
+The `SubProcessModelFacade` implements the same `IProcessModelFacade` interface
+as the `ProcessModelFacade`.
+This allows for the `SubProcessModelFacade` to be be passed through to the
+handlers, without them knowing they're executed inside a SubProcess.
