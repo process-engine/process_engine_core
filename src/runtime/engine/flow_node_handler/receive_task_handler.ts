@@ -14,9 +14,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import { FlowNodeHandler } from '../index';
+import {FlowNodeHandler} from './index';
 
-class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
+export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
   private _eventAggregator: IEventAggregator;
 
   constructor(eventAggregator: IEventAggregator,
@@ -37,7 +37,7 @@ class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    console.log('TESTSSSSTT');
+    console.log('receive task started');
     await this.persistOnEnter(receiveTaskActivity, token);
 
     const messageDefinitonUnset: boolean = receiveTaskActivity.messageEventDefinition === undefined;

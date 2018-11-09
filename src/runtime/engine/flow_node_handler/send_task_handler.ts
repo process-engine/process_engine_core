@@ -14,9 +14,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {FlowNodeHandler} from './index';
 
-class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
+export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
   private _eventAggregator: IEventAggregator;
 
   constructor(eventAggregator: IEventAggregator,
