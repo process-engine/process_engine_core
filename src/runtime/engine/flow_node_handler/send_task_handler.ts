@@ -67,7 +67,8 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                                                     token.processModelId,
                                                                     token.processInstanceId,
                                                                     sendTaskFlowNodeId,
-                                                                    token.payload);
+                                                                    token);
+
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 
