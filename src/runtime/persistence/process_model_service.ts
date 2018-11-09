@@ -219,15 +219,18 @@ export class ProcessModelService implements IProcessModelService {
 
     for (const lane of laneSet.lanes) {
 
-      const userCanAccessLane: boolean = await this._checkIfUserCanAccesslane(identity, lane.name);
-
-      if (!userCanAccessLane) {
-        continue;
-      }
-
+      const userCanNotAccessLane: boolean = await !this._checkIfUserCanAccesslane(identity, lane.name);
       const filteredLane: Model.Types.Lane = clone(lane);
 
-      if (filteredLane.childLaneSet) {
+      if (userCanNotAccessLane) {
+        filteredLane.flowNodeReferences = [];
+        delete filteredLane.childLaneSet;
+      }
+
+      const laneHasChildLanes: boolean = filteredLane.childLaneSet !== undefined &&
+                                         filteredLane.childLaneSet !== null;
+
+      if (laneHasChildLanes) {
         filteredLane.childLaneSet = await this._filterOutInaccessibleLanes(filteredLane.childLaneSet, identity);
       }
 
@@ -274,9 +277,13 @@ export class ProcessModelService implements IProcessModelService {
       // Consider a user who can only access sublane B.
       // If we were to allow him access to all references stored in lane A, he would also be granted access to the elements
       // from lane C, since they are contained within the reference set of lane A!
-      const isChildLaneSetNotEmpty: boolean = lane.childLaneSet !== undefined && lane.childLaneSet.lanes.length > 0;
+      const childLaneSetIsNotEmpty: boolean = lane.childLaneSet !== undefined &&
+                                              lane.childLaneSet !== null &&
+                                              lane.childLaneSet.lanes !== undefined &&
+                                              lane.childLaneSet.lanes !== null &&
+                                              lane.childLaneSet.lanes.length > 0;
 
-      if (isChildLaneSetNotEmpty) {
+      if (childLaneSetIsNotEmpty) {
         const accessibleChildLaneFlowNodes: Array<Model.Base.FlowNode> =
         this._getFlowNodesForLaneSet(lane.childLaneSet, flowNodes);
 
