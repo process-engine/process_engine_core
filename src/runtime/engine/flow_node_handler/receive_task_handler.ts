@@ -37,7 +37,6 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    console.log('receive task started');
     await this.persistOnEnter(receiveTaskActivity, token);
 
     const messageDefinitonUnset: boolean = receiveTaskActivity.messageEventDefinition === undefined;
@@ -45,10 +44,8 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
       throw new Error('Message definition unset.');
     }
 
-    console.log('waiting for message');
     await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);
 
-    console.log('send answear');
     await this._sendMessage(receiveTaskActivity.messageEventDefinition.name, receiveTaskActivity.id, token);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(receiveTaskActivity);
@@ -74,7 +71,6 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
       token.processInstanceId,
       sendTaskFlowNodeId,
       token.payload);
-    console.log(`msgevent: ${messageEventName} content: ${messageToSend}`);
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 
