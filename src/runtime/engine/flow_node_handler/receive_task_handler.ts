@@ -16,7 +16,7 @@ import {
 
 import {FlowNodeHandler} from './index';
 
-export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
+export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.ReceiveTask> {
   private _eventAggregator: IEventAggregator;
 
   constructor(eventAggregator: IEventAggregator,
@@ -71,6 +71,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.SendTas
       token.processInstanceId,
       sendTaskFlowNodeId,
       token.payload);
+    console.log(`msgevent: ${messageEventName} content: ${messageToSend}`);
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 

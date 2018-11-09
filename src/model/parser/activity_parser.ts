@@ -107,17 +107,17 @@ function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.Event
   }
 
   for (const currentRawReceiveTask of receiveTasksRaw) {
-    const receiveTask: Model.Activities.SendTask = createActivityInstance(currentRawReceiveTask, Model.Activities.SendTask);
+    const receiveTask: Model.Activities.ReceiveTask = createActivityInstance(currentRawReceiveTask, Model.Activities.ReceiveTask);
 
     const messageRefNotDefined: boolean = currentRawReceiveTask.messageRef === undefined;
     if (messageRefNotDefined) {
-      throw new BadRequestError(`No message Reference for Send Task with id ${currentRawReceiveTask.id} given`);
+      throw new BadRequestError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
     }
 
-    const sendTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition
+    const receiveTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition
       = getDefinitionForEvent(currentRawReceiveTask.messageRef, eventDefinitions);
 
-    receiveTask.messageEventDefinition = sendTaskMessageDefinition;
+    receiveTask.messageEventDefinition = receiveTaskMessageDefinition;
     receiveTasks.push(receiveTask);
   }
 
