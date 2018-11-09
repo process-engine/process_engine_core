@@ -36,7 +36,6 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
-    console.log('send task started');
     await this.persistOnEnter(sendTaskActivity, token);
 
     const messageDefinitonUnset: boolean = sendTaskActivity.messageEventDefinition === undefined;
@@ -55,7 +54,6 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
     await this._sendMessage(sendTaskActivity.messageEventDefinition.name, sendTaskActivity.id, token);
 
-    console.log(`waiting for a response`);
     await confirmationPromise;
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(sendTaskActivity);
@@ -81,7 +79,7 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                                                     token.processInstanceId,
                                                                     sendTaskFlowNodeId,
                                                                     token.payload);
-    console.log(`msgevent: ${messageEventName} content: ${JSON.stringify(messageToSend)}`);
+    (`msgevent: ${messageEventName} content: ${JSON.stringify(messageToSend)}`);
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 
@@ -96,8 +94,6 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
         if (subscription) {
           subscription.dispose();
         }
-
-        console.log('RECEIVED')
 
         resolve(message);
       });
