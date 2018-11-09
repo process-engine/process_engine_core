@@ -44,12 +44,12 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
       throw new Error('SendTask has no MessageDefinition!');
     }
 
-    await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);
-
+    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);
     await this._sendReplyToSender(receiveTaskActivity.messageEventDefinition.name, receiveTaskActivity.id, token);
 
+    processTokenFacade.addResultForFlowNode(receiveTaskActivity.id, receivedMessage.currentToken);
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(receiveTaskActivity);
-    await this.persistOnExit(receiveTaskActivity, token);
+    await this.persistOnExit(receiveTaskActivity, receivedMessage.currentToken);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
