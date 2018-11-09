@@ -39,14 +39,14 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
 
     await this.persistOnEnter(receiveTaskActivity, token);
 
-    const messageDefinitonUnset: boolean = receiveTaskActivity.messageEventDefinition === undefined;
-    if (messageDefinitonUnset) {
-      throw new Error('Message definition unset.');
+    const noMessageDefinitionProvided: boolean = receiveTaskActivity.messageEventDefinition === undefined;
+    if (noMessageDefinitionProvided) {
+      throw new Error('SendTask has no MessageDefinition!');
     }
 
     await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);
 
-    await this._sendMessage(receiveTaskActivity.messageEventDefinition.name, receiveTaskActivity.id, token);
+    await this._sendReplyToSender(receiveTaskActivity.messageEventDefinition.name, receiveTaskActivity.id, token);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(receiveTaskActivity);
     await this.persistOnExit(receiveTaskActivity, token);
@@ -54,9 +54,9 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _sendMessage(messageName: string,
-                             sendTaskFlowNodeId: string,
-                             token: Runtime.Types.ProcessToken): Promise<void> {
+  private async _sendReplyToSender(messageName: string,
+                                   sendTaskFlowNodeId: string,
+                                   token: Runtime.Types.ProcessToken): Promise<void> {
 
     const messageEventName: string =
       eventAggregatorSettings

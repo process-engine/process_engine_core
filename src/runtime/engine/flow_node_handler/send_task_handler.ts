@@ -37,24 +37,14 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
     await this.persistOnEnter(sendTaskActivity, token);
+    console.log(`THIS IS THE NOT PUBLISHED IMPLEMENTATION111111111111111111111`);
 
-    const messageDefinitonUnset: boolean = sendTaskActivity.messageEventDefinition === undefined;
-    if (messageDefinitonUnset) {
-      throw new Error('Message definition unset.');
+    const noMessageDefinitionProvided: boolean = sendTaskActivity.messageEventDefinition === undefined;
+    if (noMessageDefinitionProvided) {
+      throw new Error('SendTask has no MessageDefinition!');
     }
 
-    /**
-     * Before we want to send the message to the Receive task we need to
-     * subscribe to it.
-     *
-     * This ensures, that the confirmations does not get lost.
-     */
-    const confirmationPromise: Promise<MessageEventReachedMessage> =
-      this._waitForConfirmationMessage(sendTaskActivity.messageEventDefinition.name);
-
-    await this._sendMessage(sendTaskActivity.messageEventDefinition.name, sendTaskActivity.id, token);
-
-    await confirmationPromise;
+    await this._registerEventHandlerAndSendMessage(sendTaskActivity.messageEventDefinition.name, sendTaskActivity.id, token);
 
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(sendTaskActivity);
     await this.persistOnExit(sendTaskActivity, token);
@@ -62,9 +52,9 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _sendMessage(messageName: string,
+  private _sendMessage(messageName: string,
                              sendTaskFlowNodeId: string,
-                             token: Runtime.Types.ProcessToken): Promise<void> {
+                             token: Runtime.Types.ProcessToken): void {
 
     const messageEventName: string =
       eventAggregatorSettings
@@ -79,16 +69,15 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                                                     token.processInstanceId,
                                                                     sendTaskFlowNodeId,
                                                                     token.payload);
-    (`msgevent: ${messageEventName} content: ${JSON.stringify(messageToSend)}`);
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 
-  private async _waitForConfirmationMessage(messageToWaitFor: string): Promise<MessageEventReachedMessage> {
-    const messageReceivedPromise: Promise<MessageEventReachedMessage> = new Promise<MessageEventReachedMessage>((resolve: Function): void => {
-     const messageEventName: string = eventAggregatorSettings
+  private async _registerEventHandlerAndSendMessage(messageName: string, sendTaskFlowNodeId: string, token: Runtime.Types.ProcessToken): Promise<void> {
+    const doneSendingPromise: Promise<void> = new Promise((resolve: Function, reject: Function): void => {
+      const messageEventName: string = eventAggregatorSettings
       .routePaths
       .receiveTaskReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageToWaitFor);
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
      const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
         if (subscription) {
@@ -97,8 +86,10 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
         resolve(message);
       });
+
+      this._sendMessage(messageName, sendTaskFlowNodeId, token);
     });
 
-    return messageReceivedPromise;
+    return doneSendingPromise;
   }
 }
