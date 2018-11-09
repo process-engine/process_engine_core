@@ -219,7 +219,7 @@ export class ProcessModelService implements IProcessModelService {
 
     for (const lane of laneSet.lanes) {
 
-      const userCanNotAccessLane: boolean = await !this._checkIfUserCanAccesslane(identity, lane.name);
+      const userCanNotAccessLane: boolean = !await this._checkIfUserCanAccesslane(identity, lane.name);
       const filteredLane: Model.Types.Lane = clone(lane);
 
       if (userCanNotAccessLane) {
