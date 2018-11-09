@@ -83,8 +83,8 @@ function parseSendTasks(processData: any, eventDefinitions: Array<Model.EventDef
       throw new BadRequestError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
     }
 
-    const sendTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition
-      = getDefinitionForEvent(currentRawSendTask.messageRef, eventDefinitions);
+    const sendTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
+      getDefinitionForEvent(currentRawSendTask.messageRef, eventDefinitions);
 
     sendTask.messageEventDefinition = sendTaskMessageDefinition;
     sendTasks.push(sendTask);
@@ -114,8 +114,8 @@ function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.Event
       throw new BadRequestError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
     }
 
-    const receiveTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition
-      = getDefinitionForEvent(currentRawReceiveTask.messageRef, eventDefinitions);
+    const receiveTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
+      getDefinitionForEvent(currentRawReceiveTask.messageRef, eventDefinitions);
 
     receiveTask.messageEventDefinition = receiveTaskMessageDefinition;
     receiveTasks.push(receiveTask);
