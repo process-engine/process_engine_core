@@ -83,6 +83,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
           processStateInfo.processTerminatedMessage = message;
         });
 
+      // first find the ParallelGateway that joins the branch back to the original branch
       const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
 
       // The state change must be performed before the parallel branches are executed.

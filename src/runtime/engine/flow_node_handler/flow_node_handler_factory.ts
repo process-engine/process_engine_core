@@ -68,6 +68,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         return this._createHandler<TFlowNode>('SubProcessHandler');
       case BpmnType.userTask:
         return this._createHandler<TFlowNode>('UserTaskHandler');
+      case BpmnType.sendTask:
+        return this._createHandler<TFlowNode>('SendTaskHandler');
+      case BpmnType.receiveTask:
+        return this._createHandler<TFlowNode>('ReceiveTaskHandler');
       default:
         throw Error(`FlowNodeHandler for BPMN type "${type}" could not be found.`);
     }

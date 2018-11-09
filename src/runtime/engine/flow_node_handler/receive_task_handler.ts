@@ -36,9 +36,11 @@ class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
+
+    console.log('TESTSSSSTT');
     await this.persistOnEnter(receiveTaskActivity, token);
 
-    const messageDefinitonUnset: boolean = receiveTaskActivity.messageEventDefinition !== undefined;
+    const messageDefinitonUnset: boolean = receiveTaskActivity.messageEventDefinition === undefined;
     if (messageDefinitonUnset) {
       throw new Error('Message definition unset.');
     }
