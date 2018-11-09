@@ -15,8 +15,8 @@ const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
 const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
-const SendTaskHandler = require('./dist/commomjs/index').SendTaskHandler;
-const ReceiveTaskHandler = require('./dist/commomjs/index').ReceiveTaskHandler;
+const SendTaskHandler = require('./dist/commonjs/index').SendTaskHandler;
+const ReceiveTaskHandler = require('./dist/commonjs/index').ReceiveTaskHandler;
 
 const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
