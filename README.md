@@ -94,14 +94,15 @@ FlowNode is executed.
 ### FlowNodeHandler
 
 The `FlowNodeHandler` is the base class for all handlers.
-It provides an abstract `executeInternally`-method, where the derived handlers
-can implement their logic.
+It provides an abstract `executeInternally`-method, where the logic of the
+derived handlers is implemented.
 
-The base class also offers a private hook `afterExecute` that is executed after
-each FlowNode instance has finished.
+The base class also offers a private hook named `afterExecute`, which is
+executed after each FlowNode instance has finished.
 
-It can be used to perform tasks like saving the progress for a Process or
-exporting metrics, in short: Things common to all FlowNode instances.
+The ProcessTokenFacade contains all methods which implements common Tasks for
+FlowNode instances.
+An example would be to store a process' current state or exporting metrics.
 
 ### ProcessTokenFacade
 
@@ -141,5 +142,9 @@ This allows the SubProcess to access its parent ProcessModel as well.
 
 The `SubProcessModelFacade` implements the same `IProcessModelFacade` interface
 as the `ProcessModelFacade`.
+
 This allows for the `SubProcessModelFacade` to be be passed through to the
 handlers, without them knowing they're executed inside a SubProcess.
+
+Because of this, the `SubProcesssModelFacade` can be passed to the individual
+handlers, without them knowing that their are executed inside a SubProcess.
