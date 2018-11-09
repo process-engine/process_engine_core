@@ -219,15 +219,18 @@ export class ProcessModelService implements IProcessModelService {
 
     for (const lane of laneSet.lanes) {
 
-      const userCanAccessLane: boolean = await this._checkIfUserCanAccesslane(identity, lane.name);
+      const userCanNotAccessLane: boolean = await !this._checkIfUserCanAccesslane(identity, lane.name);
       const filteredLane: Model.Types.Lane = clone(lane);
 
-      if (!userCanAccessLane) {
+      if (userCanNotAccessLane) {
         filteredLane.flowNodeReferences = [];
         delete filteredLane.childLaneSet;
       }
 
-      if (filteredLane.childLaneSet) {
+      const laneHasChildLanes: boolean = filteredLane.childLaneSet !== undefined &&
+                                         filteredLane.childLaneSet !== null;
+
+      if (laneHasChildLanes) {
         filteredLane.childLaneSet = await this._filterOutInaccessibleLanes(filteredLane.childLaneSet, identity);
       }
 
