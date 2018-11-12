@@ -1,6 +1,7 @@
 import {
   IFlowNodeInstanceRepository,
   IFlowNodeInstanceService,
+  Model,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -49,37 +50,37 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._flowNodeInstanceRepository.queryProcessTokensByProcessInstanceId(processInstanceId);
   }
 
-  public async persistOnEnter(flowNodeId: string,
+  public async persistOnEnter(flowNode: Model.Base.FlowNode,
                               flowNodeInstanceId: string,
                               token: Runtime.Types.ProcessToken,
                              ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this._flowNodeInstanceRepository.persistOnEnter(flowNodeId, flowNodeInstanceId, token);
+    return this._flowNodeInstanceRepository.persistOnEnter(flowNode, flowNodeInstanceId, token);
   }
 
-  public async persistOnExit(flowNodeId: string,
+  public async persistOnExit(flowNode: Model.Base.FlowNode,
                              flowNodeInstanceId: string,
                              token: Runtime.Types.ProcessToken,
                             ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this._flowNodeInstanceRepository.persistOnExit(flowNodeId, flowNodeInstanceId, token);
+    return this._flowNodeInstanceRepository.persistOnExit(flowNode, flowNodeInstanceId, token);
   }
 
-  public async persistOnError(flowNodeId: string,
+  public async persistOnError(flowNode: Model.Base.FlowNode,
                               flowNodeInstanceId: string,
                               token: Runtime.Types.ProcessToken,
                               error: Error,
                              ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this._flowNodeInstanceRepository.persistOnError(flowNodeId, flowNodeInstanceId, token, error);
+    return this._flowNodeInstanceRepository.persistOnError(flowNode, flowNodeInstanceId, token, error);
   }
 
-  public async persistOnTerminate(flowNodeId: string,
+  public async persistOnTerminate(flowNode: Model.Base.FlowNode,
                                   flowNodeInstanceId: string,
                                   token: Runtime.Types.ProcessToken,
                                  ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this._flowNodeInstanceRepository.persistOnTerminate(flowNodeId, flowNodeInstanceId, token);
+    return this._flowNodeInstanceRepository.persistOnTerminate(flowNode, flowNodeInstanceId, token);
   }
 
   public async suspend(flowNodeId: string, flowNodeInstanceId: string, token: Runtime.Types.ProcessToken): Promise<Runtime.Types.FlowNodeInstance> {
