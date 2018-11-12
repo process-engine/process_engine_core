@@ -63,6 +63,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const unsupportedErrorMessage: string =
         `ParallelGateway ${parallelGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
       const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+
       this.persistOnError(parallelGateway, token, unsupportedError);
 
       throw unsupportedError;

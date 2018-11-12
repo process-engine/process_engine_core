@@ -1,4 +1,4 @@
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {UnprocessableEntityError, BadRequestError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -36,6 +36,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       const unsupportedErrorMessage: string =
         `ExclusiveGateway ${exclusiveGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
       const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+
       this.persistOnError(exclusiveGateway, token, unsupportedError);
 
       throw unsupportedError;
@@ -50,37 +51,56 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     if (isExclusiveJoinGateway) {
 
-      // If this is the join gateway, just return the next FlowNode to execute
-      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
+      // If this is the join gateway, just return the next FlowNode to execute.
+      // Prerequisite for this UseCase is that only one outgoing SequenceFlow exists here.
+      const nextFlowNodeAfterJoin: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
       await this.persistOnExit(exclusiveGateway, token);
 
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+      return new NextFlowNodeInfo(nextFlowNodeAfterJoin, token, processTokenFacade);
     }
 
     // If this is the split gateway, find the SequenceFlow that has a truthy condition
     // and continue execution with its target FlowNode.
+    const nextFlowNodeId: string = await this.determineBranchToTake(exclusiveGateway.id, outgoingSequenceFlows, processTokenFacade);
 
-    for (const outgoingSequenceFlow of outgoingSequenceFlows) {
+    const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(nextFlowNodeId);
 
-      if (!outgoingSequenceFlow.conditionExpression) {
+    await this.persistOnExit(exclusiveGateway, token);
+
+    return new NextFlowNodeInfo(nextFlowNodeAfterSplit, token, processTokenFacade);
+  }
+
+  private async determineBranchToTake(
+    exclusiveGatewayId: string,
+    sequenceFlows: Array<Model.Types.SequenceFlow>,
+    processTokenFacade: IProcessTokenFacade,
+  ): Promise<string> {
+
+    const truthySequenceFlows: Array<Model.Types.SequenceFlow> = [];
+
+    for (const sequenceFlow of sequenceFlows) {
+
+      if (!sequenceFlow.conditionExpression) {
         continue;
       }
 
-      const conditionWasPositive: boolean = await this.executeCondition(outgoingSequenceFlow.conditionExpression.expression, processTokenFacade);
+      const conditionIsFulfilled: boolean = await this.executeCondition(sequenceFlow.conditionExpression.expression, processTokenFacade);
 
-      if (!conditionWasPositive) {
-        continue;
+      if (conditionIsFulfilled) {
+        truthySequenceFlows.push(sequenceFlow);
       }
-
-      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
-
-      await this.persistOnExit(exclusiveGateway, token);
-
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
     }
 
-    throw new Error('no outgoing sequence flow for exclusive gateway had a truthy condition');
+    if (truthySequenceFlows.length === 0) {
+      throw new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${exclusiveGatewayId} had a truthy condition!`);
+    }
+
+    if (truthySequenceFlows.length > 1) {
+      throw new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${exclusiveGatewayId} had a truthy condition!`);
+    }
+
+    return truthySequenceFlows[0].targetRef;
   }
 
   private async executeCondition(condition: string, processTokenFacade: IProcessTokenFacade): Promise<boolean> {
