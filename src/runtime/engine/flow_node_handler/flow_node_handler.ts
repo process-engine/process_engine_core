@@ -117,7 +117,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnEnter(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
@@ -146,7 +146,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnExit(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnExit(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.persistOnExit(flowNodeInstance, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
@@ -175,7 +175,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnTerminate(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnTerminate(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.persistOnTerminate(flowNodeInstance, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
@@ -204,7 +204,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    */
   protected async persistOnError(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken, error: Error): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnError(flowNodeInstance.id, this.flowNodeInstanceId, processToken, error);
+    await this.flowNodeInstanceService.persistOnError(flowNodeInstance, this.flowNodeInstanceId, processToken, error);
 
     const now: moment.Moment = moment.utc();
 
