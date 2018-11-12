@@ -103,7 +103,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
       if (processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(parallelGateway.id, this.flowNodeInstanceId, token);
+        await this.flowNodeInstanceService.persistOnTerminate(parallelGateway, this.flowNodeInstanceId, token);
 
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
@@ -162,7 +162,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     if (processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this.flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, token);
+      await this.flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, token);
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}".`);
     }
 
