@@ -1,3 +1,4 @@
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -26,6 +27,19 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(exclusiveGateway, token);
+
+    const gatewayTypeIsNotSupported: boolean =
+      exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
+      exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
+
+    if (gatewayTypeIsNotSupported) {
+      const unsupportedErrorMessage: string =
+        `ExclusiveGateway ${exclusiveGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
+      const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+      this.persistOnError(exclusiveGateway, token, unsupportedError);
+
+      throw unsupportedError;
+    }
 
     const currentToken: any = await processTokenFacade.getOldTokenFormat();
     processTokenFacade.addResultForFlowNode(exclusiveGateway.id, currentToken.current);

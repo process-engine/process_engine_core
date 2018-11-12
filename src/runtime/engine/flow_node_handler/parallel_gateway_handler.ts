@@ -1,4 +1,4 @@
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -54,6 +54,19 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(parallelGateway, token);
+
+    const gatewayTypeIsNotSupported: boolean =
+      parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
+      parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
+
+    if (gatewayTypeIsNotSupported) {
+      const unsupportedErrorMessage: string =
+        `ParallelGateway ${parallelGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
+      const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+      this.persistOnError(parallelGateway, token, unsupportedError);
+
+      throw unsupportedError;
+    }
 
     const isSplitGateway: boolean = parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
 
