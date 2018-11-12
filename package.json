@@ -29,7 +29,7 @@
     "@process-engine/external_task_api_contracts": "~0.4.0",
     "@process-engine/logging_api_contracts": "~0.3.0",
     "@process-engine/metrics_api_contracts": "~0.3.0",
-    "@process-engine/process_engine_contracts": "feature~add_type_to_flow_node",
+    "@process-engine/process_engine_contracts": "~31.0.0",
     "@types/clone": "0.1.30",
     "addict-ioc": "~2.5.1",
     "bluebird": "3.5.2",
