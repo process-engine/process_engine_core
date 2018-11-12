@@ -25,7 +25,7 @@
     "@essential-projects/event_aggregator_contracts": "~3.1.0",
     "@essential-projects/iam_contracts": "~3.2.0",
     "@essential-projects/timing_contracts": "~3.1.0",
-    "@process-engine/consumer_api_contracts": "~1.0.0",
+    "@process-engine/consumer_api_contracts": "feature~implement_manual-task",
     "@process-engine/external_task_api_contracts": "0.5.0",
     "@process-engine/logging_api_contracts": "~0.3.0",
     "@process-engine/metrics_api_contracts": "~0.3.0",
