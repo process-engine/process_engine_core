@@ -161,7 +161,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         // Errors thrown by an ErrorEndEvent ("error.errorCode")
         // and @essential-project errors ("error.code") are thrown as they are.
         // Everything else is thrown as an InternalServerError.
-        if ((error.errorCode || error.code) && error.name) {
+        const isPresetError: boolean = (error.errorCode || error.code) && error.name;
+        if (isPresetError) {
           return reject(error);
         }
 
