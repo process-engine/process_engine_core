@@ -158,9 +158,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
           subscription.dispose();
         }
 
-        // If we received an error that was thrown by an ErrorEndEvent, pass on the error as it was received.
-        // Otherwise, pass on an anonymous error.
-        if (error.errorCode && error.name) {
+        // Errors thrown by an ErrorEndEvent ("error.errorCode")
+        // and @essential-project errors ("error.code") are thrown as they are.
+        // Everything else is thrown as an InternalServerError.
+        const isPresetError: boolean = (error.errorCode || error.code) && error.name;
+        if (isPresetError) {
           return reject(error);
         }
 
@@ -327,7 +329,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     if (processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this._flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
+      await this._flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, processToken);
 
       const error: InternalServerError =
         new InternalServerError(`Process was terminated through TerminateEndEvent "${this.processTerminatedMessage.flowNodeId}."`);
