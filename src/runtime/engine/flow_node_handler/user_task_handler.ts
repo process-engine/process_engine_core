@@ -47,8 +47,8 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
       const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.finishUserTask
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-        .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-        .replace(eventAggregatorSettings.routeParams.userTaskId, userTask.id);
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
+        .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
@@ -108,8 +108,8 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     // FlowNode-specific notification
     const userTaskFinishedEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
       .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-      .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-      .replace(eventAggregatorSettings.routeParams.userTaskId, userTaskId);
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     this.eventAggregator.publish(userTaskFinishedEvent, message);
 
