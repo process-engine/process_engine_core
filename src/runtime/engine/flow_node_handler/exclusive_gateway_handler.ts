@@ -51,7 +51,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     if (isExclusiveJoinGateway) {
 
-      // If this is the join gateway, just return the next FlowNode to execute.
+      // If this is a join gateway, just return the next FlowNode to execute.
       // Prerequisite for this UseCase is that only one outgoing SequenceFlow exists here.
       const nextFlowNodeAfterJoin: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
@@ -60,7 +60,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       return new NextFlowNodeInfo(nextFlowNodeAfterJoin, token, processTokenFacade);
     }
 
-    // If this is the split gateway, find the SequenceFlow that has a truthy condition
+    // If this is a split gateway, find the SequenceFlow that has a truthy condition
     // and continue execution with its target FlowNode.
     const nextFlowNodeId: string = await this.determineBranchToTake(exclusiveGateway.id, outgoingSequenceFlows, processTokenFacade);
 
@@ -81,7 +81,8 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     for (const sequenceFlow of sequenceFlows) {
 
-      if (!sequenceFlow.conditionExpression) {
+      const sequenceFlowHasNoCondition: boolean = sequenceFlow.conditionExpression === undefined || sequenceFlow.conditionExpression === null;
+      if (sequenceFlowHasNoCondition) {
         continue;
       }
 
@@ -92,15 +93,19 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       }
     }
 
-    if (truthySequenceFlows.length === 0) {
+    const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
+    if (noTruthySequenceFlowsExist) {
       throw new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${exclusiveGatewayId} had a truthy condition!`);
     }
 
-    if (truthySequenceFlows.length > 1) {
+    const tooManyTruthySequenceFlowsExist: boolean = truthySequenceFlows.length > 1;
+    if (tooManyTruthySequenceFlowsExist) {
       throw new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${exclusiveGatewayId} had a truthy condition!`);
     }
 
-    return truthySequenceFlows[0].targetRef;
+    const nextFlowNodeRef: string = truthySequenceFlows[0].targetRef;
+
+    return nextFlowNodeRef;
   }
 
   private async executeCondition(condition: string, processTokenFacade: IProcessTokenFacade): Promise<boolean> {

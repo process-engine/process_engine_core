@@ -329,7 +329,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     if (processWasTerminated) {
       const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this._flowNodeInstanceService.persistOnTerminate(flowNode.id, flowNodeInstanceId, processToken);
+      await this._flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, processToken);
 
       const error: InternalServerError =
         new InternalServerError(`Process was terminated through TerminateEndEvent "${this.processTerminatedMessage.flowNodeId}."`);

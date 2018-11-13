@@ -138,7 +138,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     processModelFacade: IProcessModelFacade,
   ): Model.Gateways.ParallelGateway {
 
-    // first find the ParallelGateway that joins the branch back to the original branch
+    // First find the ParallelGateway that joins the branch back to the original branch.
     const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(splitGateway);
 
     const joinGatewayTypeIsNotSupported: boolean =
