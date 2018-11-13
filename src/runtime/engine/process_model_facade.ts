@@ -61,7 +61,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
   public getStartEventById(startEventId: string): Model.Events.StartEvent {
 
-    const startEvents: Array<Model.Base.FlowNode> = this.getStartEvents();
+    const startEvents: Array<Model.Events.StartEvent> = this.getStartEvents();
 
     // TODO:
     // For backwards compatibility only.
