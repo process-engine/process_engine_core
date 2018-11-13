@@ -1,4 +1,4 @@
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -55,6 +55,20 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     await this.persistOnEnter(parallelGateway, token);
 
+    const gatewayTypeIsNotSupported: boolean =
+      parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
+      parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
+
+    if (gatewayTypeIsNotSupported) {
+      const unsupportedErrorMessage: string =
+        `ParallelGateway ${parallelGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
+      const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+
+      this.persistOnError(parallelGateway, token, unsupportedError);
+
+      throw unsupportedError;
+    }
+
     const isSplitGateway: boolean = parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
 
     if (isSplitGateway) {
@@ -69,14 +83,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
           processStateInfo.processTerminatedMessage = message;
         });
 
-      // first find the ParallelGateway that joins the branch back to the original branch
-      const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(parallelGateway);
-
       const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
 
       // The state change must be performed before the parallel branches are executed.
       // Otherwise, the Split Gateway will be in a running state, until all branches have finished.
       await this.persistOnExit(parallelGateway, token);
+
+      const joinGateway: Model.Gateways.ParallelGateway = this._findJoinGateway(parallelGateway, token, processModelFacade);
 
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
@@ -117,6 +130,32 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     await this.persistOnExit(parallelGateway, token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+  }
+
+  private _findJoinGateway(
+    splitGateway: Model.Gateways.ParallelGateway,
+    token: Runtime.Types.ProcessToken,
+    processModelFacade: IProcessModelFacade,
+  ): Model.Gateways.ParallelGateway {
+
+    // First find the ParallelGateway that joins the branch back to the original branch.
+    const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(splitGateway);
+
+    const joinGatewayTypeIsNotSupported: boolean =
+      joinGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
+      joinGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
+
+    if (joinGatewayTypeIsNotSupported) {
+      const unsupportedErrorMessage: string =
+        `ParallelGateway ${joinGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
+      const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+
+      this.persistOnError(splitGateway, token, unsupportedError);
+
+      throw unsupportedError;
+    }
+
+    return joinGateway;
   }
 
   private _executeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,

@@ -140,17 +140,19 @@ export class ProcessModelFacade implements IProcessModelFacade {
   //       we still need an integration test with multiple parallel branches to fully implement this
   public getJoinGatewayFor(parallelGatewayNode: Model.Gateways.ParallelGateway): Model.Gateways.ParallelGateway {
 
-    const incomingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getIncomingSequenceFlowsFor(parallelGatewayNode.id);
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = this.getOutgoingSequenceFlowsFor(parallelGatewayNode.id);
+    const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeFor(parallelGatewayNode);
 
     const flowNodeIsParallelGateway: boolean = parallelGatewayNode.bpmnType === BpmnType.parallelGateway;
-    const flowNodeIsJoinGateway: boolean = incomingSequenceFlows.length > outgoingSequenceFlows.length;
+
+    if (!flowNodeIsParallelGateway) {
+      return this.getJoinGatewayFor(nextFlowNode as Model.Gateways.ParallelGateway);
+    }
+
+    const flowNodeIsJoinGateway: boolean = parallelGatewayNode.gatewayDirection !== Model.Gateways.GatewayDirection.Diverging;
 
     if (flowNodeIsParallelGateway && flowNodeIsJoinGateway) {
       return parallelGatewayNode;
     }
-
-    const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeFor(parallelGatewayNode);
 
     return this.getJoinGatewayFor(nextFlowNode as Model.Gateways.ParallelGateway);
   }
