@@ -91,4 +91,8 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._flowNodeInstanceRepository.resume(flowNodeId, flowNodeInstanceId, token);
   }
 
+  public async deleteByProcessModelId(processModelId: string): Promise<void> {
+    return this._flowNodeInstanceRepository.deleteByProcessModelId(processModelId);
+  }
+
 }
