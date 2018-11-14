@@ -183,7 +183,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                                     processModelFacade,
                                                     identity,
                                                     processStateInfo,
-                                                    undefined);
+                                                    this.flowNodeInstanceId);
     });
   }
 
