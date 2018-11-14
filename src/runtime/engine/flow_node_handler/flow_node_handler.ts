@@ -17,7 +17,7 @@ import * as uuid from 'uuid';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-  protected _flowNodeInstanceId: string;
+  protected _flowNodeInstanceId: string = undefined;
   protected _flowNode: TFlowNode;
   protected _previousFlowNodeInstanceId: string;
 
@@ -37,6 +37,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   protected get flowNodeInstanceId(): string {
+
+    const noInstanceIdExists: boolean = this._flowNodeInstanceId === undefined;
+    if (noInstanceIdExists) {
+      this._flowNodeInstanceId = this.createFlowNodeInstanceId();
+    }
+
     return this._flowNodeInstanceId;
   }
 
@@ -68,7 +74,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                       ): Promise<NextFlowNodeInfo> {
 
     this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
-    this._flowNodeInstanceId = this.createFlowNodeInstanceId();
 
     let nextFlowNode: NextFlowNodeInfo;
 
