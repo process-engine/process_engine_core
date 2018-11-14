@@ -33,10 +33,15 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+              metricsService: IMetricsApi,
+              parallelGatewayModel: Model.Gateways.ParallelGateway) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, parallelGatewayModel);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+  }
+
+  private get parallelGateway(): Model.Gateways.ParallelGateway {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -47,29 +52,28 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return this._flowNodeHandlerFactory;
   }
 
-  protected async executeInternally(parallelGateway: Model.Gateways.ParallelGateway,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(parallelGateway, token);
+    await this.persistOnEnter(token);
 
     const gatewayTypeIsNotSupported: boolean =
-      parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
-      parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
+      this.parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
+      this.parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
 
     if (gatewayTypeIsNotSupported) {
       const unsupportedErrorMessage: string =
-        `ParallelGateway ${parallelGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
+        `ParallelGateway ${this.parallelGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
       const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
 
-      this.persistOnError(parallelGateway, token, unsupportedError);
+      this.persistOnError(token, unsupportedError);
 
       throw unsupportedError;
     }
 
-    const isSplitGateway: boolean = parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
+    const isSplitGateway: boolean = this.parallelGateway.gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
 
     if (isSplitGateway) {
 
@@ -84,13 +88,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         });
 
       // first find the ParallelGateway that joins the branch back to the original branch
-      const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(parallelGateway.id);
+      const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
 
       // The state change must be performed before the parallel branches are executed.
       // Otherwise, the Split Gateway will be in a running state, until all branches have finished.
-      await this.persistOnExit(parallelGateway, token);
+      await this.persistOnExit(token);
 
-      const joinGateway: Model.Gateways.ParallelGateway = this._findJoinGateway(parallelGateway, token, processModelFacade);
+      const joinGateway: Model.Gateways.ParallelGateway = await this._findJoinGateway(token, processModelFacade);
 
       // all parallel branches are only executed until the join gateway is reached
       const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
@@ -117,7 +121,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
       if (processWasTerminated) {
-        await this.flowNodeInstanceService.persistOnTerminate(parallelGateway, this.flowNodeInstanceId, token);
+        await this.flowNodeInstanceService.persistOnTerminate(this.parallelGateway, this.flowNodeInstanceId, token);
 
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
@@ -126,21 +130,18 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     }
 
     // This is a Join-Gateway. Just persist a state change and move on.
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(parallelGateway);
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.parallelGateway);
 
-    await this.persistOnExit(parallelGateway, token);
+    await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
-  private _findJoinGateway(
-    splitGateway: Model.Gateways.ParallelGateway,
-    token: Runtime.Types.ProcessToken,
-    processModelFacade: IProcessModelFacade,
-  ): Model.Gateways.ParallelGateway {
+  private async _findJoinGateway(token: Runtime.Types.ProcessToken,
+                                 processModelFacade: IProcessModelFacade): Promise<Model.Gateways.ParallelGateway> {
 
     // First find the ParallelGateway that joins the branch back to the original branch.
-    const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(splitGateway);
+    const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(this.parallelGateway);
 
     const joinGatewayTypeIsNotSupported: boolean =
       joinGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
@@ -151,7 +152,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         `ParallelGateway ${joinGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
       const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
 
-      this.persistOnError(splitGateway, token, unsupportedError);
+      await this.persistOnError(token, unsupportedError);
 
       throw unsupportedError;
     }
@@ -181,7 +182,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                                     processTokenForBranch,
                                                     processModelFacade,
                                                     identity,
-                                                    processStateInfo);
+                                                    processStateInfo,
+                                                    undefined);
     });
   }
 
@@ -191,12 +193,15 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                             processTokenFacade: IProcessTokenFacade,
                                             processModelFacade: IProcessModelFacade,
                                             identity: IIdentity,
-                                            processStateInfo: IProcessStateInfo): Promise<NextFlowNodeInfo> {
+                                            processStateInfo: IProcessStateInfo,
+                                            previousFlowNodeInstanceId: string): Promise<NextFlowNodeInfo> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
+    const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
+
     const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
+      await flowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
     const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
@@ -215,7 +220,8 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                               nextFlowNodeInfo.processTokenFacade,
                                               processModelFacade,
                                               identity,
-                                              processStateInfo);
+                                              processStateInfo,
+                                              currentFlowNodeInstanceId);
     }
 
     return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);

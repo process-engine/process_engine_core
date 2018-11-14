@@ -28,8 +28,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   }
 
   public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
-                                                             processModelFacade: IProcessModelFacade): Promise<IFlowNodeHandler<TFlowNode>> {
-    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode.bpmnType);
+                                                             processModelFacade: IProcessModelFacade,
+                                                            ): Promise<IFlowNodeHandler<TFlowNode>> {
+
+    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode);
 
     const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
@@ -40,49 +42,53 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     // the original FlowNodeHandler created above will now be decorated by one handler for each BoundaryEvent that is attached to the FlowNode
     // as a result, the `execute`-method will be called on the topmost decorated BoundaryEventHandler
     // the BoundaryEventHandler will then pass the `execute`-call down to the next BoundaryEventHandler until the original FlowNodeHandler is called
-    return this._decorateWithBoundaryEventHandlers(boundaryEvents, flowNodeHandler);
+    return this._decorateWithBoundaryEventHandlers<TFlowNode>(boundaryEvents, flowNodeHandler);
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
-  private async _create<TFlowNode extends Model.Base.FlowNode>(type: BpmnType): Promise<IFlowNodeHandler<TFlowNode>> {
-    switch (type) {
+  private async _create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode): Promise<IFlowNodeHandler<TFlowNode>> {
+    switch (flowNode.bpmnType) {
       case BpmnType.startEvent:
-        return this._createHandler<TFlowNode>('StartEventHandler');
+        return this._createHandler<TFlowNode>('StartEventHandler', flowNode);
       case BpmnType.callActivity:
-        return this._createHandler<TFlowNode>('CallActivityHandler');
+        return this._createHandler<TFlowNode>('CallActivityHandler', flowNode);
       case BpmnType.exclusiveGateway:
-        return this._createHandler<TFlowNode>('ExclusiveGatewayHandler');
+        return this._createHandler<TFlowNode>('ExclusiveGatewayHandler', flowNode);
       case BpmnType.parallelGateway:
-        return this._createHandler<TFlowNode>('ParallelGatewayHandler');
+        return this._createHandler<TFlowNode>('ParallelGatewayHandler', flowNode);
       case BpmnType.serviceTask:
-        return this._createHandler<TFlowNode>('ServiceTaskHandler');
+        return this._createHandler<TFlowNode>('ServiceTaskHandler', flowNode);
       case BpmnType.scriptTask:
-        return this._createHandler<TFlowNode>('ScriptTaskHandler');
+        return this._createHandler<TFlowNode>('ScriptTaskHandler', flowNode);
       case BpmnType.intermediateCatchEvent:
-        return this._createHandler<TFlowNode>('IntermediateCatchEventHandler');
+        return this._createHandler<TFlowNode>('IntermediateCatchEventHandler', flowNode);
       case BpmnType.intermediateThrowEvent:
-        return this._createHandler<TFlowNode>('IntermediateThrowEventHandler');
+        return this._createHandler<TFlowNode>('IntermediateThrowEventHandler', flowNode);
       case BpmnType.endEvent:
-        return this._createHandler<TFlowNode>('EndEventHandler');
+        return this._createHandler<TFlowNode>('EndEventHandler', flowNode);
       case BpmnType.subProcess:
-        return this._createHandler<TFlowNode>('SubProcessHandler');
+        return this._createHandler<TFlowNode>('SubProcessHandler', flowNode);
       case BpmnType.userTask:
-        return this._createHandler<TFlowNode>('UserTaskHandler');
+        return this._createHandler<TFlowNode>('UserTaskHandler', flowNode);
       case BpmnType.sendTask:
-        return this._createHandler<TFlowNode>('SendTaskHandler');
+        return this._createHandler<TFlowNode>('SendTaskHandler', flowNode);
       case BpmnType.receiveTask:
-        return this._createHandler<TFlowNode>('ReceiveTaskHandler');
+        return this._createHandler<TFlowNode>('ReceiveTaskHandler', flowNode);
       default:
-        throw Error(`FlowNodeHandler for BPMN type "${type}" could not be found.`);
+        throw Error(`FlowNodeHandler for BPMN type "${flowNode.bpmnType}" could not be found.`);
     }
   }
 
-  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(registrationKey: string): Promise<IFlowNodeHandler<TFlowNode>> {
-    return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey);
+  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(
+    registrationKey: string,
+    flowNode: TFlowNode,
+  ): Promise<IFlowNodeHandler<TFlowNode>> {
+
+    return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey, [flowNode]);
   }
 
   private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(boundaryEvents: Array<Model.Events.BoundaryEvent>,
-                                                                                          handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>)
+                                                                                          handlerToDecorate: IFlowNodeHandler<TFlowNode>)
                                                                                           : Promise<IFlowNodeHandler<TFlowNode>> {
 
     // first the boundary events are ordered by type
@@ -90,34 +96,35 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     // from the actual FlowNode it is attached to
     this._orderBoundaryEventsByPriority(boundaryEvents);
 
-    let currentHandler: IFlowNodeHandler<Model.Base.FlowNode> = handlerToDecorate;
+    let currentHandler: IFlowNodeHandler<TFlowNode> = handlerToDecorate;
 
     for (const boundaryEvent of boundaryEvents) {
-      currentHandler = await this._createBoundaryEventHandler(boundaryEvent, currentHandler);
+      currentHandler = await this._createBoundaryEventHandler<TFlowNode>(boundaryEvent, currentHandler);
     }
 
     return currentHandler;
   }
 
-  private async _createBoundaryEventHandler(boundaryEventNode: Model.Events.BoundaryEvent,
-                                            handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>)
-                                            : Promise<IFlowNodeHandler<Model.Base.FlowNode>> {
+  private async _createBoundaryEventHandler<TFlowNode extends Model.Base.FlowNode>(
+    boundaryEventNode: Model.Events.BoundaryEvent,
+    handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>,
+  ): Promise<IFlowNodeHandler<TFlowNode>> {
 
-    // the handler that shall be decorated is passed through using the IoC container
-    // this causes the handler to be injected after the declared dependencies of the individual handler that gets instantiated in this method
-    const argumentsToPassThrough: Array<any> = handlerToDecorate ? [handlerToDecorate] : [];
+    // The handler that shall be decorated is passed through using the IoC container
+    // This causes the handler to be injected after the declared dependencies of the individual handler that gets instantiated in this method
+    const argumentsToPassThrough: Array<any> = [handlerToDecorate, boundaryEventNode];
 
     const eventDefinitionType: BoundaryEventDefinitionType = this._getEventDefinitionType(boundaryEventNode);
 
     switch (eventDefinitionType) {
       case BoundaryEventDefinitionType.Error:
-        return this.container.resolveAsync<IFlowNodeHandler<Model.Base.FlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventDefinitionType.Timer:
-        return this.container.resolveAsync<IFlowNodeHandler<Model.Base.FlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventDefinitionType.Message:
-        return this.container.resolveAsync<IFlowNodeHandler<Model.Base.FlowNode>>('MessageBoundaryEventHandler', argumentsToPassThrough);
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('MessageBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventDefinitionType.Signal:
-        return this.container.resolveAsync<IFlowNodeHandler<Model.Base.FlowNode>>('SignalBoundaryEventHandler', argumentsToPassThrough);
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SignalBoundaryEventHandler', argumentsToPassThrough);
       default:
         throw Error(`Es konnte kein BoundaryEventHandler für den EventDefinitionType ${eventDefinitionType} gefunden werden.`);
     }

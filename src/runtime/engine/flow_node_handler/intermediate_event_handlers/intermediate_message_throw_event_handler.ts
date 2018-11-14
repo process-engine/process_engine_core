@@ -23,24 +23,28 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingService, metricsService);
+              metricsService: IMetricsApi,
+              messageThrowEventModel: Model.Events.IntermediateThrowEvent) {
+    super(flowNodeInstanceService, loggingService, metricsService, messageThrowEventModel);
     this._eventAggregator = eventAggregator;
+  }
+
+  private get messageThrowEvent(): Model.Events.IntermediateThrowEvent {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  protected async executeInternally(messageThrowEvent: Model.Events.IntermediateThrowEvent,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(messageThrowEvent, token);
+    await this.persistOnEnter(token);
 
-    const messageName: string = messageThrowEvent.messageEventDefinition.name;
+    const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
     const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
@@ -49,14 +53,14 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                token.correlationId,
                                                                                token.processModelId,
                                                                                token.processInstanceId,
-                                                                               messageThrowEvent.id,
+                                                                               this.messageThrowEvent.id,
                                                                                token.payload);
 
     this.eventAggregator.publish(messageEventName, message);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageThrowEvent);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageThrowEvent);
 
-    await this.persistOnExit(messageThrowEvent, token);
+    await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }

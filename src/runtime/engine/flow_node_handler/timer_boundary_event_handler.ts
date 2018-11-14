@@ -16,7 +16,7 @@ import {
 
 import {FlowNodeHandler} from './index';
 
-export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Base.FlowNode> {
+export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
   private _timerFacade: ITimerFacade;
@@ -25,10 +25,15 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
             loggingApiService: ILoggingApi,
             metricsService: IMetricsApi,
             timerFacade: ITimerFacade,
-            decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+            decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+            timerBoundaryEventModel: Model.Events.BoundaryEvent) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, timerBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
     this._timerFacade = timerFacade;
+  }
+
+  private get timerBoundaryEvent(): Model.Events.BoundaryEvent {
+    return super.flowNode;
   }
 
   private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
@@ -39,8 +44,7 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
     return this._timerFacade;
   }
 
-  protected async executeInternally(timerBoundaryEvent: Model.Base.FlowNode,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
@@ -49,10 +53,8 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
 
       let timerSubscription: ISubscription;
 
-      const boundaryEvent: Model.Events.BoundaryEvent = this._getTimerBoundaryEvent(timerBoundaryEvent, processModelFacade);
-
-      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(boundaryEvent.timerEventDefinition);
-      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(boundaryEvent.timerEventDefinition);
+      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(this.timerBoundaryEvent.timerEventDefinition);
+      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
 
       try {
 
@@ -69,16 +71,15 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
 
           const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-          await processTokenFacade.addResultForFlowNode(boundaryEvent.id, oldTokenFormat.current);
+          await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, oldTokenFormat.current);
 
-          const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(boundaryEvent);
+          const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
           resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
         };
 
-        timerSubscription = await this.timerFacade.initializeTimer(boundaryEvent, timerType, timerValue, timerElapsed);
+        timerSubscription = await this.timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(timerBoundaryEvent,
-                                                                                       token,
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(token,
                                                                                        processTokenFacade,
                                                                                        processModelFacade,
                                                                                        identity);
@@ -99,16 +100,5 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
         }
       }
     });
-  }
-
-  private _getTimerBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFacade: IProcessModelFacade): Model.Events.BoundaryEvent {
-
-    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
-
-    const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
-      return currentBoundaryEvent.timerEventDefinition !== undefined;
-    });
-
-    return boundaryEvent;
   }
 }

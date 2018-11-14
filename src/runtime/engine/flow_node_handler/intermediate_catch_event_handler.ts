@@ -19,8 +19,12 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
   private _container: IContainer = undefined;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, loggingApiService: ILoggingApi, metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+  constructor(container: IContainer,
+              flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
+              metricsService: IMetricsApi,
+              intermediateCatchEventModel: Model.Events.IntermediateThrowEvent) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, intermediateCatchEventModel);
     this._container = container;
   }
 
@@ -28,33 +32,29 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
     return this._container;
   }
 
-  protected async executeInternally(flowNode: Model.Events.IntermediateCatchEvent,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    if (flowNode.messageEventDefinition) {
+    if (this.flowNode.messageEventDefinition) {
       return this._executeIntermediateCatchEventByType('IntermediateMessageCatchEventHandler',
-                                                       flowNode,
                                                        token,
                                                        processTokenFacade,
                                                        processModelFacade,
                                                        identity);
     }
 
-    if (flowNode.signalEventDefinition) {
+    if (this.flowNode.signalEventDefinition) {
       return this._executeIntermediateCatchEventByType('IntermediateSignalCatchEventHandler',
-                                                       flowNode,
                                                        token,
                                                        processTokenFacade,
                                                        processModelFacade,
                                                        identity);
     }
 
-    if (flowNode.timerEventDefinition) {
+    if (this.flowNode.timerEventDefinition) {
       return this._executeIntermediateCatchEventByType('IntermediateTimerCatchEventHandler',
-                                                       flowNode,
                                                        token,
                                                        processTokenFacade,
                                                        processModelFacade,
@@ -66,33 +66,31 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
     // Note that FlowNodeInstance persistence is usually delegated to the dedicated event handlers
     // ('IntermediateMessageCatchEventHandler', etc). Since this use case addresses events that are not yet supported,
     // this method must handle state persistence by itself.
-    return this._persistAndContinue(flowNode, token, processTokenFacade, processModelFacade, identity);
+    return this._persistAndContinue(token, processTokenFacade, processModelFacade, identity);
   }
 
   private async _executeIntermediateCatchEventByType(eventHandlerName: string,
-                                                     flowNode: Model.Events.IntermediateCatchEvent,
                                                      token: Runtime.Types.ProcessToken,
                                                      processTokenFacade: IProcessTokenFacade,
                                                      processModelFacade: IProcessModelFacade,
                                                      identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const eventHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent> =
-      await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>(eventHandlerName);
+      await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>(eventHandlerName, [this.flowNode]);
 
-    return eventHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
+    return eventHandler.execute(token, processTokenFacade, processModelFacade, identity);
   }
 
-  private async _persistAndContinue(flowNode: Model.Events.IntermediateCatchEvent,
-                                    token: Runtime.Types.ProcessToken,
+  private async _persistAndContinue(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(flowNode, token);
+    await this.persistOnEnter(token);
 
-    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.flowNode);
 
-    await this.persistOnExit(flowNode, token);
+    await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }

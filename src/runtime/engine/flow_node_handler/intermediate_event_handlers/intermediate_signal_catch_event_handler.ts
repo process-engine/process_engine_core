@@ -23,44 +23,48 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingService, metricsService);
+              metricsService: IMetricsApi,
+              signalCatchEventModel: Model.Events.IntermediateCatchEvent) {
+    super(flowNodeInstanceService, loggingService, metricsService, signalCatchEventModel);
     this._eventAggregator = eventAggregator;
+  }
+
+  private get signalCatchEvent(): Model.Events.IntermediateCatchEvent {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  protected async executeInternally(flowNode: Model.Events.IntermediateCatchEvent,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(flowNode, token);
-    await this.persistOnSuspend(flowNode, token);
+    await this.persistOnEnter(token);
+    await this.persistOnSuspend(token);
 
-    const receivedSignal: SignalEventReachedMessage = await this._waitForSignal(flowNode.signalEventDefinition.name);
+    const receivedSignal: SignalEventReachedMessage = await this._waitForSignal();
 
-    processTokenFacade.addResultForFlowNode(flowNode.id, receivedSignal.currentToken);
+    processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, receivedSignal.currentToken);
     token.payload = receivedSignal.currentToken;
 
-    await this.persistOnResume(flowNode, token);
+    await this.persistOnResume(token);
 
-    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(flowNode);
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalCatchEvent);
 
-    await this.persistOnExit(flowNode, token);
+    await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _waitForSignal(signalToWaitFor: string): Promise<SignalEventReachedMessage> {
+  private async _waitForSignal(): Promise<SignalEventReachedMessage> {
 
     return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-        .replace(eventAggregatorSettings.routeParams.signalReference, signalToWaitFor);
+        .replace(eventAggregatorSettings.routeParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
 
       const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
 
