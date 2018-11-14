@@ -21,7 +21,6 @@ export class DeleteProcessModelService implements IDeleteProcessModelService {
   }
 
   public async deleteProcessModel(processModelId: string): Promise<void> {
-    console.log('DELETE');
     await this._processModelService.deleteProcessDefinitionById(processModelId);
     await this._correlationService.deleteCorrelationByProcessModelId(processModelId);
     await this._flowNodeInstanceService.deleteByProcessModelId(processModelId);
