@@ -54,10 +54,9 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
 
           await this.persistOnResume(manualTask, token);
 
-          const manualTaskResult: null = null;
-
-          processTokenFacade.addResultForFlowNode(manualTask.id, manualTaskResult);
-          token.payload = manualTaskResult;
+          // an empty object is used here because manual tasks do not yield any results
+          processTokenFacade.addResultForFlowNode(manualTask.id, {});
+          token.payload = {};
 
           const nextNodeAfterManualTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(manualTask);
 
