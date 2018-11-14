@@ -5,9 +5,12 @@ import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
+  FinishManualTaskMessage,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ManualTaskFinishedMessage,
+  ManualTaskReachedMessage,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -51,10 +54,10 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
 
           await this.persistOnResume(manualTask, token);
 
-          // const manualTaskResult: null = null;
+          const manualTaskResult: null = null;
 
-          // processTokenFacade.addResultForFlowNode(manualTask.id, manualTaskResult);
-          token.payload = null;
+          processTokenFacade.addResultForFlowNode(manualTask.id, manualTaskResult);
+          token.payload = manualTaskResult;
 
           const nextNodeAfterManualTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(manualTask);
 
