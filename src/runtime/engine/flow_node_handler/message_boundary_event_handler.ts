@@ -61,7 +61,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
         this._subscribeToMessageEvent(resolve, token, processTokenFacade, processModelFacade);
 
         const nextFlowNodeInfo: NextFlowNodeInfo
-          = await this.decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity);
+          = await this.decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
         if (this.messageReceived) {
           return;

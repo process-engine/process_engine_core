@@ -82,7 +82,8 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
         const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(token,
                                                                                        processTokenFacade,
                                                                                        processModelFacade,
-                                                                                       identity);
+                                                                                       identity,
+                                                                                       this.previousFlowNodeInstanceId);
 
         if (timerHasElapsed) {
           return;

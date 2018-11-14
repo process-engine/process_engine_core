@@ -70,7 +70,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     const eventHandler: FlowNodeHandler<Model.Events.IntermediateThrowEvent> =
       await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName, [this.flowNode]);
 
-    return eventHandler.execute(token, processTokenFacade, processModelFacade, identity);
+    return eventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 
   private async _persistAndContinue(token: Runtime.Types.ProcessToken,

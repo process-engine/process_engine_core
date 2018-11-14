@@ -40,7 +40,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
     try {
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity);
+        = await this.decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
       return nextFlowNodeInfo;
 
