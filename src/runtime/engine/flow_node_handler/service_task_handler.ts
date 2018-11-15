@@ -190,7 +190,13 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
         ._externalTaskRepository
-        .create(serviceTask.topic, token.correlationId, token.processInstanceId, this.flowNodeInstanceId, token.identity, payload);
+        .create(serviceTask.topic,
+                token.correlationId,
+                token.processModelId,
+                token.processInstanceId,
+                this.flowNodeInstanceId,
+                token.identity,
+                payload);
 
       await this.persistOnSuspend(serviceTask, token);
 

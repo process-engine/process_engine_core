@@ -103,6 +103,10 @@ export class CorrelationService implements ICorrelationService {
     return correlation;
   }
 
+  public async deleteCorrelationByProcessModelId(processModelId: string): Promise<void> {
+    this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
+  }
+
   /**
    * Takes a list of CorrelationFromRepository objects and groups the
    * ProcessModelHashes associated with them by their respecitve CorrelationId.

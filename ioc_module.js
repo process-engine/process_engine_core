@@ -28,6 +28,8 @@ const CorrelationService = require('./dist/commonjs/index').CorrelationService;
 const FlowNodeInstanceService = require('./dist/commonjs/index').FlowNodeInstanceService;
 const ProcessModelService = require('./dist/commonjs/index').ProcessModelService;
 
+const DeleteProcessModelService = require('./dist/commonjs/index').DeleteProcessModelService;
+
 const ExecuteProcessService = require('./dist/commonjs/index').ExecuteProcessService;
 
 const FlowNodeHandlerFactory = require('./dist/commonjs/index').FlowNodeHandlerFactory;
@@ -51,6 +53,9 @@ function registerInContainer(container) {
 
   container.register('CorrelationService', CorrelationService)
     .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'ProcessDefinitionRepository');
+
+  container.register('DeleteProcessModelService', DeleteProcessModelService)
+  .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
     .dependencies('FlowNodeInstanceRepository', 'IamService');
