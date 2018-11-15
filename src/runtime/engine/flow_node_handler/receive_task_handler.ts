@@ -1,6 +1,6 @@
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
@@ -41,7 +41,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
 
     const noMessageDefinitionProvided: boolean = receiveTaskActivity.messageEventDefinition === undefined;
     if (noMessageDefinitionProvided) {
-      throw new Error('SendTask has no MessageDefinition!');
+      throw new UnprocessableEntityError('SendTask has no MessageDefinition!');
     }
 
     const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);

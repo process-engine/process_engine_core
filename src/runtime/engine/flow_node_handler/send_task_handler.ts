@@ -1,3 +1,4 @@
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -40,7 +41,7 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
     const noMessageDefinitionProvided: boolean = sendTaskActivity.messageEventDefinition === undefined;
     if (noMessageDefinitionProvided) {
-      throw new Error('SendTask has no MessageDefinition!');
+      throw new UnprocessableEntityError('SendTask has no MessageDefinition!');
     }
 
     await this._registerEventHandlerAndSendMessage(sendTaskActivity.messageEventDefinition.name, sendTaskActivity.id, token);
@@ -52,8 +53,8 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
   }
 
   private _sendMessage(messageName: string,
-                             sendTaskFlowNodeId: string,
-                             token: Runtime.Types.ProcessToken): void {
+                       sendTaskFlowNodeId: string,
+                       token: Runtime.Types.ProcessToken): void {
 
     const messageEventName: string =
       eventAggregatorSettings
@@ -72,14 +73,16 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     this._eventAggregator.publish(messageEventName, messageToSend);
   }
 
-  private async _registerEventHandlerAndSendMessage(messageName: string, sendTaskFlowNodeId: string, token: Runtime.Types.ProcessToken): Promise<void> {
+  private async _registerEventHandlerAndSendMessage(messageName: string,
+                                                    sendTaskFlowNodeId: string,
+                                                    token: Runtime.Types.ProcessToken): Promise<void> {
     const doneSendingPromise: Promise<void> = new Promise((resolve: Function, reject: Function): void => {
       const messageEventName: string = eventAggregatorSettings
       .routePaths
       .receiveTaskReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-     const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+      const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
         if (subscription) {
           subscription.dispose();
         }
