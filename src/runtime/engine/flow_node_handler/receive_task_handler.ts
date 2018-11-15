@@ -54,26 +54,6 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _sendReplyToSender(messageName: string,
-                                   sendTaskFlowNodeId: string,
-                                   token: Runtime.Types.ProcessToken): Promise<void> {
-
-    const messageEventName: string =
-      eventAggregatorSettings
-        .routePaths
-        .receiveTaskReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
-
-    const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
-      messageName,
-      token.correlationId,
-      token.processModelId,
-      token.processInstanceId,
-      sendTaskFlowNodeId,
-      token.payload);
-    this._eventAggregator.publish(messageEventName, messageToSend);
-  }
-
   private async _waitForMessage(messageToWaitFor: string): Promise<MessageEventReachedMessage> {
     const messageReceivedPromise: Promise<MessageEventReachedMessage> = new Promise<MessageEventReachedMessage>((resolve: Function): void => {
       const messageEventName: string = eventAggregatorSettings
@@ -91,5 +71,26 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     });
 
     return messageReceivedPromise;
+  }
+
+  private async _sendReplyToSender(messageName: string,
+                                   sendTaskFlowNodeId: string,
+                                   token: Runtime.Types.ProcessToken): Promise<void> {
+
+    const messageEventName: string =
+      eventAggregatorSettings
+        .routePaths
+        .receiveTaskReached
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+
+    const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
+      messageName,
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      sendTaskFlowNodeId,
+      token.payload);
+
+    this._eventAggregator.publish(messageEventName, messageToSend);
   }
 }

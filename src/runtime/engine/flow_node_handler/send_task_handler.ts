@@ -52,35 +52,14 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private _sendMessage(messageName: string,
-                       sendTaskFlowNodeId: string,
-                       token: Runtime.Types.ProcessToken): void {
-
-    const messageEventName: string =
-      eventAggregatorSettings
-      .routePaths
-      .sendTaskReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
-
-    const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
-                                                                    messageName,
-                                                                    token.correlationId,
-                                                                    token.processModelId,
-                                                                    token.processInstanceId,
-                                                                    sendTaskFlowNodeId,
-                                                                    token);
-
-    this._eventAggregator.publish(messageEventName, messageToSend);
-  }
-
   private async _registerEventHandlerAndSendMessage(messageName: string,
                                                     sendTaskFlowNodeId: string,
                                                     token: Runtime.Types.ProcessToken): Promise<void> {
     const doneSendingPromise: Promise<void> = new Promise((resolve: Function, reject: Function): void => {
       const messageEventName: string = eventAggregatorSettings
-      .routePaths
-      .receiveTaskReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+        .routePaths
+        .receiveTaskReached
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
         if (subscription) {
@@ -94,5 +73,26 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     });
 
     return doneSendingPromise;
+  }
+
+  private _sendMessage(messageName: string,
+                       sendTaskFlowNodeId: string,
+                       token: Runtime.Types.ProcessToken): void {
+
+    const messageEventName: string =
+      eventAggregatorSettings
+        .routePaths
+        .sendTaskReached
+        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+
+    const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
+                                                                    messageName,
+                                                                    token.correlationId,
+                                                                    token.processModelId,
+                                                                    token.processInstanceId,
+                                                                    sendTaskFlowNodeId,
+                                                                    token);
+
+    this._eventAggregator.publish(messageEventName, messageToSend);
   }
 }
