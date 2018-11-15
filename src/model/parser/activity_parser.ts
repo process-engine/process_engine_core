@@ -11,7 +11,7 @@ import {parseProcessFlowNodes} from './flow_node_parser';
 import {parseProcessLaneSet} from './process_lane_set_parser';
 import {parseProcessSequenceFlows} from './sequence_flow_parser';
 
-import {BadRequestError} from '@essential-projects/errors_ts';
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 
 import * as moment from 'moment';
 
@@ -80,7 +80,7 @@ function parseSendTasks(processData: any, eventDefinitions: Array<Model.EventDef
 
     const messageRefNotDefined: boolean = currentRawSendTask.messageRef === undefined;
     if (messageRefNotDefined) {
-      throw new BadRequestError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
+      throw new UnprocessableEntityError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
     }
 
     const sendTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
@@ -111,7 +111,7 @@ function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.Event
 
     const messageRefNotDefined: boolean = currentRawReceiveTask.messageRef === undefined;
     if (messageRefNotDefined) {
-      throw new BadRequestError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
+      throw new UnprocessableEntityError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
     }
 
     const receiveTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
