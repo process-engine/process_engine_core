@@ -1,3 +1,5 @@
+/*tslint:disable:max-file-line-count*/
+
 import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
 
 import {
@@ -8,6 +10,8 @@ import {
 import {parseProcessFlowNodes} from './flow_node_parser';
 import {parseProcessLaneSet} from './process_lane_set_parser';
 import {parseProcessSequenceFlows} from './sequence_flow_parser';
+
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 
 import * as moment from 'moment';
 
@@ -23,6 +27,8 @@ export function parseActivitiesFromProcessData(
   const serviceTasks: Array<Model.Activities.ServiceTask> = parseServiceTasks(processData);
   const callActivities: Array<Model.Activities.CallActivity> = parseCallActivities(processData);
   const subProcesses: Array<Model.Activities.SubProcess> = parseSubProcesses(processData, errors, eventDefinitions);
+  const sendTasks: Array<Model.Activities.SendTask> = parseSendTasks(processData, eventDefinitions);
+  const receiveTasks: Array<Model.Activities.ReceiveTask> = parseReceiveTasks(processData, eventDefinitions);
 
   return Array
     .prototype
@@ -33,6 +39,8 @@ export function parseActivitiesFromProcessData(
       serviceTasks,
       callActivities,
       subProcesses,
+      sendTasks,
+      receiveTasks,
     );
 }
 
@@ -52,6 +60,68 @@ function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> 
   }
 
   return manualTasks;
+}
+
+function parseSendTasks(processData: any, eventDefinitions: Array<Model.EventDefinitions.EventDefinition>): Array<Model.Activities.SendTask> {
+  const sendTasks: Array<Model.Activities.SendTask> = [];
+
+  const sendTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
+
+  const noSendTasksFound: boolean = sendTasksRaw === undefined
+                                  || sendTasksRaw === null
+                                  || sendTasksRaw.length === 0;
+
+  if (noSendTasksFound) {
+    return sendTasks;
+  }
+
+  for (const currentRawSendTask of sendTasksRaw) {
+    const sendTask: Model.Activities.SendTask = createActivityInstance(currentRawSendTask, Model.Activities.SendTask);
+
+    const messageRefNotDefined: boolean = currentRawSendTask.messageRef === undefined;
+    if (messageRefNotDefined) {
+      throw new UnprocessableEntityError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
+    }
+
+    const sendTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
+      getDefinitionForEvent(currentRawSendTask.messageRef, eventDefinitions);
+
+    sendTask.messageEventDefinition = sendTaskMessageDefinition;
+    sendTasks.push(sendTask);
+  }
+
+  return sendTasks;
+}
+
+function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.EventDefinitions.EventDefinition>): Array<Model.Activities.ReceiveTask> {
+  const receiveTasks: Array<Model.Activities.ReceiveTask> = [];
+
+  const receiveTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ReceiveTask);
+
+  const noReceiveTasksFound: boolean = receiveTasksRaw === undefined
+                                        || receiveTasksRaw === null
+                                        || receiveTasksRaw.length === 0;
+
+  if (noReceiveTasksFound) {
+    return receiveTasks;
+  }
+
+  for (const currentRawReceiveTask of receiveTasksRaw) {
+    const receiveTask: Model.Activities.ReceiveTask = createActivityInstance(currentRawReceiveTask, Model.Activities.ReceiveTask);
+
+    const messageRefNotDefined: boolean = currentRawReceiveTask.messageRef === undefined;
+    if (messageRefNotDefined) {
+      throw new UnprocessableEntityError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
+    }
+
+    const receiveTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
+      getDefinitionForEvent(currentRawReceiveTask.messageRef, eventDefinitions);
+
+    receiveTask.messageEventDefinition = receiveTaskMessageDefinition;
+    receiveTasks.push(receiveTask);
+  }
+
+  return receiveTasks;
 }
 
 function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
@@ -418,4 +488,16 @@ function createActivityInstance<TActivity extends Model.Activities.Activity>(dat
   instance.name = data.name;
 
   return instance;
+}
+
+function getDefinitionForEvent<TEventDefinition extends Model.EventDefinitions.EventDefinition>(
+                                                  eventDefinitionId: string,
+                                                  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>): TEventDefinition {
+
+  const matchingEventDefintion: Model.EventDefinitions.EventDefinition =
+    eventDefinitions.find((entry: Model.EventDefinitions.EventDefinition): boolean => {
+      return entry.id === eventDefinitionId;
+    });
+
+  return <TEventDefinition> matchingEventDefintion;
 }
