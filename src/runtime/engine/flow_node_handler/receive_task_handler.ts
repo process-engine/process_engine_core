@@ -22,46 +22,52 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingService, metricsService);
+              metricsService: IMetricsApi,
+              receiveTaskModel: Model.Activities.ReceiveTask) {
+    super(flowNodeInstanceService, loggingService, metricsService, receiveTaskModel);
     this._eventAggregator = eventAggregator;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
+  private get receiveTask(): Model.Activities.ReceiveTask {
+    return super.flowNode;
   }
 
-  protected async executeInternally(receiveTaskActivity: Model.Activities.SendTask,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(receiveTaskActivity, token);
+    await this.persistOnEnter(token);
 
-    const noMessageDefinitionProvided: boolean = receiveTaskActivity.messageEventDefinition === undefined;
+    const noMessageDefinitionProvided: boolean = this.receiveTask.messageEventDefinition === undefined;
     if (noMessageDefinitionProvided) {
       throw new UnprocessableEntityError('SendTask has no MessageDefinition!');
     }
 
-    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage(receiveTaskActivity.messageEventDefinition.name);
-    await this._sendReplyToSender(receiveTaskActivity.messageEventDefinition.name, receiveTaskActivity.id, token);
+    await this.persistOnSuspend(token);
+    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage();
+    await this.persistOnResume(token);
 
-    processTokenFacade.addResultForFlowNode(receiveTaskActivity.id, receivedMessage.currentToken);
-    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(receiveTaskActivity);
-    await this.persistOnExit(receiveTaskActivity, receivedMessage.currentToken);
+    await this._sendReplyToSender(token);
+
+    processTokenFacade.addResultForFlowNode(this.receiveTask.id, receivedMessage.currentToken);
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.receiveTask);
+    await this.persistOnExit(receivedMessage.currentToken);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
-  private async _waitForMessage(messageToWaitFor: string): Promise<MessageEventReachedMessage> {
-    const messageReceivedPromise: Promise<MessageEventReachedMessage> = new Promise<MessageEventReachedMessage>((resolve: Function): void => {
+  private async _waitForMessage(): Promise<MessageEventReachedMessage> {
+
+    return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
+
       const messageEventName: string = eventAggregatorSettings
         .routePaths
         .sendTaskReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, messageToWaitFor);
+        .replace(eventAggregatorSettings.routeParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+
         if (subscription) {
           subscription.dispose();
         }
@@ -69,13 +75,11 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
         resolve(message);
       });
     });
-
-    return messageReceivedPromise;
   }
 
-  private async _sendReplyToSender(messageName: string,
-                                   sendTaskFlowNodeId: string,
-                                   token: Runtime.Types.ProcessToken): Promise<void> {
+  private async _sendReplyToSender(token: Runtime.Types.ProcessToken): Promise<void> {
+
+    const messageName: string = this.receiveTask.messageEventDefinition.name;
 
     const messageEventName: string =
       eventAggregatorSettings
@@ -88,7 +92,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
-      sendTaskFlowNodeId,
+      this.receiveTask.id,
       token.payload);
 
     this._eventAggregator.publish(messageEventName, messageToSend);
