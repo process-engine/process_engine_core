@@ -92,6 +92,10 @@ export class ProcessModelService implements IProcessModelService {
     return definitionRaw;
   }
 
+  public async deleteProcessDefinitionById(processModelId: string): Promise<void> {
+    this._processDefinitionRepository.deleteProcessDefinitionById(processModelId);
+  }
+
   /**
    * Takes the xml code of a given ProcessDefinition and tries to parse it.
    * If the parsing is successful, the xml is assumed to be valid.
