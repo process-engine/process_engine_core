@@ -15,6 +15,8 @@ const EndEventHandler = require('./dist/commonjs/index').EndEventHandler;
 const CallActivityHandler = require('./dist/commonjs/index').CallActivityHandler;
 const SubProcessHandler = require('./dist/commonjs/index').SubProcessHandler;
 const UserTaskHandler = require('./dist/commonjs/index').UserTaskHandler;
+const SendTaskHandler = require('./dist/commonjs/index').SendTaskHandler;
+const ReceiveTaskHandler = require('./dist/commonjs/index').ReceiveTaskHandler;
 
 const IntermediateCatchEventHandler = require('./dist/commonjs/index').IntermediateCatchEventHandler;
 const IntermediateThrowEventHandler = require('./dist/commonjs/index').IntermediateThrowEventHandler;
@@ -136,6 +138,13 @@ function registerInContainer(container) {
 
   container.register('UserTaskHandler', UserTaskHandler)
     .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container.register('SendTaskHandler', SendTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container.register('ReceiveTaskHandler', ReceiveTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
 }
 
 module.exports.registerInContainer = registerInContainer;
