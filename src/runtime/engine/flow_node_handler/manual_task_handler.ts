@@ -50,9 +50,8 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
 
       const finishManualTaskEvent: string = eventAggregatorSettings.routePaths.finishManualTask
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-        .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-        .replace(eventAggregatorSettings.routeParams.manualTaskId, this.manualTask.id);
-
+        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
+        .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
 
@@ -105,9 +104,8 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
     // FlowNode-specific notification
     const manualTaskFinishedEvent: string = eventAggregatorSettings.routePaths.manualTaskFinished
       .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-      .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-      .replace(eventAggregatorSettings.routeParams.manualTaskId, this.manualTask.id);
-
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
     this.eventAggregator.publish(manualTaskFinishedEvent, message);
 
     // Global notification
