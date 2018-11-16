@@ -25,44 +25,48 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+              metricsService: IMetricsApi,
+              manualTaskModel: Model.Activities.ManualTask) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, manualTaskModel);
     this._eventAggregator = eventAggregator;
+  }
+
+  private get manualTask(): Model.Activities.ManualTask {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  protected async executeInternally(manualTask: Model.Activities.ManualTask,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      await this.persistOnEnter(manualTask, token);
+      await this.persistOnEnter(token);
 
       const finishManualTaskEvent: string = eventAggregatorSettings.routePaths.finishManualTask
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
         .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-        .replace(eventAggregatorSettings.routeParams.manualTaskId, manualTask.id);
+        .replace(eventAggregatorSettings.routeParams.manualTaskId, this.manualTask.id);
 
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
 
-          await this.persistOnResume(manualTask, token);
+          await this.persistOnResume(token);
 
           // an empty object is used here because manual tasks do not yield any results
-          processTokenFacade.addResultForFlowNode(manualTask.id, {});
+          processTokenFacade.addResultForFlowNode(this.manualTask.id, {});
           token.payload = {};
 
-          const nextNodeAfterManualTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(manualTask);
+          const nextNodeAfterManualTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.manualTask);
 
-          await this.persistOnExit(manualTask, token);
+          await this.persistOnExit(token);
 
-          this._sendManualTaskFinishedToConsumerApi(manualTask.id, token);
+          this._sendManualTaskFinishedToConsumerApi(token);
 
           if (subscription) {
             subscription.dispose();
@@ -71,31 +75,30 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
           resolve(new NextFlowNodeInfo(nextNodeAfterManualTask, token, processTokenFacade));
         });
 
-      await this.persistOnSuspend(manualTask, token);
-      this._sendManualTaskWaitingToConsumerApi(manualTask.id, token);
+      await this.persistOnSuspend(token);
+      this._sendManualTaskWaitingToConsumerApi(token);
     });
 
   }
 
-  private _sendManualTaskWaitingToConsumerApi(manualTaskId: string, token: Runtime.Types.ProcessToken): void {
+  private _sendManualTaskWaitingToConsumerApi(token: Runtime.Types.ProcessToken): void {
 
     const message: ManualTaskReachedMessage = new ManualTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
                                                                        token.processInstanceId,
-                                                                       manualTaskId,
+                                                                       this.manualTask.id,
                                                                        this.flowNodeInstanceId,
                                                                        token.payload);
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
   }
 
-  private _sendManualTaskFinishedToConsumerApi(manualTaskId: string,
-                                               token: Runtime.Types.ProcessToken): void {
+  private _sendManualTaskFinishedToConsumerApi(token: Runtime.Types.ProcessToken): void {
 
     const message: ManualTaskFinishedMessage = new ManualTaskFinishedMessage(token.correlationId,
                                                                          token.processModelId,
                                                                          token.processInstanceId,
-                                                                         manualTaskId,
+                                                                         this.manualTask.id,
                                                                          this.flowNodeInstanceId,
                                                                          token.payload);
 
@@ -103,7 +106,7 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
     const manualTaskFinishedEvent: string = eventAggregatorSettings.routePaths.manualTaskFinished
       .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
       .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId)
-      .replace(eventAggregatorSettings.routeParams.manualTaskId, manualTaskId);
+      .replace(eventAggregatorSettings.routeParams.manualTaskId, this.manualTask.id);
 
     this.eventAggregator.publish(manualTaskFinishedEvent, message);
 
