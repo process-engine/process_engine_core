@@ -257,7 +257,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                 processInstanceConfig.processToken,
                                 processInstanceConfig.processTokenFacade,
                                 processInstanceConfig.processModelFacade,
-                                identity);
+                                identity,
+                                undefined);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
 
@@ -316,12 +317,15 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  identity: IIdentity,
+                                 previousFlowNodeInstanceId: string,
                                 ): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
+    const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
+
     const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(flowNode, processToken, processTokenFacade, processModelFacade, identity);
+      await flowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
     const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
 
@@ -340,7 +344,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,
-                                  identity);
+                                  identity,
+                                  currentFlowNodeInstanceId);
     }
   }
 

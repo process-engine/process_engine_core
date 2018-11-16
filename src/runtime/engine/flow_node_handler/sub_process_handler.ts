@@ -11,7 +11,6 @@ import {
   IProcessTokenFacade,
   Model,
   NextFlowNodeInfo,
-  ProcessEndedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -31,17 +30,19 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
-  private _processWasTerminated: boolean = false;
-  private _processTerminationMessage: TerminateEndEventReachedMessage;
-
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+              metricsService: IMetricsApi,
+              subProcessModel: Model.Activities.SubProcess) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, subProcessModel);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+  }
+
+  private get subProcess(): Model.Activities.SubProcess {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -52,13 +53,12 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     return this._flowNodeHandlerFactory;
   }
 
-  protected async executeInternally(subProcess: Model.Activities.SubProcess,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(subProcess, token);
+    await this.persistOnEnter(token);
 
     const processStateInfo: IProcessStateInfo = {};
 
@@ -81,7 +81,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // The SubProcess-specific Facade implements the same interface as the regular ProcessModelFacade so that we can pass it
     // through to handlers inside the SubProcess.
 
-    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(subProcess);
+    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
     const startEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
     const startEvent: Model.Events.StartEvent = startEvents[0];
 
@@ -94,7 +94,8 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                 subProcessTokenFacade,
                                 subProcessModelFacade,
                                 identity,
-                                processStateInfo);
+                                processStateInfo,
+                                undefined);
 
     const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
     if (processTerminationSubscriptionIsActive) {
@@ -105,14 +106,14 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     // and on the original ProcessTokenFacade, so that is is accessible by the original Process
     const finalTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(subProcess);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.subProcess);
 
     const finalResult: any = finalTokenData.current === undefined ? null : finalTokenData.current;
 
-    processTokenFacade.addResultForFlowNode(subProcess.id, finalResult);
+    processTokenFacade.addResultForFlowNode(this.subProcess.id, finalResult);
     token.payload = finalResult;
 
-    await this.persistOnExit(subProcess, token);
+    await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
@@ -122,12 +123,15 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                  processTokenFacade: IProcessTokenFacade,
                                  processModelFacade: IProcessModelFacade,
                                  identity: IIdentity,
-                                 processStateInfo: IProcessStateInfo): Promise<void> {
+                                 processStateInfo: IProcessStateInfo,
+                                 previousFlowNodeInstanceId: string): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
+    const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
+
     const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(flowNode, token, processTokenFacade, processModelFacade, identity);
+      await flowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
     const processWasTerminated: boolean = processStateInfo.processTerminatedMessage !== undefined;
 
@@ -136,13 +140,15 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
         throw new InternalServerError(`Process was terminated through TerminateEndEvent "${processStateInfo.processTerminatedMessage.flowNodeId}".`);
       }
 
-    if (nextFlowNodeInfo.flowNode !== undefined) {
+    const subProcessHasAnotherFlowNodeToExecute: boolean = nextFlowNodeInfo.flowNode !== undefined;
+    if (subProcessHasAnotherFlowNodeToExecute) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
                                   processModelFacade,
                                   identity,
-                                  processStateInfo);
+                                  processStateInfo,
+                                  currentFlowNodeInstanceId);
     }
   }
 
