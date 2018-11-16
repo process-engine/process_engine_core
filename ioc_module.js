@@ -34,6 +34,7 @@ const {
 const {
   CorrelationService,
   FlowNodeInstanceService,
+  DeleteProcessModelService,
   ProcessModelService,
 } = require('./dist/commonjs/index');
 
@@ -64,7 +65,7 @@ function registerInContainer(container) {
     .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'ProcessDefinitionRepository');
 
   container.register('DeleteProcessModelService', DeleteProcessModelService)
-  .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService');
+    .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService');
 
   container.register('FlowNodeInstanceService', FlowNodeInstanceService)
     .dependencies('FlowNodeInstanceRepository', 'IamService');
