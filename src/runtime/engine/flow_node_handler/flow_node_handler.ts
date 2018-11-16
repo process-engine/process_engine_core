@@ -17,16 +17,41 @@ import * as uuid from 'uuid';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-  protected flowNodeInstanceId: string;
+  protected _flowNodeInstanceId: string = undefined;
+  protected _flowNode: TFlowNode;
+  protected _previousFlowNodeInstanceId: string;
 
   private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _loggingApiService: ILoggingApi;
   private _metricsApiService: IMetricsApi;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService, loggingApiService: ILoggingApi, metricsApiService: IMetricsApi) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
+              metricsApiService: IMetricsApi,
+              flowNode: TFlowNode,
+            ) {
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
+    this._flowNode = flowNode;
+  }
+
+  protected get flowNodeInstanceId(): string {
+
+    const noInstanceIdExists: boolean = this._flowNodeInstanceId === undefined;
+    if (noInstanceIdExists) {
+      this._flowNodeInstanceId = this.createFlowNodeInstanceId();
+    }
+
+    return this._flowNodeInstanceId;
+  }
+
+  protected get flowNode(): TFlowNode {
+    return this._flowNode;
+  }
+
+  protected get previousFlowNodeInstanceId(): string {
+    return this._previousFlowNodeInstanceId;
   }
 
   protected get flowNodeInstanceService(): IFlowNodeInstanceService {
@@ -41,42 +66,43 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this._metricsApiService;
   }
 
-  public async execute(flowNode: TFlowNode,
-                       token: Runtime.Types.ProcessToken,
+  public async execute(token: Runtime.Types.ProcessToken,
                        processTokenFacade: IProcessTokenFacade,
                        processModelFacade: IProcessModelFacade,
-                       identity: IIdentity): Promise<NextFlowNodeInfo> {
+                       identity: IIdentity,
+                       previousFlowNodeInstanceId?: string,
+                      ): Promise<NextFlowNodeInfo> {
+
+    this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
 
     let nextFlowNode: NextFlowNodeInfo;
-    this.flowNodeInstanceId = this.createFlowNodeInstanceId();
 
     try {
-      nextFlowNode = await this.executeInternally(flowNode, token, processTokenFacade, processModelFacade, identity);
+      nextFlowNode = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
 
     } catch (error) {
       // TODO: (SM) this is only to support the old implementation
       //            I would like to set no token result or further specify it to be an error to avoid confusion
-      await processTokenFacade.addResultForFlowNode(flowNode.id, error);
+      await processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
 
       throw error;
     }
 
     if (!nextFlowNode) {
-      throw new Error(`Next flow node after node with id "${flowNode.id}" could not be found.`);
+      throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
 
-    await this.afterExecute(flowNode, nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
+    await this.afterExecute(nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }
 
-  /**
-   * Gets the instance ID of the FlowNode that this handler is responsible for.
-   *
-   * @returns The instance ID of the FlowNode.
-   */
   public getInstanceId(): string {
     return this.flowNodeInstanceId;
+  }
+
+  public getFlowNode(): TFlowNode {
+    return this.flowNode;
   }
 
   /**
@@ -85,19 +111,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Here, the actual execution of the FlowNodes takes place.
    *
    * @async
-   * @param flowNode               The FlowNode to execute.
-   * @param token                  The current ProcessToken.
-   * @param processTokenFacade     The ProcessTokenFacade of the curently
-   *                               running process.
-   * @param processModelFacade     The ProcessModelFacade of the curently
-   *                               running process.
-   * @param executionContextFacade Contains the requesting users identity.
+   * @param token                      The current ProcessToken.
+   * @param processTokenFacade         The ProcessTokenFacade of the curently
+   *                                   running process.
+   * @param processModelFacade         The ProcessModelFacade of the curently
+   *                                   running process.
+   * @param identity                   The requesting users identity.
    */
-  protected async abstract executeInternally(flowNode: TFlowNode,
-                                             token: Runtime.Types.ProcessToken,
+  protected async abstract executeInternally(token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
-                                             identity: IIdentity): Promise<NextFlowNodeInfo>;
+                                             identity: IIdentity,
+                                            ): Promise<NextFlowNodeInfo>;
 
   /**
    * Creates an instance ID for the FlowNode that this handler is responsible for.
@@ -112,19 +137,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Persists the current state of the FlowNodeInstance, after it successfully started execution.
    *
    * @async
-   * @param flowNodeInstance The FlowNodeInstance to persist.
-   * @param processToken     The current ProcessToken of the FlowNodeInstance.
+   * @param processToken               The current ProcessToken of the FlowNodeInstance.
    */
-  protected async persistOnEnter(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
+  protected async persistOnEnter(processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnEnter(flowNodeInstance, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
 
     const now: moment.Moment = moment.utc();
 
     this.metricsApiService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
                                                      processToken.processModelId,
                                                      this.flowNodeInstanceId,
-                                                     flowNodeInstance.id,
+                                                     this.flowNode.id,
                                                      processToken,
                                                      now);
 
@@ -132,7 +156,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                processToken.processModelId,
                                                processToken.processInstanceId,
                                                this.flowNodeInstanceId,
-                                               flowNodeInstance.id,
+                                               this.flowNode.id,
                                                LogLevel.info,
                                                'Flow Node execution started.');
   }
@@ -141,19 +165,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Persists the current state of the FlowNodeInstance, after it successfully finished execution.
    *
    * @async
-   * @param flowNodeInstance The FlowNodeInstance to persist.
    * @param processToken     The current ProcessToken of the FlowNodeInstance.
    */
-  protected async persistOnExit(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
+  protected async persistOnExit(processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnExit(flowNodeInstance, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
     this.metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
                                                     processToken.processModelId,
                                                     this.flowNodeInstanceId,
-                                                    flowNodeInstance.id,
+                                                    this.flowNode.id,
                                                     processToken,
                                                     now);
 
@@ -161,7 +184,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                processToken.processModelId,
                                                processToken.processInstanceId,
                                                this.flowNodeInstanceId,
-                                               flowNodeInstance.id,
+                                               this.flowNode.id,
                                                LogLevel.info,
                                                'Flow Node execution finished.');
   }
@@ -170,19 +193,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Persists the current state of the FlowNodeInstance, after it was aborted, due to process termination.
    *
    * @async
-   * @param flowNodeInstance The FlowNodeInstance to persist.
    * @param processToken     The current ProcessToken of the FlowNodeInstance.
    */
-  protected async persistOnTerminate(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
+  protected async persistOnTerminate(processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnTerminate(flowNodeInstance, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
     this.metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
                                                     processToken.processModelId,
                                                     this.flowNodeInstanceId,
-                                                    flowNodeInstance.id,
+                                                    this.flowNode.id,
                                                     processToken,
                                                     now);
 
@@ -190,7 +212,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                processToken.processModelId,
                                                processToken.processInstanceId,
                                                this.flowNodeInstanceId,
-                                               flowNodeInstance.id,
+                                               this.flowNode.id,
                                                LogLevel.error,
                                                'Flow Node execution terminated.');
   }
@@ -199,19 +221,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Persists the current state of the FlowNodeInstance, after it encountered an error.
    *
    * @async
-   * @param flowNodeInstance The FlowNodeInstance to persist.
    * @param processToken     The current ProcessToken of the FlowNodeInstance.
    */
-  protected async persistOnError(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken, error: Error): Promise<void> {
+  protected async persistOnError(processToken: Runtime.Types.ProcessToken, error: Error): Promise<void> {
 
-    await this.flowNodeInstanceService.persistOnError(flowNodeInstance, this.flowNodeInstanceId, processToken, error);
+    await this.flowNodeInstanceService.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
 
     const now: moment.Moment = moment.utc();
 
     this.metricsApiService.writeOnFlowNodeInstanceError(processToken.correlationId,
                                                      processToken.processModelId,
                                                      this.flowNodeInstanceId,
-                                                     flowNodeInstance.id,
+                                                     this.flowNode.id,
                                                      processToken,
                                                      error,
                                                      now);
@@ -220,7 +241,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                processToken.processModelId,
                                                processToken.processInstanceId,
                                                this.flowNodeInstanceId,
-                                               flowNodeInstance.id,
+                                               this.flowNode.id,
                                                LogLevel.error,
                                               `Flow Node execution failed: ${error.message}`);
   }
@@ -229,19 +250,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Suspends the execution of the given FlowNodeInstance.
    *
    * @async
-   * @param flowNodeInstance The FlowNodeInstance to suspend.
    * @param processToken     The current ProcessToken of the FlowNodeInstance.
    */
-  protected async persistOnSuspend(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
+  protected async persistOnSuspend(processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.suspend(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.suspend(this.flowNode.id, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
     this.metricsApiService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
                                                        processToken.processModelId,
                                                        this.flowNodeInstanceId,
-                                                       flowNodeInstance.id,
+                                                       this.flowNode.id,
                                                        processToken,
                                                        now);
 
@@ -249,7 +269,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                processToken.processModelId,
                                                processToken.processInstanceId,
                                                this.flowNodeInstanceId,
-                                               flowNodeInstance.id,
+                                               this.flowNode.id,
                                                LogLevel.info,
                                                'Flow Node execution suspended.');
   }
@@ -258,19 +278,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Resumes execution of the given suspended FlowNodeInstance.
    *
    * @async
-   * @param flowNodeInstance The FlowNodeInstance to resume.
    * @param processToken     The current ProcessToken of the FlowNodeInstance.
    */
-  protected async persistOnResume(flowNodeInstance: TFlowNode, processToken: Runtime.Types.ProcessToken): Promise<void> {
+  protected async persistOnResume(processToken: Runtime.Types.ProcessToken): Promise<void> {
 
-    await this.flowNodeInstanceService.resume(flowNodeInstance.id, this.flowNodeInstanceId, processToken);
+    await this.flowNodeInstanceService.resume(this.flowNode.id, this.flowNodeInstanceId, processToken);
 
     const now: moment.Moment = moment.utc();
 
     this.metricsApiService.writeOnFlowNodeInstanceResume(processToken.correlationId,
                                                       processToken.processModelId,
                                                       this.flowNodeInstanceId,
-                                                      flowNodeInstance.id,
+                                                      this.flowNode.id,
                                                       processToken,
                                                       now);
 
@@ -278,7 +297,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                processToken.processModelId,
                                                processToken.processInstanceId,
                                                this.flowNodeInstanceId,
-                                               flowNodeInstance.id,
+                                               this.flowNode.id,
                                                LogLevel.info,
                                                'Flow Node execution resumed.');
   }
@@ -291,24 +310,21 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * SequenceFlows.
    *
    * @async
-   * @param flowNode           The FlowNode for which to perform post-execution
-   *                           operations.
    * @param nextFlowNode       The FlowNode that follows after this one.
    * @param processTokenFacade The ProcessTokenFacade of the curently running
    *                           process.
    * @param processModelFacade The ProcessModelFacade of the curently running
    *                           process.
    */
-  private async afterExecute(flowNode: TFlowNode,
-                             nextFlowNode: Model.Base.FlowNode,
+  private async afterExecute(nextFlowNode: Model.Base.FlowNode,
                              processTokenFacade: IProcessTokenFacade,
                              processModelFacade: IProcessModelFacade): Promise<void> {
 
     // There are two kinds of Mappers to evaluate: FlowNode- and SequenceFlow-Mappers.
     // They are evaluated in between handling of FlowNodes.
-    await processTokenFacade.evaluateMapperForFlowNode(flowNode);
+    await processTokenFacade.evaluateMapperForFlowNode(this.flowNode);
 
-    const nextSequenceFlow: Model.Types.SequenceFlow = processModelFacade.getSequenceFlowBetween(flowNode, nextFlowNode);
+    const nextSequenceFlow: Model.Types.SequenceFlow = processModelFacade.getSequenceFlowBetween(this.flowNode, nextFlowNode);
 
     if (!nextSequenceFlow) {
       return;

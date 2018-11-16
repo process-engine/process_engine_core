@@ -28,10 +28,15 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              timerFacade: ITimerFacade) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+              timerFacade: ITimerFacade,
+              startEventModel: Model.Events.StartEvent) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, startEventModel);
     this._eventAggregator = eventAggregator;
     this._timerFacade = timerFacade;
+  }
+
+  private get startEvent(): Model.Events.StartEvent {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -42,31 +47,30 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return this._timerFacade;
   }
 
-  protected async executeInternally(startEvent: Model.Events.StartEvent,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(startEvent, token);
+    await this.persistOnEnter(token);
 
-    const flowNodeIsMessageStartEvent: boolean = startEvent.messageEventDefinition !== undefined;
-    const flowNodeIsSignalStartEvent: boolean = startEvent.signalEventDefinition !== undefined;
-    const flowNodeIsTimerStartEvent: boolean = startEvent.timerEventDefinition !== undefined;
+    const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
+    const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
+    const flowNodeIsTimerStartEvent: boolean = this.startEvent.timerEventDefinition !== undefined;
 
     // If the StartEvent is not a regular StartEvent,
     // wait for the defined condition to be fulfilled.
     if (flowNodeIsMessageStartEvent) {
-      await this._waitForMessage(startEvent, token, startEvent.messageEventDefinition.name);
+      await this._waitForMessage(token, this.startEvent.messageEventDefinition.name);
     } else if (flowNodeIsSignalStartEvent) {
-      await this._waitForSignal(startEvent, token, startEvent.signalEventDefinition.name);
+      await this._waitForSignal(token, this.startEvent.signalEventDefinition.name);
     } else if (flowNodeIsTimerStartEvent) {
-      await this._waitForTimerToElapse(startEvent, token, startEvent.timerEventDefinition);
+      await this._waitForTimerToElapse(token, this.startEvent.timerEventDefinition);
     }
 
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(startEvent);
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.startEvent);
 
-    await this.persistOnExit(startEvent, token);
+    await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
@@ -76,15 +80,12 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * designated message.
    *
    * @async
-   * @param flowNode    The FlowNode containing the StartEvent.
    * @param token       The current ProcessToken.
    * @param messageName The message to wait for.
    */
-  private async _waitForMessage(startEvent: Model.Events.StartEvent,
-                                token: Runtime.Types.ProcessToken,
-                                messageName: string): Promise<void> {
+  private async _waitForMessage(token: Runtime.Types.ProcessToken, messageName: string): Promise<void> {
 
-    await this.persistOnSuspend(startEvent, token);
+    await this.persistOnSuspend(token);
 
     return new Promise<void>((resolve: Function): void => {
 
@@ -97,7 +98,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
           subscription.dispose();
         }
 
-        await this.persistOnResume(startEvent, token);
+        await this.persistOnResume(token);
 
         resolve();
       });
@@ -109,15 +110,12 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * designated signal.
    *
    * @async
-   * @param startEvent The FlowNode containing the StartEvent.
    * @param token      The current ProcessToken.
    * @param signalName The signal to wait for.
    */
-  private async _waitForSignal(startEvent: Model.Events.StartEvent,
-                               token: Runtime.Types.ProcessToken,
-                               signalName: string): Promise<void> {
+  private async _waitForSignal(token: Runtime.Types.ProcessToken, signalName: string): Promise<void> {
 
-    await this.persistOnSuspend(startEvent, token);
+    await this.persistOnSuspend(token);
 
     return new Promise<void>((resolve: Function): void => {
 
@@ -130,7 +128,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
           subscription.dispose();
         }
 
-        await this.persistOnResume(startEvent, token);
+        await this.persistOnResume(token);
 
         resolve();
       });
@@ -142,15 +140,13 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * until the timer has elapsed.
    *
    * @async
-   * @param startEvent The FlowNode containing the StartEvent.
-   * @param token      The current ProcessToken.
+   * @param token           The current ProcessToken.
+   * @param timerDefinition The definition that contains the timer to use.
    */
-  private async _waitForTimerToElapse(startEvent: Model.Events.StartEvent,
-                                      token: Runtime.Types.ProcessToken,
-                                      timerDefinition: Model.EventDefinitions.TimerEventDefinition,
-                                     ): Promise<void> {
+  private async _waitForTimerToElapse(token: Runtime.Types.ProcessToken,
+                                      timerDefinition: Model.EventDefinitions.TimerEventDefinition): Promise<void> {
 
-    await this.persistOnSuspend(startEvent, token);
+    await this.persistOnSuspend(token);
 
     return new Promise<void> (async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -161,7 +157,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
       const timerElapsed: any = async(): Promise<void> => {
 
-        await this.persistOnResume(startEvent, token);
+        await this.persistOnResume(token);
 
         const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
 
@@ -172,7 +168,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
         resolve();
       };
 
-      timerSubscription = await this.timerFacade.initializeTimer(startEvent, timerType, timerValue, timerElapsed);
+      timerSubscription = await this.timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
     });
   }
 }

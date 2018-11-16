@@ -34,12 +34,17 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     externalTaskRepository: IExternalTaskRepository,
     flowNodeInstanceService: IFlowNodeInstanceService,
     loggingApiService: ILoggingApi,
-    metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+    metricsService: IMetricsApi,
+    serviceTaskModel: Model.Activities.ServiceTask) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
 
     this._container = container;
     this._eventAggregator = eventAggregator;
     this._externalTaskRepository = externalTaskRepository;
+  }
+
+  private get serviceTask(): Model.Activities.ServiceTask {
+    return super.flowNode;
   }
 
   private get container(): IContainer {
@@ -47,37 +52,36 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
   }
 
   protected async executeInternally(
-    serviceTask: Model.Activities.ServiceTask,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(serviceTask, token);
+    await this.persistOnEnter(token);
 
     let result: any;
 
-    const serviceTaskHasNoInvocation: boolean = serviceTask.invocation === undefined;
+    const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
 
-    const isInternalTask: boolean = serviceTask.type !== Model.Activities.ServiceTaskType.external;
+    const isInternalTask: boolean = this.serviceTask.type !== Model.Activities.ServiceTaskType.external;
 
     if (serviceTaskHasNoInvocation && isInternalTask) {
       logger.verbose('ServiceTask has no invocation. Skipping execution.');
       result = {};
     } else if (isInternalTask) {
       logger.verbose('Execute internal ServiceTask');
-      result = await this._executeInternalServiceTask(serviceTask, token, processTokenFacade, identity);
+      result = await this._executeInternalServiceTask(token, processTokenFacade, identity);
     } else {
       logger.verbose('Execute external ServiceTask');
-      result = await this._executeExternalServiceTask(serviceTask, token, processTokenFacade, identity);
+      result = await this._executeExternalServiceTask(token, processTokenFacade, identity);
     }
 
-    processTokenFacade.addResultForFlowNode(serviceTask.id, result);
+    processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
     token.payload = result;
 
-    await this.persistOnExit(serviceTask, token);
+    await this.persistOnExit(token);
 
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(serviceTask);
+    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.serviceTask);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
@@ -87,7 +91,6 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * The ServiceTaskHandler handles all execution.
    *
    * @async
-   * @param   serviceTask        The ServiceTask to execute.
    * @param   token              The current ProcessToken.
    * @param   processTokenFacade The Facade for accessing all ProcessTokens of the
    *                             currently running ProcessInstance.
@@ -95,12 +98,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @returns                    The ServiceTask's result.
    */
   private async _executeInternalServiceTask(
-    serviceTask: Model.Activities.ServiceTask,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     identity: IIdentity): Promise<any> {
 
-    const isMethodInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
+    const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
     if (!isMethodInvocation) {
       const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
@@ -111,7 +113,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
 
-    const invocation: Model.Activities.MethodInvocation = serviceTask.invocation as Model.Activities.MethodInvocation;
+    const invocation: Model.Activities.MethodInvocation = this.serviceTask.invocation as Model.Activities.MethodInvocation;
 
     const serviceInstance: any = await this.container.resolveAsync(invocation.module);
 
@@ -122,7 +124,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     if (!serviceMethod) {
       const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
-      await this.persistOnError(serviceTask, token, error);
+      await this.persistOnError(token, error);
       throw error;
     }
 
@@ -137,7 +139,6 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * The handler will be suspended, until the ExternalTask has finished.
    *
    * @async
-   * @param   serviceTask        The ServiceTask to execute.
    * @param   token              The current ProcessToken.
    * @param   processTokenFacade The Facade for accessing all ProcessTokens of the
    *                             currently running ProcessInstance.
@@ -145,12 +146,11 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
    * @returns                    The ServiceTask's result.
    */
   private async _executeExternalServiceTask(
-    serviceTask: Model.Activities.ServiceTask,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     identity: IIdentity): Promise<any> {
 
-    const isInternalTaskInvocation: boolean = serviceTask.invocation instanceof Model.Activities.MethodInvocation;
+    const isInternalTaskInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
     if (isInternalTaskInvocation) {
       const notSupportedErrorMessage: string = 'External ServiceTasks cannot perform MethodInvocations!';
@@ -165,7 +165,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
       const messageReceivedCallback: Function = async(message: any): Promise<void> => {
 
-        await this.persistOnResume(serviceTask, token);
+        await this.persistOnResume(token);
 
         if (subscription) {
           subscription.dispose();
@@ -173,7 +173,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
         if (message.error) {
           logger.error(`External processing of ServiceTask failed!`, message.error);
-          await this.persistOnError(serviceTask, token, message.error);
+          await this.persistOnError(token, message.error);
 
           throw message.error;
         }
@@ -185,12 +185,12 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
       const subscription: ISubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
 
       const tokenData: any = await processTokenFacade.getOldTokenFormat();
-      const payload: boolean = this._getPayloadForServiceTask(serviceTask, token, tokenData, identity);
+      const payload: boolean = this._getServiceTaskPayload(token, tokenData, identity);
 
       logger.verbose('Persist ServiceTask as ExternalTask.');
       await this
         ._externalTaskRepository
-        .create(serviceTask.topic,
+        .create(this.serviceTask.topic,
                 token.correlationId,
                 token.processModelId,
                 token.processInstanceId,
@@ -198,26 +198,22 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                 token.identity,
                 payload);
 
-      await this.persistOnSuspend(serviceTask, token);
+      await this.persistOnSuspend(token);
 
-      const externalTaskCreatedEventName: string = `/externaltask/topic/${serviceTask.topic}/created`;
+      const externalTaskCreatedEventName: string = `/externaltask/topic/${this.serviceTask.topic}/created`;
       this._eventAggregator.publish(externalTaskCreatedEventName);
 
       logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
     });
   }
 
-  private _getPayloadForServiceTask(
-    serviceTask: Model.Activities.ServiceTask,
-    token: Runtime.Types.ProcessToken,
-    tokenData: any,
-    identity: IIdentity): any {
+  private _getServiceTaskPayload(token: Runtime.Types.ProcessToken, tokenData: any, identity: IIdentity): any {
 
-    const isPayloadInServiceTask: boolean = serviceTask.payload !== undefined;
+    const isPayloadInServiceTask: boolean = this.serviceTask.payload !== undefined;
 
     if (isPayloadInServiceTask) {
 
-      const evaluatePayloadFunction: Function = new Function('context', 'token', `return ${serviceTask.payload}`);
+      const evaluatePayloadFunction: Function = new Function('context', 'token', `return ${this.serviceTask.payload}`);
 
       return evaluatePayloadFunction.call(tokenData, identity, tokenData);
     } else {

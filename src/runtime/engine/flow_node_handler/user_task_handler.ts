@@ -26,24 +26,28 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+              metricsService: IMetricsApi,
+              userTaskModel: Model.Activities.UserTask) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, userTaskModel);
     this._eventAggregator = eventAggregator;
+  }
+
+  private get userTask(): Model.Activities.UserTask {
+    return super.flowNode;
   }
 
   private get eventAggregator(): IEventAggregator {
     return this._eventAggregator;
   }
 
-  protected async executeInternally(userTask: Model.Activities.UserTask,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      await this.persistOnEnter(userTask, token);
+      await this.persistOnEnter(token);
 
       const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.finishUserTask
         .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
@@ -53,20 +57,20 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
       const subscription: ISubscription =
         this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
 
-          await this.persistOnResume(userTask, token);
+          await this.persistOnResume(token);
 
           const userTaskResult: any = {
             form_fields: message.result === undefined ? null : message.result,
           };
 
-          processTokenFacade.addResultForFlowNode(userTask.id, userTaskResult);
+          processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
           token.payload = userTaskResult;
 
-          const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(userTask);
+          const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.userTask);
 
-          await this.persistOnExit(userTask, token);
+          await this.persistOnExit(token);
 
-          this._sendUserTaskFinishedToConsumerApi(userTask.id, token, userTaskResult);
+          this._sendUserTaskFinishedToConsumerApi(token, userTaskResult);
 
           if (subscription) {
             subscription.dispose();
@@ -75,33 +79,32 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
           resolve(new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade));
         });
 
-      await this.persistOnSuspend(userTask, token);
-      this._sendUserTaskWaitingToConsumerApi(userTask.id, token);
+      await this.persistOnSuspend(token);
+      this._sendUserTaskWaitingToConsumerApi(token);
     });
 
   }
 
-  private _sendUserTaskWaitingToConsumerApi(userTaskId: string, token: Runtime.Types.ProcessToken): void {
+  private _sendUserTaskWaitingToConsumerApi(token: Runtime.Types.ProcessToken): void {
 
     const message: UserTaskReachedMessage = new UserTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
                                                                        token.processInstanceId,
-                                                                       userTaskId,
+                                                                       this.userTask.id,
                                                                        this.flowNodeInstanceId,
                                                                        token.payload);
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
   }
 
-  private _sendUserTaskFinishedToConsumerApi(userTaskId: string,
-                                             token: Runtime.Types.ProcessToken,
+  private _sendUserTaskFinishedToConsumerApi(token: Runtime.Types.ProcessToken,
                                              userTaskResult: UserTaskResult): void {
 
     const message: UserTaskFinishedMessage = new UserTaskFinishedMessage(userTaskResult,
                                                                          token.correlationId,
                                                                          token.processModelId,
                                                                          token.processInstanceId,
-                                                                         userTaskId,
+                                                                         this.userTask.id,
                                                                          this.flowNodeInstanceId,
                                                                          token.payload);
 

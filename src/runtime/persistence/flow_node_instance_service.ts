@@ -53,9 +53,10 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
   public async persistOnEnter(flowNode: Model.Base.FlowNode,
                               flowNodeInstanceId: string,
                               token: Runtime.Types.ProcessToken,
+                              previousFlowNodeInstanceId: string,
                              ): Promise<Runtime.Types.FlowNodeInstance> {
 
-    return this._flowNodeInstanceRepository.persistOnEnter(flowNode, flowNodeInstanceId, token);
+    return this._flowNodeInstanceRepository.persistOnEnter(flowNode, flowNodeInstanceId, token, previousFlowNodeInstanceId);
   }
 
   public async persistOnExit(flowNode: Model.Base.FlowNode,

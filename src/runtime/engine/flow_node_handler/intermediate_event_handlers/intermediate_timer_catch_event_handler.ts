@@ -23,50 +23,54 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
               metricsService: IMetricsApi,
-              timerFacade: ITimerFacade) {
-    super(flowNodeInstanceService, loggingService, metricsService);
+              timerFacade: ITimerFacade,
+              timerCatchEventModel: Model.Events.IntermediateCatchEvent) {
+    super(flowNodeInstanceService, loggingService, metricsService, timerCatchEventModel);
     this._timerFacade = timerFacade;
+  }
+
+  private get timerCatchEvent(): Model.Events.IntermediateCatchEvent {
+    return super.flowNode;
   }
 
   private get timerFacade(): ITimerFacade {
     return this._timerFacade;
   }
 
-  protected async executeInternally(timerCatchEvent: Model.Events.IntermediateCatchEvent,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(timerCatchEvent, token);
+    await this.persistOnEnter(token);
 
     return new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<void> => {
 
       let timerSubscription: ISubscription;
 
-      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(timerCatchEvent.timerEventDefinition);
-      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(timerCatchEvent.timerEventDefinition);
+      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
+      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(timerCatchEvent);
+      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
 
       const timerElapsed: any = async(): Promise<void> => {
 
-        await this.persistOnResume(timerCatchEvent, token);
+        await this.persistOnResume(token);
 
         const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-        await processTokenFacade.addResultForFlowNode(timerCatchEvent.id, oldTokenFormat.current);
+        await processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, oldTokenFormat.current);
 
         if (timerSubscription && timerType !== TimerDefinitionType.cycle) {
           timerSubscription.dispose();
         }
 
-        await this.persistOnExit(timerCatchEvent, token);
+        await this.persistOnExit(token);
 
         resolve(new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade));
       };
 
-      await this.persistOnSuspend(timerCatchEvent, token);
-      timerSubscription = await this.timerFacade.initializeTimer(timerCatchEvent, timerType, timerValue, timerElapsed);
+      await this.persistOnSuspend(token);
+      timerSubscription = await this.timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
     });
   }
 }

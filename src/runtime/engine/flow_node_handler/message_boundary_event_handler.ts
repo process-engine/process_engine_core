@@ -30,10 +30,15 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>) {
-    super(flowNodeInstanceService, loggingApiService, metricsService);
+              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+              messageBoundaryEventModel: Model.Events.BoundaryEvent) {
+    super(flowNodeInstanceService, loggingApiService, metricsService, messageBoundaryEventModel);
     this._eventAggregator = eventAggregator;
     this._decoratedHandler = decoratedHandler;
+  }
+
+  private get messageBoundaryEvent(): Model.Events.BoundaryEvent {
+    return super.flowNode;
   }
 
   private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
@@ -45,8 +50,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
   }
 
   // TODO: Add support for non-interrupting message events.
-  protected async executeInternally(messageBoundaryEvent: Model.Events.BoundaryEvent,
-                                    token: Runtime.Types.ProcessToken,
+  protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
@@ -54,10 +58,10 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       try {
-        this._subscribeToMessageEvent(resolve, messageBoundaryEvent, token, processTokenFacade, processModelFacade);
+        this._subscribeToMessageEvent(resolve, token, processTokenFacade, processModelFacade);
 
         const nextFlowNodeInfo: NextFlowNodeInfo
-          = await this.decoratedHandler.execute(messageBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+          = await this.decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
         if (this.messageReceived) {
           return;
@@ -76,15 +80,12 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
   }
 
   private async _subscribeToMessageEvent(resolveFunc: Function,
-                                         flowNode: Model.Events.BoundaryEvent,
                                          token: Runtime.Types.ProcessToken,
                                          processTokenFacade: IProcessTokenFacade,
                                          processModelFacade: IProcessModelFacade): Promise<void> {
 
-    const messageBoundaryEvent: Model.Events.BoundaryEvent = await this._getMessageBoundaryEvent(flowNode, processModelFacade);
-
     const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageBoundaryEvent.messageEventDefinition.name);
+      .replace(eventAggregatorSettings.routeParams.messageReference, this.messageBoundaryEvent.messageEventDefinition.name);
 
     const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 
@@ -93,15 +94,15 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       }
       this.messageReceived = true;
 
-      processTokenFacade.addResultForFlowNode(flowNode.id, message.currentToken);
+      processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, message.currentToken);
       token.payload = message.currentToken;
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute
       const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-      await processTokenFacade.addResultForFlowNode(messageBoundaryEvent.id, oldTokenFormat.current);
+      await processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, oldTokenFormat.current);
 
-      const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(messageBoundaryEvent);
+      const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageBoundaryEvent);
 
       const nextFlowNodeInfo: NextFlowNodeInfo = new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade);
 
@@ -109,16 +110,5 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     };
 
     this.subscription = this.eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback);
-  }
-
-  private _getMessageBoundaryEvent(flowNode: Model.Base.FlowNode, processModelFacade: IProcessModelFacade): Model.Events.BoundaryEvent {
-
-    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
-
-    const boundaryEvent: Model.Events.BoundaryEvent = boundaryEvents.find((currentBoundaryEvent: Model.Events.BoundaryEvent) => {
-      return currentBoundaryEvent.messageEventDefinition !== undefined;
-    });
-
-    return boundaryEvent;
   }
 }
