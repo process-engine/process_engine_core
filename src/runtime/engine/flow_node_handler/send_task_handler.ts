@@ -52,6 +52,15 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   private async _registerEventHandlerAndSendMessage(token: Runtime.Types.ProcessToken): Promise<void> {
 
     return new Promise<void>((resolve: Function, reject: Function): void => {

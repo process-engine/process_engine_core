@@ -45,7 +45,28 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
       return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalThrowEventHandler', [this.flowNode]);
     }
 
-    throw new InternalServerError(`The IntermediateThrowEventType used with FlowNode ${this.flowNode.id} is not supported!`);
+    return this._persistAndContinue(token, processTokenFacade, processModelFacade, identity);
+  }
+
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
+  private async _executeIntermediateThrowEventByType(eventHandlerName: string,
+                                                     token: Runtime.Types.ProcessToken,
+                                                     processTokenFacade: IProcessTokenFacade,
+                                                     processModelFacade: IProcessModelFacade,
+                                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
+
+    const eventHandler: FlowNodeHandler<Model.Events.IntermediateThrowEvent> =
+      await this._container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName, [this.flowNode]);
+
+    return eventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,

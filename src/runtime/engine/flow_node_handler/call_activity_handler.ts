@@ -74,6 +74,15 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   /**
    * Retrieves the first accessible StartEvent for the ProcessModel with the
    * given ID.

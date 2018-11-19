@@ -71,6 +71,15 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     });
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   private async _subscribeToMessageEvent(resolveFunc: Function,
                                          token: Runtime.Types.ProcessToken,
                                          processTokenFacade: IProcessTokenFacade,

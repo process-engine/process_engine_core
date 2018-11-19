@@ -57,4 +57,12 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
+
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity): Promise<NextFlowNodeInfo> {
+
+    return this._childEventHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+  }
 }

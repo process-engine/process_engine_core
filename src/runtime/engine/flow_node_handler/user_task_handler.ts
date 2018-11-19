@@ -78,7 +78,15 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
       await this.persistOnSuspend(token);
       this._sendUserTaskWaitingToConsumerApi(token);
     });
+  }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
   }
 
   private _sendUserTaskWaitingToConsumerApi(token: Runtime.Types.ProcessToken): void {

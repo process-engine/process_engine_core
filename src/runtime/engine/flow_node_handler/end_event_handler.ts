@@ -79,6 +79,15 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   /**
    * When a MessageEndEvent is used, an event with the corresponding message is
    * published to the EventAggregator.

@@ -60,4 +60,13 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
+
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
 }

@@ -55,6 +55,15 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   private async _waitForMessage(): Promise<MessageEventReachedMessage> {
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {

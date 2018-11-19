@@ -74,6 +74,15 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
     });
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   private async _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): Promise<string> {
     const tokenVariableName: string = 'token';
     const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);

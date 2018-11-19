@@ -32,6 +32,52 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(token);
+    const nextFlowNodeInfo: NextFlowNodeInfo = await this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+
+    return nextFlowNodeInfo;
+  }
+
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    // ScriptTasks only produce two tokens in their lifetime.
+    // Therefore, it is safe to assume that the first token will always be the "onEnter" token.
+    const currentToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    const nextFlowNodeInfo: NextFlowNodeInfo = await this._executeHandler(currentToken, processTokenFacade, processModelFacade, identity);
+
+    return nextFlowNodeInfo;
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    let result: any = {};
+
+    try {
+      result = await this._executeScriptTask(processTokenFacade, identity);
+    } catch (error) {
+      await this.persistOnError(token, error);
+
+      throw error;
+    }
+
+    await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
+    token.payload = result;
+    await this.persistOnExit(token);
+
+    const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+    return nextFlowNodeInfo;
+  }
+
+  private async _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
 
     const script: string = this.scriptTask.script;
 
@@ -42,26 +88,13 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
     let result: any;
 
-    try {
+    const scriptFunction: Function = new Function('token', 'identity', script);
 
-      const scriptFunction: Function = new Function('token', 'identity', script);
+    result = await scriptFunction.call(this, tokenData, identity);
+    result = result === undefined
+      ? null
+      : result;
 
-      result = await scriptFunction.call(this, tokenData, identity);
-      result = result === undefined ? null : result;
-
-    } catch (error) {
-
-      await this.persistOnError(token, error);
-
-      throw error;
-    }
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.scriptTask);
-
-    await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
-    token.payload = result;
-
-    await this.persistOnExit(token);
-
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return result;
   }
 }

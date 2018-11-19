@@ -94,6 +94,47 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return nextFlowNode;
   }
 
+  /**
+   * This is the method where the derived handlers must implement their logic
+   * for resuming a previously interrupted instance.
+   *
+   * @async
+   * @param flowNodeInstance   The current ProcessToken.
+   * @param processTokenFacade The ProcessTokenFacade of the curently
+   *                           running process.
+   * @param processModelFacade The ProcessModelFacade of the curently
+   *                           running process.
+   * @param identity           The requesting users identity.
+   */
+  public async resume(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                      processTokenFacade: IProcessTokenFacade,
+                      processModelFacade: IProcessModelFacade,
+                      identity: IIdentity,
+                    ): Promise<NextFlowNodeInfo> {
+
+    this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
+    this._flowNodeInstanceId = flowNodeInstance.id;
+
+    let nextFlowNode: NextFlowNodeInfo;
+
+    try {
+      nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+    } catch (error) {
+      await processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
+
+      throw error;
+    }
+
+    if (!nextFlowNode) {
+      throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
+    }
+
+    await this.afterExecute(nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
+
+    return nextFlowNode;
+  }
+
   public getInstanceId(): string {
     return this.flowNodeInstanceId;
   }
@@ -103,7 +144,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * This is the method where the derived handlers must implement their logic.
+   * This is the method where the derived handlers must implement their logic
+   * for executing new FlowNodeInstances.
    *
    * Here, the actual execution of the FlowNodes takes place.
    *
@@ -120,6 +162,24 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                              processModelFacade: IProcessModelFacade,
                                              identity: IIdentity,
                                             ): Promise<NextFlowNodeInfo>;
+
+  /**
+   * This is the method where the derived handlers must implement their logic
+   * for resuming a previously interrupted instance.
+   *
+   * @async
+   * @param flowNodeInstance   The current ProcessToken.
+   * @param processTokenFacade The ProcessTokenFacade of the curently
+   *                           running process.
+   * @param processModelFacade The ProcessModelFacade of the curently
+   *                           running process.
+   * @param identity           The requesting users identity.
+   */
+  protected async abstract resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                            processTokenFacade: IProcessTokenFacade,
+                                            processModelFacade: IProcessModelFacade,
+                                            identity: IIdentity,
+                                           ): Promise<NextFlowNodeInfo>;
 
   /**
    * Persists the current state of the FlowNodeInstance, after it successfully started execution.

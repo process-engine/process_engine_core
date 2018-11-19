@@ -77,6 +77,15 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     return new NextFlowNodeInfo(nextFlowNodeAfterSplit, token, processTokenFacade);
   }
 
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
   private async determineBranchToTake(
     token: Runtime.Types.ProcessToken,
     sequenceFlows: Array<Model.Types.SequenceFlow>,
