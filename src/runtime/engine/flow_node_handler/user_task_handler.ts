@@ -70,9 +70,9 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade);
         }
 
-        return this._continueAfterResume(resumeToken, flowNodeInstance, processTokenFacade, processModelFacade);
+        return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       default:
-        throw new InternalServerError(`Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume UserTask instance ${flowNodeInstance.id}, because it was already finished!`);
     }
   }
 
@@ -136,13 +136,13 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
    * The final result is only missing in the database.
    *
    * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   resumeToken        The ProcessToken stored after resuming the
+   *                             FlowNodeInstance.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
    * @param   processModelFacade The processModelFacade to use for resuming.
    * @returns                    The Info for the next FlowNode to run.
    */
   private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                     flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                      processTokenFacade: IProcessTokenFacade,
                                      processModelFacade: IProcessModelFacade,
                                     ): Promise<NextFlowNodeInfo> {
