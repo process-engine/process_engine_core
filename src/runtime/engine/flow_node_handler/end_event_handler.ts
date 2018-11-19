@@ -46,11 +46,11 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     return this._executeHandler(token, processTokenFacade);
   }
 
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
 
     // EndEvents only produce two tokens in their lifetime.
     // Therefore, it is safe to assume that only one token exists at this point.

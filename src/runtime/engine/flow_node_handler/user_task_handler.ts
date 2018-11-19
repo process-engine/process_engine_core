@@ -15,7 +15,6 @@ import {
   Runtime,
   UserTaskFinishedMessage,
   UserTaskReachedMessage,
-  UserTaskResult,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';

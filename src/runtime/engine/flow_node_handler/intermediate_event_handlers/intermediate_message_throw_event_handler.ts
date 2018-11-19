@@ -37,8 +37,27 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
-
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    // IntermediateThrowEvents only produce two tokens in their lifetime.
+    // Therefore, it is safe to assume that only one token exists at this point.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
@@ -59,14 +78,6 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
-  }
 
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
-
-    throw new Error('Not implemented yet.');
   }
 }
