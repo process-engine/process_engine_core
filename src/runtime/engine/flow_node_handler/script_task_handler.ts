@@ -32,9 +32,8 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(token);
-    const nextFlowNodeInfo: NextFlowNodeInfo = await this._executeHandler(token, processTokenFacade, processModelFacade, identity);
 
-    return nextFlowNodeInfo;
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -47,9 +46,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     // Therefore, it is safe to assume that the first token will always be the "onEnter" token.
     const currentToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await this._executeHandler(currentToken, processTokenFacade, processModelFacade, identity);
-
-    return nextFlowNodeInfo;
+    return this._executeHandler(currentToken, processTokenFacade, processModelFacade, identity);
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,
