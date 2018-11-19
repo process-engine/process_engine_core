@@ -1,3 +1,4 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -43,6 +44,24 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     await this.persistOnEnter(token);
 
+    return this._executeHandler(token, processTokenFacade);
+  }
+
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    // EndEvents only produce two tokens in their lifetime.
+    // Therefore, it is safe to assume that only one token exists at this point.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    return this._executeHandler(onEnterToken, processTokenFacade);
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<NextFlowNodeInfo> {
+
     const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
     const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;
     const flowNodeIsMessageEndEvent: boolean = this.endEvent.messageEventDefinition !== undefined;
@@ -77,15 +96,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     }
 
     return new NextFlowNodeInfo(undefined, token, processTokenFacade);
-  }
-
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
-
-    throw new Error('Not implemented yet.');
   }
 
   /**

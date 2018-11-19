@@ -44,10 +44,10 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                   ): Promise<NextFlowNodeInfo> {
 
     // ScriptTasks only produce two tokens in their lifetime.
-    // Therefore, it is safe to assume that the first token will always be the "onEnter" token.
-    const currentToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    // Therefore, it is safe to assume that only one token exists at this point.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
-    return this._executeHandler(currentToken, processTokenFacade, processModelFacade, identity);
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,
