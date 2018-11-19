@@ -29,18 +29,19 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity,
+                                   ): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
 
     // ScriptTasks only produce two tokens in their lifetime.
     // Therefore, it is safe to assume that the first token will always be the "onEnter" token.
