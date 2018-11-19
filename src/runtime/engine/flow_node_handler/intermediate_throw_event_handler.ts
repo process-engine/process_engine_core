@@ -45,6 +45,8 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
       return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalThrowEventHandler', [this.flowNode]);
     }
 
+    await this.persistOnEnter(token);
+
     return this._persistAndContinue(token, processTokenFacade, processModelFacade, identity);
   }
 
@@ -54,7 +56,27 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
-    throw new Error('Not implemented yet.');
+    if (this.flowNode.messageEventDefinition) {
+      return this._resumeIntermediateThrowEventByType('IntermediateMessageThrowEventHandler',
+                                                      flowNodeInstance,
+                                                      processTokenFacade,
+                                                      processModelFacade,
+                                                     identity);
+    }
+
+    if (this.flowNode.signalEventDefinition) {
+      return this._resumeIntermediateThrowEventByType('IntermediateSignalThrowEventHandler',
+                                                      flowNodeInstance,
+                                                      processTokenFacade,
+                                                      processModelFacade,
+                                                      identity);
+    }
+
+    // The base handlers for IntermediateEvents only produce two tokens during their lifetime.
+    // Therefore, we can safely assume that token list will only contain one entry at this point.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    return this._persistAndContinue(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   private async _executeIntermediateThrowEventByType(eventHandlerName: string,
@@ -69,11 +91,27 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     return eventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
+  private async _resumeIntermediateThrowEventByType(eventHandlerName: string,
+                                                    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                                    processTokenFacade: IProcessTokenFacade,
+                                                    processModelFacade: IProcessModelFacade,
+                                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+
+    const eventHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent> =
+      await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>(eventHandlerName, [this.flowNode]);
+
+    return eventHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+  }
+
+  private async _persistAndContinue(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.flowNode);
+
+    await this.persistOnExit(token);
+
+    return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 }
