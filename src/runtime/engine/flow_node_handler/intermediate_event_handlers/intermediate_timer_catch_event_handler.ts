@@ -64,14 +64,14 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
             return token.type === Runtime.Types.ProcessTokenType.onResume;
           });
 
-        const signalNotYetReceived: boolean = resumeToken === undefined;
-        if (signalNotYetReceived) {
+        const timerNotYetElapsed: boolean = resumeToken === undefined;
+        if (timerNotYetElapsed) {
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade);
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       default:
-        throw new InternalServerError(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume TimerCatchEvent instance ${flowNodeInstance.id}, because it was already finished!`);
     }
   }
 
