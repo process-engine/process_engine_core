@@ -37,6 +37,8 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
 
   private _getChildHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
+    await this.persistOnEnter(token);
+
     if (this.flowNode.messageEventDefinition) {
       return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageThrowEventHandler', [this.flowNode]);
     }
@@ -45,16 +47,14 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
       return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalThrowEventHandler', [this.flowNode]);
     }
 
-    await this.persistOnEnter(token);
-
     return this._persistAndContinue(token, processTokenFacade, processModelFacade, identity);
   }
 
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
 
     if (this.flowNode.messageEventDefinition) {
       return this._resumeIntermediateThrowEventByType('IntermediateMessageThrowEventHandler',

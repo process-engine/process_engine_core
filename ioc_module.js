@@ -43,6 +43,7 @@ const {
 } = require('./dist/commonjs/index');
 
 const {ExecuteProcessService} = require('./dist/commonjs/index');
+const {ResumeProcessService} = require('./dist/commonjs/index');
 
 const {
   FlowNodeHandlerFactory,
@@ -62,6 +63,18 @@ function registerServices(container) {
 
   container
     .register('ExecuteProcessService', ExecuteProcessService)
+    .dependencies(
+      'CorrelationService',
+      'EventAggregator',
+      'FlowNodeHandlerFactory',
+      'FlowNodeInstanceService',
+      'LoggingApiService',
+      'MetricsApiService',
+      'ProcessModelService'
+    );
+
+  container
+    .register('ResumeProcessService', ResumeProcessService)
     .dependencies(
       'CorrelationService',
       'EventAggregator',
@@ -110,9 +123,11 @@ function registerHandlers(container) {
   container
     .register('CallActivityHandler', CallActivityHandler)
     .dependencies('ConsumerApiService',
+                  'CorrelationService',
                   'FlowNodeInstanceService',
                   'LoggingApiService',
-                  'MetricsApiService');
+                  'MetricsApiService',
+                  'ResumeProcessService');
 
   container
     .register('EndEventHandler', EndEventHandler)
@@ -208,11 +223,13 @@ function registerHandlers(container) {
 
   container
     .register('SubProcessHandler', SubProcessHandler)
-    .dependencies('EventAggregator',
+    .dependencies('CorrelationService',
+                  'EventAggregator',
                   'FlowNodeHandlerFactory',
                   'FlowNodeInstanceService',
                   'LoggingApiService',
-                  'MetricsApiService');
+                  'MetricsApiService',
+                  'ResumeProcessService');
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)

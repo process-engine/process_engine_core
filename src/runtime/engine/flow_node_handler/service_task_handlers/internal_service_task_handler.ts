@@ -46,6 +46,29 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     await this.persistOnEnter(token);
 
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+  }
+
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    // Internal ServiceTasks only produce two tokens in their lifetime.
+    // Therefore, it is safe to assume that only one token exists at this point.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    logger.verbose(`Resuming internal ServiceTask with instance ID ${flowNodeInstance.id} and FlowNode id ${flowNodeInstance.flowNodeId}`);
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                               ): Promise<NextFlowNodeInfo> {
+
     let result: any;
 
     const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
