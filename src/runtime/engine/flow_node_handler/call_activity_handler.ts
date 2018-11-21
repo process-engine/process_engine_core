@@ -83,7 +83,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       default:
-        throw new InternalServerError(`Cannot resume StartEvent instance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was already finished!`);
     }
   }
 
