@@ -77,7 +77,30 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
-    throw new Error('Not implemented yet.');
+    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+
+      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+      try {
+        this._subscribeToMessageEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
+
+        const nextFlowNodeInfo: NextFlowNodeInfo
+          = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+        if (this.messageReceived) {
+          return;
+        }
+
+        // if the decorated handler finished execution before the message was received,
+        // continue the regular execution with the next FlowNode and dispose the message subscription
+        this.handlerHasFinished = true;
+        resolve(nextFlowNodeInfo);
+      } finally {
+        if (this.subscription) {
+          this.subscription.dispose();
+        }
+      }
+    });
   }
 
   private async _subscribeToMessageEvent(resolveFunc: Function,
