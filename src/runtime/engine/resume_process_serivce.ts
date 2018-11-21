@@ -6,4 +6,8 @@ export class ResumeProcessService implements IResumeProcessService {
     return Promise.resolve();
   }
 
+  public async resumeProcessInstanceById(processInstanceId: string): Promise<any> {
+    return Promise.resolve();
+  }
+
 }
