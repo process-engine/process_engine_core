@@ -39,7 +39,6 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
         = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
       return nextFlowNodeInfo;
-
     } catch (err) {
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.errorBoundaryEvent);
 
@@ -53,6 +52,17 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
-    throw new Error('Not implemented yet.');
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    try {
+      const nextFlowNodeInfo: NextFlowNodeInfo
+        = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+      return nextFlowNodeInfo;
+    } catch (err) {
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.errorBoundaryEvent);
+
+      return new NextFlowNodeInfo(nextFlowNode, onEnterToken, processTokenFacade);
+    }
   }
 }

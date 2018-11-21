@@ -120,6 +120,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
+
       const noSequenceFlowFoundError: BadRequestError =
         new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
@@ -129,6 +130,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const tooManyTruthySequenceFlowsExist: boolean = truthySequenceFlows.length > 1;
     if (tooManyTruthySequenceFlowsExist) {
+
       const tooManySequenceFlowsError: BadRequestError =
         new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
