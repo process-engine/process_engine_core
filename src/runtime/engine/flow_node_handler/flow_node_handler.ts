@@ -75,6 +75,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
     this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
 
+    token.flowNodeInstanceId = this.flowNodeInstanceId;
+
     let nextFlowNode: NextFlowNodeInfo;
 
     try {
