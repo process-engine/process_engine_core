@@ -34,6 +34,26 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     await this.persistOnEnter(token);
 
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    // ExclusiveGateways only produce two tokens in their lifetime.
+    // Therefore, it is safe to assume that only one token exists at this point.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+
     const gatewayTypeIsNotSupported: boolean =
       this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
       this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
@@ -69,21 +89,11 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     // If this is a split gateway, find the SequenceFlow that has a truthy condition
     // and continue execution with its target FlowNode.
     const nextFlowNodeId: string = await this.determineBranchToTake(token, outgoingSequenceFlows, processTokenFacade);
+    await this.persistOnExit(token);
 
     const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(nextFlowNodeId);
 
-    await this.persistOnExit(token);
-
     return new NextFlowNodeInfo(nextFlowNodeAfterSplit, token, processTokenFacade);
-  }
-
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
-
-    throw new Error('Not implemented yet.');
   }
 
   private async determineBranchToTake(
@@ -110,7 +120,6 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
-
       const noSequenceFlowFoundError: BadRequestError =
         new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
@@ -120,7 +129,6 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const tooManyTruthySequenceFlowsExist: boolean = truthySequenceFlows.length > 1;
     if (tooManyTruthySequenceFlowsExist) {
-
       const tooManySequenceFlowsError: BadRequestError =
         new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
