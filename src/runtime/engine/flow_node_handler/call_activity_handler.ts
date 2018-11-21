@@ -1,4 +1,5 @@
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -12,9 +13,11 @@ import {
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  ICorrelationService,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  IResumeProcessService,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -25,15 +28,21 @@ import {FlowNodeHandler} from './index';
 export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApi;
+  private _correlationService: ICorrelationService;
+  private _resumeProcessService: IResumeProcessService;
 
   constructor(consumerApiService: IConsumerApi,
+              correlationService: ICorrelationService,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
+              resumeProcessService: IResumeProcessService,
               callActivityModel: Model.Activities.CallActivity) {
     super(flowNodeInstanceService, loggingApiService, metricsService, callActivityModel);
 
     this._consumerApiService = consumerApiService;
+    this._correlationService = correlationService;
+    this._resumeProcessService = resumeProcessService;
   }
 
   private get callActivity(): Model.Activities.CallActivity {
@@ -47,31 +56,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     await this.persistOnEnter(token);
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
-
-    const processInstanceId: string = token.processInstanceId;
-    const correlationId: string = token.correlationId;
-    const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
-
-    await this.persistOnSuspend(token);
-
-    const processStartResponse: ProcessStartResponsePayload =
-      await this._waitForSubProcessToFinishAndReturnCorrelationId(identity,
-                                                                  correlationId,
-                                                                  processInstanceId,
-                                                                  startEventId,
-                                                                  tokenData);
-
-    await this.persistOnResume(token);
-
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.callActivity);
-
-    await processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
-    token.payload = processStartResponse.tokenPayload;
-
-    await this.persistOnExit(token);
-
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -80,7 +65,159 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
-    throw new Error('Not implemented yet.');
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.suspended:
+        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      case Runtime.Types.FlowNodeInstanceState.running:
+
+        const resumeToken: Runtime.Types.ProcessToken =
+          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+            return token.type === Runtime.Types.ProcessTokenType.onResume;
+          });
+
+        const startEventConditionNotYetAchieved: boolean = resumeToken === undefined;
+
+        if (startEventConditionNotYetAchieved) {
+          return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        }
+
+        return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      default:
+        throw new InternalServerError(`Cannot resume StartEvent instance ${flowNodeInstance.id}, because it was already finished!`);
+    }
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onEnter" state.
+   *
+   * Basically, the handler was not yet executed, except for the initial
+   * state change.
+   *
+   * @async
+   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The requesting user's identity.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterEnter(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    identity: IIdentity,
+                                   ): Promise<NextFlowNodeInfo> {
+
+    // When the FNI was interrupted directly after the onEnter state change, only one token will be present.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onSuspended" state.
+   *
+   * When the FlowNodeInstance was interrupted during this stage, we need to
+   * run the handler again, except for the "onSuspend" state change.
+   *
+   * @async
+   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The requesting user's identity.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                      identity: IIdentity,
+                                     ): Promise<NextFlowNodeInfo> {
+
+    const currentToken: Runtime.Types.ProcessToken =
+      flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === Runtime.Types.ProcessTokenType.onSuspend;
+      });
+
+    // First we need to find out if the Subprocess was already started.
+    const correlation: Runtime.Types.Correlation
+      = await this._correlationService.getSubprocessesForProcessInstance(flowNodeInstance.processInstanceId);
+
+    const matchingSubProcess: Runtime.Types.CorrelationProcessModel =
+      correlation.processModels.find((entry: Runtime.Types.CorrelationProcessModel): boolean => {
+        return entry.name === this.callActivity.calledReference;
+      });
+
+    let callActivityResult: any;
+
+    const callActivityNotYetExecuted: boolean = matchingSubProcess === undefined;
+    if (callActivityNotYetExecuted) {
+      // Subprocess not yet started. We need to run the handler again.
+      const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
+
+      const processStartResponse: ProcessStartResponsePayload =
+        await this._executeSubprocess(identity, startEventId, processTokenFacade, currentToken);
+
+      callActivityResult = processStartResponse.tokenPayload;
+    } else {
+      // Subprocess was already started. Resume it and wait for the result:
+      callActivityResult = await this._resumeProcessService.resumeProcessInstanceById(matchingSubProcess.processInstanceId);
+    }
+
+    currentToken.payload = callActivityResult;
+    await this.persistOnResume(currentToken);
+    await processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
+    await this.persistOnExit(currentToken);
+
+    return this.getNextFlowNodeInfo(currentToken, processTokenFacade, processModelFacade);
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onResumed" state.
+   *
+   * Basically, the StartEvent was already finished.
+   * The final result is only missing in the database.
+   *
+   * @async
+   * @param   resumeToken   The FlowNodeInstance to resume.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
+                                     processTokenFacade: IProcessTokenFacade,
+                                     processModelFacade: IProcessModelFacade,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, resumeToken.payload);
+
+    const nextNodeAfter: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.callActivity);
+
+    await this.persistOnExit(resumeToken);
+
+    return new NextFlowNodeInfo(nextNodeAfter, resumeToken, processTokenFacade);
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                               ): Promise<NextFlowNodeInfo> {
+
+    const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
+
+    await this.persistOnSuspend(token);
+
+    const processStartResponse: ProcessStartResponsePayload =
+      await this._executeSubprocess(identity, startEventId, processTokenFacade, token);
+
+    token.payload = processStartResponse.tokenPayload;
+
+    await this.persistOnResume(token);
+    await processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
+    await this.persistOnExit(token);
+
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 
   /**
@@ -110,18 +247,21 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
    * CallActivity FlowNode.
    *
    * @async
-   * @param identity          The users identity.
-   * @param correlationId     The ID of the Correlation in which to run the
-   *                          SubProcess specified in the CallActivtiy.
-   * @param processInstanceId The ID of the current ProcessInstance.
-   * @param startEventId      The StartEvent by which to start the SubProcess.
-   * @param tokenData         The current ProcessToken.
+   * @param identity           The users identity.
+   * @param startEventId       The StartEvent by which to start the SubProcess.
+   * @param processTokenFacade The Facade for accessing the current process' tokens.
+   * @param token              The current ProcessToken.
    */
-  private async _waitForSubProcessToFinishAndReturnCorrelationId(identity: IIdentity,
-                                                                 correlationId: string,
-                                                                 processInstanceId: string,
-                                                                 startEventId: string,
-                                                                 tokenData: any): Promise<ProcessStartResponsePayload> {
+  private async _executeSubprocess(identity: IIdentity,
+                                   startEventId: string,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   token: Runtime.Types.ProcessToken ,
+                                  ): Promise<ProcessStartResponsePayload> {
+
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+
+    const processInstanceId: string = token.processInstanceId;
+    const correlationId: string = token.correlationId;
 
     const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
 
