@@ -102,28 +102,7 @@ export class CorrelationService implements ICorrelationService {
     return correlation;
   }
 
-  public async getSubprocessesForProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.Correlation>> {
-
-    const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
-      await this._correlationRepository.getSubprocessesForProcessInstance(processInstanceId);
-
-    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(correlationsFromRepo);
-
-    return correlations;
-  }
-
-  public async deleteCorrelationByProcessModelId(processModelId: string): Promise<void> {
-    this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
-  }
-
-  /**
-   * Takes a list of CorrelationFromRepository objects and groups the
-   * ProcessModelHashes associated with them by their respecitve CorrelationId.
-   *
-   * @param   correlations The Correlations to group.
-   * @returns              The grouped ProcessModelHashes.
-   */
-  private _groupProcessModelHashes(correlations: Array<Runtime.Types.CorrelationFromRepository>): GroupedProcessModelHashes {
+  public async getSubprocessesForProcessInstance(processInstanceId: string): Promise<Runtime.Types.Correlation> {
 
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getSubprocessesForProcessInstance(processInstanceId);
@@ -229,12 +208,21 @@ export class CorrelationService implements ICorrelationService {
           await this._processDefinitionRepository.getByHash(entry.processModelHash);
 
         const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
-        processModel.name = entry.name;
-        processModel.xml = entry.xml;
-        processModel.hash = correlationFromRepo.processModelHash;
-        processModel.processInstanceId = correlationFromRepo.processInstanceId;
-        processModel.parentProcessInstanceId = correlationFromRepo.parentProcessInstanceId;
-        processModel.createdAt = correlationFromRepo.createdAt;
+        processModel.name = processDefinition.name;
+        processModel.xml = processDefinition.xml;
+        processModel.hash = entry.processModelHash;
+        processModel.processInstanceId = entry.processInstanceId;
+        processModel.parentProcessInstanceId = entry.parentProcessInstanceId;
+        processModel.createdAt = entry.createdAt;
+
+        const processHasActiveFlowNodeInstances: boolean =
+          activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
+            return flowNodeInstance.processInstanceId === entry.processInstanceId;
+          });
+
+        processModel.state = processHasActiveFlowNodeInstances
+          ? Runtime.Types.FlowNodeInstanceState.running
+          : Runtime.Types.FlowNodeInstanceState.finished;
 
         return processModel;
       });
@@ -244,17 +232,56 @@ export class CorrelationService implements ICorrelationService {
   }
 
   /**
-   * Queries all "running" and "suspended" FlowNodeInstances from the repository.
+   * Queries all "running" and "suspended" FlowNodeInstances from the repository
+   * and returns them as a concatenated result.
    *
    * @async
-   * @returns All retrieved active FlowNodeInstances.
+   * @returns All retrieved FlowNodeInstances.
    */
   private async _getActiveFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
 
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
-      await this._flowNodeInstanceRepository.queryActive();
+    const runningFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this._getRunningFlowNodeInstances();
 
-    return activeFlowNodeInstances;
+    const suspendedFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this._getSuspendedFlowNodeInstances();
+
+    Array.prototype.push.apply(runningFlowNodeInstances, suspendedFlowNodeInstances);
+
+    return runningFlowNodeInstances;
+  }
+
+  /**
+   * Queries all running and suspended FlowNodeInstances from the repository
+   * and returns them as a concatenated result.
+   *
+   * @async
+   * @returns A list of all retrieved FlowNodeInstances.
+   */
+  private async _getRunningFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+
+    const runningState: Runtime.Types.FlowNodeInstanceState = Runtime.Types.FlowNodeInstanceState.running;
+
+    const runningFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this._flowNodeInstanceRepository.queryByState(runningState);
+
+    return runningFlowNodeInstances;
+  }
+
+  /**
+   * Returns all running FlowNodeInstances from the repository.
+   *
+   * @async
+   * @returns A list of all retrieved FlowNodeInstances.
+   */
+  private async _getSuspendedFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+
+    const suspendedState: Runtime.Types.FlowNodeInstanceState = Runtime.Types.FlowNodeInstanceState.suspended;
+
+    const suspendedFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      await this._flowNodeInstanceRepository.queryByState(suspendedState);
+
+    return suspendedFlowNodeInstances;
   }
 
   /**
