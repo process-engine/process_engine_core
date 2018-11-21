@@ -75,9 +75,9 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
             return token.type === Runtime.Types.ProcessTokenType.onResume;
           });
 
-        const startEventConditionNotYetAchieved: boolean = resumeToken === undefined;
+        const callActivityNotYetExecuted: boolean = resumeToken === undefined;
 
-        if (startEventConditionNotYetAchieved) {
+        if (callActivityNotYetExecuted) {
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
         }
 
