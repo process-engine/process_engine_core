@@ -11,6 +11,7 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -126,7 +127,10 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
         return new NextFlowNodeInfo(undefined, token, processTokenFacade);
       }
 
-      return new NextFlowNodeInfo(joinGateway, token, processTokenFacade);
+      const processTokenResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
+      const newToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(processTokenResults);
+
+      return new NextFlowNodeInfo(joinGateway, newToken, processTokenFacade);
     }
 
     // This is a Join-Gateway. Just persist a state change and move on.
