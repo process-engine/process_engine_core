@@ -94,18 +94,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return nextFlowNode;
   }
 
-  /**
-   * This is the method where the derived handlers must implement their logic
-   * for resuming a previously interrupted instance.
-   *
-   * @async
-   * @param flowNodeInstance   The current ProcessToken.
-   * @param processTokenFacade The ProcessTokenFacade of the curently
-   *                           running process.
-   * @param processModelFacade The ProcessModelFacade of the curently
-   *                           running process.
-   * @param identity           The requesting users identity.
-   */
   public async resume(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                       processTokenFacade: IProcessTokenFacade,
                       processModelFacade: IProcessModelFacade,
