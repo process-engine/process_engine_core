@@ -175,7 +175,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
    * Resumes the given FlowNodeInstance from the point where it assumed the
    * "onResumed" state.
    *
-   * Basically, the StartEvent was already finished.
+   * Basically, the handler had already finished.
    * The final result is only missing in the database.
    *
    * @async
