@@ -148,13 +148,10 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
     processTokenFacade.addResultForFlowNode(this.userTask.id, resumeToken.payload);
 
-    const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.userTask);
-
     await this.persistOnExit(resumeToken);
-
     this._sendUserTaskFinishedNotification(resumeToken);
 
-    return new NextFlowNodeInfo(nextNodeAfterUserTask, resumeToken, processTokenFacade);
+    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,
@@ -169,13 +166,10 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
 
     processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
 
-    const nextNodeAfterUserTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.userTask);
-
     await this.persistOnExit(token);
-
     this._sendUserTaskFinishedNotification(token);
 
-    return new NextFlowNodeInfo(nextNodeAfterUserTask, token, processTokenFacade);
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 
   /**
