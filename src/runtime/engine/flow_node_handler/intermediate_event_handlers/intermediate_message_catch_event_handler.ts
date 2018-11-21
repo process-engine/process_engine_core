@@ -128,7 +128,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
    * Resumes the given FlowNodeInstance from the point where it assumed the
    * "onResumed" state.
    *
-   * Basically, the message was alrady received, but the final state change
+   * Basically, the message was already received, but the final state change
    * did not happen.
    *
    * @async

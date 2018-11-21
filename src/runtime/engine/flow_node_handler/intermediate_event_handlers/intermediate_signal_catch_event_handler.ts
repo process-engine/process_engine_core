@@ -128,7 +128,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
    * Resumes the given FlowNodeInstance from the point where it assumed the
    * "onResumed" state.
    *
-   * Basically, the signal was alrady received, but the final state change
+   * Basically, the signal was already received, but the final state change
    * did not happen.
    *
    * @async

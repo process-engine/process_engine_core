@@ -187,7 +187,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
       const externalTaskIsAlreadyFinished: boolean = externalTask.state === ExternalTaskState.finished;
       if (externalTaskIsAlreadyFinished) {
-        // The external worker has alrady finished processing the ExternalTask
+        // The external worker has already finished processing the ExternalTask
         // and we only missed the notification.
         // We can continue with the ExternalTask we retrieved from the database.
         processExternalTaskResult(externalTask.error, externalTask.result);

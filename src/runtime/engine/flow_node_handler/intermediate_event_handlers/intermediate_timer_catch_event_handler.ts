@@ -130,7 +130,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
    * Resumes the given FlowNodeInstance from the point where it assumed the
    * "onResumed" state.
    *
-   * Basically, the timer had alrady elapsed, but the final state change
+   * Basically, the timer had already elapsed, but the final state change
    * did not happen.
    *
    * @async
