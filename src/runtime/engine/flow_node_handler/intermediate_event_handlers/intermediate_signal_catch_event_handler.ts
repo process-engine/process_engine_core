@@ -33,10 +33,6 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
     return super.flowNode;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -66,7 +62,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
         .replace(eventAggregatorSettings.routeParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
+      const subscription: ISubscription = this._eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();

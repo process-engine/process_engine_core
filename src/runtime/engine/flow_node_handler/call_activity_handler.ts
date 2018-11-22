@@ -40,10 +40,6 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return super.flowNode;
   }
 
-  private get consumerApiService(): IConsumerApi {
-    return this._consumerApiService;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -88,7 +84,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
    */
   private async _getAccessibleCallActivityStartEvent(identity: IIdentity): Promise<string> {
 
-    const processModel: ProcessModel = await this.consumerApiService.getProcessModelById(identity, this.callActivity.calledReference);
+    const processModel: ProcessModel = await this._consumerApiService.getProcessModelById(identity, this.callActivity.calledReference);
 
     /*
      * Note: If the user cannot access the process model and/or its start events,
@@ -129,7 +125,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     const processModelId: string = this.callActivity.calledReference;
 
     const result: ProcessStartResponsePayload =
-      await this.consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
+      await this._consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
 
     return result;
   }

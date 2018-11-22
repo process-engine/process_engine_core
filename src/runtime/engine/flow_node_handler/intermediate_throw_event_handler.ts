@@ -28,10 +28,6 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
     this._container = container;
   }
 
-  private get container(): IContainer {
-    return this._container;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -63,7 +59,7 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                                      identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const eventHandler: FlowNodeHandler<Model.Events.IntermediateThrowEvent> =
-      await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName, [this.flowNode]);
+      await this._container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateThrowEvent>>(eventHandlerName, [this.flowNode]);
 
     return eventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }

@@ -35,10 +35,6 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
     return super.flowNode;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -53,7 +49,7 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
         .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
         .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
+        this._eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
 
           await this.persistOnResume(token);
 
@@ -89,7 +85,7 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
                                                                        this.flowNodeInstanceId,
                                                                        token.payload);
 
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
   }
 
   private _sendManualTaskFinishedToConsumerApi(token: Runtime.Types.ProcessToken): void {
@@ -106,9 +102,9 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
       .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
       .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
       .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
-    this.eventAggregator.publish(manualTaskFinishedEvent, message);
+    this._eventAggregator.publish(manualTaskFinishedEvent, message);
 
     // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
   }
 }

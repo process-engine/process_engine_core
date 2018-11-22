@@ -61,7 +61,6 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
 
           // if the timer elapsed before the decorated handler finished execution,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
-
           const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
           await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, oldTokenFormat.current);
 
@@ -71,11 +70,8 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
 
         timerSubscription = await this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this._decoratedHandler.execute(token,
-                                                                                       processTokenFacade,
-                                                                                       processModelFacade,
-                                                                                       identity,
-                                                                                       this.previousFlowNodeInstanceId);
+        const nextFlowNodeInfo: NextFlowNodeInfo =
+          await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
         if (timerHasElapsed) {
           return;
@@ -83,7 +79,6 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
 
         // if the decorated handler finished execution before the timer elapsed,
         // continue the regular execution with the next FlowNode and dispose the timer
-
         hasHandlerFinished = true;
         resolve(nextFlowNodeInfo);
 

@@ -38,10 +38,6 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     return super.flowNode;
   }
 
-  private get container(): IContainer {
-    return this._container;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -99,7 +95,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     const invocation: Model.Activities.MethodInvocation = this.serviceTask.invocation as Model.Activities.MethodInvocation;
 
-    const serviceInstance: any = await this.container.resolveAsync(invocation.module);
+    const serviceInstance: any = await this._container.resolveAsync(invocation.module);
 
     const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
     const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];

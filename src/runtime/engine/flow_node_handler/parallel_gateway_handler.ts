@@ -45,14 +45,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return super.flowNode;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
-  private get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
-    return this._flowNodeHandlerFactory;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -83,7 +75,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
       const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
         .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
 
-      const processTerminationSubscription: ISubscription = this.eventAggregator
+      const processTerminationSubscription: ISubscription = this._eventAggregator
         .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
           processStateInfo.processTerminatedMessage = message;
         });
@@ -228,7 +220,7 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                             processStateInfo: IProcessStateInfo,
                                             previousFlowNodeInstanceId: string): Promise<NextFlowNodeInfo> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
 
