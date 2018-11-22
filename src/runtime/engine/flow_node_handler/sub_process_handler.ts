@@ -68,7 +68,101 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
-    throw new Error('Not implemented yet.');
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.suspended:
+        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      case Runtime.Types.FlowNodeInstanceState.running:
+
+        const resumeToken: Runtime.Types.ProcessToken =
+          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+            return token.type === Runtime.Types.ProcessTokenType.onResume;
+          });
+
+        const callActivityNotYetExecuted: boolean = resumeToken === undefined;
+
+        if (callActivityNotYetExecuted) {
+          return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        }
+
+        return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      default:
+        throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was already finished!`);
+    }
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onEnter" state.
+   *
+   * Basically, the handler was not yet executed, except for the initial
+   * state change.
+   *
+   * @async
+   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The requesting user's identity.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterEnter(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                    processTokenFacade: IProcessTokenFacade,
+                                    processModelFacade: IProcessModelFacade,
+                                    identity: IIdentity,
+                                   ): Promise<NextFlowNodeInfo> {
+
+    // When the FNI was interrupted directly after the onEnter state change, only one token will be present.
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onSuspended" state.
+   *
+   * When the FlowNodeInstance was interrupted during this stage, we need to
+   * run the handler again, except for the "onSuspend" state change.
+   *
+   * @async
+   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The requesting user's identity.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                      identity: IIdentity,
+                                     ): Promise<NextFlowNodeInfo> {
+    throw new Error('bla');
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onResumed" state.
+   *
+   * Basically, the handler had already finished.
+   * The final result is only missing in the database.
+   *
+   * @async
+   * @param   resumeToken   The FlowNodeInstance to resume.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
+                                     processTokenFacade: IProcessTokenFacade,
+                                     processModelFacade: IProcessModelFacade,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    processTokenFacade.addResultForFlowNode(this.subProcess.id, resumeToken.payload);
+
+    const nextNodeAfter: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.subProcess);
+
+    await this.persistOnExit(resumeToken);
+
+    return new NextFlowNodeInfo(nextNodeAfter, resumeToken, processTokenFacade);
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,
@@ -78,18 +172,8 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
-    const initialSubProcessToken: any = await processTokenFacade.getOldTokenFormat();
-
-    // The SubProcessModelFacade implements the same interface as the ProcessModelFacade.
-    // It contains all FlowNode data for the SubProcess in question, but nothing more.
-    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
-
-    // This allows the SubProcess to access its parent processes token data, but prevents the parent process from
-    // accessing the Subprocess' data until the SubProcess its finished.
-    const subProcessTokenFacade: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
-
     await this.persistOnSuspend(token);
-    const subProcessResult: any = await this._executeSubprocess(initialSubProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
+    const subProcessResult: any = await this._executeSubprocess(token, processTokenFacade, processModelFacade, identity);
     token.payload = subProcessResult;
     await this.persistOnResume(token);
 
