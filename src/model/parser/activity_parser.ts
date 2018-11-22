@@ -1,5 +1,6 @@
-/*tslint:disable:max-file-line-count*/
+import * as moment from 'moment';
 
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
 
 import {
@@ -10,10 +11,6 @@ import {
 import {parseProcessFlowNodes} from './flow_node_parser';
 import {parseProcessLaneSet} from './process_lane_set_parser';
 import {parseProcessSequenceFlows} from './sequence_flow_parser';
-
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-
-import * as moment from 'moment';
 
 export function parseActivitiesFromProcessData(
   processData: any,
@@ -32,16 +29,7 @@ export function parseActivitiesFromProcessData(
 
   return Array
     .prototype
-    .concat(
-      manualTasks,
-      userTasks,
-      scriptTasks,
-      serviceTasks,
-      callActivities,
-      subProcesses,
-      sendTasks,
-      receiveTasks,
-    );
+    .concat(manualTasks, userTasks, scriptTasks, serviceTasks, callActivities, subProcesses, sendTasks, receiveTasks);
 }
 
 function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
@@ -376,7 +364,7 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
   const methodProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
   const paramsProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('params', extensionProperties);
 
-  // If no module- or method- property is defined, this is not a valid method invocation, although parameters are optional.
+  // If no module- or method- property is defined, this is not a valid method invocation. 'params' are optional.
   if (!moduleProperty || !methodProperty) {
     return undefined;
   }
@@ -388,10 +376,9 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
   return methodInvocation;
 }
 
-function findExtensionPropertyByName(
-  propertyName: string,
-  extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
-): Model.Base.CamundaExtensionProperty {
+function findExtensionPropertyByName(propertyName: string,
+                                     extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
+                                    ): Model.Base.CamundaExtensionProperty {
 
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
@@ -431,11 +418,10 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   return callActivities;
 }
 
-function parseSubProcesses(
-  processData: any,
-  errors: Array<Model.Types.Error>,
-  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
-): Array<Model.Activities.SubProcess> {
+function parseSubProcesses(processData: any,
+                           errors: Array<Model.Types.Error>,
+                           eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+                          ): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
 
