@@ -259,7 +259,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processModel.id,
       processInstanceConfig.processInstanceId,
       processInstanceConfig.startEvent.id,
-      null, processInstanceConfig.processToken);
+      processInstanceConfig.processToken);
+
     /**
      * TODO: Currently, the message which is send, when a Process ends is
      * implement in the EndEvent Handlers.
