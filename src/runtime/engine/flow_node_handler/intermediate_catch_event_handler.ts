@@ -110,7 +110,7 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
                                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const eventHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent> =
-      await this.container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>(eventHandlerName, [this.flowNode]);
+      await this._container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>(eventHandlerName, [this.flowNode]);
 
     return eventHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
   }
