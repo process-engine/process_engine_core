@@ -14,7 +14,7 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandler} from '../index';
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
@@ -36,14 +36,6 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
     return super.flowNode;
   }
 
-  private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
-    return this._decoratedHandler;
-  }
-
-  private get timerFacade(): ITimerFacade {
-    return this._timerFacade;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -53,8 +45,8 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
 
       let timerSubscription: ISubscription;
 
-      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(this.timerBoundaryEvent.timerEventDefinition);
-      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
+      const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerBoundaryEvent.timerEventDefinition);
+      const timerValue: string = this._timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
 
       try {
 
@@ -77,9 +69,9 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
           resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
         };
 
-        timerSubscription = await this.timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
+        timerSubscription = await this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.decoratedHandler.execute(token,
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this._decoratedHandler.execute(token,
                                                                                        processTokenFacade,
                                                                                        processModelFacade,
                                                                                        identity,
