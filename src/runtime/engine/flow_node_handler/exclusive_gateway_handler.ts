@@ -81,7 +81,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     token: Runtime.Types.ProcessToken,
     sequenceFlows: Array<Model.Types.SequenceFlow>,
     processTokenFacade: IProcessTokenFacade,
-): Promise<string> {
+  ): Promise<string> {
 
     const truthySequenceFlows: Array<Model.Types.SequenceFlow> = [];
 
@@ -117,7 +117,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       await this.persistOnError(token, tooManySequenceFlowsError);
       throw tooManySequenceFlowsError;
-}
+    }
 
     const nextFlowNodeRef: string = truthySequenceFlows[0].targetRef;
 
