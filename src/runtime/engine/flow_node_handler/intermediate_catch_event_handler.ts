@@ -61,11 +61,6 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
                                                        identity);
     }
 
-    // TODO: Default behavior, in case an unsupported intermediate event is used.
-    // Can probably be removed, once we support Signals.
-    // Note that FlowNodeInstance persistence is usually delegated to the dedicated event handlers
-    // ('IntermediateMessageCatchEventHandler', etc). Since this use case addresses events that are not yet supported,
-    // this method must handle state persistence by itself.
     return this._persistAndContinue(token, processTokenFacade, processModelFacade, identity);
   }
 
