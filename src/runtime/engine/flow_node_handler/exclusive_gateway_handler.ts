@@ -68,7 +68,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     // If this is a split gateway, find the SequenceFlow that has a truthy condition
     // and continue execution with its target FlowNode.
-    const nextFlowNodeId: string = await this.determineBranchToTake(outgoingSequenceFlows, processTokenFacade);
+    const nextFlowNodeId: string = await this.determineBranchToTake(token, outgoingSequenceFlows, processTokenFacade);
 
     const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(nextFlowNodeId);
 
@@ -78,9 +78,10 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
   }
 
   private async determineBranchToTake(
+    token: Runtime.Types.ProcessToken,
     sequenceFlows: Array<Model.Types.SequenceFlow>,
     processTokenFacade: IProcessTokenFacade,
-  ): Promise<string> {
+): Promise<string> {
 
     const truthySequenceFlows: Array<Model.Types.SequenceFlow> = [];
 
@@ -100,13 +101,23 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
-      throw new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
+
+      const noSequenceFlowFoundError: BadRequestError =
+        new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
+
+      await this.persistOnError(token, noSequenceFlowFoundError);
+      throw noSequenceFlowFoundError;
     }
 
     const tooManyTruthySequenceFlowsExist: boolean = truthySequenceFlows.length > 1;
     if (tooManyTruthySequenceFlowsExist) {
-      throw new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
-    }
+
+      const tooManySequenceFlowsError: BadRequestError =
+        new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
+
+      await this.persistOnError(token, tooManySequenceFlowsError);
+      throw tooManySequenceFlowsError;
+}
 
     const nextFlowNodeRef: string = truthySequenceFlows[0].targetRef;
 
