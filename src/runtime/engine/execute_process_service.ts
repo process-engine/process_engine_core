@@ -255,25 +255,24 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._saveCorrelation(identity, processInstanceConfig);
 
+    const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(processInstanceConfig.correlationId,
+      processModel.id,
+      processInstanceConfig.processInstanceId,
+      processInstanceConfig.startEvent.id,
+      null, processInstanceConfig.processToken);
     /**
      * TODO: Currently, the message which is send, when a Process ends is
      * implement in the EndEvent Handlers.
      *
      * We should review, if we can move this message to this place.
      */
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted);
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
 
     const processStartedBaseName: string = eventAggregatorSettings.routePaths.processInstanceStarted;
     const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
     const processWithIdStartedMessage: string =
       processStartedBaseName
         .replace(processModelIdParam, processModel.id);
-
-    const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(processInstanceConfig.correlationId,
-                                                                                  processModel.id,
-                                                                                  processInstanceConfig.processInstanceId,
-                                                                                  processInstanceConfig.startEvent.id,
-                                                                                  null, processInstanceConfig.processToken);
 
     this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
 
