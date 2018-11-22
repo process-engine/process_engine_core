@@ -13,6 +13,7 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
+  IResumeProcessService,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -24,21 +25,27 @@ import {FlowNodeHandler} from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
+  private _correlationService: ICorrelationService;
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+  private _resumeProcessService: IResumeProcessService;
 
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
-  constructor(eventAggregator: IEventAggregator,
+  constructor(correlationService: ICorrelationService,
+              eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
+              resumeProcessService: IResumeProcessService,
               subProcessModel: Model.Activities.SubProcess) {
     super(flowNodeInstanceService, loggingApiService, metricsService, subProcessModel);
 
+    this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this._resumeProcessService = resumeProcessService;
   }
 
   private get subProcess(): Model.Activities.SubProcess {
@@ -52,10 +59,37 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     await this.persistOnEnter(token);
 
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+  }
+
+  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                              ): Promise<NextFlowNodeInfo> {
+
+    throw new Error('Not implemented yet.');
+  }
+
+  private async _executeHandler(token: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity): Promise<NextFlowNodeInfo> {
+
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
+    const initialSubProcessToken: any = await processTokenFacade.getOldTokenFormat();
+
+    // The SubProcessModelFacade implements the same interface as the ProcessModelFacade.
+    // It contains all FlowNode data for the SubProcess in question, but nothing more.
+    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
+
+    // This allows the SubProcess to access its parent processes token data, but prevents the parent process from
+    // accessing the Subprocess' data until the SubProcess its finished.
+    const subProcessTokenFacade: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
+
     await this.persistOnSuspend(token);
-    const subProcessResult: any = await this._executeSubprocess(token, processTokenFacade, processModelFacade, identity);
+    const subProcessResult: any = await this._executeSubprocess(initialSubProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
     token.payload = subProcessResult;
     await this.persistOnResume(token);
 
@@ -120,15 +154,6 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const subProcessResult: any = subProcessTokenData.current || {};
 
     return subProcessResult;
-  }
-
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
-
-    throw new Error('Not implemented yet.');
   }
 
   private async _executeSubProcessFlowNode(flowNode: Model.Base.FlowNode,
