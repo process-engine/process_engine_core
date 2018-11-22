@@ -22,6 +22,7 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
+  ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -262,11 +263,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
      */
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted);
 
-    const processStartedBaseMessage: string = eventAggregatorSettings.routePaths.processInstanceStarted;
+    const processStartedBaseName: string = eventAggregatorSettings.routePaths.processInstanceStarted;
     const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
     const processWithIdStartedMessage: string =
-      processStartedBaseMessage
+      processStartedBaseName
         .replace(processModelIdParam, processModel.id);
+
+    const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(processInstanceConfig.correlationId,
+                                                                                  processModel.id,
+                                                                                  processInstanceConfig.processInstanceId,
+                                                                                  processInstanceConfig.startEvent.id,
+                                                                                  null, processInstanceConfig.processToken);
+
+    this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
 
     await this._executeFlowNode(processInstanceConfig.startEvent,
                                 processInstanceConfig.processToken,
