@@ -17,3 +17,4 @@ export * from './manual_task_handler';
 
 export * from './boundary_event_handlers/index';
 export * from './intermediate_event_handlers/index';
+export * from './service_task_handlers/index';

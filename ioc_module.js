@@ -7,6 +7,8 @@ const {
   EndEventHandler,
   ErrorBoundaryEventHandler,
   ExclusiveGatewayHandler,
+  ExternalServiceTaskHandler,
+  InternalServiceTaskHandler,
   ManualTaskHandler,
   MessageBoundaryEventHandler,
   ParallelGatewayHandler,
@@ -168,7 +170,15 @@ function registerHandlers(container) {
 
   container
     .register('ServiceTaskHandler', ServiceTaskHandler)
-    .dependencies('container', 'EventAggregator', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+    .dependencies('container', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('ExternalServiceTaskHandler', ExternalServiceTaskHandler)
+    .dependencies('EventAggregator', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('InternalServiceTaskHandler', InternalServiceTaskHandler)
+    .dependencies('container', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container
     .register('ManualTaskHandler', ManualTaskHandler)
