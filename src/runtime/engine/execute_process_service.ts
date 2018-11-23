@@ -288,7 +288,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                processInstanceConfig.correlationId,
                                                processInstanceConfig.processInstanceId,
                                                processDefinition.name,
-                                               processDefinition.hash);
+                                               processDefinition.hash,
+                                               processInstanceConfig.parentProcessInstanceId);
   }
 
   /**
