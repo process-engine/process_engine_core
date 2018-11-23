@@ -135,9 +135,11 @@ export class ProcessModelFacade implements IProcessModelFacade {
     });
   }
 
-  // TODO: support of new Split Gateway in Branch
-  //       currently the next Parallel Gateway is always taken as the Parallel Join Gateway
-  //       we still need an integration test with multiple parallel branches to fully implement this
+  // TODO:
+  // Supported nested ParallelGateways, or ExclusiveGateways within ParallelGateways.
+  // Currently the next Parallel Gateway is always taken as the Parallel Join Gateway.
+  // This also effectively prevents us from using TerminateEndEvents reliably, because
+  // it is always assumed that every branch must ultimately lead back to the Join Gateway.
   public getJoinGatewayFor(parallelGatewayNode: Model.Gateways.ParallelGateway): Model.Gateways.ParallelGateway {
 
     const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeFor(parallelGatewayNode);
@@ -169,20 +171,20 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return boundaryEvents as Array<Model.Events.BoundaryEvent>;
   }
 
+  // TODO: This does not work for gateways because it always assumes that only one outgoing SequenceFlow is present.
   public getNextFlowNodeFor(flowNode: Model.Base.FlowNode): Model.Base.FlowNode {
 
     // First find the SequenceFlow that describes the next target after the FlowNode
-
     const flow: Model.Types.SequenceFlow = this.processModel.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow) => {
       return sequenceFlow.sourceRef === flowNode.id;
     });
 
-    if (!flow) {
-      return null;
+    const flowhasNoTarget: boolean = !flow || !flow.targetRef;
+    if (flowhasNoTarget) {
+      return undefined;
     }
 
     // Then find the target FlowNode of the SequenceFlow
-
     const nextFlowNode: Model.Base.FlowNode = this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
       return currentFlowNode.id === flow.targetRef;
     });
