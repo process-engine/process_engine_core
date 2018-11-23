@@ -36,7 +36,9 @@ import {ProcessTokenFacade} from './process_token_facade';
  */
 interface IProcessInstanceConfig {
   correlationId: string;
+  processModelId: string;
   processInstanceId: string;
+  parentProcessInstanceId: string;
   processModelFacade: IProcessModelFacade;
   startEvent: Model.Events.StartEvent;
   processToken: Runtime.Types.ProcessToken;
@@ -86,7 +88,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     try {
 
       this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
-      const result: IProcessTokenResult = await this._executeProcess(identity, processModel, processInstanceConfig);
+      const result: IProcessTokenResult = await this._executeProcess(identity, processInstanceConfig);
       this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
 
       return result;
@@ -147,7 +149,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       try {
 
         this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
-        await this._executeProcess(identity, processModel, processInstanceConfig);
+        await this._executeProcess(identity, processInstanceConfig);
         this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
 
       } catch (error) {
@@ -220,7 +222,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processInstanceConfig: IProcessInstanceConfig = {
       correlationId: correlationId,
+      processModelId: processModel.id,
       processInstanceId: processInstanceId,
+      parentProcessInstanceId: caller,
       processModelFacade: processModelFacade,
       startEvent: startEvent,
       processToken: processToken,
@@ -235,13 +239,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
    *
    * @async
    * @param   identity              The identity of the requesting user.
-   * @param   processModel          The ProcessModel to start.
    * @param   processInstanceConfig The configs for the ProcessInstance.
    * @returns                       The ProcessInstance's result.
    */
-  private async _executeProcess(identity: IIdentity,
-                                processModel: Model.Types.Process,
-                                processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
+  private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
 
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
@@ -251,7 +252,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         this.processTerminatedMessage = message;
       });
 
-    await this._saveCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, processModel.id);
+    await this._saveCorrelation(identity, processInstanceConfig);
 
     await this._executeFlowNode(processInstanceConfig.startEvent,
                                 processInstanceConfig.processToken,
@@ -275,24 +276,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
    * Correlation.
    *
    * @async
-   * @param identity          The identity of the user that started the
-   *                          ProcessInstance.
-   * @param correlationId     The ID of the Correlation.
-   * @param processInstanceId The ID of the ProcessInstance.
-   * @param processModelId    The ID of the ProcessModel.
+   * @param   identity              The identity of the requesting user.
+   * @param   processInstanceConfig The configs for the ProcessInstance.
    */
-  private async _saveCorrelation(identity: IIdentity,
-                                 correlationId: string,
-                                 processInstanceId: string,
-                                 processModelId: string,
-                                ): Promise<void> {
+  private async _saveCorrelation(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
     const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
-      await this._processModelService.getProcessDefinitionAsXmlByName(identity, processModelId);
+      await this._processModelService.getProcessDefinitionAsXmlByName(identity, processInstanceConfig.processModelId);
 
-    await this
-      ._correlationService
-      .createEntry(identity, correlationId, processInstanceId, processDefinition.name, processDefinition.hash);
+    await this._correlationService.createEntry(identity,
+                                               processInstanceConfig.correlationId,
+                                               processInstanceConfig.processInstanceId,
+                                               processDefinition.name,
+                                               processDefinition.hash);
   }
 
   /**

@@ -36,10 +36,6 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     return super.flowNode;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -55,7 +51,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
         .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
       const subscription: ISubscription =
-        this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
+        this._eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
 
           await this.persistOnResume(token);
 
@@ -94,7 +90,7 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
                                                                        this.flowNodeInstanceId,
                                                                        token.payload);
 
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
   }
 
   private _sendUserTaskFinishedToConsumerApi(token: Runtime.Types.ProcessToken,
@@ -114,9 +110,9 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
       .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
       .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
-    this.eventAggregator.publish(userTaskFinishedEvent, message);
+    this._eventAggregator.publish(userTaskFinishedEvent, message);
 
     // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
   }
 }

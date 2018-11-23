@@ -33,10 +33,6 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     return super.flowNode;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -56,7 +52,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                this.messageThrowEvent.id,
                                                                                token.payload);
 
-    this.eventAggregator.publish(messageEventName, message);
+    this._eventAggregator.publish(messageEventName, message);
 
     const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageThrowEvent);
 
