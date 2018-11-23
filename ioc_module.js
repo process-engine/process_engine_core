@@ -86,13 +86,17 @@ function registerServices(container) {
     .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
     .dependencies('container');
 
-  container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory);
+  container
+    .register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
+    .singleton();
 
   container
     .register('ProcessModelService', ProcessModelService)
     .dependencies('ProcessDefinitionRepository', 'IamService', 'BpmnModelParser');
 
-  container.register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory);
+  container
+    .register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
+    .singleton();
 
   container
     .register('TimerFacade', TimerFacade)
