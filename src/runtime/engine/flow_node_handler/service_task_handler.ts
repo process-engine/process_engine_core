@@ -38,8 +38,6 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    await this.persistOnEnter(token);
-
     if (this.serviceTask.type === Model.Activities.ServiceTaskType.external) {
       return this._executeServiceTaskByType('ExternalServiceTaskHandler', token, processTokenFacade, processModelFacade, identity);
     }
