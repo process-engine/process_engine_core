@@ -39,6 +39,18 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._flowNodeInstanceRepository.queryByProcessModel(processModelId);
   }
 
+  public async queryByState(state: Runtime.Types.FlowNodeInstanceState): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.queryByState(state);
+  }
+
+  public async queryActive(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.queryActive();
+  }
+
+  public async queryActiveByProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.queryActiveByProcessInstance(processInstanceId);
+  }
+
   public async querySuspendedByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this._flowNodeInstanceRepository.querySuspendedByCorrelation(correlationId);
   }
@@ -46,6 +58,7 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
   public async querySuspendedByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this._flowNodeInstanceRepository.querySuspendedByProcessModel(processModelId);
   }
+
   public async queryProcessTokensByProcessInstanceId(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
     return this._flowNodeInstanceRepository.queryProcessTokensByProcessInstanceId(processInstanceId);
   }
