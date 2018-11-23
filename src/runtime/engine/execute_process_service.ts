@@ -256,7 +256,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     await this._saveCorrelation(identity, processInstanceConfig);
 
     const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(processInstanceConfig.correlationId,
-      processModel.id,
+      processInstanceConfig.processModelId,
       processInstanceConfig.processInstanceId,
       processInstanceConfig.startEvent.id,
       processInstanceConfig.processToken);
@@ -273,7 +273,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
     const processWithIdStartedMessage: string =
       processStartedBaseName
-        .replace(processModelIdParam, processModel.id);
+        .replace(processModelIdParam, processInstanceConfig.processModelId);
 
     this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
 
