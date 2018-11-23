@@ -72,35 +72,27 @@ function registerServices(container) {
 
   container
     .register('CorrelationService', CorrelationService)
-    .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'ProcessDefinitionRepository')
-    .singleton();
+    .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'ProcessDefinitionRepository');
 
   container
     .register('DeleteProcessModelService', DeleteProcessModelService)
-    .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService')
-    .singleton();
+    .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService');
 
   container
     .register('FlowNodeInstanceService', FlowNodeInstanceService)
-    .dependencies('FlowNodeInstanceRepository', 'IamService')
-    .singleton();
+    .dependencies('FlowNodeInstanceRepository', 'IamService');
 
   container
     .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
     .dependencies('container');
 
-  container
-    .register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
-    .singleton();
+  container.register('ProcessModelFacadeFactory', ProcessModelFacadeFactory);
 
   container
     .register('ProcessModelService', ProcessModelService)
-    .dependencies('ProcessDefinitionRepository', 'IamService', 'BpmnModelParser')
-    .singleton();
+    .dependencies('ProcessDefinitionRepository', 'IamService', 'BpmnModelParser');
 
-  container
-    .register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
-    .singleton();
+  container.register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory);
 
   container
     .register('TimerFacade', TimerFacade)
