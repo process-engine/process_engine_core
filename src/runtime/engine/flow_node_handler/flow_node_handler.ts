@@ -34,15 +34,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
     this._flowNode = flowNode;
+    this._flowNodeInstanceId = uuid.v4();
   }
 
   protected get flowNodeInstanceId(): string {
-
-    const noInstanceIdExists: boolean = this._flowNodeInstanceId === undefined;
-    if (noInstanceIdExists) {
-      this._flowNodeInstanceId = this.createFlowNodeInstanceId();
-    }
-
     return this._flowNodeInstanceId;
   }
 
@@ -125,15 +120,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                              processModelFacade: IProcessModelFacade,
                                              identity: IIdentity,
                                             ): Promise<NextFlowNodeInfo>;
-
-  /**
-   * Creates an instance ID for the FlowNode that this handler is responsible for.
-   *
-   * @returns The created FlowNodeInstanceId.
-   */
-  protected createFlowNodeInstanceId(): string {
-    return uuid.v4();
-  }
 
   /**
    * Persists the current state of the FlowNodeInstance, after it successfully started execution.
