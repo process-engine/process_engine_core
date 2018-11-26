@@ -14,32 +14,16 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     this._identity = identity;
   }
 
-  private get processInstanceId(): string {
-    return this._processInstanceId;
-  }
-
-  private get processModelId(): string {
-    return this._processModelId;
-  }
-
-  private get correlationId(): string {
-    return this._correlationId;
-  }
-
-  private get identity(): any {
-    return this._identity;
-  }
-
   public async getAllResults(): Promise<Array<IProcessTokenResult>> {
     return Promise.resolve(this.processTokenResults);
   }
 
   public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
     const token: Runtime.Types.ProcessToken = new Runtime.Types.ProcessToken();
-    token.processInstanceId = this.processInstanceId;
-    token.processModelId = this.processModelId;
-    token.correlationId = this.correlationId;
-    token.identity = this.identity;
+    token.processInstanceId = this._processInstanceId;
+    token.processModelId = this._processModelId;
+    token.correlationId = this._correlationId;
+    token.identity = this._identity;
     token.createdAt = new Date();
     token.payload = payload;
 
@@ -58,9 +42,11 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     Array.prototype.push.apply(this.processTokenResults, processTokenResults);
   }
 
-  public async getProcessTokenFacadeForParallelBranch(): Promise<IProcessTokenFacade> {
+  public async cloneProcessTokenFacade(processInstanceId?: string): Promise<IProcessTokenFacade> {
 
-    const processTokenFacade: any = new ProcessTokenFacade(this.processInstanceId, this.processModelId, this.correlationId, this.identity);
+    const newProcessInstanceId: string = processInstanceId || this._processInstanceId;
+
+    const processTokenFacade: any = new ProcessTokenFacade(newProcessInstanceId, this._processModelId, this._correlationId, this._identity);
     const allResults: Array<IProcessTokenResult> = await this.getAllResults();
     await processTokenFacade.importResults(allResults);
 
@@ -69,7 +55,6 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
 
   public async mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): Promise<void> {
     const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
-
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
 
