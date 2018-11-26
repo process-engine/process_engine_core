@@ -1,3 +1,4 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -48,11 +49,31 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    // IntermediateThrowEvents only produce two tokens in their lifetime.
-    // Therefore, it is safe to assume that only one token exists at this point.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
 
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.running:
+
+        const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+        return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new InternalServerError(`Cannot resume MessageThrowEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+      default:
+        throw new InternalServerError(`Cannot resume MessageThrowEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+    }
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,
