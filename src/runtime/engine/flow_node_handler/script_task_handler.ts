@@ -1,3 +1,4 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -43,11 +44,29 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    // ScriptTasks only produce two tokens in their lifetime.
-    // Therefore, it is safe to assume that only one token exists at this point.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
 
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.running:
+
+        const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+        return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+      case Runtime.Types.FlowNodeInstanceState.error:
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.scriptTask.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      default:
+        throw new InternalServerError(`Cannot resume ScriptTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+    }
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,

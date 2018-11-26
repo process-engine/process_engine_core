@@ -50,27 +50,41 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
   protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity): Promise<NextFlowNodeInfo> {
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade);
+
+        const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+
+        return this._continueAfterSuspend(suspendToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.running:
 
-        const resumeToken: Runtime.Types.ProcessToken =
-          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-            return token.type === Runtime.Types.ProcessTokenType.onResume;
-          });
+        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const manualTaskResultNotYetAwaited: boolean = resumeToken === undefined;
-
-        if (manualTaskResultNotYetAwaited) {
+        const noMessageReceivedYet: boolean = resumeToken === undefined;
+        if (noMessageReceivedYet) {
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade);
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.manualTask.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
       default:
-        throw new InternalServerError(`Cannot resume ManualTask instance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume ManualTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }
   }
 
@@ -108,22 +122,18 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
    * to the EventHandler and wait for the ManualTasks result.
    *
    * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
+   *                             suspended.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
    * @param   processModelFacade The processModelFacade to use for resuming.
    * @returns                    The Info for the next FlowNode to run.
    */
-  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+  private async _continueAfterSuspend(onSuspendToken: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
                                      ): Promise<NextFlowNodeInfo> {
 
-    const suspendToken: Runtime.Types.ProcessToken =
-      flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === Runtime.Types.ProcessTokenType.onSuspend;
-      });
-
-    return this._executeHandler(suspendToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
   /**
