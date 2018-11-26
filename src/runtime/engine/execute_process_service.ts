@@ -198,7 +198,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                        correlationId: string,
                                        startEventId: string,
                                        payload: any,
-                                       caller: string): any {
+                                       caller: string): IProcessInstanceConfig {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
