@@ -51,7 +51,6 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
-
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);

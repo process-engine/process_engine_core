@@ -58,7 +58,6 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-
         const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(suspendToken, processTokenFacade, processModelFacade);
@@ -73,11 +72,9 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
-
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
-        processTokenFacade.addResultForFlowNode(this.sendTask.id, onExitToken);
 
-        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
@@ -155,6 +152,30 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
     await this.persistOnExit(resumeToken);
 
     return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onExit" state.
+   *
+   * Basically, the handler had already finished.
+   * We just need to return the info about the next FlowNode to run.
+   *
+   * @async
+   * @param   resumeToken        The ProcessToken stored after resuming the
+   *                             FlowNodeInstance.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  private async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    processTokenFacade.addResultForFlowNode(this.sendTask.id, onExitToken.payload);
+
+    return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,

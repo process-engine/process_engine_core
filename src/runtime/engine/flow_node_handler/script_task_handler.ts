@@ -52,14 +52,13 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
-
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
 
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
-        processTokenFacade.addResultForFlowNode(this.scriptTask.id, onExitToken);
+        processTokenFacade.addResultForFlowNode(this.scriptTask.id, onExitToken.payload);
 
         return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
