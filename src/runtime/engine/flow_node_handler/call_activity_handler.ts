@@ -101,28 +101,12 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     }
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * When the FlowNodeInstance was interrupted during this stage, we need to
-   * run the handler again, except for the "onSuspend" state change.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
-   *                             suspended.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The requesting user's identity.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                      onSuspendToken: Runtime.Types.ProcessToken,
-                                      processTokenFacade: IProcessTokenFacade,
-                                      processModelFacade: IProcessModelFacade,
-                                      identity: IIdentity,
-                                     ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
+                                      ): Promise<NextFlowNodeInfo> {
 
     // First we need to find out if the Subprocess was already started.
     const correlation: Runtime.Types.Correlation
@@ -157,23 +141,10 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onResumed" state.
-   *
-   * Basically, the handler had already finished.
-   * The final result is only missing in the database.
-   *
-   * @async
-   * @param   resumeToken   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                     processTokenFacade: IProcessTokenFacade,
-                                     processModelFacade: IProcessModelFacade,
-                                    ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
+                                       processTokenFacade: IProcessTokenFacade,
+                                       processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.callActivity.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);

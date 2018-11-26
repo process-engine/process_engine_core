@@ -67,7 +67,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       case Runtime.Types.FlowNodeInstanceState.suspended:
         const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
-        return this._continueAfterSuspend(suspendToken, processTokenFacade, processModelFacade);
+        return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.running:
 
         const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
@@ -94,24 +94,11 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     }
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * When the FlowNodeInstance was interrupted during this stage, we need to
-   * run the handler again, except for the "onSuspend" state change.
-   *
-   * @async
-   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
-   *                             suspended.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterSuspend(onSuspendToken: Runtime.Types.ProcessToken,
-                                      processTokenFacade: IProcessTokenFacade,
-                                      processModelFacade: IProcessModelFacade,
-                                     ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -133,23 +120,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return new NextFlowNodeInfo(nextFlowNode, onSuspendToken, processTokenFacade);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onResumed" state.
-   *
-   * Basically, the StartEvent was already finished.
-   * The final result is only missing in the database.
-   *
-   * @async
-   * @param   resumeToken   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                     processTokenFacade: IProcessTokenFacade,
-                                     processModelFacade: IProcessModelFacade,
-                                    ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
+                                       processTokenFacade: IProcessTokenFacade,
+                                       processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);

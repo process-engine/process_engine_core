@@ -76,7 +76,9 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        const onSuspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+
+        return this._continueAfterSuspend(flowNodeInstance, onSuspendToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.running:
 
         const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
@@ -102,45 +104,19 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     }
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * When the FlowNodeInstance was interrupted during this stage, we need to
-   * run the handler again, except for the "onSuspend" state change.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The requesting user's identity.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                      processTokenFacade: IProcessTokenFacade,
-                                      processModelFacade: IProcessModelFacade,
-                                      identity: IIdentity,
-                                     ): Promise<NextFlowNodeInfo> {
-    throw new Error('bla');
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
+                                       ): Promise<NextFlowNodeInfo> {
+    throw new Error('Not implemented yet.');
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onResumed" state.
-   *
-   * Basically, the handler had already finished.
-   * The final result is only missing in the database.
-   *
-   * @async
-   * @param   resumeToken   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                     processTokenFacade: IProcessTokenFacade,
-                                     processModelFacade: IProcessModelFacade,
-                                    ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
+                                       processTokenFacade: IProcessTokenFacade,
+                                       processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.subProcess.id, resumeToken.payload);
 

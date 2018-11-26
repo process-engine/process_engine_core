@@ -108,38 +108,18 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     }
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * When the FlowNodeInstance was interrupted during this stage, we need to resubscribe
-   * to the EventHandler and wait for the ServiceTasks result.
-   *
-   * We also need to check if the ExternalTask was already executed during the downtime.
-   * If it was, we need to resume and finish manually and NOT create a new external task!
-   * Otherwise, the ExternalTask might get executed twice.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
-   *                             suspended.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                      onSuspendToken: Runtime.Types.ProcessToken,
-                                      processTokenFacade: IProcessTokenFacade,
-                                      processModelFacade: IProcessModelFacade,
-                                      identity: IIdentity,
-                                     ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
+                                       ): Promise<NextFlowNodeInfo> {
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
       const noMatchingExteralTaskExists: boolean = !externalTask;
-
       if (noMatchingExteralTaskExists) {
         // No ExternalTask has been created yet. We can just execute the normal handler method chain.
         const result: any = await this._executeExternalServiceTask(onSuspendToken, processTokenFacade, identity);
@@ -185,28 +165,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
         // We must wait for the notification and pass the result to our customized callback.
         this._waitForExternalTaskResult(processExternalTaskResult);
       }
-
     });
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onResumed" state.
-   *
-   * Basically, the ServiceTask was already finished, but the final state change
-   * didn't happen.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                     processTokenFacade: IProcessTokenFacade,
-                                     processModelFacade: IProcessModelFacade,
-                                    ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
+                                       processTokenFacade: IProcessTokenFacade,
+                                       processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.serviceTask.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);
