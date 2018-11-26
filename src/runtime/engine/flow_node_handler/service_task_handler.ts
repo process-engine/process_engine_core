@@ -44,16 +44,21 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     return this._container.resolve<FlowNodeHandler<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [this.flowNode]);
   }
 
+  private _getChildEventHandler(): FlowNodeHandler<Model.Activities.ServiceTask> {
+
+    if (this.flowNode.type === Model.Activities.ServiceTaskType.external) {
+      return this._container.resolve<FlowNodeHandler<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [this.flowNode]);
+    }
+
+    return this._container.resolve<FlowNodeHandler<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [this.flowNode]);
+  }
+
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    if (this.serviceTask.type === Model.Activities.ServiceTaskType.external) {
-      return this._executeServiceTaskByType('ExternalServiceTaskHandler', token, processTokenFacade, processModelFacade, identity);
-    }
-
-    return this._executeServiceTaskByType('InternalServiceTaskHandler', token, processTokenFacade, processModelFacade, identity);
+    return this._childEventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 
   protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -131,6 +136,6 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     } catch (error) {
       logger.info('No external task has been stored for this FlowNodeInstance.');
 
-    return serviceTaskHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+    return this._childEventHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
   }
 }

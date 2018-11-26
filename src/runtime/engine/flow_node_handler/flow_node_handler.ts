@@ -28,8 +28,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsApiService: IMetricsApi,
-              flowNode: TFlowNode,
-            ) {
+              flowNode: TFlowNode) {
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
