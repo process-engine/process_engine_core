@@ -45,11 +45,11 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
     return await this._executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                 ): Promise<NextFlowNodeInfo> {
 
     function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
       return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
@@ -67,8 +67,8 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
 
         const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const noMessageReceivedYet: boolean = resumeToken === undefined;
-        if (noMessageReceivedYet) {
+        const messageNotYetReceived: boolean = resumeToken === undefined;
+        if (messageNotYetReceived) {
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade);
         }
 

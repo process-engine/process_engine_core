@@ -51,15 +51,21 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
                                    identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
+
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade);
+
+        const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+
+        return this._continueAfterSuspend(suspendToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.running:
 
-        const resumeToken: Runtime.Types.ProcessToken =
-          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-            return token.type === Runtime.Types.ProcessTokenType.onResume;
-          });
+        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
         const signalNotYetReceived: boolean = resumeToken === undefined;
         if (signalNotYetReceived) {
@@ -67,8 +73,18 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new InternalServerError(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
-        throw new InternalServerError(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }
   }
 
@@ -106,22 +122,17 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
    * again and wait for the signal.
    *
    * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   onSuspendToken     The FlowNodeInstance to resume.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
    * @param   processModelFacade The processModelFacade to use for resuming.
    * @returns                    The Info for the next FlowNode to run.
    */
-  private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+  private async _continueAfterSuspend(onSuspendToken: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
                                      ): Promise<NextFlowNodeInfo> {
 
-    const suspendToken: Runtime.Types.ProcessToken =
-      flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === Runtime.Types.ProcessTokenType.onSuspend;
-      });
-
-    return this._executeHandler(suspendToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
   /**
