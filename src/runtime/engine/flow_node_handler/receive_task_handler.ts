@@ -80,7 +80,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new Error(`Cannot resume ReceiveTask instance ${flowNodeInstance.id}, because it was terminated!`);
+        throw new InternalServerError(`Cannot resume ReceiveTask instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume ReceiveTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }

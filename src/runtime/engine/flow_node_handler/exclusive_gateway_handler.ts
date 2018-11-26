@@ -78,7 +78,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new Error(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because it was terminated!`);
+        throw new InternalServerError(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }

@@ -59,36 +59,53 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    logger.verbose(`Resuming external ServiceTask with instance ID ${flowNodeInstance.id} and FlowNode id ${flowNodeInstance.flowNodeId}`);
+    logger.verbose(`Resuming external ServiceTask with instance ID ${flowNodeInstance.id} and FlowNode ID ${flowNodeInstance.flowNodeId}`);
 
-    return this._resumeExternalServiceTask(flowNodeInstance, processTokenFacade, processModelFacade, identity);
-  }
-
-  private async _resumeExternalServiceTask(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                           processTokenFacade: IProcessTokenFacade,
-                                           processModelFacade: IProcessModelFacade,
-                                           identity: IIdentity,
-                                          ): Promise<NextFlowNodeInfo> {
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        logger.verbose(`ServiceTask was left suspended. Waiting for the ExternalTask to be processed.`);
+        const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+
+        return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.running:
 
-        const resumeToken: Runtime.Types.ProcessToken =
-          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-            return token.type === Runtime.Types.ProcessTokenType.onResume;
-          });
+        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const serviceTaskResultNotYetAwaited: boolean = resumeToken === undefined;
+        const noMessageReceivedYet: boolean = resumeToken === undefined;
+        if (noMessageReceivedYet) {
+          logger.verbose(`ServiceTask was interrupted at the beginning. Resuming from the start.`);
 
-        if (serviceTaskResultNotYetAwaited) {
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
         }
 
+        logger.verbose(`The external task was already processed and the handler resumed. Finishing up the handler.`);
+
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+        logger.verbose(`ServiceTask was already finished. Skipping ahead.`);
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        logger.error(`Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        const terminatedError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it was terminated!`;
+        logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
       default:
-        throw new InternalServerError(`Cannot resume extenal ServiceTask instance ${flowNodeInstance.id}, because it was already finished!`);
+        const invalidStateError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
     }
   }
 
@@ -130,11 +147,14 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
    *
    * @async
    * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
+   *                             suspended.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
    * @param   processModelFacade The processModelFacade to use for resuming.
    * @returns                    The Info for the next FlowNode to run.
    */
   private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                      onSuspendToken: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
                                       identity: IIdentity,
@@ -142,24 +162,19 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const currentToken: Runtime.Types.ProcessToken =
-        flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-          return token.type === Runtime.Types.ProcessTokenType.onSuspend;
-        });
-
       const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
       const noMatchingExteralTaskExists: boolean = !externalTask;
 
       if (noMatchingExteralTaskExists) {
         // No ExternalTask has been created yet. We can just execute the normal handler method chain.
-        const result: any = await this._executeExternalServiceTask(currentToken, processTokenFacade, identity);
+        const result: any = await this._executeExternalServiceTask(onSuspendToken, processTokenFacade, identity);
 
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
-        currentToken.payload = result;
-        await this.persistOnExit(currentToken);
+        onSuspendToken.payload = result;
+        await this.persistOnExit(onSuspendToken);
 
-        const nextFlowNode: NextFlowNodeInfo = await this.getNextFlowNodeInfo(currentToken, processTokenFacade, processModelFacade);
+        const nextFlowNode: NextFlowNodeInfo = await this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
 
         return resolve(nextFlowNode);
       }
@@ -169,19 +184,19 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
         if (error) {
           logger.error(`External processing of ServiceTask failed!`, error);
-          await this.persistOnError(currentToken, error);
+          await this.persistOnError(onSuspendToken, error);
 
           throw error;
         }
 
         logger.verbose('External processing of the ServiceTask finished successfully.');
-        currentToken.payload = result;
+        onSuspendToken.payload = result;
 
-        await this.persistOnResume(currentToken);
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, currentToken.payload);
-        await this.persistOnExit(currentToken);
+        await this.persistOnResume(onSuspendToken);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, onSuspendToken.payload);
+        await this.persistOnExit(onSuspendToken);
 
-        const nextFlowNode: NextFlowNodeInfo = await this.getNextFlowNodeInfo(currentToken, processTokenFacade, processModelFacade);
+        const nextFlowNode: NextFlowNodeInfo = await this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
         resolve(nextFlowNode);
       };
 

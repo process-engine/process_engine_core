@@ -74,7 +74,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new Error(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+        throw new InternalServerError(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }

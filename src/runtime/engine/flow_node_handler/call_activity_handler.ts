@@ -96,7 +96,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new Error(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was terminated!`);
+        throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }

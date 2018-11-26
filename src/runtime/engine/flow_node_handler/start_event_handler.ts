@@ -89,7 +89,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new Error(`Cannot resume StartEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+        throw new InternalServerError(`Cannot resume StartEvent instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume StartEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }
