@@ -59,13 +59,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    logger.verbose(`Resuming external ServiceTask with instance ID ${flowNodeInstance.id} and FlowNode ID ${flowNodeInstance.flowNodeId}`);
-
     function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
       return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
         return token.type === tokenType;
       });
     }
+
+    logger.verbose(`Resuming external ServiceTask with instance ID ${flowNodeInstance.id} and FlowNode ID ${flowNodeInstance.flowNodeId}`);
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
@@ -80,8 +80,9 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
         const noMessageReceivedYet: boolean = resumeToken === undefined;
         if (noMessageReceivedYet) {
           logger.verbose(`ServiceTask was interrupted at the beginning. Resuming from the start.`);
+          const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
-          return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+          return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
         }
 
         logger.verbose(`The external task was already processed and the handler resumed. Finishing up the handler.`);
@@ -105,31 +106,6 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
         logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
-  }
-
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onEnter" state.
-   *
-   * Basically, the handler was not yet executed, except for the initial
-   * state change.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterEnter(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity,
-                                   ): Promise<NextFlowNodeInfo> {
-
-    // When the FNI was interrupted directly after the onEnter state change, only one token will be present.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
-
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   /**
@@ -238,35 +214,11 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onExit" state.
-   *
-   * Basically, the handler had already finished.
-   * We just need to return the info about the next FlowNode to run.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                    ): Promise<NextFlowNodeInfo> {
-
-    processTokenFacade.addResultForFlowNode(this.serviceTask.id, onExitToken.payload);
-
-    return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
-  }
-
-  private async _executeHandler(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                               ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
+                                 ): Promise<NextFlowNodeInfo> {
 
     logger.verbose('Executing external ServiceTask');
     await this.persistOnSuspend(token);

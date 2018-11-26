@@ -53,27 +53,11 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       case Runtime.Types.FlowNodeInstanceState.running:
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
-        return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
-
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
-        processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, onExitToken);
 
-        const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
-        if (isExclusiveJoinGateway) {
-          return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
-        }
-
-        const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
-
-        // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
-        // If this were not the case, the Gateway would not have been executed at all.
-        const matchingSequenceFlow: Model.Types.SequenceFlow =
-          this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade)[0];
-
-        const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlow.targetRef);
-
-        return new NextFlowNodeInfo(nextFlowNodeAfterSplit, onExitToken, processTokenFacade);
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
@@ -83,9 +67,33 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     }
   }
 
-  private async _executeHandler(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,
+                                     processTokenFacade: IProcessTokenFacade,
+                                     processModelFacade: IProcessModelFacade,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, onExitToken);
+
+    const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
+    if (isExclusiveJoinGateway) {
+      return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+    }
+
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
+
+    // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
+    // If this were not the case, the Gateway would not have been executed at all.
+    const matchingSequenceFlow: Model.Types.SequenceFlow =
+      this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade)[0];
+
+    const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlow.targetRef);
+
+    return new NextFlowNodeInfo(nextFlowNodeAfterSplit, onExitToken, processTokenFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
     const gatewayTypeIsNotSupported: boolean =
       this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||

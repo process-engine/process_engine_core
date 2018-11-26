@@ -63,13 +63,11 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       case Runtime.Types.FlowNodeInstanceState.running:
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
-        return this._executeHandler(onEnterToken, processTokenFacade);
+        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
+      const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
-        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
-        processTokenFacade.addResultForFlowNode(this.endEvent.id, onExitToken);
-
-        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
@@ -79,7 +77,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     }
   }
 
-  private async _executeHandler(token: Runtime.Types.ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(token: Runtime.Types.ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<NextFlowNodeInfo> {
 
     const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
     const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;

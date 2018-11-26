@@ -70,7 +70,9 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
 
         const noMessageReceivedYet: boolean = resumeToken === undefined;
         if (noMessageReceivedYet) {
-          return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade);
+          const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+          return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
@@ -87,26 +89,10 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
     }
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onEnter" state.
-   *
-   * Basically, the handler was not yet executed, except for the initial
-   * state change.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterEnter(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                   ): Promise<NextFlowNodeInfo> {
-
-    // When the FNI was interrupted directly after the onEnter state change, only one token will be present.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+  protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                     ): Promise<NextFlowNodeInfo> {
 
     await this.persistOnSuspend(onEnterToken);
 
@@ -160,34 +146,10 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
     return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onExit" state.
-   *
-   * Basically, the handler had already finished.
-   * We just need to return the info about the next FlowNode to run.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                    ): Promise<NextFlowNodeInfo> {
-
-    processTokenFacade.addResultForFlowNode(this.manualTask.id, onExitToken.payload);
-
-    return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
-  }
-
-  private async _executeHandler(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                               ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                 ): Promise<NextFlowNodeInfo> {
 
     const manualTaskResult: any = await this._waitForManualTaskResult(token);
     token.payload = manualTaskResult;

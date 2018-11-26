@@ -57,16 +57,13 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
-
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
-        return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
-
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
-        processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, onExitToken);
 
-        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
@@ -76,9 +73,9 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     }
   }
 
-  private async _executeHandler(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 

@@ -169,6 +169,72 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                            ): Promise<NextFlowNodeInfo>;
 
   /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onEnter" state.
+   *
+   * Basically, the handler was not yet executed, except for the initial
+   * state change.
+   *
+   * @async
+   * @param   onEnterToken       The token the FlowNodeInstance had when it was
+   *                             started.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The requesting user's identity.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                      identity?: IIdentity,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+  }
+
+  /**
+   * Resumes the given FlowNodeInstance from the point where it assumed the
+   * "onExit" state.
+   *
+   * Basically, the handler had already finished.
+   * We just need to return the info about the next FlowNode to run.
+   *
+   * @async
+   * @param   resumeToken        The ProcessToken stored after resuming the
+   *                             FlowNodeInstance.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  protected async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,
+                                     processTokenFacade: IProcessTokenFacade,
+                                     processModelFacade: IProcessModelFacade,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);
+
+    return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+  }
+
+  /**
+   * Contains all common logic for executing and resuming FlowNodeHandlers.
+   *
+   * @async
+   * @param   token              The FlowNodeInstances current ProcessToken.
+   * @param   processTokenFacade The ProcessTokenFacade to use.
+   * @param   processModelFacade The processModelFacade to use.
+   * @param   identity           The requesting users identity.
+   * @returns                    Info about the next FlowNode to run.
+   */
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity?: IIdentity,
+                                 ): Promise<NextFlowNodeInfo> {
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+  }
+
+  /**
    * Persists the current state of the FlowNodeInstance, after it successfully started execution.
    *
    * @async

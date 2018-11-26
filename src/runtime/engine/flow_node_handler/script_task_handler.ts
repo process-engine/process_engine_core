@@ -54,13 +54,11 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
       case Runtime.Types.FlowNodeInstanceState.running:
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
-        return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
-
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
-        processTokenFacade.addResultForFlowNode(this.scriptTask.id, onExitToken.payload);
 
-        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
@@ -70,11 +68,11 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     }
   }
 
-  private async _executeHandler(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
+                                 ): Promise<NextFlowNodeInfo> {
 
     let result: any = {};
 

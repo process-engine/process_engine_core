@@ -68,52 +68,38 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
+
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
         return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.running:
 
-        const resumeToken: Runtime.Types.ProcessToken =
-          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-            return token.type === Runtime.Types.ProcessTokenType.onResume;
-          });
+        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
         const callActivityNotYetExecuted: boolean = resumeToken === undefined;
-
         if (callActivityNotYetExecuted) {
-          return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+          const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+          return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new InternalServerError(`Cannot resume UserTask instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
-        throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume UserTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }
-  }
-
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onEnter" state.
-   *
-   * Basically, the handler was not yet executed, except for the initial
-   * state change.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The requesting user's identity.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  private async _continueAfterEnter(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity,
-                                   ): Promise<NextFlowNodeInfo> {
-
-    // When the FNI was interrupted directly after the onEnter state change, only one token will be present.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
-
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   /**
@@ -165,10 +151,10 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     return new NextFlowNodeInfo(nextNodeAfter, resumeToken, processTokenFacade);
   }
 
-  private async _executeHandler(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
