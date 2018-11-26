@@ -72,14 +72,16 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.error:
-      case Runtime.Types.FlowNodeInstanceState.terminated:
       case Runtime.Types.FlowNodeInstanceState.finished:
 
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
         processTokenFacade.addResultForFlowNode(this.sendTask.id, onExitToken);
 
         return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new Error(`Cannot resume SendTask instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume SendTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }

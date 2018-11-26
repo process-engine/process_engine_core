@@ -56,14 +56,16 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
-      case Runtime.Types.FlowNodeInstanceState.error:
-      case Runtime.Types.FlowNodeInstanceState.terminated:
       case Runtime.Types.FlowNodeInstanceState.finished:
 
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
         processTokenFacade.addResultForFlowNode(this.scriptTask.id, onExitToken);
 
         return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new Error(`Cannot resume ScriptTask instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
         throw new InternalServerError(`Cannot resume ScriptTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }

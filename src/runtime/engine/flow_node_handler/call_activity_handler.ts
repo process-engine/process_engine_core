@@ -65,25 +65,40 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                 identity: IIdentity,
                               ): Promise<NextFlowNodeInfo> {
 
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
+
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        return this._continueAfterSuspend(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+        const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+
+        return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.running:
 
-        const resumeToken: Runtime.Types.ProcessToken =
-          flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-            return token.type === Runtime.Types.ProcessTokenType.onResume;
-          });
+        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const callActivityNotYetExecuted: boolean = resumeToken === undefined;
-
-        if (callActivityNotYetExecuted) {
+        const noMessageReceivedYet: boolean = resumeToken === undefined;
+        if (noMessageReceivedYet) {
           return this._continueAfterEnter(flowNodeInstance, processTokenFacade, processModelFacade, identity);
         }
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.callActivity.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new Error(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
-        throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because it was already finished!`);
+        throw new InternalServerError(`Cannot resume CallActivity instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }
   }
 
@@ -122,21 +137,19 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
    *
    * @async
    * @param   flowNodeInstance   The FlowNodeInstance to resume.
+   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
+   *                             suspended.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
    * @param   processModelFacade The processModelFacade to use for resuming.
    * @param   identity           The requesting user's identity.
    * @returns                    The Info for the next FlowNode to run.
    */
   private async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                      onSuspendToken: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
                                       identity: IIdentity,
                                      ): Promise<NextFlowNodeInfo> {
-
-    const currentToken: Runtime.Types.ProcessToken =
-      flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === Runtime.Types.ProcessTokenType.onSuspend;
-      });
 
     // First we need to find out if the Subprocess was already started.
     const correlation: Runtime.Types.Correlation
@@ -155,7 +168,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
       const processStartResponse: ProcessStartResponsePayload =
-        await this._executeSubprocess(identity, startEventId, processTokenFacade, currentToken);
+        await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
 
       callActivityResult = processStartResponse.tokenPayload;
     } else {
@@ -163,12 +176,12 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       callActivityResult = await this._resumeProcessService.resumeProcessInstanceById(matchingSubProcess.processInstanceId);
     }
 
-    currentToken.payload = callActivityResult;
-    await this.persistOnResume(currentToken);
+    onSuspendToken.payload = callActivityResult;
+    await this.persistOnResume(onSuspendToken);
     await processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
-    await this.persistOnExit(currentToken);
+    await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(currentToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
   /**

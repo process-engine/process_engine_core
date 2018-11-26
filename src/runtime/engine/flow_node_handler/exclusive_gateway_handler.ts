@@ -1,4 +1,4 @@
-import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {BadRequestError, InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -37,17 +37,51 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     return this._executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  public async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                                identity: IIdentity,
-                              ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
 
-    // ExclusiveGateways only produce two tokens in their lifetime.
-    // Therefore, it is safe to assume that only one token exists at this point.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
 
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.running:
+
+        const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+        return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, onExitToken);
+
+        const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
+        if (isExclusiveJoinGateway) {
+          return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+        }
+
+        const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
+
+        // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
+        // If this were not the case, the Gateway would not have been executed at all.
+        const matchingSequenceFlow: Model.Types.SequenceFlow =
+          this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade)[0];
+
+        const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlow.targetRef);
+
+        return new NextFlowNodeInfo(nextFlowNodeAfterSplit, onExitToken, processTokenFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new Error(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because it was terminated!`);
+      default:
+        throw new InternalServerError(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+    }
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken,

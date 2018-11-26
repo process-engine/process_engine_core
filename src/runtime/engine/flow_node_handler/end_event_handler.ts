@@ -1,3 +1,4 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -52,11 +53,31 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    // EndEvents only produce two tokens in their lifetime.
-    // Therefore, it is safe to assume that only one token exists at this point.
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
+      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
+        return token.type === tokenType;
+      });
+    }
 
-    return this._executeHandler(onEnterToken, processTokenFacade);
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.running:
+
+        const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+        return this._executeHandler(onEnterToken, processTokenFacade);
+      case Runtime.Types.FlowNodeInstanceState.finished:
+
+        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        processTokenFacade.addResultForFlowNode(this.endEvent.id, onExitToken);
+
+        return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+      case Runtime.Types.FlowNodeInstanceState.error:
+        throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        throw new Error(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+      default:
+        throw new InternalServerError(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+    }
   }
 
   private async _executeHandler(token: Runtime.Types.ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<NextFlowNodeInfo> {
@@ -215,5 +236,4 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     // Send global message about a reached EndEvent
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
-
 }
