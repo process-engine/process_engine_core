@@ -58,7 +58,7 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childEventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    return this._childServiceTaskHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 
   protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -136,6 +136,6 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
     } catch (error) {
       logger.info('No external task has been stored for this FlowNodeInstance.');
 
-    return this._childEventHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+    return this._childServiceTaskHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
   }
 }

@@ -96,6 +96,5 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     await this.persistOnExit(token);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
-
   }
 }
