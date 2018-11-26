@@ -102,21 +102,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     processTokenFacade: IProcessTokenFacade,
   ): Promise<string> {
 
-    const truthySequenceFlows: Array<Model.Types.SequenceFlow> = [];
-
-    for (const sequenceFlow of sequenceFlows) {
-
-      const sequenceFlowHasNoCondition: boolean = sequenceFlow.conditionExpression === undefined || sequenceFlow.conditionExpression === null;
-      if (sequenceFlowHasNoCondition) {
-        continue;
-      }
-
-      const conditionIsFulfilled: boolean = await this.executeCondition(sequenceFlow.conditionExpression.expression, processTokenFacade);
-
-      if (conditionIsFulfilled) {
-        truthySequenceFlows.push(sequenceFlow);
-      }
-    }
+    const truthySequenceFlows: Array<Model.Types.SequenceFlow> = await this._getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
 
     const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
@@ -141,6 +127,30 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     const nextFlowNodeRef: string = truthySequenceFlows[0].targetRef;
 
     return nextFlowNodeRef;
+  }
+
+  private async _getSequenceFlowsWithMatchingCondition(
+    sequenceFlows: Array<Model.Types.SequenceFlow>,
+    processTokenFacade: IProcessTokenFacade,
+  ): Promise<Array<Model.Types.SequenceFlow>> {
+
+    const truthySequenceFlows: Array<Model.Types.SequenceFlow> = [];
+
+    for (const sequenceFlow of sequenceFlows) {
+
+      const sequenceFlowHasNoCondition: boolean = sequenceFlow.conditionExpression === undefined || sequenceFlow.conditionExpression === null;
+      if (sequenceFlowHasNoCondition) {
+        continue;
+      }
+
+      const conditionIsFulfilled: boolean = await this.executeCondition(sequenceFlow.conditionExpression.expression, processTokenFacade);
+
+      if (conditionIsFulfilled) {
+        truthySequenceFlows.push(sequenceFlow);
+      }
+    }
+
+    return truthySequenceFlows;
   }
 
   private async executeCondition(condition: string, processTokenFacade: IProcessTokenFacade): Promise<boolean> {
