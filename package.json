@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://www.npmjs.com"
   },
-  "version": "7.3.0",
+  "version": "7.3.1",
   "description": "The ProcessEngine core package. ProcessEngine is a tool to bring BPMN diagrams to life in JS.",
   "license": "MIT",
   "main": "dist/commonjs/index.js",
@@ -47,8 +47,8 @@
     "@types/express": "4.16.0",
     "@types/node": "10.12.2",
     "gulp": "4.0.0",
-    "gulptraum": "3.0.0",
-    "gulptraum-typescript": "2.0.0",
+    "gulptraum": "~3.0.0",
+    "gulptraum-typescript": "~2.0.0",
     "ts-node": "7.0.1",
     "tsconfig": "7.0.0",
     "tslint": "5.11.0",
