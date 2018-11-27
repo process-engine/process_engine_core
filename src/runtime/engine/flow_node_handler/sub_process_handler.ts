@@ -95,9 +95,9 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
       case Runtime.Types.FlowNodeInstanceState.error:
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume UserTask instance ${flowNodeInstance.id}, because it was terminated!`);
+        throw new InternalServerError(`Cannot resume SubProcess instance ${flowNodeInstance.id}, because it was terminated!`);
       default:
-        throw new InternalServerError(`Cannot resume UserTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+        throw new InternalServerError(`Cannot resume SubProcess instance ${flowNodeInstance.id}, because its state cannot be determined!`);
     }
   }
 

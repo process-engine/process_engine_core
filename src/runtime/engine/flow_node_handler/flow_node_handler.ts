@@ -482,8 +482,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                              processTokenFacade: IProcessTokenFacade,
                              processModelFacade: IProcessModelFacade): Promise<void> {
 
-    // There are two kinds of Mappers to evaluate: FlowNode- and SequenceFlow-Mappers.
-    // They are evaluated in between handling of FlowNodes.
     await processTokenFacade.evaluateMapperForFlowNode(this.flowNode);
 
     const nextSequenceFlow: Model.Types.SequenceFlow = processModelFacade.getSequenceFlowBetween(this.flowNode, nextFlowNode);
