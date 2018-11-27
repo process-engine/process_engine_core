@@ -25,15 +25,13 @@ import {FlowNodeHandler} from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
-  private _correlationService: ICorrelationService;
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _resumeProcessService: IResumeProcessService;
 
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
-  constructor(correlationService: ICorrelationService,
-              eventAggregator: IEventAggregator,
+  constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
@@ -42,7 +40,6 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
               subProcessModel: Model.Activities.SubProcess) {
     super(flowNodeInstanceService, loggingApiService, metricsService, subProcessModel);
 
-    this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._resumeProcessService = resumeProcessService;
