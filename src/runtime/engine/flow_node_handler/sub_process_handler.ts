@@ -80,8 +80,8 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
         const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const callActivityNotYetExecuted: boolean = resumeToken === undefined;
-        if (callActivityNotYetExecuted) {
+        const subProcessNotYetExecuted: boolean = resumeToken === undefined;
+        if (subProcessNotYetExecuted) {
           const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);

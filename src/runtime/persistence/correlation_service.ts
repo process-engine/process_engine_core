@@ -208,9 +208,10 @@ export class CorrelationService implements ICorrelationService {
           await this._processDefinitionRepository.getByHash(entry.processModelHash);
 
         const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
-        processModel.name = processDefinition.name;
+        processModel.processDefinitionName = processDefinition.name;
         processModel.xml = processDefinition.xml;
         processModel.hash = entry.processModelHash;
+        processModel.processModelId = entry.processModelId;
         processModel.processInstanceId = entry.processInstanceId;
         processModel.parentProcessInstanceId = entry.parentProcessInstanceId;
         processModel.createdAt = entry.createdAt;
@@ -313,11 +314,16 @@ export class CorrelationService implements ICorrelationService {
           await this._processDefinitionRepository.getByHash(correlation.processModelHash);
 
         const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
-        processModel.name = processDefinition.name;
+        processModel.processDefinitionName = processDefinition.name;
         processModel.hash = processDefinition.hash;
         processModel.xml = processDefinition.xml;
         processModel.createdAt = processDefinition.createdAt;
+        processModel.processModelId = correlation.processModelId;
         processModel.processInstanceId = correlation.processInstanceId;
+        processModel.parentProcessInstanceId = correlation.parentProcessInstanceId;
+        // For this UseCase, we can safely assuem the running-state,
+        // because we already made sure that only active correlations have been retrieved.
+        processModel.state = Runtime.Types.FlowNodeInstanceState.running;
 
         return processModel;
       });

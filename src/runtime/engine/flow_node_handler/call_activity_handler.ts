@@ -114,7 +114,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     const matchingSubProcess: Runtime.Types.CorrelationProcessModel =
       correlation.processModels.find((entry: Runtime.Types.CorrelationProcessModel): boolean => {
-        return entry.name === this.callActivity.calledReference;
+        return entry.processModelId === this.callActivity.calledReference;
       });
 
     let callActivityResult: any;
