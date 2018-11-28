@@ -22,17 +22,12 @@ import {
 import {ProcessTokenFacade} from '../process_token_facade';
 import {FlowNodeHandler} from './index';
 
-interface IProcessStateInfo {
-  processTerminationSubscription?: ISubscription;
-  processTerminatedMessage?: TerminateEndEventReachedMessage;
-}
-
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
-  private processStateInfo: IProcessStateInfo = {};
+  private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -64,11 +59,6 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     token.payload = subProcessResult;
     await this.persistOnResume(token);
 
-    const processTerminationSubscriptionIsActive: boolean = this.processStateInfo.processTerminationSubscription !== undefined;
-    if (processTerminationSubscriptionIsActive) {
-      this.processStateInfo.processTerminationSubscription.dispose();
-    }
-
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(token);
 
@@ -80,9 +70,15 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
-    this.processStateInfo.processTerminationSubscription = this._eventAggregator
-      .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-        this.processStateInfo.processTerminatedMessage = message;
+    const terminateEndEventSubscription: ISubscription =
+      this._eventAggregator.subscribeOnce(processTerminatedEvent, (message: TerminateEndEventReachedMessage): void => {
+
+        this._processTerminatedMessage = message;
+
+        const terminationSubscriptionIsActive: boolean = terminateEndEventSubscription !== undefined;
+        if (terminationSubscriptionIsActive) {
+          terminateEndEventSubscription.dispose();
+        }
       });
   }
 
@@ -141,11 +137,10 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
-    const processWasTerminated: boolean = this.processStateInfo.processTerminatedMessage !== undefined;
-
+    const processWasTerminated: boolean = this._processTerminatedMessage !== undefined;
     if (processWasTerminated) {
-      await this.flowNodeInstanceService.persistOnTerminate(flowNode, this.flowNodeInstanceId, token);
-      const terminateEndEventId: string = this.processStateInfo.processTerminatedMessage.flowNodeId;
+      await this.flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, token);
+      const terminateEndEventId: string = this._processTerminatedMessage.flowNodeId;
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${terminateEndEventId}".`);
     }
 
