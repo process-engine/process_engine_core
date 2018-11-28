@@ -120,17 +120,6 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return new NextFlowNodeInfo(nextFlowNode, onSuspendToken, processTokenFacade);
   }
 
-  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                       processTokenFacade: IProcessTokenFacade,
-                                       processModelFacade: IProcessModelFacade,
-                                      ): Promise<NextFlowNodeInfo> {
-
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, resumeToken.payload);
-    await this.persistOnExit(resumeToken);
-
-    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
-  }
-
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {

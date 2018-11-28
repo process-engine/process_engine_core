@@ -110,17 +110,6 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     throw new Error('Not implemented yet.');
   }
 
-  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                       processTokenFacade: IProcessTokenFacade,
-                                       processModelFacade: IProcessModelFacade,
-                                      ): Promise<NextFlowNodeInfo> {
-
-    processTokenFacade.addResultForFlowNode(this.subProcess.id, resumeToken.payload);
-    await this.persistOnExit(resumeToken);
-
-    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
-  }
-
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,

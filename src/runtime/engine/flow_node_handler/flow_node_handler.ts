@@ -208,6 +208,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                        ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onSuspendToken.payload);
+    await this.persistOnResume(onSuspendToken);
+    await this.persistOnExit(onSuspendToken);
 
     return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
   }
@@ -232,6 +234,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                       ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, resumeToken.payload);
+    await this.persistOnExit(resumeToken);
 
     return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
   }

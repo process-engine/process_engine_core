@@ -106,17 +106,6 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
-  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                       processTokenFacade: IProcessTokenFacade,
-                                       processModelFacade: IProcessModelFacade,
-                                      ): Promise<NextFlowNodeInfo> {
-
-    processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, resumeToken.payload);
-    await this.persistOnExit(resumeToken);
-
-    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
-  }
-
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {

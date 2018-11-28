@@ -108,19 +108,6 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
-  protected async _continueAfterResume(resumeToken: Runtime.Types.ProcessToken,
-                                       processTokenFacade: IProcessTokenFacade,
-                                       processModelFacade: IProcessModelFacade,
-                                      ): Promise<NextFlowNodeInfo> {
-
-    processTokenFacade.addResultForFlowNode(this.userTask.id, resumeToken.payload);
-    await this.persistOnExit(resumeToken);
-
-    this._sendUserTaskFinishedNotification(resumeToken);
-
-    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
-  }
-
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
