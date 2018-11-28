@@ -350,10 +350,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   /**
    * Writes logs and metrics at the beginning of a ProcessInstance's execution.
    *
-   * @param correlationId     The ID of the Correlation the ProcessInstance
-   *                          belongs to.
-   * @param processModelId    The ID of the ProcessModel describing the
-   *                          ProcessInstance.
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
   private _logProcessStarted(correlationId: string, processModelId: string, processInstanceId: string): void {
@@ -374,10 +372,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   /**
    * Writes logs and metrics after a ProcessInstance finishes execution.
    *
-   * @param correlationId     The ID of the Correlation the ProcessInstance
-   *                          belongs to.
-   * @param processModelId    The ID of the ProcessModel describing the
-   *                          ProcessInstance.
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
   private _logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
@@ -397,10 +393,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   /**
    * Writes logs and metrics when a ProcessInstances was interrupted by an error.
    *
-   * @param correlationId     The ID of the Correlation the ProcessInstance
-   *                          belongs to.
-   * @param processModelId    The ID of the ProcessModel describing the
-   *                          ProcessInstance.
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
   private _logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
