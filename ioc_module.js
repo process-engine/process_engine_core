@@ -76,7 +76,6 @@ function registerServices(container) {
   container
     .register('ResumeProcessService', ResumeProcessService)
     .dependencies(
-      'CorrelationService',
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
