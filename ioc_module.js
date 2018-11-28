@@ -223,7 +223,8 @@ function registerHandlers(container) {
 
   container
     .register('SubProcessHandler', SubProcessHandler)
-    .dependencies('EventAggregator',
+    .dependencies('CorrelationService',
+                  'EventAggregator',
                   'FlowNodeHandlerFactory',
                   'FlowNodeInstanceService',
                   'LoggingApiService',

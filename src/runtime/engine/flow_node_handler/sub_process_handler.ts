@@ -8,6 +8,7 @@ import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
+  ICorrelationService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
@@ -25,13 +26,15 @@ import {FlowNodeHandler} from './index';
 
 export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
+  private _correlationService: ICorrelationService;
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _resumeProcessService: IResumeProcessService;
 
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
-  constructor(eventAggregator: IEventAggregator,
+  constructor(correlationService: ICorrelationService,
+              eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
@@ -40,6 +43,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
               subProcessModel: Model.Activities.SubProcess) {
     super(flowNodeInstanceService, loggingApiService, metricsService, subProcessModel);
 
+    this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._resumeProcessService = resumeProcessService;
@@ -107,7 +111,36 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                         processModelFacade: IProcessModelFacade,
                                         identity: IIdentity,
                                        ): Promise<NextFlowNodeInfo> {
-    throw new Error('Not implemented yet.');
+
+    this._subscribeToProcessTerminatedEvent(flowNodeInstance.processInstanceId);
+
+    // First we need to find out if the Subprocess was already started.
+    const correlation: Runtime.Types.Correlation
+      = await this._correlationService.getSubprocessesForProcessInstance(flowNodeInstance.processInstanceId);
+
+    const matchingSubProcess: Runtime.Types.CorrelationProcessModel =
+      correlation.processModels.find((entry: Runtime.Types.CorrelationProcessModel): boolean => {
+        return entry.processModelId === this.subProcess.id;
+      });
+
+    let callActivityResult: any;
+
+    const callActivityNotYetExecuted: boolean = matchingSubProcess === undefined;
+    if (callActivityNotYetExecuted) {
+      // Subprocess not yet started. We need to run the handler again.
+      const subProcessResult: any = await this._executeSubprocess(onSuspendToken, processTokenFacade, processModelFacade, identity);
+      callActivityResult = subProcessResult;
+    } else {
+      // Subprocess was already started. Resume it and wait for the result:
+      callActivityResult = await this._resumeProcessService.resumeProcessInstanceById(matchingSubProcess.processInstanceId);
+    }
+
+    onSuspendToken.payload = callActivityResult;
+    await this.persistOnResume(onSuspendToken);
+    await processTokenFacade.addResultForFlowNode(this.subProcess.id, callActivityResult);
+    await this.persistOnExit(onSuspendToken);
+
+    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
@@ -169,6 +202,14 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(initialTokenData.current);
     subProcessToken.caller = currentProcessToken.processInstanceId;
+
+    // Not that Subprocesses do not have XML of their own.
+    await this._correlationService.createEntry(identity,
+                                               currentProcessToken.correlationId,
+                                               subProcessInstanceId,
+                                               this.subProcess.id,
+                                               '',
+                                               currentProcessToken.processInstanceId);
 
     await this._executeSubProcessFlowNode(subProcessStartEvent,
                                           subProcessToken,
