@@ -116,12 +116,9 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                       ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.subProcess.id, resumeToken.payload);
-
-    const nextNodeAfter: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.subProcess);
-
     await this.persistOnExit(resumeToken);
 
-    return new NextFlowNodeInfo(nextNodeAfter, resumeToken, processTokenFacade);
+    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
@@ -217,6 +214,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const processWasTerminated: boolean = this._processTerminatedMessage !== undefined;
     if (processWasTerminated) {
       await this.flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, token);
+      await this.persistOnTerminate(token);
       const terminateEndEventId: string = this._processTerminatedMessage.flowNodeId;
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${terminateEndEventId}".`);
     }
@@ -231,5 +229,4 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
                                   currentFlowNodeInstanceId);
     }
   }
-
 }
