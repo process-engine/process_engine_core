@@ -130,7 +130,8 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       callActivityResult = processStartResponse.tokenPayload;
     } else {
       // Subprocess was already started. Resume it and wait for the result:
-      callActivityResult = await this._resumeProcessService.resumeProcessInstanceById(matchingSubProcess.processInstanceId);
+      callActivityResult =
+        await this._resumeProcessService.resumeProcessInstanceById(identity, matchingSubProcess.processModelId, matchingSubProcess.processInstanceId);
     }
 
     onSuspendToken.payload = callActivityResult;
