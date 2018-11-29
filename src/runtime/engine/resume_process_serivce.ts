@@ -1,6 +1,5 @@
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
-import * as uuid from 'uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -10,10 +9,7 @@ import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   BpmnType,
-  EndEventReachedMessage,
   eventAggregatorSettings,
-  ICorrelationService,
-  IExecuteProcessService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
@@ -44,18 +40,19 @@ interface IProcessInstanceConfig {
   processInstanceId: string;
   processModelFacade: IProcessModelFacade;
   startEvent: Model.Events.StartEvent;
+  startEventInstance: Runtime.Types.FlowNodeInstance;
   processToken: Runtime.Types.ProcessToken;
   processTokenFacade: IProcessTokenFacade;
 }
 
 /**
- * This service is designed to find and resume process instances that were
+ * This service is designed to find and resume ProcessInstances that were
  * interrupted during a previous lifecycle of the ProcessEngine.
  *
  * It is strongly encouraged to only run this service ONCE when starting up
  * the ProcessEngine!
  *
- * Trying to resume process instance during normal operation will have
+ * Trying to resume ProcessInstance during normal operation will have
  * unpredictable consequences!
  */
 export class ResumeProcessService implements IResumeProcessService {
@@ -67,7 +64,7 @@ export class ResumeProcessService implements IResumeProcessService {
   private readonly _metricsApiService: IMetricsApi;
   private readonly _processModelService: IProcessModelService;
 
-  private processTerminatedMessage: TerminateEndEventReachedMessage;
+  private processTerminatedMessages: {[processInstanceId: string]: TerminateEndEventReachedMessage} = {};
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -86,7 +83,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
   public async findAndResumeInterruptedProcessInstances(identity: IIdentity): Promise<void> {
 
-    logger.info('Resuming Process Instances that were not yet finished.');
+    logger.info('Resuming ProcessInstances that were not yet finished.');
 
     // First get all active FlowNodeInstances.
     // This doesn't account for processes with ParallelGateways.
@@ -97,7 +94,7 @@ export class ResumeProcessService implements IResumeProcessService {
     const activeProcessInstances: Array<IProcessInstanceModelAssociation> =
       this._findProcessInstancesFromFlowNodeList(activeFlowNodeInstances);
 
-    logger.verbose(`Found ${activeProcessInstances.length} Process Instances to resume.`);
+    logger.verbose(`Found ${activeProcessInstances.length} ProcessInstances to resume.`);
 
     for (const processInstance of activeProcessInstances) {
       // Do not await this, to avoid possible issues with Inter-Process communication.
@@ -110,9 +107,10 @@ export class ResumeProcessService implements IResumeProcessService {
 
   public async resumeProcessInstanceById(identity: IIdentity, processModelId: string, processInstanceId: string): Promise<any> {
 
-    logger.info(`Attempting to resume process instance with id ${processInstanceId}`);
+    logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
-    // TODO: This could be refined, if the FlowNodeInstanceService had a `queryByProcessInstance` UseCase.
+    // TODO: This could be merged, if the FlowNodeInstanceService had a `queryByProcessInstance` UseCase.
+    // ----
     const flowNodeInstancesForProcessModel: Array<Runtime.Types.FlowNodeInstance> =
       await this._flowNodeInstanceService.queryByProcessModel(processModelId);
 
@@ -120,6 +118,7 @@ export class ResumeProcessService implements IResumeProcessService {
       flowNodeInstancesForProcessModel.filter((entry: Runtime.Types.FlowNodeInstance): boolean => {
         return entry.processInstanceId === processInstanceId;
       });
+    // ----
 
     // First check if there even are any FlowNodeInstances still active.
     // There is no point in trying to resume anything that's already finished.
@@ -130,7 +129,7 @@ export class ResumeProcessService implements IResumeProcessService {
       });
 
     if (processHasActiveFlowNodeInstances) {
-      logger.info(`Processs instance ${processInstanceId} is not active anymore.`);
+      logger.info(`ProcessInstance ${processInstanceId} is not active anymore.`);
 
       return;
     }
@@ -140,7 +139,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
     try {
       this._logProcessResumed(processInstanceConfig.correlationId, processModelId, processInstanceId);
-      const result: any = await this._resumeProcessInstance(identity, processInstanceConfig);
+      const result: any = await this._resumeProcessInstance(identity, processInstanceConfig, flowNodeInstancesForProcessInstance);
       this._logProcessFinished(processInstanceConfig.correlationId, processModelId, processInstanceId);
 
       return result;
@@ -185,6 +184,7 @@ export class ResumeProcessService implements IResumeProcessService {
       processInstanceId: processInstanceId,
       processModelFacade: processModelFacade,
       startEvent: startEvent,
+      startEventInstance: startEventInstance,
       processToken: processToken,
       processTokenFacade: processTokenFacade,
     };
@@ -192,23 +192,26 @@ export class ResumeProcessService implements IResumeProcessService {
     return processInstanceConfig;
   }
 
-  private async _resumeProcessInstance(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<any> {
+  private async _resumeProcessInstance(identity: IIdentity,
+                                       processInstanceConfig: IProcessInstanceConfig,
+                                       flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+                                      ): Promise<any> {
 
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const processTerminationSubscription: ISubscription = this._eventAggregator
       .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-        this.processTerminatedMessage = message;
+        this.processTerminatedMessages[processInstanceConfig.processInstanceId] = message;
       });
 
-    // TODO - WIP
-    // await this._resumeFlowNode(processInstanceConfig.startEvent,
-    //                            processInstanceConfig.processToken,
-    //                            processInstanceConfig.processTokenFacade,
-    //                            processInstanceConfig.processModelFacade,
-    //                            identity,
-    //                            undefined);
+    await this._resumeFlowNode(processInstanceConfig.startEvent,
+                               processInstanceConfig.startEventInstance,
+                               processInstanceConfig.processToken,
+                               processInstanceConfig.processTokenFacade,
+                               processInstanceConfig.processModelFacade,
+                               identity,
+                               flowNodeInstances);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
 
@@ -218,6 +221,118 @@ export class ResumeProcessService implements IResumeProcessService {
     }
 
     return resultToken;
+  }
+
+  private async _resumeFlowNode(flowNodeToResume: Model.Base.FlowNode,
+                                flowNodeInstanceForFlowNode: Runtime.Types.FlowNodeInstance,
+                                currentProcessToken: Runtime.Types.ProcessToken,
+                                processTokenFacade: IProcessTokenFacade,
+                                processModelFacade: IProcessModelFacade,
+                                identity: IIdentity,
+                                flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance>,
+                               ): Promise<void> {
+
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
+
+    const nextFlowNodeInfo: NextFlowNodeInfo =
+      await flowNodeHandler.resume(flowNodeInstanceForFlowNode, processTokenFacade, processModelFacade, identity);
+
+    const processInstanceId: string = flowNodeInstanceForFlowNode.processInstanceId;
+    const processTerminatedMessage: TerminateEndEventReachedMessage = this.processTerminatedMessages[processInstanceId];
+
+    // If the Process was terminated during the FlowNodes execution, abort the ProcessInstance immediately.
+    const processWasTerminated: boolean = processTerminatedMessage !== undefined;
+    if (processWasTerminated) {
+
+      await this._flowNodeInstanceService.persistOnTerminate(flowNodeToResume, flowNodeInstanceForFlowNode.id, currentProcessToken);
+
+      const error: InternalServerError =
+        new InternalServerError(`Process was terminated through TerminateEndEvent "${processTerminatedMessage.flowNodeId}."`);
+
+      throw error;
+    }
+
+    // If more FlowNodes exist after the current one, continue execution.
+    // Otherwise we will have arrived at the end of the current ProcessInstance.
+    const processInstanceHasFinished: boolean = nextFlowNodeInfo.flowNode === undefined;
+    if (processInstanceHasFinished) {
+      return;
+    }
+
+    // Check if a FlowNodeInstance for the next FlowNode has already been persisted
+    // during a previous execution of the ProcessInstance.
+    const flowNodeInstanceForNextFlowNode: Runtime.Types.FlowNodeInstance =
+      flowNodeInstancesForProcessInstance.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
+        return entry.flowNodeId === nextFlowNodeInfo.flowNode.id;
+      });
+
+    const resumingNotFinished: boolean = flowNodeInstanceForNextFlowNode !== undefined;
+    if (resumingNotFinished) {
+      logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} for ProcessInstance ${processInstanceId}.`);
+      // If a matching FlowNodeInstance exists, continue resuming.
+      await this._resumeFlowNode(nextFlowNodeInfo.flowNode,
+                                 flowNodeInstanceForNextFlowNode,
+                                 nextFlowNodeInfo.token,
+                                 nextFlowNodeInfo.processTokenFacade,
+                                 processModelFacade,
+                                 identity,
+                                 flowNodeInstancesForProcessInstance);
+    } else {
+      // Otherwise, we will have arrived at the point at which the ProcessInstance was previously interrupted,
+      // and we can continue with normal execution.
+      logger.info(`All previously interrupted FlowNodeInstances for ProcessInstance ${processInstanceId} have been successfully resumed.`);
+      logger.info(`Continuing ProcessInstance ${processInstanceId} normally.`);
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+                                  nextFlowNodeInfo.token,
+                                  nextFlowNodeInfo.processTokenFacade,
+                                  processModelFacade,
+                                  identity,
+                                  flowNodeInstanceForFlowNode.id);
+    }
+
+  }
+
+  private async _executeFlowNode(flowNode: Model.Base.FlowNode,
+                                 processToken: Runtime.Types.ProcessToken,
+                                 processTokenFacade: IProcessTokenFacade,
+                                 processModelFacade: IProcessModelFacade,
+                                 identity: IIdentity,
+                                 previousFlowNodeInstanceId: string,
+                                ): Promise<void> {
+
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
+
+    const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
+
+    const nextFlowNodeInfo: NextFlowNodeInfo =
+      await flowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
+
+    const processInstanceId: string = processToken.processInstanceId;
+    const processTerminatedMessage: TerminateEndEventReachedMessage = this.processTerminatedMessages[processInstanceId];
+
+    // If the Process was terminated during the FlowNodes execution, abort the ProcessInstance immediately.
+    const processWasTerminated: boolean = processTerminatedMessage !== undefined;
+    if (processWasTerminated) {
+
+      await this._flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, processToken.payload);
+
+      const error: InternalServerError =
+        new InternalServerError(`Process was terminated through TerminateEndEvent "${processTerminatedMessage.flowNodeId}."`);
+
+      throw error;
+    }
+
+    // If more FlowNodes exist after the current one, continue execution.
+    // Otherwise we will have arrived at the end of the current ProcessInstance.
+    const processInstanceHasAdditionalFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
+    if (processInstanceHasAdditionalFlowNode) {
+      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
+                                  nextFlowNodeInfo.token,
+                                  nextFlowNodeInfo.processTokenFacade,
+                                  processModelFacade,
+                                  identity,
+                                  currentFlowNodeInstanceId);
+    }
   }
 
   /**
@@ -276,17 +391,15 @@ export class ResumeProcessService implements IResumeProcessService {
    */
   private _logProcessResumed(correlationId: string, processModelId: string, processInstanceId: string): void {
 
+    logger.info(`ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId} successfully resumed.`);
     const startTime: moment.Moment = moment.utc();
-
+    this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
     this._loggingApiService.writeLogForProcessModel(correlationId,
                                                     processModelId,
                                                     processInstanceId,
                                                     LogLevel.info,
-                                                    `Process instance resumed.`,
+                                                    `ProcessInstance resumed.`,
                                                     startTime.toDate());
-
-    this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
-
   }
 
   /**
@@ -298,15 +411,15 @@ export class ResumeProcessService implements IResumeProcessService {
    */
   private _logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
 
+    logger.info(`ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId} successfully finished.`);
+
     const endTime: moment.Moment = moment.utc();
-
     this._metricsApiService.writeOnProcessFinished(correlationId, processModelId, endTime);
-
     this._loggingApiService.writeLogForProcessModel(correlationId,
                                                     processModelId,
                                                     processInstanceId,
                                                     LogLevel.info,
-                                                    `Process instance finished.`,
+                                                    `ProcessInstance finished.`,
                                                     endTime.toDate());
   }
 
@@ -319,10 +432,9 @@ export class ResumeProcessService implements IResumeProcessService {
    */
   private _logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
 
+    logger.error(`ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId} failed with error.`, error);
     const errorTime: moment.Moment = moment.utc();
-
     this._metricsApiService.writeOnProcessError(correlationId, processModelId, error, errorTime);
-
     this._loggingApiService.writeLogForProcessModel(correlationId,
                                                     processModelId,
                                                     processInstanceId,
