@@ -325,19 +325,22 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
-    const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
-
+    // If the Process was terminated during the FlowNodes execution, abort the ProcessInstance immediately.
     const processWasTerminated: boolean = this.processTerminatedMessage !== undefined;
-
     if (processWasTerminated) {
-      const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this._flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, processToken);
+
+      await this._flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, processToken.payload);
 
       const error: InternalServerError =
         new InternalServerError(`Process was terminated through TerminateEndEvent "${this.processTerminatedMessage.flowNodeId}."`);
 
       throw error;
-    } else if (nextFlowNodeInfoHasFlowNode) {
+    }
+
+    // If more FlowNodes exist after the current one, continue execution.
+    // Otherwise we will have arrived at the end of the current ProcessInstance.
+    const processInstanceHasAdditionalFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
+    if (processInstanceHasAdditionalFlowNode) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
