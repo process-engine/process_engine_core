@@ -12,6 +12,7 @@ import {
   MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
+  ProcessStartedMessage,
   Runtime,
   SignalEventReachedMessage,
   TimerDefinitionType,
@@ -46,6 +47,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     await this.persistOnEnter(token);
 
+    this._sendProcessStartedMessage(token, this.startEvent.id);
+
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
     const flowNodeIsTimerStartEvent: boolean = this.startEvent.timerEventDefinition !== undefined;
@@ -67,6 +70,29 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
+  /**
+   * Sends a message that the ProcessInstance was started.
+   *
+   * @param token Current token object, which contains all necessary Process Metadata.
+   * @param startEventId Id of the used StartEvent.
+   */
+  private _sendProcessStartedMessage(token: Runtime.Types.ProcessToken, startEventId: string): void {
+    const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      startEventId,
+      token.payload);
+
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
+
+    const processStartedBaseName: string = eventAggregatorSettings.routePaths.processInstanceStarted;
+    const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
+    const processWithIdStartedMessage: string =
+      processStartedBaseName
+        .replace(processModelIdParam, token.processModelId);
+
+    this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
+  }
   /**
    * Creates a subscription on the EventAggregator and waits to receive the
    * designated message.

@@ -22,6 +22,7 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
+  ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
