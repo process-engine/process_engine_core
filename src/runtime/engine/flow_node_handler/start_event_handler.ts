@@ -12,6 +12,7 @@ import {
   MessageEventReachedMessage,
   Model,
   NextFlowNodeInfo,
+  ProcessStartedMessage,
   Runtime,
   SignalEventReachedMessage,
   TimerDefinitionType,
@@ -39,20 +40,14 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return super.flowNode;
   }
 
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
-  private get timerFacade(): ITimerFacade {
-    return this._timerFacade;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(token);
+
+    this._sendProcessStartedMessage(token, this.startEvent.id);
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -76,6 +71,29 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
   }
 
   /**
+   * Sends a message that the ProcessInstance was started.
+   *
+   * @param token Current token object, which contains all necessary Process Metadata.
+   * @param startEventId Id of the used StartEvent.
+   */
+  private _sendProcessStartedMessage(token: Runtime.Types.ProcessToken, startEventId: string): void {
+    const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      startEventId,
+      token.payload);
+
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
+
+    const processStartedBaseName: string = eventAggregatorSettings.routePaths.processInstanceStarted;
+    const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
+    const processWithIdStartedMessage: string =
+      processStartedBaseName
+        .replace(processModelIdParam, token.processModelId);
+
+    this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
+  }
+  /**
    * Creates a subscription on the EventAggregator and waits to receive the
    * designated message.
    *
@@ -92,7 +110,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
         .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+      const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
@@ -122,7 +140,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
         .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
 
-      const subscription: ISubscription = this.eventAggregator.subscribeOnce(signalEventName, async(message: SignalEventReachedMessage) => {
+      const subscription: ISubscription = this._eventAggregator.subscribeOnce(signalEventName, async(message: SignalEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
@@ -152,8 +170,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
       let timerSubscription: ISubscription;
 
-      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(timerDefinition);
-      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(timerDefinition);
+      const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(timerDefinition);
+      const timerValue: string = this._timerFacade.parseTimerDefinitionValue(timerDefinition);
 
       const timerElapsed: any = async(): Promise<void> => {
 
@@ -168,7 +186,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
         resolve();
       };
 
-      timerSubscription = await this.timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
+      timerSubscription = await this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
     });
   }
 }

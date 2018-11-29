@@ -69,6 +69,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
 
   public async mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): Promise<void> {
     const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
+
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
 

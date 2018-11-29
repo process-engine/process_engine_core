@@ -34,15 +34,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
     this._flowNode = flowNode;
+    this._flowNodeInstanceId = uuid.v4();
   }
 
   protected get flowNodeInstanceId(): string {
-
-    const noInstanceIdExists: boolean = this._flowNodeInstanceId === undefined;
-    if (noInstanceIdExists) {
-      this._flowNodeInstanceId = this.createFlowNodeInstanceId();
-    }
-
     return this._flowNodeInstanceId;
   }
 
@@ -74,6 +69,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                       ): Promise<NextFlowNodeInfo> {
 
     this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
+
+    token.flowNodeInstanceId = this.flowNodeInstanceId;
 
     let nextFlowNode: NextFlowNodeInfo;
 
@@ -111,27 +108,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Here, the actual execution of the FlowNodes takes place.
    *
    * @async
-   * @param token                      The current ProcessToken.
-   * @param processTokenFacade         The ProcessTokenFacade of the curently
-   *                                   running process.
-   * @param processModelFacade         The ProcessModelFacade of the curently
-   *                                   running process.
-   * @param identity                   The requesting users identity.
+   * @param token              The current ProcessToken.
+   * @param processTokenFacade The ProcessTokenFacade of the curently
+   *                           running process.
+   * @param processModelFacade The ProcessModelFacade of the curently
+   *                           running process.
+   * @param identity           The requesting users identity.
    */
   protected async abstract executeInternally(token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
                                              identity: IIdentity,
                                             ): Promise<NextFlowNodeInfo>;
-
-  /**
-   * Creates an instance ID for the FlowNode that this handler is responsible for.
-   *
-   * @returns The created FlowNodeInstanceId.
-   */
-  protected createFlowNodeInstanceId(): string {
-    return uuid.v4();
-  }
 
   /**
    * Persists the current state of the FlowNodeInstance, after it successfully started execution.
@@ -300,6 +288,28 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                this.flowNode.id,
                                                LogLevel.info,
                                                'Flow Node execution resumed.');
+  }
+
+  /**
+   * Gets the FlowNodeInfo about the next FlowNode to execute after this
+   * handler has finished.
+   *
+   * @async
+   * @param token              The current Processtoken.
+   * @param processTokenFacade The ProcessTokenFacade to use with the next
+   *                           FlowNode.
+   * @param processModelFacade The ProcessModelFacade to use with the next
+   *                           FlowNode.
+   * @returns                  The NextFlowNodeInfo object for the next FlowNode
+   *                           to run.
+   */
+  protected async getNextFlowNodeInfo(token: Runtime.Types.ProcessToken,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                     ): Promise<NextFlowNodeInfo> {
+    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.flowNode);
+
+    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
   }
 
   /**

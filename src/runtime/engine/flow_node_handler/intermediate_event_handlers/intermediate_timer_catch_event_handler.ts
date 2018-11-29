@@ -33,10 +33,6 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
     return super.flowNode;
   }
 
-  private get timerFacade(): ITimerFacade {
-    return this._timerFacade;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
@@ -48,8 +44,8 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
       let timerSubscription: ISubscription;
 
-      const timerType: TimerDefinitionType = this.timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
-      const timerValue: string = this.timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
+      const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
+      const timerValue: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
 
       const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
 
@@ -70,7 +66,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       };
 
       await this.persistOnSuspend(token);
-      timerSubscription = await this.timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
+      timerSubscription = await this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
     });
   }
 }

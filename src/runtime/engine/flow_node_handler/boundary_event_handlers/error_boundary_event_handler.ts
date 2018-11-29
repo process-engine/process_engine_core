@@ -11,7 +11,7 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandler} from '../index';
 
 export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
@@ -30,17 +30,13 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     return super.flowNode;
   }
 
-  private get decoratedHandler(): FlowNodeHandler<Model.Base.FlowNode> {
-    return this._decoratedHandler;
-  }
-
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
     try {
       const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this.decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+        = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
       return nextFlowNodeInfo;
 
