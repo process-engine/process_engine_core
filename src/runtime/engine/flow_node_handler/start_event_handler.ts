@@ -103,9 +103,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    */
   private async _waitForMessage(token: Runtime.Types.ProcessToken, messageName: string): Promise<void> {
 
-    await this.persistOnSuspend(token);
-
-    return new Promise<void>((resolve: Function): void => {
+    return new Promise<void>((async(resolve: Function): Promise<void> => {
 
       const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
         .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
@@ -120,7 +118,9 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
         resolve();
       });
-    });
+
+      await this.persistOnSuspend(token);
+    }));
   }
 
   /**
@@ -133,9 +133,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    */
   private async _waitForSignal(token: Runtime.Types.ProcessToken, signalName: string): Promise<void> {
 
-    await this.persistOnSuspend(token);
-
-    return new Promise<void>((resolve: Function): void => {
+    return new Promise<void>(async(resolve: Function): Promise<void> => {
 
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
         .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
@@ -150,6 +148,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
         resolve();
       });
+
+      await this.persistOnSuspend(token);
     });
   }
 
@@ -163,8 +163,6 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    */
   private async _waitForTimerToElapse(token: Runtime.Types.ProcessToken,
                                       timerDefinition: Model.EventDefinitions.TimerEventDefinition): Promise<void> {
-
-    await this.persistOnSuspend(token);
 
     return new Promise<void> (async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -187,6 +185,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       };
 
       timerSubscription = await this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
+      await this.persistOnSuspend(token);
     });
   }
 }
