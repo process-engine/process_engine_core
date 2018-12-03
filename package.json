@@ -33,13 +33,13 @@
     "@types/clone": "~0.1.30",
     "addict-ioc": "~2.5.1",
     "bluebird": "~3.5.2",
-    "clone": "2.1.2",
-    "loggerhythm": "3.0.3",
-    "mocha": "5.2.0",
-    "moment": "2.22.2",
-    "uuid": "3.3.2",
-    "should": "13.2.3",
-    "xml2js": "0.4.19"
+    "clone": "~2.1.2",
+    "loggerhythm": "~3.0.3",
+    "mocha": "~5.2.0",
+    "moment": "~2.22.2",
+    "uuid": "~3.3.2",
+    "should": "~13.2.3",
+    "xml2js": "~0.4.19"
   },
   "devDependencies": {
     "@essential-projects/tslint-config": "^1.1.3",
