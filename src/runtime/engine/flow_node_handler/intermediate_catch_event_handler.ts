@@ -18,7 +18,7 @@ import {FlowNodeHandler} from './index';
 
 export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
-  private _childEventHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent>;
+  private _childHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -28,11 +28,11 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
               intermediateCatchEventModel: Model.Events.IntermediateThrowEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, intermediateCatchEventModel);
     this._container = container;
-    this._childEventHandler = this._getChildEventHandler();
+    this._childHandler = this._getChildEventHandler();
   }
 
   public getInstanceId(): string {
-    return this._childEventHandler.getInstanceId();
+    return this._childHandler.getInstanceId();
   }
 
   private _getChildEventHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
@@ -57,6 +57,6 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childEventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 }

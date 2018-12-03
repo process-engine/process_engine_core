@@ -8,7 +8,7 @@ import {
 
 import {IContainer} from 'addict-ioc';
 
-enum BoundaryEventDefinitionType {
+enum BoundaryEventType {
   Error = 0,
   Timer = 1,
   Message = 2,
@@ -27,9 +27,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return this._container;
   }
 
-  public async create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode,
-                                                             processModelFacade: IProcessModelFacade,
-                                                            ): Promise<IFlowNodeHandler<TFlowNode>> {
+  public async create<TFlowNode extends Model.Base.FlowNode>(
+    flowNode: TFlowNode,
+    processModelFacade: IProcessModelFacade,
+  ): Promise<IFlowNodeHandler<TFlowNode>> {
 
     const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode);
 
@@ -39,9 +40,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       return flowNodeHandler;
     }
 
-    // the original FlowNodeHandler created above will now be decorated by one handler for each BoundaryEvent that is attached to the FlowNode
-    // as a result, the `execute`-method will be called on the topmost decorated BoundaryEventHandler
-    // the BoundaryEventHandler will then pass the `execute`-call down to the next BoundaryEventHandler until the original FlowNodeHandler is called
+    // The original FlowNodeHandler created above will now be decorated with handlers for each BoundaryEvent attached to the FlowNode.
+    // As a result, the `execute`-method will be called on the topmost decorated BoundaryEventHandler.
+    // The BoundaryEventHandler will then pass the `execute`-call down to the next BoundaryEventHandler,
+    // until the original FlowNodeHandler is reached.
     return this._decorateWithBoundaryEventHandlers<TFlowNode>(boundaryEvents, flowNodeHandler);
   }
 
@@ -77,7 +79,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BpmnType.manualTask:
         return this._createHandler<TFlowNode>('ManualTaskHandler', flowNode);
       default:
-        throw Error(`FlowNodeHandler for BPMN type "${flowNode.bpmnType}" could not be found.`);
+        throw Error(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" found.`);
     }
   }
 
@@ -85,17 +87,17 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     registrationKey: string,
     flowNode: TFlowNode,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
-
     return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey, [flowNode]);
   }
 
-  private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(boundaryEvents: Array<Model.Events.BoundaryEvent>,
-                                                                                          handlerToDecorate: IFlowNodeHandler<TFlowNode>)
-                                                                                          : Promise<IFlowNodeHandler<TFlowNode>> {
+  private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(
+    boundaryEvents: Array<Model.Events.BoundaryEvent>,
+    handlerToDecorate: IFlowNodeHandler<TFlowNode>,
+  ): Promise<IFlowNodeHandler<TFlowNode>> {
 
-    // first the boundary events are ordered by type
-    // e.g.: the ErrorBoundaryEventHandler has to be applied before other BoundaryEvents so that it only catches errors
-    // from the actual FlowNode it is attached to
+    // First the boundary events are ordered by typeand priority.
+    // e.g.: the ErrorBoundaryEventHandler has to be applied before other BoundaryEvents
+    // so that it only catches errors from the actual FlowNode it is attached to.
     this._orderBoundaryEventsByPriority(boundaryEvents);
 
     let currentHandler: IFlowNodeHandler<TFlowNode> = handlerToDecorate;
@@ -107,55 +109,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return currentHandler;
   }
 
-  private async _createBoundaryEventHandler<TFlowNode extends Model.Base.FlowNode>(
-    boundaryEventNode: Model.Events.BoundaryEvent,
-    handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>,
-  ): Promise<IFlowNodeHandler<TFlowNode>> {
-
-    // The handler that shall be decorated is passed through using the IoC container
-    // This causes the handler to be injected after the declared dependencies of the individual handler that gets instantiated in this method
-    const argumentsToPassThrough: Array<any> = [handlerToDecorate, boundaryEventNode];
-
-    const eventDefinitionType: BoundaryEventDefinitionType = this._getEventDefinitionType(boundaryEventNode);
-
-    switch (eventDefinitionType) {
-      case BoundaryEventDefinitionType.Error:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
-      case BoundaryEventDefinitionType.Timer:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
-      case BoundaryEventDefinitionType.Message:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('MessageBoundaryEventHandler', argumentsToPassThrough);
-      case BoundaryEventDefinitionType.Signal:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SignalBoundaryEventHandler', argumentsToPassThrough);
-      default:
-        throw Error(`Es konnte kein BoundaryEventHandler für den EventDefinitionType ${eventDefinitionType} gefunden werden.`);
-    }
-  }
-
-  private _getEventDefinitionType(boundaryEventNode: Model.Events.BoundaryEvent): BoundaryEventDefinitionType {
-    if (boundaryEventNode.errorEventDefinition) {
-      return BoundaryEventDefinitionType.Error;
-    }
-
-    if (boundaryEventNode.messageEventDefinition) {
-      return BoundaryEventDefinitionType.Message;
-    }
-
-    if (boundaryEventNode.signalEventDefinition) {
-      return BoundaryEventDefinitionType.Signal;
-    }
-
-    if (boundaryEventNode.timerEventDefinition) {
-      return BoundaryEventDefinitionType.Timer;
-    }
-
-    return undefined;
-  }
-
   private _orderBoundaryEventsByPriority(boundaryEvents: Array<Model.Events.BoundaryEvent>): void {
-
-    // order the boundary events so that e.g. the error handler only handles the error of the actual flow node,
-    // not errors of other boundary events or so
 
     boundaryEvents.sort((eventA: Model.Events.BoundaryEvent, eventB: Model.Events.BoundaryEvent) => {
 
@@ -174,4 +128,48 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     });
   }
 
+  private async _createBoundaryEventHandler<TFlowNode extends Model.Base.FlowNode>(
+    boundaryEventNode: Model.Events.BoundaryEvent,
+    handlerToDecorate: IFlowNodeHandler<Model.Base.FlowNode>,
+  ): Promise<IFlowNodeHandler<TFlowNode>> {
+
+    // The handler to decorate is passed through to the BoundaryEventHandler via ioc as an InjectionArgument.
+    // This causes the decorated handler to be injected last, after all other dependencies.
+    const argumentsToPassThrough: Array<any> = [handlerToDecorate, boundaryEventNode];
+
+    const eventDefinitionType: BoundaryEventType = this._getEventDefinitionType(boundaryEventNode);
+
+    switch (eventDefinitionType) {
+      case BoundaryEventType.Error:
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
+      case BoundaryEventType.Message:
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('MessageBoundaryEventHandler', argumentsToPassThrough);
+      case BoundaryEventType.Signal:
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SignalBoundaryEventHandler', argumentsToPassThrough);
+      case BoundaryEventType.Timer:
+        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
+      default:
+        throw Error(`No BoundaryEventHandler for EventDefinitionType ${eventDefinitionType} found.`);
+    }
+  }
+
+  private _getEventDefinitionType(boundaryEventNode: Model.Events.BoundaryEvent): BoundaryEventType {
+    if (boundaryEventNode.errorEventDefinition) {
+      return BoundaryEventType.Error;
+    }
+
+    if (boundaryEventNode.messageEventDefinition) {
+      return BoundaryEventType.Message;
+    }
+
+    if (boundaryEventNode.signalEventDefinition) {
+      return BoundaryEventType.Signal;
+    }
+
+    if (boundaryEventNode.timerEventDefinition) {
+      return BoundaryEventType.Timer;
+    }
+
+    return undefined;
+  }
 }

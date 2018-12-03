@@ -12,6 +12,8 @@ const {
   ManualTaskHandler,
   MessageBoundaryEventHandler,
   ParallelGatewayHandler,
+  ParallelJoinGatewayHandler,
+  ParallelSplitGatewayHandler,
   ReceiveTaskHandler,
   ScriptTaskHandler,
   SendTaskHandler,
@@ -158,11 +160,31 @@ function registerHandlers(container) {
 
   container
     .register('ParallelGatewayHandler', ParallelGatewayHandler)
+    .dependencies('container', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('ParallelJoinGatewayHandler', ParallelJoinGatewayHandler)
+    .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('ParallelSplitGatewayHandler', ParallelSplitGatewayHandler)
     .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('ManualTaskHandler', ManualTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('ReceiveTaskHandler', ReceiveTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container
     .register('ScriptTaskHandler', ScriptTaskHandler)
     .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('SendTaskHandler', SendTaskHandler)
+    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container
     .register('ServiceTaskHandler', ServiceTaskHandler)
@@ -175,18 +197,6 @@ function registerHandlers(container) {
   container
     .register('InternalServiceTaskHandler', InternalServiceTaskHandler)
     .dependencies('container', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
-
-  container
-    .register('ManualTaskHandler', ManualTaskHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
-
-  container
-    .register('ReceiveTaskHandler', ReceiveTaskHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
-
-  container
-    .register('SendTaskHandler', SendTaskHandler)
-    .dependencies('EventAggregator', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container
     .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
