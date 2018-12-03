@@ -123,22 +123,21 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
         return entry.processModelId === this.subProcess.id;
       });
 
-    let callActivityResult: any;
+    let subProcessResult: any;
 
-    const callActivityNotYetExecuted: boolean = matchingSubProcess === undefined;
-    if (callActivityNotYetExecuted) {
+    const subProcessNotYetExecuted: boolean = matchingSubProcess === undefined;
+    if (subProcessNotYetExecuted) {
       // Subprocess not yet started. We need to run the handler again.
-      const subProcessResult: any = await this._executeSubprocess(onSuspendToken, processTokenFacade, processModelFacade, identity);
-      callActivityResult = subProcessResult;
+      subProcessResult = await this._executeSubprocess(onSuspendToken, processTokenFacade, processModelFacade, identity);
     } else {
       // Subprocess was already started. Resume it and wait for the result:
-      callActivityResult =
+      subProcessResult =
         await this._resumeProcessService.resumeProcessInstanceById(identity, matchingSubProcess.processModelId, matchingSubProcess.processInstanceId);
     }
 
-    onSuspendToken.payload = callActivityResult;
+    onSuspendToken.payload = subProcessResult;
     await this.persistOnResume(onSuspendToken);
-    await processTokenFacade.addResultForFlowNode(this.subProcess.id, callActivityResult);
+    await processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(onSuspendToken);
 
     return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);

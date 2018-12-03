@@ -1,4 +1,3 @@
-import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 
@@ -22,7 +21,6 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
-  ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';

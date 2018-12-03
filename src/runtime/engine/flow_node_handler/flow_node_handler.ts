@@ -181,7 +181,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
                                       identity?: IIdentity,
-                                    ): Promise<NextFlowNodeInfo> {
+                                     ): Promise<NextFlowNodeInfo> {
 
     return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
@@ -251,11 +251,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                             FlowNodeInstance.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
    * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The identity of the user that originally
+   *                             started the ProcessInstance.
    * @returns                    The Info for the next FlowNode to run.
    */
   protected async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,
                                      processTokenFacade: IProcessTokenFacade,
                                      processModelFacade: IProcessModelFacade,
+                                     identity?: IIdentity,
                                     ): Promise<NextFlowNodeInfo> {
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);

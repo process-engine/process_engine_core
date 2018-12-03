@@ -75,10 +75,10 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
-        logger.verbose(`ParallelSplitGateway was already finished. Skipping ahead.`);
+        logger.verbose(`ParallelSplitGateway was finished. Reconstructing branches.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.error:
         logger.error(`Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it previously exited with an error!`,
                      flowNodeInstance.error);
@@ -93,6 +93,51 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
         logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
+  }
+
+  protected async _continueAfterExit(token: Runtime.Types.ProcessToken,
+                                     processTokenFacade: IProcessTokenFacade,
+                                     processModelFacade: IProcessModelFacade,
+                                     identity?: IIdentity,
+                                    ): Promise<NextFlowNodeInfo> {
+
+    // We must re-run the handler, regardles of whether it was finished or only just started,
+    // because we need it to reconstruct the TokenData that was created by the parallel branches.
+    this._subscribeToProcessTerminatedEvent(token.processInstanceId);
+
+    // TODO: This can probably be removed, when we have refactored the way we handle ParallelGateways in general.
+    // For now, we need that data here for use in the parallel branches.
+    // ----
+    const flowNodeInstancesForProcessModel: Array<Runtime.Types.FlowNodeInstance> =
+      await this.flowNodeInstanceService.queryByProcessModel(token.processModelId);
+
+    const flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance> =
+      flowNodeInstancesForProcessModel.filter((entry: Runtime.Types.FlowNodeInstance): boolean => {
+        return entry.processInstanceId === token.processInstanceId;
+      });
+    // ----
+
+    // First, find the Join-Gateway that will finish the Parallel branches.
+    const joinGateway: Model.Gateways.ParallelGateway = await this._findJoinGateway(token, processModelFacade);
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
+
+    // Create Promises for each branch.
+    const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
+      this._resumeParallelBranches(outgoingSequenceFlows,
+                                   flowNodeInstancesForProcessInstance,
+                                   joinGateway,
+                                   token,
+                                   processTokenFacade,
+                                   processModelFacade,
+                                   identity);
+
+    // Now await the resumption of all the branches. They will only run to the point where they encounter the Join-Gateway.
+    const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
+
+    // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
+    const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
+
+    return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
@@ -117,7 +162,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     // Now await the execution of all the branches. They will only run to the point where they encounter the Join-Gateway.
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
 
-    // After all parallel branches have been executed, each result is merged on the ProcessTokenFacade
+    // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
@@ -222,6 +267,100 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     }
 
     return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
+  }
+
+  private _resumeParallelBranches(outgoingSequenceFlows: Array<Model.Types.SequenceFlow>,
+                                  flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+                                  joinGateway: Model.Gateways.ParallelGateway,
+                                  token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Array<Promise<NextFlowNodeInfo>> {
+
+    return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
+
+      // To have an isolated ProcessToken for each branch, we fork a new ProcessToken from the original one and use it during execution of this branch
+      const processTokenForBranch: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
+      const tokenForBranch: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(token.payload);
+
+      const firstFlowNodeInBranch: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
+
+      const flowNodeInstanceForFirstFlowNode: Runtime.Types.FlowNodeInstance =
+        flowNodeInstances.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
+          return entry.flowNodeId === firstFlowNodeInBranch.id;
+        });
+
+      return await this._resumeBranchToJoinGateway(firstFlowNodeInBranch,
+                                                   flowNodeInstanceForFirstFlowNode,
+                                                   joinGateway,
+                                                   tokenForBranch,
+                                                   processTokenForBranch,
+                                                   processModelFacade,
+                                                   identity,
+                                                   flowNodeInstances);
+    });
+  }
+
+  private async _resumeBranchToJoinGateway(flowNodeToResume: Model.Base.FlowNode,
+                                           flowNodeInstanceForFlowNode: Runtime.Types.FlowNodeInstance,
+                                           joinGateway: Model.Gateways.ParallelGateway,
+                                           token: Runtime.Types.ProcessToken,
+                                           processTokenFacade: IProcessTokenFacade,
+                                           processModelFacade: IProcessModelFacade,
+                                           identity: IIdentity,
+                                           flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance>,
+                                          ): Promise<NextFlowNodeInfo> {
+
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
+
+    const nextFlowNodeInfo: NextFlowNodeInfo =
+      await flowNodeHandler.resume(flowNodeInstanceForFlowNode, processTokenFacade, processModelFacade, identity);
+
+    const processWasTerminated: boolean = this._processTerminatedMessage !== undefined;
+    if (processWasTerminated) {
+      await this.flowNodeInstanceService.persistOnTerminate(flowNodeToResume, flowNodeInstanceForFlowNode.id, token);
+      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminatedMessage.flowNodeId}".`);
+    }
+
+    // If the next FlowNode is the JoinGateway for this branch, then the branch has finished.
+    const nextFlowNodeIsJoinGateway: boolean =
+      nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id;
+    if (nextFlowNodeIsJoinGateway) {
+      return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
+    }
+
+    // Check if a FlowNodeInstance for the next FlowNode has already been persisted
+    // during a previous execution of the ProcessInstance.
+    const flowNodeInstanceForNextFlowNode: Runtime.Types.FlowNodeInstance =
+      flowNodeInstancesForProcessInstance.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
+        return entry.flowNodeId === nextFlowNodeInfo.flowNode.id;
+      });
+
+    const resumingNotFinished: boolean = flowNodeInstanceForNextFlowNode !== undefined;
+    if (resumingNotFinished) {
+      logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} in ParallelGateway instance ${this.flowNodeInstanceId}.`);
+      // If a matching FlowNodeInstance exists, continue resuming.
+      await this._resumeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
+                                            flowNodeInstanceForNextFlowNode,
+                                            joinGateway,
+                                            nextFlowNodeInfo.token,
+                                            nextFlowNodeInfo.processTokenFacade,
+                                            processModelFacade,
+                                            identity,
+                                            flowNodeInstancesForProcessInstance);
+    } else {
+      // Otherwise, we will have arrived at the point at which the branch was previously interrupted,
+      // and we can continue with normal execution.
+      logger.info(`Continuing Parallel branch in ParallelGateway instance ${this.flowNodeInstanceId} normally.`);
+      await this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
+                                             joinGateway,
+                                             nextFlowNodeInfo.token,
+                                             nextFlowNodeInfo.processTokenFacade,
+                                             processModelFacade,
+                                             identity,
+                                             flowNodeInstanceForFlowNode.id);
+    }
+
   }
 
   private async _mergeTokenHistories(processTokenFacade: IProcessTokenFacade,
