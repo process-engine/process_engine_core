@@ -52,7 +52,7 @@ interface IProcessInstanceConfig {
  * It is strongly encouraged to only run this service ONCE when starting up
  * the ProcessEngine!
  *
- * Trying to resume ProcessInstance during normal operation will have
+ * Trying to resume ProcessInstances during normal operation will have
  * unpredictable consequences!
  */
 export class ResumeProcessService implements IResumeProcessService {
@@ -85,8 +85,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
     logger.info('Resuming ProcessInstances that were not yet finished.');
 
-    // First get all active FlowNodeInstances.
-    // This doesn't account for processes with ParallelGateways.
+    // First get all active FlowNodeInstances from every ProcessInstance.
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
       await this._flowNodeInstanceService.queryActive();
 
@@ -120,7 +119,7 @@ export class ResumeProcessService implements IResumeProcessService {
       });
     // ----
 
-    // First check if there even are any FlowNodeInstances still active.
+    // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
     // There is no point in trying to resume anything that's already finished.
     const processHasActiveFlowNodeInstances: boolean =
       flowNodeInstancesForProcessInstance.some((entry: Runtime.Types.FlowNodeInstance): boolean => {
@@ -138,6 +137,12 @@ export class ResumeProcessService implements IResumeProcessService {
       await this._createProcessInstanceConfig(identity, processModelId, processInstanceId, flowNodeInstancesForProcessInstance);
 
     try {
+      // Resume the ProcessInstance from the StartEvent it was originally started with.
+      // The ProcessInstance will retrace all its steps until it ends up at the FlowNode it was interrupted at.
+      // This removes the need for us to reconstruct the ProcessToken manually, or trace any parallel running branches,
+      // because the FlowNodeHandlers will do that for us.
+      // When we reached the interrupted FlowNodeInstance and finished resuming it, the ProcessInstance will
+      // continue to run normally; i.e. all following FlowNodes will be 'executed' and no longer 'resumed'.
       this._logProcessResumed(processInstanceConfig.correlationId, processModelId, processInstanceId);
       const result: any = await this._resumeProcessInstance(identity, processInstanceConfig, flowNodeInstancesForProcessInstance);
       this._logProcessFinished(processInstanceConfig.correlationId, processModelId, processInstanceId);

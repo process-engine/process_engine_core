@@ -83,6 +83,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
         logger.error(`Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it previously exited with an error!`,
                      flowNodeInstance.error);
         throw flowNodeInstance.error;
+      case Runtime.Types.FlowNodeInstanceState.terminated:
         const terminatedError: string = `Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it was terminated!`;
         logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
