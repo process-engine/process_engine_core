@@ -63,6 +63,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                    processModelFacade: IProcessModelFacade,
                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childEventHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+    return this._childHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
   }
 }
