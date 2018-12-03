@@ -17,7 +17,7 @@ import {FlowNodeHandler} from './index';
 
 export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
-  private _childEventHandler: FlowNodeHandler<Model.Activities.ServiceTask>;
+  private _childHandler: FlowNodeHandler<Model.Activities.ServiceTask>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -28,14 +28,14 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
 
     super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
     this._container = container;
-    this._childEventHandler = this._getChildEventHandler();
+    this._childHandler = this._getChildHandler();
   }
 
   public getInstanceId(): string {
-    return this._childEventHandler.getInstanceId();
+    return this._childHandler.getInstanceId();
   }
 
-  private _getChildEventHandler(): FlowNodeHandler<Model.Activities.ServiceTask> {
+  private _getChildHandler(): FlowNodeHandler<Model.Activities.ServiceTask> {
 
     if (this.flowNode.type === Model.Activities.ServiceTaskType.external) {
       return this._container.resolve<FlowNodeHandler<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [this.flowNode]);
@@ -49,6 +49,6 @@ export class ServiceTaskHandler extends FlowNodeHandler<Model.Activities.Service
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childEventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 }

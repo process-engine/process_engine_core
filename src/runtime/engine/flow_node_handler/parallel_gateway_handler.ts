@@ -18,7 +18,7 @@ import {FlowNodeHandler} from './index';
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
-  private _childEventHandler: FlowNodeHandler<Model.Gateways.ParallelGateway>;
+  private _childHandler: FlowNodeHandler<Model.Gateways.ParallelGateway>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -29,14 +29,14 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
 
     super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
     this._container = container;
-    this._childEventHandler = this._getChildEventHandler();
+    this._childHandler = this._getChildHandler();
   }
 
   public getInstanceId(): string {
-    return this._childEventHandler.getInstanceId();
+    return this._childHandler.getInstanceId();
   }
 
-  private _getChildEventHandler(): FlowNodeHandler<Model.Gateways.ParallelGateway> {
+  private _getChildHandler(): FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
     switch (this.flowNode.gatewayDirection) {
       case Model.Gateways.GatewayDirection.Converging:
@@ -55,6 +55,6 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childEventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 }

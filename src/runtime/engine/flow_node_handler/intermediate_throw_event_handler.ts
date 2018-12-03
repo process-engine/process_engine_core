@@ -18,7 +18,7 @@ import {FlowNodeHandler} from './index';
 
 export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
-  private _childEventHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent>;
+  private _childHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -28,14 +28,14 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
               intermediateThrowEventModel: Model.Events.IntermediateThrowEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, intermediateThrowEventModel);
     this._container = container;
-    this._childEventHandler = this._getChildEventHandler();
+    this._childHandler = this._getChildHandler();
   }
 
   public getInstanceId(): string {
-    return this._childEventHandler.getInstanceId();
+    return this._childHandler.getInstanceId();
   }
 
-  private _getChildEventHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
+  private _getChildHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
     if (this.flowNode.messageEventDefinition) {
       return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageThrowEventHandler', [this.flowNode]);
@@ -53,6 +53,6 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return this._childEventHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
 }
