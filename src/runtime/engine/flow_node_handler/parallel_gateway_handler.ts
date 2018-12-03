@@ -11,7 +11,6 @@ import {
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
-  IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
   Runtime,
@@ -19,11 +18,6 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from './index';
-
-interface IProcessStateInfo {
-  processTerminationSubscription?: ISubscription;
-  processTerminatedMessage?: TerminateEndEventReachedMessage;
-}
 
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
