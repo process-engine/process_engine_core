@@ -76,19 +76,23 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
+
       case Runtime.Types.FlowNodeInstanceState.finished:
         this.logger.verbose(`ParallelSplitGateway was finished. Reconstructing branches.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
+
       case Runtime.Types.FlowNodeInstanceState.error:
         this.logger.error(`Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it previously exited with an error!`,
                      flowNodeInstance.error);
         throw flowNodeInstance.error;
+
       case Runtime.Types.FlowNodeInstanceState.terminated:
         const terminatedError: string = `Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it was terminated!`;
         this.logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
+
       default:
         const invalidStateError: string =
           `Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because its state cannot be determined!`;

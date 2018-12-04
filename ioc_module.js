@@ -222,13 +222,11 @@ function registerHandlers(container) {
 
   container
     .register('SubProcessHandler', SubProcessHandler)
-    .dependencies('CorrelationService',
-                  'EventAggregator',
+    .dependencies('EventAggregator',
                   'FlowNodeHandlerFactory',
                   'FlowNodeInstanceService',
                   'LoggingApiService',
-                  'MetricsApiService',
-                  'ResumeProcessService');
+                  'MetricsApiService');
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
