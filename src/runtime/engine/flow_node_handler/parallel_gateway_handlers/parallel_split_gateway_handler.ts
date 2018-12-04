@@ -138,7 +138,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
-    logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken);
+    logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
@@ -169,7 +169,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
-    logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken);
+    logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
