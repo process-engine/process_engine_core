@@ -80,7 +80,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     if (!nextFlowNode) {
       throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
-
     await this.afterExecute(nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
@@ -107,7 +106,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     if (!nextFlowNode) {
       throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
-
     await this.afterExecute(nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
@@ -182,7 +180,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                       processModelFacade: IProcessModelFacade,
                                       identity?: IIdentity,
                                      ): Promise<NextFlowNodeInfo> {
-
     return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
@@ -206,7 +203,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                         processModelFacade: IProcessModelFacade,
                                         identity?: IIdentity,
                                        ): Promise<NextFlowNodeInfo> {
-
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onSuspendToken.payload);
     await this.persistOnResume(onSuspendToken);
     await this.persistOnExit(onSuspendToken);
@@ -232,7 +228,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                        processModelFacade: IProcessModelFacade,
                                        identity?: IIdentity,
                                       ): Promise<NextFlowNodeInfo> {
-
     processTokenFacade.addResultForFlowNode(this.flowNode.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);
 
@@ -260,7 +255,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                      processModelFacade: IProcessModelFacade,
                                      identity?: IIdentity,
                                     ): Promise<NextFlowNodeInfo> {
-
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);
 
     return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
@@ -491,7 +485,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     await processTokenFacade.evaluateMapperForFlowNode(this.flowNode);
 
     const nextSequenceFlow: Model.Types.SequenceFlow = processModelFacade.getSequenceFlowBetween(this.flowNode, nextFlowNode);
-
     if (!nextSequenceFlow) {
       return;
     }

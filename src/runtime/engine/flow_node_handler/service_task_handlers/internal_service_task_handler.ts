@@ -17,11 +17,11 @@ import {
 
 import {FlowNodeHandler} from '../index';
 
-const logger: Logger = Logger.createLogger('processengine:runtime:internal_service_task');
-
 export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
+
+  private logger: Logger;
 
   constructor(container: IContainer,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -32,6 +32,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
 
     this._container = container;
+    this.logger = Logger.createLogger(`processengine:internal_service_task:${serviceTaskModel.id}`);
   }
 
   private get serviceTask(): Model.Activities.ServiceTask {
@@ -44,6 +45,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                     identity: IIdentity,
                                    ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing internal ServiceTask instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
@@ -61,30 +63,30 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
       });
     }
 
-    logger.verbose(`Resuming internal ServiceTask ${flowNodeInstance.flowNodeId} with instance ID ${flowNodeInstance.id}.`);
+    this.logger.verbose(`Resuming internal ServiceTask instance ${flowNodeInstance.id}.`);
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
-        logger.verbose(`ServiceTask was unfinished. Resuming from the start.`);
+        this.logger.verbose(`ServiceTask was unfinished. Resuming from the start.`);
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
-        logger.verbose(`ServiceTask was already finished. Skipping ahead.`);
+        this.logger.verbose(`ServiceTask was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
-        logger.error(`Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+        this.logger.error(`Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it previously exited with an error!`,
                      flowNodeInstance.error);
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
         const terminatedError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it was terminated!`;
-        logger.error(terminatedError);
+        this.logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
       default:
         const invalidStateError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because its state cannot be determined!`;
-        logger.error(invalidStateError);
+        this.logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
   }
@@ -100,10 +102,10 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
 
     if (serviceTaskHasNoInvocation) {
-      logger.verbose('ServiceTask has no invocation. Skipping execution.');
+      this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
       result = {};
     } else {
-      logger.verbose('Executing internal ServiceTask');
+      this.logger.verbose('Executing internal ServiceTask');
       result = await this._executeInternalServiceTask(token, processTokenFacade, identity);
     }
 
@@ -135,7 +137,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     if (!isMethodInvocation) {
       const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
-      logger.error(notSupportedErrorMessage);
+      this.logger.error(notSupportedErrorMessage);
 
       throw new UnprocessableEntityError(notSupportedErrorMessage);
     }

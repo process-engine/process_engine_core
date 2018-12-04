@@ -18,12 +18,12 @@ import {
 
 import {FlowNodeHandler} from '../index';
 
-const logger: Logger = Logger.createLogger('processengine:runtime:external_service_task');
-
 export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _eventAggregator: IEventAggregator;
   private _externalTaskRepository: IExternalTaskRepository;
+
+  private logger: Logger;
 
   constructor(eventAggregator: IEventAggregator,
               externalTaskRepository: IExternalTaskRepository,
@@ -36,6 +36,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     this._eventAggregator = eventAggregator;
     this._externalTaskRepository = externalTaskRepository;
+    this.logger = Logger.createLogger(`processengine:external_service_task:${serviceTaskModel.id}`);
   }
 
   private get serviceTask(): Model.Activities.ServiceTask {
@@ -48,6 +49,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                     identity: IIdentity,
   ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing external ServiceTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
@@ -65,11 +67,11 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
       });
     }
 
-    logger.verbose(`Resuming external ServiceTask with instance ID ${flowNodeInstance.id} and FlowNode ID ${flowNodeInstance.flowNodeId}`);
+    this.logger.verbose(`Resuming external ServiceTask instance ${flowNodeInstance.id}`);
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        logger.verbose(`ServiceTask was left suspended. Waiting for the ExternalTask to be processed.`);
+        this.logger.verbose(`ServiceTask was left suspended. Waiting for the ExternalTask to be processed.`);
         const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade, identity);
@@ -79,31 +81,31 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
         const noMessageReceivedYet: boolean = resumeToken === undefined;
         if (noMessageReceivedYet) {
-          logger.verbose(`ServiceTask was interrupted at the beginning. Resuming from the start.`);
+          this.logger.verbose(`ServiceTask was interrupted at the beginning. Resuming from the start.`);
           const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
         }
 
-        logger.verbose(`The external task was already processed and the handler resumed. Finishing up the handler.`);
+        this.logger.verbose(`The external task was already processed and the handler resumed. Finishing up the handler.`);
 
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
-        logger.verbose(`ServiceTask was already finished. Skipping ahead.`);
+        this.logger.verbose(`ServiceTask was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
-        logger.error(`Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+        this.logger.error(`Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it previously exited with an error!`,
                      flowNodeInstance.error);
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
         const terminatedError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it was terminated!`;
-        logger.error(terminatedError);
+        this.logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
       default:
         const invalidStateError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because its state cannot be determined!`;
-        logger.error(invalidStateError);
+        this.logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
   }
@@ -137,13 +139,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
       const processExternalTaskResult: Function = async(error: Error, result: any): Promise<void> => {
 
         if (error) {
-          logger.error(`External processing of ServiceTask failed!`, error);
+          this.logger.error(`External processing of ServiceTask failed!`, error);
           await this.persistOnError(onSuspendToken, error);
 
           throw error;
         }
 
-        logger.verbose('External processing of the ServiceTask finished successfully.');
+        this.logger.verbose('External processing of the ServiceTask finished successfully.');
         onSuspendToken.payload = result;
 
         await this.persistOnResume(onSuspendToken);
@@ -174,7 +176,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                   identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
-    logger.verbose('Executing external ServiceTask');
+    this.logger.verbose('Executing external ServiceTask');
     await this.persistOnSuspend(token);
     const result: any = await this._executeExternalServiceTask(token, processTokenFacade, identity);
 
@@ -208,13 +210,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
       const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
 
         if (error) {
-          logger.error(`External processing of ServiceTask failed!`, error);
+          this.logger.error(`External processing of ServiceTask failed!`, error);
           await this.persistOnError(token, error);
 
           throw error;
         }
 
-        logger.verbose('External processing of the ServiceTask finished successfully.');
+        this.logger.verbose('External processing of the ServiceTask finished successfully.');
         token.payload = result;
 
         await this.persistOnResume(token);
@@ -230,7 +232,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
       await this._createExternalTask(token, payload);
       this._publishExternalTaskCreatedNotification();
 
-      logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
+      this.logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
     });
   }
 
@@ -273,7 +275,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
       return matchingExternalTask;
     } catch (error) {
-      logger.info('No external task has been stored for this FlowNodeInstance.');
+      this.logger.info('No external task has been stored for this FlowNodeInstance.');
 
       return undefined;
     }
@@ -313,7 +315,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
    */
   private async _createExternalTask(token: Runtime.Types.ProcessToken, exernalTaskPayload: any): Promise<void> {
 
-    logger.verbose('Persist ServiceTask as ExternalTask.');
+    this.logger.verbose('Persist ServiceTask as ExternalTask.');
     await this._externalTaskRepository.create(this.serviceTask.topic,
       token.correlationId,
       token.processModelId,

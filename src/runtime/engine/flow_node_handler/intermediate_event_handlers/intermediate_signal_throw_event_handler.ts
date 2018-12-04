@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -20,6 +22,7 @@ import {FlowNodeHandler} from '../index';
 export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
   private _eventAggregator: IEventAggregator;
+  private logger: Logger;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -28,6 +31,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
               signalThrowEventModel: Model.Events.IntermediateThrowEvent) {
     super(flowNodeInstanceService, loggingService, metricsService, signalThrowEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = Logger.createLogger(`processengine:signal_throw_event_handler:${signalThrowEventModel.id}`);
   }
 
   private get signalThrowEvent(): Model.Events.IntermediateThrowEvent {
@@ -39,6 +43,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing SignalThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade);
@@ -50,6 +55,8 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Resuming SignalThrowEvent instance ${flowNodeInstance.id}`);
+
     function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
       return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
         return token.type === tokenType;
@@ -58,19 +65,27 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
+        this.logger.verbose(`SignalThrowEvent ${flowNodeInstance.id} was interrupted before it could finish. Restarting the handler.`);
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
+        this.logger.verbose(`SignalThrowEvent ${flowNodeInstance.id} was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
+        this.logger.error(`Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+        const terminatedError: string = `Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because it was terminated!`;
+        this.logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
       default:
-        throw new InternalServerError(`Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+        const invalidStateError: string = `Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        this.logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
     }
   }
 
@@ -90,12 +105,12 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                                                              this.signalThrowEvent.id,
                                                                              token.payload);
 
+    this.logger.verbose(`SignalThrowEvent instance ${this.flowNodeInstanceId} now sending signal ${signalName}...`);
     this._eventAggregator.publish(signalEventName, message);
-
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalThrowEvent);
+    this.logger.verbose(`Done.`);
 
     await this.persistOnExit(token);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 }

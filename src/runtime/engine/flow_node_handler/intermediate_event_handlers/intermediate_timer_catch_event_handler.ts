@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -24,6 +26,8 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
   private _timerFacade: ITimerFacade;
 
+  private logger: Logger;
+
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
               metricsService: IMetricsApi,
@@ -31,6 +35,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
               timerCatchEventModel: Model.Events.IntermediateCatchEvent) {
     super(flowNodeInstanceService, loggingService, metricsService, timerCatchEventModel);
     this._timerFacade = timerFacade;
+    this.logger = Logger.createLogger(`processengine:timer_catch_event_handler:${timerCatchEventModel.id}`);
   }
 
   private get timerCatchEvent(): Model.Events.IntermediateCatchEvent {
@@ -42,6 +47,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing TimerCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
@@ -54,6 +60,8 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
                                    identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Resuming TimerCatchEvent instance ${flowNodeInstance.id}`);
+
     function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
       return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
         return token.type === tokenType;
@@ -62,31 +70,46 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
+        this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was left suspended. Waiting for the Message to be received.`);
         const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.running:
 
+      case Runtime.Types.FlowNodeInstanceState.running:
         const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const signalNotYetReceived: boolean = resumeToken === undefined;
-        if (signalNotYetReceived) {
+        const messageNotYetReceived: boolean = resumeToken === undefined;
+        if (messageNotYetReceived) {
+          this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was interrupted at the beginning. Resuming from the start.`);
           const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
         }
 
+        this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} already received its message. Finishing up the handler.`);
+
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+
       case Runtime.Types.FlowNodeInstanceState.finished:
+        this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
+
       case Runtime.Types.FlowNodeInstanceState.error:
+        this.logger.error(`Cannot resume TimerCatchEvent instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
         throw flowNodeInstance.error;
+
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume TimerCatchEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+        const terminatedError: string = `Cannot resume TimerCatchEvent instance ${flowNodeInstance.id}, because it was terminated!`;
+        this.logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
+
       default:
-        throw new InternalServerError(`Cannot resume TimerCatchEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+        const invalidStateError: string = `Cannot resume TimerCatchEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        this.logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
     }
   }
 

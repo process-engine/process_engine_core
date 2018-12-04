@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -21,6 +23,8 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
 
   private _eventAggregator: IEventAggregator;
 
+  private logger: Logger;
+
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
@@ -28,6 +32,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
               signalCatchEventModel: Model.Events.IntermediateCatchEvent) {
     super(flowNodeInstanceService, loggingService, metricsService, signalCatchEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = Logger.createLogger(`processengine:signal_catch_event_handler:${signalCatchEventModel.id}`);
   }
 
   private get signalCatchEvent(): Model.Events.IntermediateCatchEvent {
@@ -39,6 +44,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing SignalCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
@@ -51,6 +57,8 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
                                    identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Resuming SignalCatchEvent instance ${flowNodeInstance.id}`);
+
     function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
       return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
         return token.type === tokenType;
@@ -59,31 +67,46 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
+        this.logger.verbose(`SignalCatchEvent was left suspended. Waiting for the Message to be received.`);
         const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.running:
 
+      case Runtime.Types.FlowNodeInstanceState.running:
         const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
-        const signalNotYetReceived: boolean = resumeToken === undefined;
-        if (signalNotYetReceived) {
+        const messageNotYetReceived: boolean = resumeToken === undefined;
+        if (messageNotYetReceived) {
+          this.logger.verbose(`SignalCatchEvent was interrupted at the beginning. Resuming from the start.`);
           const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
         }
 
+        this.logger.verbose(`The message was already received and the handler resumed. Finishing up the handler.`);
+
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
+
       case Runtime.Types.FlowNodeInstanceState.finished:
+        this.logger.verbose(`SignalCatchEvent was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
+
       case Runtime.Types.FlowNodeInstanceState.error:
+        this.logger.error(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
         throw flowNodeInstance.error;
+
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because it was terminated!`);
+        const terminatedError: string = `Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because it was terminated!`;
+        this.logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
+
       default:
-        throw new InternalServerError(`Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+        const invalidStateError: string = `Cannot resume SignalCatchEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        this.logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
     }
   }
 
@@ -135,9 +158,15 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
         if (subscription) {
           subscription.dispose();
         }
+        this.logger.verbose(
+          `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
+          signal,
+          'Resuming execution.',
+        );
 
         return resolve(signal);
       });
+      this.logger.verbose(`SignalCatchEvent instance ${this.flowNodeInstanceId} waiting for signal ${signalEventName}.`);
     });
   }
 }

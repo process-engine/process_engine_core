@@ -19,8 +19,6 @@ import {
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-const logger: Logger = Logger.createLogger('processengine:runtime:parallel_split_gateway');
-
 import {FlowNodeHandler} from '../index';
 
 export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
@@ -28,6 +26,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
+
+  private logger: Logger;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -38,6 +38,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     super(flowNodeInstanceService, loggingApiService, metricsService, parallelGatewayModel);
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this.logger = Logger.createLogger(`processengine:parallel_split_gateway:${parallelGatewayModel.id}`);
   }
 
   private get parallelGateway(): Model.Gateways.ParallelGateway {
@@ -49,6 +50,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing ParallelSplitGateway instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
@@ -66,31 +68,31 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
       });
     }
 
-    logger.verbose(`Resuming ParallelSplitGateway ${flowNodeInstance.flowNodeId} with instance ID ${flowNodeInstance.id}.`);
+    this.logger.verbose(`Resuming ParallelSplitGateway instance ${flowNodeInstance.id}.`);
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
-        logger.verbose(`ParallelSplitGateway was unfinished. Resuming from the start.`);
+        this.logger.verbose(`ParallelSplitGateway was unfinished. Resuming from the start.`);
         const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
-        logger.verbose(`ParallelSplitGateway was finished. Reconstructing branches.`);
+        this.logger.verbose(`ParallelSplitGateway was finished. Reconstructing branches.`);
         const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.error:
-        logger.error(`Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it previously exited with an error!`,
+        this.logger.error(`Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it previously exited with an error!`,
                      flowNodeInstance.error);
         throw flowNodeInstance.error;
       case Runtime.Types.FlowNodeInstanceState.terminated:
         const terminatedError: string = `Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because it was terminated!`;
-        logger.error(terminatedError);
+        this.logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
       default:
         const invalidStateError: string =
           `Cannot resume ParallelSplitGateway instance ${flowNodeInstance.id}, because its state cannot be determined!`;
-        logger.error(invalidStateError);
+        this.logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
   }
@@ -103,7 +105,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                      identity?: IIdentity,
                                     ): Promise<NextFlowNodeInfo> {
 
-    logger.verbose(`Subscribing to ProcessTerminated event.`);
+    this.logger.verbose(`Subscribing to ProcessTerminated event.`);
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
     // TODO: This can probably be removed, when we have refactored the way we handle ParallelGateways in general.
@@ -123,6 +125,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
 
     // Create Promises for each branch.
+    this.logger.verbose(`Executing ${outgoingSequenceFlows.length} parallel branches to the Join-Gateway.`);
     const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
       this._resumeParallelBranches(outgoingSequenceFlows,
                                    flowNodeInstancesForProcessInstance,
@@ -133,12 +136,11 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                    identity);
 
     // Now await the resumption of all the branches. They will only run to the point where they encounter the Join-Gateway.
-    logger.verbose(`Executing ${parallelBranchExecutionPromises.length} parallel branches to the Join-Gateway.`);
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
-    logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
+    this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
@@ -148,7 +150,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                   processModelFacade: IProcessModelFacade,
                                   identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    logger.verbose(`Subscribing to ProcessTerminated event.`);
+    this.logger.verbose(`Subscribing to ProcessTerminated event.`);
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
     // First, find the Join-Gateway that will finish the Parallel branches.
@@ -156,6 +158,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
 
     // Create Promises for each branch.
+    this.logger.verbose(`Executing ${outgoingSequenceFlows.length} parallel branches to the Join-Gateway.`);
     const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
       this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, identity);
 
@@ -164,12 +167,11 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     await this.persistOnExit(token);
 
     // Now await the execution of all the branches. They will only run to the point where they encounter the Join-Gateway.
-    logger.verbose(`Executing ${parallelBranchExecutionPromises.length} parallel branches to the Join-Gateway.`);
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
-    logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
+    this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
@@ -196,7 +198,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     // First find the ParallelGateway that joins the branch back to the original branch.
     const joinGateway: Model.Gateways.ParallelGateway = processModelFacade.getJoinGatewayFor(this.parallelGateway);
-    logger.verbose(`Determined ParallelGateway ${joinGateway.id} as the Join-Gateway.`);
+    this.logger.verbose(`Determined ParallelGateway ${joinGateway.id} as the Join-Gateway.`);
 
     const joinGatewayTypeIsNotSupported: boolean =
       joinGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
@@ -345,7 +347,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     const resumingNotFinished: boolean = flowNodeInstanceForNextFlowNode !== undefined;
     if (resumingNotFinished) {
-      logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} for ParallelGateway instance ${this.flowNodeInstanceId}.`);
+      this.logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} for ParallelGateway instance ${this.flowNodeInstanceId}.`);
       // If a matching FlowNodeInstance exists, continue resuming.
       await this._resumeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                             flowNodeInstanceForNextFlowNode,
@@ -358,8 +360,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     } else {
       // Otherwise, we will have arrived at the point at which the branch was previously interrupted,
       // and we can continue with normal execution.
-      logger.info(`All interrupted FlowNodeInstances resumed and finished.`);
-      logger.info(`Continuing parallel branch in ParallelGateway instance ${this.flowNodeInstanceId} normally.`);
+      this.logger.info(`All interrupted FlowNodeInstances resumed and finished.`);
+      this.logger.info(`Continuing parallel branch in ParallelGateway instance ${this.flowNodeInstanceId} normally.`);
       await this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                              joinGateway,
                                              nextFlowNodeInfo.token,
