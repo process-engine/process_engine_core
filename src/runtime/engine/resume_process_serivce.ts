@@ -30,6 +30,7 @@ import {ProcessTokenFacade} from './process_token_facade';
 const logger: Logger = new Logger('processengine:runtime:resume_process_service');
 
 interface IProcessInstanceModelAssociation {
+  identity: IIdentity;
   processModelId: string;
   processInstanceId: string;
 }
@@ -100,7 +101,7 @@ export class ResumeProcessService implements IResumeProcessService {
       //
       // Lets say, Process A sends signals/messages to Process B,
       // then these processes must run in concert, not sequentially.
-      this.resumeProcessInstanceById(identity, processInstance.processModelId, processInstance.processInstanceId);
+      this.resumeProcessInstanceById(processInstance.identity, processInstance.processModelId, processInstance.processInstanceId);
     }
   }
 
@@ -379,6 +380,8 @@ export class ResumeProcessService implements IResumeProcessService {
         const newAssociation: IProcessInstanceModelAssociation = {
           processInstanceId: flowNodeInstance.processInstanceId,
           processModelId: flowNodeInstance.processModelId,
+          // TODO: This can be simplified, once the data models for FlowNodeInstance and ProcessToken have been refactored.
+          identity: flowNodeInstance.tokens[0].identity,
         };
         activeProcessInstances.push(newAssociation);
       }
