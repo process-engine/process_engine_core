@@ -294,14 +294,14 @@ export class CorrelationService implements ICorrelationService {
   }
 
   /**
-   * Retrieves all entries from the correlation repository that have th
-   *  matching correlation ID.
+   * Retrieves all entries from the correlation repository that have the
+   * matching correlation ID.
    * Afterwards, the associated ProcessModelHashes are used to retrieve the
    * corresponding ProcessModels.
    *
    * @async
-   * @param   correlationId     The correlationId for which to get the ProcessModels.
-   * @returns                   The retrieved ProcessModels.
+   * @param   correlationId The correlationId for which to get the ProcessModels.
+   * @returns               The retrieved ProcessModels.
    */
   private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.CorrelationProcessModel>> {
 
@@ -321,7 +321,7 @@ export class CorrelationService implements ICorrelationService {
         processModel.processModelId = correlation.processModelId;
         processModel.processInstanceId = correlation.processInstanceId;
         processModel.parentProcessInstanceId = correlation.parentProcessInstanceId;
-        // For this UseCase, we can safely assuem the running-state,
+        // For this UseCase, we can safely assume the running-state,
         // because we already made sure that only active correlations have been retrieved.
         processModel.state = Runtime.Types.FlowNodeInstanceState.running;
 
