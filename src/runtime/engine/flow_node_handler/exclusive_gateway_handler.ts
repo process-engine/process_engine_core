@@ -83,10 +83,10 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
     // If this were not the case, the Gateway would not have been executed at all.
-    const matchingSequenceFlow: Model.Types.SequenceFlow =
-      this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade)[0];
+    const matchingSequenceFlows: Array<Model.Types.SequenceFlow> =
+      await this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade);
 
-    const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlow.targetRef);
+    const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlows[0].targetRef);
 
     return new NextFlowNodeInfo(nextFlowNodeAfterSplit, onExitToken, processTokenFacade);
   }
