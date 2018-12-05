@@ -125,6 +125,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       await this.persistOnResume(onSuspendToken);
     }
 
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
 
     return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
@@ -160,6 +161,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       await this.persistOnResume(token);
     }
 
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
     await this.persistOnExit(token);
 
     return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
@@ -225,15 +227,15 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       .replace(eventAggregatorSettings.routeParams.messageReference, messageDefinitionName);
 
     const subscription: ISubscription =
-      this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+      this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
         }
 
-        const messageHasPayload: boolean = message && message.currentToken;
+        const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
         const tokenToReturn: any = messageHasPayload
-          ? message.currentToken
+          ? messageEventPayload.currentToken
           : currentToken.payload;
 
         resolveFunc(tokenToReturn);
@@ -255,15 +257,15 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       .replace(eventAggregatorSettings.routeParams.signalReference, signalDefinitionName);
 
     const subscription: ISubscription =
-      this._eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
+      this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
         }
 
-        const signalHasPayload: boolean = signal && signal.currentToken;
+        const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
         const tokenToReturn: any = signalHasPayload
-          ? signal.currentToken
+          ? signalEventPayload.currentToken
           : currentToken.payload;
 
         resolveFunc(tokenToReturn);
@@ -298,5 +300,40 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     };
 
     timerSubscription = this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
+  }
+
+  /**
+   * Checks if the given message has a valid payload.
+   * This function serves to prevent initial tokens to be accidentally wiped
+   * by an empty message.
+   *
+   * @param   message The message for which to check the payload.
+   * @returns         'true', if a valid payload was send with the message,
+   *                  'false' otherwise.
+   */
+  private _checkIfEventPayloadHasToken(message: SignalEventReachedMessage | MessageEventReachedMessage): boolean {
+
+    const messageHasNoPayload: boolean = !message || !message.currentToken;
+    if (messageHasNoPayload) {
+      return false;
+    }
+
+    const payloadIsEmptyArray: boolean = Array.isArray(message.currentToken) && message.currentToken.length === 0;
+    if (payloadIsEmptyArray) {
+      return false;
+    }
+
+    const payloadIsEmptyObject: boolean = typeof message.currentToken === 'object' &&
+                                          Object.keys(message.currentToken).length === 0;
+    if (payloadIsEmptyObject) {
+      return false;
+    }
+
+    const payloadIsEmptyString: boolean = typeof message.currentToken === 'string' && message.currentToken.length === 0;
+    if (payloadIsEmptyString) {
+      return false;
+    }
+
+    return true;
   }
 }
