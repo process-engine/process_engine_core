@@ -29,10 +29,10 @@ export class TimerFacade implements ITimerFacade {
     return this._timerService;
   }
 
-  public async initializeTimer(flowNode: Model.Base.FlowNode,
-                               timerType: TimerDefinitionType,
-                               timerValue: string,
-                               timerCallback: Function): Promise<ISubscription> {
+  public initializeTimer(flowNode: Model.Base.FlowNode,
+                         timerType: TimerDefinitionType,
+                         timerValue: string,
+                         timerCallback: Function): ISubscription {
 
     const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
 
@@ -87,9 +87,7 @@ export class TimerFacade implements ITimerFacade {
     return undefined;
   }
 
-  private async _startCycleTimer(timerDefinition: string,
-                                 timerCallback: Function,
-                                 callbackEventName: string): Promise<ISubscription> {
+  private _startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): ISubscription {
 
     const duration: moment.Duration = moment.duration(timerDefinition);
 
@@ -106,14 +104,12 @@ export class TimerFacade implements ITimerFacade {
       timerCallback();
     });
 
-    await this.timerService.periodic(timingRule, callbackEventName);
+    this.timerService.periodic(timingRule, callbackEventName);
 
     return subscription;
   }
 
-  private async _startDurationTimer(timerDefinition: string,
-                                    timerCallback: Function,
-                                    callbackEventName: string): Promise<ISubscription> {
+  private _startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): ISubscription {
 
     const duration: moment.Duration = moment.duration(timerDefinition);
     const date: moment.Moment = moment().add(duration);
@@ -122,14 +118,12 @@ export class TimerFacade implements ITimerFacade {
       timerCallback();
     });
 
-    await this.timerService.once(date, callbackEventName);
+    this.timerService.once(date, callbackEventName);
 
     return subscription;
   }
 
-  private async _startDateTimer(timerDefinition: string,
-                                timerCallback: Function,
-                                callbackEventName: string): Promise<ISubscription> {
+  private _startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): ISubscription {
 
     const date: moment.Moment = moment(timerDefinition);
 
@@ -137,7 +131,7 @@ export class TimerFacade implements ITimerFacade {
       timerCallback();
     });
 
-    await this.timerService.once(date, callbackEventName);
+    this.timerService.once(date, callbackEventName);
 
     return subscription;
   }
