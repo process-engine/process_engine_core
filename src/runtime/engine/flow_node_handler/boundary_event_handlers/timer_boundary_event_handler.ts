@@ -14,7 +14,10 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
+import {Logger} from 'loggerhythm';
 import {FlowNodeHandler} from '../index';
+
+const logger: Logger = Logger.createLogger('processengine:runtime:timer_boundary_event');
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
@@ -108,7 +111,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
       return evaluateFunction.call(tokenData, tokenData);
 
     } catch (err) {
-      return timerExpression;
+      logger.error(err);
+      throw err;
     }
   }
 }
