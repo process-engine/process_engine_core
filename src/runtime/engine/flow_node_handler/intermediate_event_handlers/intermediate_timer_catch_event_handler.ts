@@ -70,7 +70,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
-        this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was left suspended. Waiting for the Message to be received.`);
+        this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was left suspended. Restarting the timer.`);
         const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
