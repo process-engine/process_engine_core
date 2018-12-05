@@ -93,7 +93,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
   private async _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): Promise<string> {
     const tokenVariableName: string = 'token';
-    const isConstantTimerExpression: boolean = timerExpression.includes(tokenVariableName);
+    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
 
     if (isConstantTimerExpression) {
       return timerExpression;

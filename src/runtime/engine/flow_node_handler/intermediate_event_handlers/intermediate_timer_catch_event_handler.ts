@@ -14,7 +14,10 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
+import {Logger} from 'loggerhythm';
 import {FlowNodeHandler} from '../index';
+
+const logger: Logger = Logger.createLogger('processengine:runtime:intermediate_timer_catch_event');
 
 export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
@@ -48,6 +51,8 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
       const timerValue: string = await this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
+      logger.info(timerValue);
+
       const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
 
       const timerElapsed: any = async(): Promise<void> => {
@@ -73,7 +78,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
   private async _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): Promise<string> {
     const tokenVariableName: string = 'token';
-    const isConstantTimerExpression: boolean = timerExpression.includes(tokenVariableName);
+    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
 
     if (isConstantTimerExpression) {
       return timerExpression;
