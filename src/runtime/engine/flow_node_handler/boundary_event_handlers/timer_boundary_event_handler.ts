@@ -68,7 +68,7 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
           resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
         };
 
-        timerSubscription = await this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
+        timerSubscription = this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
 
         const nextFlowNodeInfo: NextFlowNodeInfo =
           await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);

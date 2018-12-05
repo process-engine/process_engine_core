@@ -184,7 +184,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
         resolve();
       };
 
-      timerSubscription = await this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
+      timerSubscription = this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
       await this.persistOnSuspend(token);
     });
   }
