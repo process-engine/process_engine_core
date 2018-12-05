@@ -128,7 +128,7 @@ export class ResumeProcessService implements IResumeProcessService {
                entry.state === Runtime.Types.FlowNodeInstanceState.suspended;
       });
 
-    if (processHasActiveFlowNodeInstances) {
+    if (!processHasActiveFlowNodeInstances) {
       logger.info(`ProcessInstance ${processInstanceId} is not active anymore.`);
 
       return;
@@ -376,7 +376,7 @@ export class ResumeProcessService implements IResumeProcessService {
           return !token.caller;
         });
 
-      if (!processInstanceListHasNoMatchingEntry && flowNodeInstanceIsNotPartOfSubprocess) {
+      if (processInstanceListHasNoMatchingEntry && flowNodeInstanceIsNotPartOfSubprocess) {
         const newAssociation: IProcessInstanceModelAssociation = {
           processInstanceId: flowNodeInstance.processInstanceId,
           processModelId: flowNodeInstance.processModelId,
