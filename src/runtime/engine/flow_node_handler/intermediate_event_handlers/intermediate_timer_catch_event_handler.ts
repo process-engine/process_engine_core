@@ -66,7 +66,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       };
 
       await this.persistOnSuspend(token);
-      timerSubscription = await this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
+      timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
     });
   }
 }
