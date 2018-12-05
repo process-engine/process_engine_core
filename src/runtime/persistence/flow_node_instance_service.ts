@@ -38,6 +38,9 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
   public async queryByProcessModel(processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this._flowNodeInstanceRepository.queryByProcessModel(processModelId);
   }
+  public async queryByCorrelationAndProcessModel(correlationId: string, processModelId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.queryByCorrelationAndProcessModel(correlationId, processModelId);
+  }
 
   public async queryByState(state: Runtime.Types.FlowNodeInstanceState): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this._flowNodeInstanceRepository.queryByState(state);
@@ -49,6 +52,12 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
 
   public async queryActiveByProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this._flowNodeInstanceRepository.queryActiveByProcessInstance(processInstanceId);
+  }
+
+  public async queryActiveByCorrelationAndProcessModel(correlationId: string,
+                                                       processModelId: string,
+                                                      ): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.queryActiveByCorrelationAndProcessModel(correlationId, processModelId);
   }
 
   public async querySuspendedByCorrelation(correlationId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
