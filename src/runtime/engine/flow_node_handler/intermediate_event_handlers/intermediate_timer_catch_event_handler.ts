@@ -51,7 +51,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
       const timerValue: string = await this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
-      logger.info(timerValue);
+      logger.info(`TimerValue: ${timerValue}`);
 
       const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
 
@@ -93,6 +93,8 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       return evaluateFunction.call(tokenData, tokenData);
 
     } catch (err) {
+      logger.error(err);
+
       return timerExpression;
     }
   }
