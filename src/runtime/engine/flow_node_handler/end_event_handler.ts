@@ -44,7 +44,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    this.logger.verbose(`Executing external EndEvent instance ${this.flowNodeInstanceId}`);
+    this.logger.verbose(`Executing EndEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade);

@@ -22,7 +22,6 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
               metricsService: IMetricsApi,
               parallelGatewayModel: Model.Gateways.ParallelGateway) {
     super(flowNodeInstanceService, loggingApiService, metricsService, parallelGatewayModel);
-
     this.logger = Logger.createLogger(`processengine:parallel_join_gateway:${parallelGatewayModel.id}`);
   }
 
