@@ -107,6 +107,10 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getSubprocessesForProcessInstance(processInstanceId);
 
+    if (correlationsFromRepo.length === 0) {
+      return undefined;
+    }
+
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const correlation: Runtime.Types.Correlation =
