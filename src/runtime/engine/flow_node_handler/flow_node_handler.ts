@@ -85,6 +85,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     if (!nextFlowNode) {
       throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
+    await this.afterExecute(nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }
@@ -110,6 +111,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     if (!nextFlowNode) {
       throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
+    await this.afterExecute(nextFlowNode.flowNode, nextFlowNode.processTokenFacade, processModelFacade);
 
     return nextFlowNode;
   }
@@ -504,5 +506,30 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.flowNode);
 
     return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+  }
+
+  /**
+   * Performs post-execution operations for the FlowNode that this Handler is
+   * responsible for.
+   *
+   * @async
+   * @param nextFlowNode       The FlowNode that follows after this one.
+   * @param processTokenFacade The ProcessTokenFacade of the curently running
+   *                           process.
+   * @param processModelFacade The ProcessModelFacade of the curently running
+   *                           process.
+   */
+  private async afterExecute(nextFlowNode: Model.Base.FlowNode,
+                             processTokenFacade: IProcessTokenFacade,
+                             processModelFacade: IProcessModelFacade): Promise<void> {
+
+    await processTokenFacade.evaluateMapperForFlowNode(this.flowNode);
+
+    const nextSequenceFlow: Model.Types.SequenceFlow = processModelFacade.getSequenceFlowBetween(this.flowNode, nextFlowNode);
+    if (!nextSequenceFlow) {
+      return;
+    }
+
+    await processTokenFacade.evaluateMapperForSequenceFlow(nextSequenceFlow);
   }
 }
