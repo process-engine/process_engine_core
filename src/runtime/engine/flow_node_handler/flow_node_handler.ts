@@ -1,6 +1,9 @@
+// tslint:disable:max-file-line-count
+import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
@@ -19,6 +22,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   protected _flowNodeInstanceId: string = undefined;
   protected _flowNode: TFlowNode;
   protected _previousFlowNodeInstanceId: string;
+
+  protected logger: Logger;
 
   private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _loggingApiService: ILoggingApi;
@@ -143,6 +148,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * This is the method where the derived handlers must implement their logic
    * for resuming a previously interrupted instance.
    *
+   * The base implementation comes with a logic for resuming after "onEnter",
+   * "onExit" and all error cases.
+   * Handlers that use suspension and resumption must override this function.
+   *
    * @async
    * @param   flowNodeInstance   The current ProcessToken.
    * @param   processTokenFacade The ProcessTokenFacade of the curently
@@ -153,11 +162,44 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                             started the ProcessInstance.
    * @returns                    The Info for the next FlowNode to run.
    */
-  protected async abstract resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                            processTokenFacade: IProcessTokenFacade,
-                                            processModelFacade: IProcessModelFacade,
-                                            identity: IIdentity,
-                                           ): Promise<NextFlowNodeInfo>;
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
+
+    switch (flowNodeInstance.state) {
+      case Runtime.Types.FlowNodeInstanceState.running:
+        this.logger.verbose(`FlowNodeInstance was unfinished. Resuming from the start.`);
+        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
+
+      case Runtime.Types.FlowNodeInstanceState.finished:
+        this.logger.verbose(`FlowNodeInstance was finished. Reconstructing branches.`);
+        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
+
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
+
+      case Runtime.Types.FlowNodeInstanceState.error:
+        this.logger.error(`Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
+        throw flowNodeInstance.error;
+
+      case Runtime.Types.FlowNodeInstanceState.terminated:
+        const terminatedError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
+        this.logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
+
+      default:
+        const invalidStateError: string =
+          `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        this.logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
+    }
+  }
 
   /**
    * Resumes the given FlowNodeInstance from the point where it assumed the
