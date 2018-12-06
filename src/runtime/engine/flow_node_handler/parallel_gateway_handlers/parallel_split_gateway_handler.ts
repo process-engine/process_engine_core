@@ -304,9 +304,10 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     const resumingNotFinished: boolean = flowNodeInstanceForNextFlowNode !== undefined;
     if (resumingNotFinished) {
-      this.logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} for ParallelGateway instance ${this.flowNodeInstanceId}.`);
       // If a matching FlowNodeInstance exists, continue resuming.
-      await this._resumeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
+      this.logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} for ParallelGateway instance ${this.flowNodeInstanceId}.`);
+
+      return this._resumeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
                                             flowNodeInstanceForNextFlowNode,
                                             joinGateway,
                                             nextFlowNodeInfo.token,
@@ -314,20 +315,20 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                             processModelFacade,
                                             identity,
                                             flowNodeInstancesForProcessInstance);
-    } else {
-      // Otherwise, we will have arrived at the point at which the branch was previously interrupted,
-      // and we can continue with normal execution.
-      this.logger.info(`All interrupted FlowNodeInstances resumed and finished.`);
-      this.logger.info(`Continuing parallel branch in ParallelGateway instance ${this.flowNodeInstanceId} normally.`);
-      await this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
-                                             joinGateway,
-                                             nextFlowNodeInfo.token,
-                                             nextFlowNodeInfo.processTokenFacade,
-                                             processModelFacade,
-                                             identity,
-                                             flowNodeInstanceForFlowNode.id);
     }
 
+    // Otherwise, we will have arrived at the point at which the branch was previously interrupted,
+    // and we can continue with normal execution.
+    this.logger.info(`All interrupted FlowNodeInstances resumed and finished.`);
+    this.logger.info(`Continuing parallel branch in ParallelGateway instance ${this.flowNodeInstanceId} normally.`);
+
+    return this._executeBranchToJoinGateway(nextFlowNodeInfo.flowNode,
+                                           joinGateway,
+                                           nextFlowNodeInfo.token,
+                                           nextFlowNodeInfo.processTokenFacade,
+                                           processModelFacade,
+                                           identity,
+                                           flowNodeInstanceForFlowNode.id);
   }
 
   private async _mergeTokenHistories(processTokenFacade: IProcessTokenFacade,
