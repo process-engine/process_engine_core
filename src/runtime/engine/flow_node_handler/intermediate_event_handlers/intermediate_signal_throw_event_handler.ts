@@ -57,21 +57,15 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     this.logger.verbose(`Resuming SignalThrowEvent instance ${flowNodeInstance.id}`);
 
-    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
-      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === tokenType;
-      });
-    }
-
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
         this.logger.verbose(`SignalThrowEvent ${flowNodeInstance.id} was interrupted before it could finish. Restarting the handler.`);
-        const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
         this.logger.verbose(`SignalThrowEvent ${flowNodeInstance.id} was already finished. Skipping ahead.`);
-        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:

@@ -44,19 +44,13 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
-      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === tokenType;
-      });
-    }
-
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.running:
-        const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.finished:
-        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:

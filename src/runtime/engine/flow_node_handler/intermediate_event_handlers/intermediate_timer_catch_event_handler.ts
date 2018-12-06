@@ -62,26 +62,20 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
     this.logger.verbose(`Resuming TimerCatchEvent instance ${flowNodeInstance.id}`);
 
-    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
-      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === tokenType;
-      });
-    }
-
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
         this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was left suspended. Restarting the timer.`);
-        const suspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+        const suspendToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
 
       case Runtime.Types.FlowNodeInstanceState.running:
-        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
+        const resumeToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
         const messageNotYetReceived: boolean = resumeToken === undefined;
         if (messageNotYetReceived) {
           this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was interrupted at the beginning. Resuming from the start.`);
-          const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+          const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
         }
@@ -92,7 +86,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
       case Runtime.Types.FlowNodeInstanceState.finished:
         this.logger.verbose(`TimerCatchEvent ${flowNodeInstance.id} was already finished. Skipping ahead.`);
-        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
 

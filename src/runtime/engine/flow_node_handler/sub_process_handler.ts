@@ -67,26 +67,20 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     this.logger.verbose(`Resuming SubProcess instance ${this.flowNodeInstanceId}.`);
 
-    function getFlowNodeInstanceTokenByType(tokenType: Runtime.Types.ProcessTokenType): Runtime.Types.ProcessToken {
-      return flowNodeInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === tokenType;
-      });
-    }
-
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
         this.logger.verbose(`SubProcess ${flowNodeInstance.id} was left suspended. Waiting for the Message to be received.`);
-        const onSuspendToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
+        const onSuspendToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, onSuspendToken, processTokenFacade, processModelFacade, identity);
       case Runtime.Types.FlowNodeInstanceState.running:
 
-        const resumeToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onResume);
+        const resumeToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onResume);
 
         const subProcessNotYetExecuted: boolean = resumeToken === undefined;
         if (subProcessNotYetExecuted) {
           this.logger.verbose(`SubProcess ${flowNodeInstance.id} was interrupted at the beginning. Resuming from the start.`);
-          const onEnterToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+          const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
         }
@@ -97,7 +91,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
       case Runtime.Types.FlowNodeInstanceState.finished:
         this.logger.verbose(`SubProcess was finished. Skipping ahead.`);
-        const onExitToken: Runtime.Types.ProcessToken = getFlowNodeInstanceTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
 
