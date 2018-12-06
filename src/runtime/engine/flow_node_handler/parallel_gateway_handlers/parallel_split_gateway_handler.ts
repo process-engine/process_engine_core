@@ -288,10 +288,9 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
       throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminatedMessage.flowNodeId}".`);
     }
 
-    // If the next FlowNode is the JoinGateway for this branch, then the branch has finished.
-    const nextFlowNodeIsJoinGateway: boolean =
-      nextFlowNodeInfo.flowNode !== null && nextFlowNodeInfo.flowNode && nextFlowNodeInfo.flowNode.id !== joinGateway.id;
-    if (nextFlowNodeIsJoinGateway) {
+    // If no next FlowNode exists, or the next FlowNode is the JoinGateway for this branch, then the branch has finished.
+    const stopExecution: boolean = !nextFlowNodeInfo.flowNode || nextFlowNodeInfo.flowNode.id === joinGateway.id;
+    if (stopExecution) {
       return new NextFlowNodeInfo(joinGateway, nextFlowNodeInfo.token, nextFlowNodeInfo.processTokenFacade);
     }
 
