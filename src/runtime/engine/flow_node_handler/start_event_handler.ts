@@ -1,3 +1,6 @@
+import {Logger} from 'loggerhythm';
+
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -34,6 +37,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     super(flowNodeInstanceService, loggingApiService, metricsService, startEventModel);
     this._eventAggregator = eventAggregator;
     this._timerFacade = timerFacade;
+    this.logger = new Logger(`processengine:start_event_handler:${startEventModel.id}`);
   }
 
   private get startEvent(): Model.Events.StartEvent {
@@ -45,7 +49,52 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing StartEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
+
+    const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
+    const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
+    const flowNodeIsTimerStartEvent: boolean = this.startEvent.timerEventDefinition !== undefined;
+
+    const isSpecializedStartEvent: boolean = flowNodeIsMessageStartEvent || flowNodeIsSignalStartEvent || flowNodeIsTimerStartEvent;
+
+    // If the StartEvent is not a regular StartEvent,
+    // wait for the defined condition to be fulfilled.
+    if (isSpecializedStartEvent) {
+
+      let newTokenPayload: any =
+        await new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+          if (flowNodeIsMessageStartEvent) {
+            newTokenPayload = this._waitForMessage(onSuspendToken, resolve);
+          } else if (flowNodeIsSignalStartEvent) {
+            newTokenPayload = this._waitForSignal(onSuspendToken, resolve);
+          } else if (flowNodeIsTimerStartEvent) {
+            newTokenPayload = this._waitForTimerToElapse(onSuspendToken, resolve);
+          }
+        });
+
+      onSuspendToken.payload = newTokenPayload;
+      await this.persistOnResume(onSuspendToken);
+    }
+
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
+    await this.persistOnExit(onSuspendToken);
+
+    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
     this._sendProcessStartedMessage(token, this.startEvent.id);
 
@@ -53,21 +102,30 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
     const flowNodeIsTimerStartEvent: boolean = this.startEvent.timerEventDefinition !== undefined;
 
+    const isSpecializedStartEvent: boolean = flowNodeIsMessageStartEvent || flowNodeIsSignalStartEvent || flowNodeIsTimerStartEvent;
+
     // If the StartEvent is not a regular StartEvent,
     // wait for the defined condition to be fulfilled.
-    if (flowNodeIsMessageStartEvent) {
-      await this._waitForMessage(token, this.startEvent.messageEventDefinition.name);
-    } else if (flowNodeIsSignalStartEvent) {
-      await this._waitForSignal(token, this.startEvent.signalEventDefinition.name);
-    } else if (flowNodeIsTimerStartEvent) {
-      await this._waitForTimerToElapse(token, this.startEvent.timerEventDefinition);
+    if (isSpecializedStartEvent) {
+
+      let newTokenPayload: any = token.payload;
+
+      if (flowNodeIsMessageStartEvent) {
+        newTokenPayload = await this._suspendAndWaitForMessage(token);
+      } else if (flowNodeIsSignalStartEvent) {
+        newTokenPayload = await this._suspendAndWaitForSignal(token);
+      } else if (flowNodeIsTimerStartEvent) {
+        newTokenPayload = await this._suspendAndWaitForTimerToElapse(token);
+      }
+
+      token.payload = newTokenPayload;
+      await this.persistOnResume(token);
     }
 
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.startEvent);
-
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
     await this.persistOnExit(token);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 
   /**
@@ -93,99 +151,150 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
   }
-  /**
-   * Creates a subscription on the EventAggregator and waits to receive the
-   * designated message.
-   *
-   * @async
-   * @param token       The current ProcessToken.
-   * @param messageName The message to wait for.
-   */
-  private async _waitForMessage(token: Runtime.Types.ProcessToken, messageName: string): Promise<void> {
 
-    return new Promise<void>((async(resolve: Function): Promise<void> => {
+  private async _suspendAndWaitForMessage(currentToken: Runtime.Types.ProcessToken): Promise<any> {
+    return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+      this._waitForMessage(currentToken, resolve);
+      await this.persistOnSuspend(currentToken);
+    });
+  }
 
-      const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+  private async _suspendAndWaitForSignal(currentToken: Runtime.Types.ProcessToken): Promise<any> {
+    return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+      this._waitForSignal(currentToken, resolve);
+      await this.persistOnSuspend(currentToken);
+    });
+  }
 
-      const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
-
-        if (subscription) {
-          subscription.dispose();
-        }
-
-        await this.persistOnResume(token);
-
-        resolve();
-      });
-
-      await this.persistOnSuspend(token);
-    }));
+  private async _suspendAndWaitForTimerToElapse(currentToken: Runtime.Types.ProcessToken): Promise<any> {
+    return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+      this._waitForTimerToElapse(currentToken, resolve);
+      await this.persistOnSuspend(currentToken);
+    });
   }
 
   /**
    * Creates a subscription on the EventAggregator and waits to receive the
-   * designated signal.
+   * message described in the StartEvents event definition.
    *
-   * @async
-   * @param token      The current ProcessToken.
-   * @param signalName The signal to wait for.
+   * @param currentToken The current ProcessToken.
+   * @param resolveFunc  The function to call after the message was received.
    */
-  private async _waitForSignal(token: Runtime.Types.ProcessToken, signalName: string): Promise<void> {
+  private _waitForMessage(currentToken: Runtime.Types.ProcessToken, resolveFunc: Function): void {
 
-    return new Promise<void>(async(resolve: Function): Promise<void> => {
+    const messageDefinitionName: string = this.startEvent.messageEventDefinition.name;
 
-      const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-        .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
+    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
+      .replace(eventAggregatorSettings.routeParams.messageReference, messageDefinitionName);
 
-      const subscription: ISubscription = this._eventAggregator.subscribeOnce(signalEventName, async(message: SignalEventReachedMessage) => {
+    const subscription: ISubscription =
+      this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
 
         if (subscription) {
           subscription.dispose();
         }
 
-        await this.persistOnResume(token);
+        const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
+        const tokenToReturn: any = messageHasPayload
+          ? messageEventPayload.currentToken
+          : currentToken.payload;
 
-        resolve();
+        resolveFunc(tokenToReturn);
       });
+  }
 
-      await this.persistOnSuspend(token);
-    });
+  /**
+   * Creates a subscription on the EventAggregator and waits to receive the
+   * signal described in the StartEvents event definition.
+   *
+   * @param currentToken The current ProcessToken.
+   * @param resolveFunc  The function to call after the signal was received.
+   */
+  private _waitForSignal(currentToken: Runtime.Types.ProcessToken, resolveFunc: Function): void {
+
+    const signalDefinitionName: string = this.startEvent.signalEventDefinition.name;
+
+    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
+      .replace(eventAggregatorSettings.routeParams.signalReference, signalDefinitionName);
+
+    const subscription: ISubscription =
+      this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
+
+        if (subscription) {
+          subscription.dispose();
+        }
+
+        const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
+        const tokenToReturn: any = signalHasPayload
+          ? signalEventPayload.currentToken
+          : currentToken.payload;
+
+        resolveFunc(tokenToReturn);
+      });
   }
 
   /**
    * If a timed StartEvent is used, this will delay the events execution
    * until the timer has elapsed.
    *
-   * @async
-   * @param token           The current ProcessToken.
-   * @param timerDefinition The definition that contains the timer to use.
+   * @param currentToken The current ProcessToken.
+   * @param resolveFunc  The function to call after the timer has elapsed.
    */
-  private async _waitForTimerToElapse(token: Runtime.Types.ProcessToken,
-                                      timerDefinition: Model.EventDefinitions.TimerEventDefinition): Promise<void> {
+  private _waitForTimerToElapse(currentToken: Runtime.Types.ProcessToken, resolveFunc: Function): void {
 
-    return new Promise<void> (async(resolve: Function, reject: Function): Promise<void> => {
+    const timerDefinition: Model.EventDefinitions.TimerEventDefinition = this.startEvent.timerEventDefinition;
 
-      let timerSubscription: ISubscription;
+    let timerSubscription: ISubscription;
 
-      const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(timerDefinition);
-      const timerValue: string = this._timerFacade.parseTimerDefinitionValue(timerDefinition);
+    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(timerDefinition);
+    const timerValue: string = this._timerFacade.parseTimerDefinitionValue(timerDefinition);
 
-      const timerElapsed: any = async(): Promise<void> => {
+    const timerElapsed: any = (): void => {
 
-        await this.persistOnResume(token);
+      const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
 
-        const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
+      if (cancelSubscription) {
+        timerSubscription.dispose();
+      }
 
-        if (cancelSubscription) {
-          timerSubscription.dispose();
-        }
+      resolveFunc(currentToken.payload);
+    };
 
-        resolve();
-      };
+    timerSubscription = this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
+  }
 
-      timerSubscription = this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
-      await this.persistOnSuspend(token);
-    });
+  /**
+   * Checks if the given message has a valid payload.
+   * This function serves to prevent initial tokens to be accidentally wiped
+   * by an empty message.
+   *
+   * @param   message The message for which to check the payload.
+   * @returns         'true', if a valid payload was send with the message,
+   *                  'false' otherwise.
+   */
+  private _checkIfEventPayloadHasToken(message: SignalEventReachedMessage | MessageEventReachedMessage): boolean {
+
+    const messageHasNoPayload: boolean = !message || !message.currentToken;
+    if (messageHasNoPayload) {
+      return false;
+    }
+
+    const payloadIsEmptyArray: boolean = Array.isArray(message.currentToken) && message.currentToken.length === 0;
+    if (payloadIsEmptyArray) {
+      return false;
+    }
+
+    const payloadIsEmptyObject: boolean = typeof message.currentToken === 'object' &&
+                                          Object.keys(message.currentToken).length === 0;
+    if (payloadIsEmptyObject) {
+      return false;
+    }
+
+    const payloadIsEmptyString: boolean = typeof message.currentToken === 'string' && message.currentToken.length === 0;
+    if (payloadIsEmptyString) {
+      return false;
+    }
+
+    return true;
   }
 }

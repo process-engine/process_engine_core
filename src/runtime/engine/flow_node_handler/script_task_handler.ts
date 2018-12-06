@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -20,6 +22,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
               metricsService: IMetricsApi,
               scriptTaskModel: Model.Activities.ScriptTask) {
     super(flowNodeInstanceService, loggingApiService, metricsService, scriptTaskModel);
+    this.logger = new Logger(`processengine:script_task_handler:${scriptTaskModel.id}`);
   }
 
   private get scriptTask(): Model.Activities.ScriptTask {
@@ -29,9 +32,41 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+                                    identity: IIdentity,
+                                   ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing ScriptTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
+                                 ): Promise<NextFlowNodeInfo> {
+
+    let result: any = {};
+
+    try {
+      result = await this._executeScriptTask(processTokenFacade, identity);
+    } catch (error) {
+      await this.persistOnError(token, error);
+
+      throw error;
+    }
+
+    await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
+    token.payload = result;
+    await this.persistOnExit(token);
+
+    const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+    return nextFlowNodeInfo;
+  }
+
+  private async _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
 
     const script: string = this.scriptTask.script;
 
@@ -42,26 +77,13 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
     const tokenData: any = await processTokenFacade.getOldTokenFormat();
     let result: any;
 
-    try {
+    const scriptFunction: Function = new Function('token', 'identity', script);
 
-      const scriptFunction: Function = new Function('token', 'identity', script);
+    result = await scriptFunction.call(this, tokenData, identity);
+    result = result === undefined
+      ? null
+      : result;
 
-      result = await scriptFunction.call(this, tokenData, identity);
-      result = result === undefined ? null : result;
-
-    } catch (error) {
-
-      await this.persistOnError(token, error);
-
-      throw error;
-    }
-    const nextFlowNode: Model.Base.FlowNode = await processModelFacade.getNextFlowNodeFor(this.scriptTask);
-
-    await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
-    token.payload = result;
-
-    await this.persistOnExit(token);
-
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return result;
   }
 }

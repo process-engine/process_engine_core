@@ -59,4 +59,12 @@ export class IntermediateCatchEventHandler extends FlowNodeHandler<Model.Events.
 
     return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
   }
+
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity): Promise<NextFlowNodeInfo> {
+
+    return this._childHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+  }
 }

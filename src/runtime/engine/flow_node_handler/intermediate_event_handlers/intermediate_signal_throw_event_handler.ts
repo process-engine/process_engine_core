@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -27,6 +29,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
               signalThrowEventModel: Model.Events.IntermediateThrowEvent) {
     super(flowNodeInstanceService, loggingService, metricsService, signalThrowEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = Logger.createLogger(`processengine:signal_throw_event_handler:${signalThrowEventModel.id}`);
   }
 
   private get signalThrowEvent(): Model.Events.IntermediateThrowEvent {
@@ -38,7 +41,15 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing SignalThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
     const signalName: string = this.signalThrowEvent.signalEventDefinition.name;
 
@@ -52,12 +63,12 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                                                              this.signalThrowEvent.id,
                                                                              token.payload);
 
+    this.logger.verbose(`SignalThrowEvent instance ${this.flowNodeInstanceId} now sending signal ${signalName}...`);
     this._eventAggregator.publish(signalEventName, message);
-
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalThrowEvent);
+    this.logger.verbose(`Done.`);
 
     await this.persistOnExit(token);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 }

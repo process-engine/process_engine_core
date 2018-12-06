@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -27,6 +29,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
               messageThrowEventModel: Model.Events.IntermediateThrowEvent) {
     super(flowNodeInstanceService, loggingService, metricsService, messageThrowEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = Logger.createLogger(`processengine:message_throw_event_handler:${messageThrowEventModel.id}`);
   }
 
   private get messageThrowEvent(): Model.Events.IntermediateThrowEvent {
@@ -38,7 +41,15 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing MessageThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
@@ -52,12 +63,12 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                this.messageThrowEvent.id,
                                                                                token.payload);
 
+    this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
     this._eventAggregator.publish(messageEventName, message);
-
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageThrowEvent);
+    this.logger.verbose(`Done.`);
 
     await this.persistOnExit(token);
 
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 }

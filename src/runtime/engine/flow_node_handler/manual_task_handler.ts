@@ -1,3 +1,6 @@
+import {Logger} from 'loggerhythm';
+
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -29,6 +32,7 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
               manualTaskModel: Model.Activities.ManualTask) {
     super(flowNodeInstanceService, loggingApiService, metricsService, manualTaskModel);
     this._eventAggregator = eventAggregator;
+    this.logger = new Logger(`processengine:manual_task_handler:${manualTaskModel.id}`);
   }
 
   private get manualTask(): Model.Activities.ManualTask {
@@ -40,43 +44,89 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.logger.verbose(`Executing ManualTask instance ${this.flowNodeInstanceId}`);
+    await this.persistOnEnter(token);
+    await this.persistOnSuspend(token);
 
-      await this.persistOnEnter(token);
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
 
-      const finishManualTaskEvent: string = eventAggregatorSettings.routePaths.finishManualTask
-        .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-        .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
-        .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+  protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                     ): Promise<NextFlowNodeInfo> {
+
+    await this.persistOnSuspend(onEnterToken);
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+  }
+
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                       ): Promise<NextFlowNodeInfo> {
+
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                 ): Promise<NextFlowNodeInfo> {
+
+    const manualTaskResult: any = await this._waitForManualTaskResult(token);
+    token.payload = manualTaskResult;
+
+    await this.persistOnResume(token);
+
+    processTokenFacade.addResultForFlowNode(this.manualTask.id, manualTaskResult);
+    await this.persistOnExit(token);
+
+    this._sendManualTaskFinishedNotification(token);
+
+    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+  }
+
+  /**
+   * Suspends the current handler and waits for a FinishManualTaskMessage.
+   * Upon receiving the messsage, the handler will be resumed.
+   *
+   * @async
+   * @param token Contains all relevant info the EventAggregator will need for
+   *              creating the EventSubscription.
+   * @returns     The recevied ManualTask result.
+   */
+  private async _waitForManualTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+
+    return new Promise<any>(async(resolve: Function): Promise<void> => {
+
+      const finishManualTaskEvent: string = this._getFinishManualTaskEventName(token.correlationId, token.processInstanceId);
+
       const subscription: ISubscription =
         this._eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
 
-          await this.persistOnResume(token);
-
-          // an empty object is used here because manual tasks do not yield any results
-          processTokenFacade.addResultForFlowNode(this.manualTask.id, {});
-          token.payload = {};
-
-          const nextNodeAfterManualTask: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.manualTask);
-
-          await this.persistOnExit(token);
-
-          this._sendManualTaskFinishedToConsumerApi(token);
+          // An empty object is used, because ManualTasks do not yield results.
+          const manualTaskResult: any = {};
 
           if (subscription) {
             subscription.dispose();
           }
 
-          resolve(new NextFlowNodeInfo(nextNodeAfterManualTask, token, processTokenFacade));
+          resolve(manualTaskResult);
         });
 
-      await this.persistOnSuspend(token);
-      this._sendManualTaskWaitingToConsumerApi(token);
+      this._sendManualTaskReachedNotification(token);
     });
-
   }
 
-  private _sendManualTaskWaitingToConsumerApi(token: Runtime.Types.ProcessToken): void {
+  /**
+   * Publishes a notification on the EventAggregator, informing about a new
+   * suspended ManualTask.
+   *
+   * @param token Contains all infos required for the Notification message.
+   */
+  private _sendManualTaskReachedNotification(token: Runtime.Types.ProcessToken): void {
 
     const message: ManualTaskReachedMessage = new ManualTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
@@ -88,7 +138,17 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
   }
 
-  private _sendManualTaskFinishedToConsumerApi(token: Runtime.Types.ProcessToken): void {
+  /**
+   * Publishes notifications on the EventAggregator, informing that a ManualTask
+   * has finished execution.
+   *
+   * Two notifications will be send:
+   * - A global notification that everybody can receive
+   * - A notification specifically for this ManualTask.
+   *
+   * @param token Contains all infos required for the Notification message.
+   */
+  private _sendManualTaskFinishedNotification(token: Runtime.Types.ProcessToken): void {
 
     const message: ManualTaskFinishedMessage = new ManualTaskFinishedMessage(token.correlationId,
                                                                          token.processModelId,
@@ -98,13 +158,31 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
                                                                          token.payload);
 
     // FlowNode-specific notification
-    const manualTaskFinishedEvent: string = eventAggregatorSettings.routePaths.manualTaskFinished
-      .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const manualTaskFinishedEvent: string = this._getManualTaskFinishedEventName(token.correlationId, token.processInstanceId);
     this._eventAggregator.publish(manualTaskFinishedEvent, message);
 
     // Global notification
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
+  }
+
+  private _getFinishManualTaskEventName(correlationId: string, processInstanceId: string): string {
+
+    const finishManualTaskEvent: string = eventAggregatorSettings.routePaths.finishManualTask
+      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+
+    return finishManualTaskEvent;
+  }
+
+  private _getManualTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
+
+    // FlowNode-specific notification
+    const manualTaskFinishedEvent: string = eventAggregatorSettings.routePaths.manualTaskFinished
+      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+
+    return manualTaskFinishedEvent;
   }
 }

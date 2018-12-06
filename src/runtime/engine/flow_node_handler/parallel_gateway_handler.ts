@@ -1,9 +1,10 @@
 import {IContainer} from 'addict-ioc';
+import * as moment from 'moment';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
+import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeInstanceService,
@@ -56,5 +57,13 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     return this._childHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+  }
+
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity): Promise<NextFlowNodeInfo> {
+
+    return this._childHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
   }
 }

@@ -1,4 +1,6 @@
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {Logger} from 'loggerhythm';
+
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -26,6 +28,7 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
               receiveTaskModel: Model.Activities.ReceiveTask) {
     super(flowNodeInstanceService, loggingService, metricsService, receiveTaskModel);
     this._eventAggregator = eventAggregator;
+    this.logger = new Logger(`processengine:receive_task_handler:${receiveTaskModel.id}`);
   }
 
   private get receiveTask(): Model.Activities.ReceiveTask {
@@ -37,18 +40,29 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing ReceiveTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
-
-    const noMessageDefinitionProvided: boolean = this.receiveTask.messageEventDefinition === undefined;
-    if (noMessageDefinitionProvided) {
-      throw new UnprocessableEntityError('SendTask has no MessageDefinition!');
-    }
-
     await this.persistOnSuspend(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                       ): Promise<NextFlowNodeInfo> {
+
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+
     const receivedMessage: MessageEventReachedMessage = await this._waitForMessage();
     await this.persistOnResume(token);
-
-    await this._sendReplyToSender(token);
+    this._sendReplyToSender(token);
 
     processTokenFacade.addResultForFlowNode(this.receiveTask.id, receivedMessage.currentToken);
     const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.receiveTask);
@@ -57,6 +71,12 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
 
+  /**
+   * Waits for an incoming message from a SendTask.
+   *
+   * @async
+   * @returns The received message.
+   */
   private async _waitForMessage(): Promise<MessageEventReachedMessage> {
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
@@ -77,7 +97,13 @@ export class ReceiveTaskHandler extends FlowNodeHandler<Model.Activities.Receive
     });
   }
 
-  private async _sendReplyToSender(token: Runtime.Types.ProcessToken): Promise<void> {
+  /**
+   * Publishes a message to the EventAggregator, informing any SendTasks that
+   * may be listening about the receit of the message.
+   *
+   * @param token The current ProcessToken.
+   */
+  private _sendReplyToSender(token: Runtime.Types.ProcessToken): void {
 
     const messageName: string = this.receiveTask.messageEventDefinition.name;
 

@@ -71,6 +71,38 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
     });
   }
 
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+
+      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+      try {
+        this._subscribeToSignalEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
+
+        const nextFlowNodeInfo: NextFlowNodeInfo
+          = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+        if (this.signalReceived) {
+          return;
+        }
+
+        // if the decorated handler finished execution before the signal was received,
+        // continue the regular execution with the next FlowNode and dispose the signal subscription
+        this.handlerHasFinished = true;
+        resolve(nextFlowNodeInfo);
+      } finally {
+        if (this.subscription) {
+          this.subscription.dispose();
+        }
+      }
+    });
+  }
+
   private async _subscribeToSignalEvent(resolveFunc: Function,
                                         token: Runtime.Types.ProcessToken,
                                         processTokenFacade: IProcessTokenFacade,
@@ -86,13 +118,11 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
       }
       this.signalReceived = true;
 
-      processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, signal.currentToken);
       token.payload = signal.currentToken;
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute
-      const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-      await processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, oldTokenFormat.current);
+      await processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalBoundaryEvent);
 

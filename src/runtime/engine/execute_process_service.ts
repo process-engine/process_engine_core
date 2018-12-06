@@ -1,4 +1,3 @@
-import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 
@@ -22,7 +21,6 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
-  ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -269,7 +267,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processTerminationSubscription.dispose();
     }
 
-    return resultToken;
+    return resultToken.result;
   }
 
   /**
@@ -325,19 +323,22 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
-    const nextFlowNodeInfoHasFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
-
+    // If the Process was terminated during the FlowNodes execution, abort the ProcessInstance immediately.
     const processWasTerminated: boolean = this.processTerminatedMessage !== undefined;
-
     if (processWasTerminated) {
-      const flowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-      await this._flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, processToken);
+
+      await this._flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, processToken.payload);
 
       const error: InternalServerError =
         new InternalServerError(`Process was terminated through TerminateEndEvent "${this.processTerminatedMessage.flowNodeId}."`);
 
       throw error;
-    } else if (nextFlowNodeInfoHasFlowNode) {
+    }
+
+    // If more FlowNodes exist after the current one, continue execution.
+    // Otherwise we will have arrived at the end of the current ProcessInstance.
+    const processInstanceHasAdditionalFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
+    if (processInstanceHasAdditionalFlowNode) {
       await this._executeFlowNode(nextFlowNodeInfo.flowNode,
                                   nextFlowNodeInfo.token,
                                   nextFlowNodeInfo.processTokenFacade,
@@ -350,10 +351,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   /**
    * Writes logs and metrics at the beginning of a ProcessInstance's execution.
    *
-   * @param correlationId     The ID of the Correlation the ProcessInstance
-   *                          belongs to.
-   * @param processModelId    The ID of the ProcessModel describing the
-   *                          ProcessInstance.
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
   private _logProcessStarted(correlationId: string, processModelId: string, processInstanceId: string): void {
@@ -374,10 +373,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   /**
    * Writes logs and metrics after a ProcessInstance finishes execution.
    *
-   * @param correlationId     The ID of the Correlation the ProcessInstance
-   *                          belongs to.
-   * @param processModelId    The ID of the ProcessModel describing the
-   *                          ProcessInstance.
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
   private _logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
@@ -397,10 +394,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   /**
    * Writes logs and metrics when a ProcessInstances was interrupted by an error.
    *
-   * @param correlationId     The ID of the Correlation the ProcessInstance
-   *                          belongs to.
-   * @param processModelId    The ID of the ProcessModel describing the
-   *                          ProcessInstance.
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
   private _logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {

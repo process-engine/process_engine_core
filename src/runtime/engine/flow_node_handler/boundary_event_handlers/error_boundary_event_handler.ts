@@ -39,11 +39,30 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
         = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
       return nextFlowNodeInfo;
-
     } catch (err) {
       const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.errorBoundaryEvent);
 
       return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+    }
+  }
+
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    try {
+      const nextFlowNodeInfo: NextFlowNodeInfo
+        = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+      return nextFlowNodeInfo;
+    } catch (err) {
+      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.errorBoundaryEvent);
+
+      return new NextFlowNodeInfo(nextFlowNode, onEnterToken, processTokenFacade);
     }
   }
 }
