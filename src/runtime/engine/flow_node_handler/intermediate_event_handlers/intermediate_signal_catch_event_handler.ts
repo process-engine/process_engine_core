@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -27,6 +29,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
               signalCatchEventModel: Model.Events.IntermediateCatchEvent) {
     super(flowNodeInstanceService, loggingService, metricsService, signalCatchEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = Logger.createLogger(`processengine:signal_catch_event_handler:${signalCatchEventModel.id}`);
   }
 
   private get signalCatchEvent(): Model.Events.IntermediateCatchEvent {
@@ -38,19 +41,45 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing SignalCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
+    return await this._executeHandler(token, processTokenFacade, processModelFacade);
+  }
+
+  protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      processModelFacade: IProcessModelFacade,
+                                     ): Promise<NextFlowNodeInfo> {
+
+    await this.persistOnSuspend(onEnterToken);
+
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+  }
+
+  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                        onSuspendToken: Runtime.Types.ProcessToken,
+                                        processTokenFacade: IProcessTokenFacade,
+                                        processModelFacade: IProcessModelFacade,
+                                      ): Promise<NextFlowNodeInfo> {
+
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+
     const receivedSignal: SignalEventReachedMessage = await this._waitForSignal();
 
-    processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, receivedSignal.currentToken);
     token.payload = receivedSignal.currentToken;
-
     await this.persistOnResume(token);
 
-    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalCatchEvent);
-
+    processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, receivedSignal.currentToken);
     await this.persistOnExit(token);
+
+    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalCatchEvent);
 
     return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
   }
@@ -67,9 +96,15 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
         if (subscription) {
           subscription.dispose();
         }
+        this.logger.verbose(
+          `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
+          signal,
+          'Resuming execution.',
+        );
 
         return resolve(signal);
       });
+      this.logger.verbose(`SignalCatchEvent instance ${this.flowNodeInstanceId} waiting for signal ${signalEventName}.`);
     });
   }
 }

@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -30,6 +32,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
               endEventModel: Model.Events.EndEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, endEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = new Logger(`processengine:end_event_handler:${endEventModel.id}`);
   }
 
   private get endEvent(): Model.Events.EndEvent {
@@ -41,7 +44,13 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing EndEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<NextFlowNodeInfo> {
 
     const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
     const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;
@@ -197,5 +206,4 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     // Send global message about a reached EndEvent
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
-
 }

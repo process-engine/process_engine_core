@@ -71,6 +71,38 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     });
   }
 
+  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
+                                   processTokenFacade: IProcessTokenFacade,
+                                   processModelFacade: IProcessModelFacade,
+                                   identity: IIdentity,
+                                  ): Promise<NextFlowNodeInfo> {
+
+    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+
+      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+      try {
+        this._subscribeToMessageEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
+
+        const nextFlowNodeInfo: NextFlowNodeInfo
+          = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+        if (this.messageReceived) {
+          return;
+        }
+
+        // if the decorated handler finished execution before the message was received,
+        // continue the regular execution with the next FlowNode and dispose the message subscription
+        this.handlerHasFinished = true;
+        resolve(nextFlowNodeInfo);
+      } finally {
+        if (this.subscription) {
+          this.subscription.dispose();
+        }
+      }
+    });
+  }
+
   private async _subscribeToMessageEvent(resolveFunc: Function,
                                          token: Runtime.Types.ProcessToken,
                                          processTokenFacade: IProcessTokenFacade,
@@ -86,13 +118,11 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       }
       this.messageReceived = true;
 
-      processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, message.currentToken);
       token.payload = message.currentToken;
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute
-      const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-      await processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, oldTokenFormat.current);
+      await processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageBoundaryEvent);
 

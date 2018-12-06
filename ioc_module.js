@@ -43,6 +43,7 @@ const {
 } = require('./dist/commonjs/index');
 
 const {ExecuteProcessService} = require('./dist/commonjs/index');
+const {ResumeProcessService} = require('./dist/commonjs/index');
 
 const {
   FlowNodeHandlerFactory,
@@ -64,6 +65,17 @@ function registerServices(container) {
     .register('ExecuteProcessService', ExecuteProcessService)
     .dependencies(
       'CorrelationService',
+      'EventAggregator',
+      'FlowNodeHandlerFactory',
+      'FlowNodeInstanceService',
+      'LoggingApiService',
+      'MetricsApiService',
+      'ProcessModelService'
+    );
+
+  container
+    .register('ResumeProcessService', ResumeProcessService)
+    .dependencies(
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
@@ -110,9 +122,11 @@ function registerHandlers(container) {
   container
     .register('CallActivityHandler', CallActivityHandler)
     .dependencies('ConsumerApiService',
+                  'CorrelationService',
                   'FlowNodeInstanceService',
                   'LoggingApiService',
-                  'MetricsApiService');
+                  'MetricsApiService',
+                  'ResumeProcessService');
 
   container
     .register('EndEventHandler', EndEventHandler)

@@ -107,6 +107,10 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getSubprocessesForProcessInstance(processInstanceId);
 
+    if (correlationsFromRepo.length === 0) {
+      return undefined;
+    }
+
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const correlation: Runtime.Types.Correlation =
@@ -208,9 +212,10 @@ export class CorrelationService implements ICorrelationService {
           await this._processDefinitionRepository.getByHash(entry.processModelHash);
 
         const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
-        processModel.name = processDefinition.name;
+        processModel.processDefinitionName = processDefinition.name;
         processModel.xml = processDefinition.xml;
         processModel.hash = entry.processModelHash;
+        processModel.processModelId = entry.processModelId;
         processModel.processInstanceId = entry.processInstanceId;
         processModel.parentProcessInstanceId = entry.parentProcessInstanceId;
         processModel.createdAt = entry.createdAt;
@@ -293,14 +298,14 @@ export class CorrelationService implements ICorrelationService {
   }
 
   /**
-   * Retrieves all entries from the correlation repository that have th
-   *  matching correlation ID.
+   * Retrieves all entries from the correlation repository that have the
+   * matching correlation ID.
    * Afterwards, the associated ProcessModelHashes are used to retrieve the
    * corresponding ProcessModels.
    *
    * @async
-   * @param   correlationId     The correlationId for which to get the ProcessModels.
-   * @returns                   The retrieved ProcessModels.
+   * @param   correlationId The correlationId for which to get the ProcessModels.
+   * @returns               The retrieved ProcessModels.
    */
   private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.CorrelationProcessModel>> {
 
@@ -313,11 +318,16 @@ export class CorrelationService implements ICorrelationService {
           await this._processDefinitionRepository.getByHash(correlation.processModelHash);
 
         const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
-        processModel.name = processDefinition.name;
+        processModel.processDefinitionName = processDefinition.name;
         processModel.hash = processDefinition.hash;
         processModel.xml = processDefinition.xml;
         processModel.createdAt = processDefinition.createdAt;
+        processModel.processModelId = correlation.processModelId;
         processModel.processInstanceId = correlation.processInstanceId;
+        processModel.parentProcessInstanceId = correlation.parentProcessInstanceId;
+        // For this UseCase, we can safely assume the running-state,
+        // because we already made sure that only active correlations have been retrieved.
+        processModel.state = Runtime.Types.FlowNodeInstanceState.running;
 
         return processModel;
       });

@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -17,8 +17,6 @@ import {
 
 import {FlowNodeHandler} from '../index';
 
-const logger: Logger = Logger.createLogger('processengine:runtime:internal_service_task');
-
 export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
@@ -32,6 +30,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
 
     this._container = container;
+    this.logger = Logger.createLogger(`processengine:internal_service_task:${serviceTaskModel.id}`);
   }
 
   private get serviceTask(): Model.Activities.ServiceTask {
@@ -44,17 +43,27 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                     identity: IIdentity,
                                    ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing internal ServiceTask instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+  }
+
+  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
+                                 ): Promise<NextFlowNodeInfo> {
 
     let result: any;
 
     const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
 
     if (serviceTaskHasNoInvocation) {
-      logger.verbose('ServiceTask has no invocation. Skipping execution.');
+      this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
       result = {};
     } else {
-      logger.verbose('Executing internal ServiceTask');
+      this.logger.verbose('Executing internal ServiceTask');
       result = await this._executeInternalServiceTask(token, processTokenFacade, identity);
     }
 
@@ -86,7 +95,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     if (!isMethodInvocation) {
       const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
-      logger.error(notSupportedErrorMessage);
+      this.logger.error(notSupportedErrorMessage);
 
       throw new UnprocessableEntityError(notSupportedErrorMessage);
     }
