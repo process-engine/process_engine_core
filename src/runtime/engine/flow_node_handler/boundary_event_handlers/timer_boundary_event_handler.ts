@@ -127,7 +127,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
           resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, onEnterToken, processTokenFacade));
         };
 
-        timerSubscription = await this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
+        timerSubscription = this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
 
         const nextFlowNodeInfo: NextFlowNodeInfo =
           await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
