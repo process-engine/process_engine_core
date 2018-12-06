@@ -226,7 +226,7 @@ export class ResumeProcessService implements IResumeProcessService {
       processTerminationSubscription.dispose();
     }
 
-    return resultToken;
+    return resultToken.result;
   }
 
   private async _resumeFlowNode(flowNodeToResume: Model.Base.FlowNode,

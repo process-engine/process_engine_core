@@ -267,7 +267,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processTerminationSubscription.dispose();
     }
 
-    return resultToken;
+    return resultToken.result;
   }
 
   /**
