@@ -1,4 +1,5 @@
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {Logger} from 'loggerhythm';
+
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -31,6 +32,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
               endEventModel: Model.Events.EndEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, endEventModel);
     this._eventAggregator = eventAggregator;
+    this.logger = new Logger(`processengine:end_event_handler:${endEventModel.id}`);
   }
 
   private get endEvent(): Model.Events.EndEvent {
@@ -42,33 +44,10 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing external EndEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade);
-  }
-
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
-
-    switch (flowNodeInstance.state) {
-      case Runtime.Types.FlowNodeInstanceState.running:
-        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
-      case Runtime.Types.FlowNodeInstanceState.finished:
-      const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
-
-      return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.error:
-        throw flowNodeInstance.error;
-      case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because it was terminated!`);
-      default:
-        throw new InternalServerError(`Cannot resume EndEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`);
-    }
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<NextFlowNodeInfo> {

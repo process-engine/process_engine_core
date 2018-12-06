@@ -1,4 +1,6 @@
-import {BadRequestError, InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {Logger} from 'loggerhythm';
+
+import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -21,6 +23,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
               metricsService: IMetricsApi,
               exclusiveGatewayModel: Model.Gateways.ExclusiveGateway) {
     super(flowNodeInstanceService, loggingApiService, metricsService, exclusiveGatewayModel);
+    this.logger = new Logger(`processengine:exclusive_gateway_handler:${exclusiveGatewayModel.id}`);
   }
 
   private get exclusiveGateway(): Model.Gateways.ExclusiveGateway {
@@ -32,33 +35,10 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing ExclusiveGateway instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade);
-  }
-
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
-
-    switch (flowNodeInstance.state) {
-      case Runtime.Types.FlowNodeInstanceState.running:
-        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.finished:
-        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
-
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.error:
-        throw flowNodeInstance.error;
-      case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because it was terminated!`);
-      default:
-        throw new InternalServerError(`Cannot resume ExclusiveGateway instance ${flowNodeInstance.id}, because its state cannot be determined!`);
-    }
   }
 
   protected async _continueAfterExit(onExitToken: Runtime.Types.ProcessToken,

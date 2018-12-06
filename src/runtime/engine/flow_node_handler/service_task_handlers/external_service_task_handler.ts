@@ -23,8 +23,6 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
   private _eventAggregator: IEventAggregator;
   private _externalTaskRepository: IExternalTaskRepository;
 
-  private logger: Logger;
-
   constructor(eventAggregator: IEventAggregator,
               externalTaskRepository: IExternalTaskRepository,
               flowNodeInstanceService: IFlowNodeInstanceService,

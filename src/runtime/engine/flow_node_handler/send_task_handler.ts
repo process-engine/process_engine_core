@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -27,6 +29,7 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
               sendTaskModel: Model.Activities.SendTask) {
     super(flowNodeInstanceService, loggingService, metricsService, sendTaskModel);
     this._eventAggregator = eventAggregator;
+    this.logger = new Logger(`processengine:send_task_handler:${sendTaskModel.id}`);
   }
 
   private get sendTask(): Model.Activities.SendTask {
@@ -38,6 +41,7 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing SendTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
@@ -50,8 +54,11 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
+
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
+        this.logger.verbose(`FlowNodeInstance was left suspended. Waiting for the SendTask to receive a response.`);
         const suspendToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
@@ -61,22 +68,34 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
 
         const noResponseReceivedYet: boolean = resumeToken === undefined;
         if (noResponseReceivedYet) {
+          this.logger.verbose(`FlowNodeInstance was interrupted at the beginning. Resuming from the start.`);
           const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
         }
 
+        this.logger.verbose(`The SendTask already received a response and the handler was resumed. Finishing up the handler.`);
+
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
+        this.logger.verbose(`FlowNodeInstance was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
+        this.logger.error(`Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
         throw flowNodeInstance.error;
+
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume SendTask instance ${flowNodeInstance.id}, because it was terminated!`);
+        const terminatedError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
+        this.logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
+
       default:
-        throw new InternalServerError(`Cannot resume SendTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+        const invalidStateError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        this.logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
     }
   }
 

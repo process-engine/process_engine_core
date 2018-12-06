@@ -23,8 +23,6 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandler<Model.E
 
   private _eventAggregator: IEventAggregator;
 
-  private logger: Logger;
-
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,

@@ -176,7 +176,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
 
       case Runtime.Types.FlowNodeInstanceState.finished:
-        this.logger.verbose(`FlowNodeInstance was finished. Reconstructing branches.`);
+        this.logger.verbose(`FlowNodeInstance was already finished. Skipping ahead.`);
         const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
         return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
@@ -192,8 +192,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         throw new InternalServerError(terminatedError);
 
       default:
-        const invalidStateError: string =
-          `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        const invalidStateError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
         this.logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }

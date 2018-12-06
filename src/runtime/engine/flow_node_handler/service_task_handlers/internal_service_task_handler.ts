@@ -21,8 +21,6 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
   private _container: IContainer;
 
-  private logger: Logger;
-
   constructor(container: IContainer,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
@@ -49,40 +47,6 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
-  }
-
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
-
-    this.logger.verbose(`Resuming internal ServiceTask instance ${flowNodeInstance.id}.`);
-
-    switch (flowNodeInstance.state) {
-      case Runtime.Types.FlowNodeInstanceState.running:
-        this.logger.verbose(`ServiceTask was unfinished. Resuming from the start.`);
-        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
-      case Runtime.Types.FlowNodeInstanceState.finished:
-        this.logger.verbose(`ServiceTask was already finished. Skipping ahead.`);
-        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
-
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.error:
-        this.logger.error(`Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it previously exited with an error!`,
-                     flowNodeInstance.error);
-        throw flowNodeInstance.error;
-      case Runtime.Types.FlowNodeInstanceState.terminated:
-        const terminatedError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because it was terminated!`;
-        this.logger.error(terminatedError);
-        throw new InternalServerError(terminatedError);
-      default:
-        const invalidStateError: string = `Cannot resume ServiceTask instance ${flowNodeInstance.id}, because its state cannot be determined!`;
-        this.logger.error(invalidStateError);
-        throw new InternalServerError(invalidStateError);
-    }
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,

@@ -1,4 +1,5 @@
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {Logger} from 'loggerhythm';
+
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -21,6 +22,7 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
               metricsService: IMetricsApi,
               scriptTaskModel: Model.Activities.ScriptTask) {
     super(flowNodeInstanceService, loggingApiService, metricsService, scriptTaskModel);
+    this.logger = new Logger(`processengine:script_task_handler:${scriptTaskModel.id}`);
   }
 
   private get scriptTask(): Model.Activities.ScriptTask {
@@ -33,33 +35,10 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                     identity: IIdentity,
                                    ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing ScriptTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
-  }
-
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
-
-    switch (flowNodeInstance.state) {
-      case Runtime.Types.FlowNodeInstanceState.running:
-        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
-      case Runtime.Types.FlowNodeInstanceState.finished:
-        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
-
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.error:
-        throw flowNodeInstance.error;
-      case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume ScriptTask instance ${flowNodeInstance.id}, because it was terminated!`);
-      default:
-        throw new InternalServerError(`Cannot resume ScriptTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
-    }
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,

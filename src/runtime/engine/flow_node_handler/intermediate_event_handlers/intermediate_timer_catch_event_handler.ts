@@ -26,8 +26,6 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
   private _timerFacade: ITimerFacade;
 
-  private logger: Logger;
-
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
               metricsService: IMetricsApi,

@@ -1,3 +1,5 @@
+import {Logger} from 'loggerhythm';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -30,6 +32,7 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
               manualTaskModel: Model.Activities.ManualTask) {
     super(flowNodeInstanceService, loggingApiService, metricsService, manualTaskModel);
     this._eventAggregator = eventAggregator;
+    this.logger = new Logger(`processengine:manual_task_handler:${manualTaskModel.id}`);
   }
 
   private get manualTask(): Model.Activities.ManualTask {
@@ -41,6 +44,7 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Executing ManualTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
@@ -53,8 +57,11 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
+    this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
+
     switch (flowNodeInstance.state) {
       case Runtime.Types.FlowNodeInstanceState.suspended:
+        this.logger.verbose(`FlowNodeInstance was left suspended. Waiting for the ManualTask to be finished.`);
         const suspendToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
         return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade);
@@ -64,22 +71,34 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
 
         const noMessageReceivedYet: boolean = resumeToken === undefined;
         if (noMessageReceivedYet) {
+          this.logger.verbose(`FlowNodeInstance was interrupted at the beginning. Resuming from the start.`);
           const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
           return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
         }
 
+        this.logger.verbose(`The ManualTask was already finished and the handler resumed. Finishing up the handler.`);
+
         return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.finished:
-      const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
+        this.logger.verbose(`FlowNodeInstance was already finished. Skipping ahead.`);
+        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
 
-      return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
+        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
       case Runtime.Types.FlowNodeInstanceState.error:
+        this.logger.error(`Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it previously exited with an error!`,
+                     flowNodeInstance.error);
         throw flowNodeInstance.error;
+
       case Runtime.Types.FlowNodeInstanceState.terminated:
-        throw new InternalServerError(`Cannot resume ManualTask instance ${flowNodeInstance.id}, because it was terminated!`);
+        const terminatedError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
+        this.logger.error(terminatedError);
+        throw new InternalServerError(terminatedError);
+
       default:
-        throw new InternalServerError(`Cannot resume ManualTask instance ${flowNodeInstance.id}, because its state cannot be determined!`);
+        const invalidStateError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        this.logger.error(invalidStateError);
+        throw new InternalServerError(invalidStateError);
     }
   }
 

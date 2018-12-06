@@ -22,7 +22,6 @@ import {FlowNodeHandler} from '../index';
 export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private logger: Logger;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -47,40 +46,6 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     await this.persistOnEnter(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade);
-  }
-
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
-
-    this.logger.verbose(`Resuming SignalThrowEvent instance ${flowNodeInstance.id}`);
-
-    switch (flowNodeInstance.state) {
-      case Runtime.Types.FlowNodeInstanceState.running:
-        this.logger.verbose(`SignalThrowEvent ${flowNodeInstance.id} was interrupted before it could finish. Restarting the handler.`);
-        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.finished:
-        this.logger.verbose(`SignalThrowEvent ${flowNodeInstance.id} was already finished. Skipping ahead.`);
-        const onExitToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onExit);
-
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade);
-      case Runtime.Types.FlowNodeInstanceState.error:
-        this.logger.error(`Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because it previously exited with an error!`,
-                     flowNodeInstance.error);
-        throw flowNodeInstance.error;
-      case Runtime.Types.FlowNodeInstanceState.terminated:
-        const terminatedError: string = `Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because it was terminated!`;
-        this.logger.error(terminatedError);
-        throw new InternalServerError(terminatedError);
-      default:
-        const invalidStateError: string = `Cannot resume SignalThrowEvent instance ${flowNodeInstance.id}, because its state cannot be determined!`;
-        this.logger.error(invalidStateError);
-        throw new InternalServerError(invalidStateError);
-    }
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
