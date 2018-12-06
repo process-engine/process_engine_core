@@ -142,8 +142,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
 
         await this.persistOnResume(token);
 
-        const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-        await processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, oldTokenFormat.current);
+        await processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
 
         if (timerSubscription && timerType !== TimerDefinitionType.cycle) {
           timerSubscription.dispose();

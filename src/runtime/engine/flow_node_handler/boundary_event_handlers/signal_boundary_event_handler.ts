@@ -118,13 +118,11 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
       }
       this.signalReceived = true;
 
-      processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, signal.currentToken);
       token.payload = signal.currentToken;
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute
-      const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-      await processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, oldTokenFormat.current);
+      await processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalBoundaryEvent);
 

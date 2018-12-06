@@ -46,7 +46,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
                                      processModelFacade: IProcessModelFacade,
                                     ): Promise<NextFlowNodeInfo> {
 
-    processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, onExitToken);
+    processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, onExitToken.payload);
 
     const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
     if (isExclusiveJoinGateway) {
@@ -83,8 +83,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       throw unsupportedError;
     }
 
-    const currentToken: any = await processTokenFacade.getOldTokenFormat();
-    processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, currentToken.current);
+    processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, token.payload);
 
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
 

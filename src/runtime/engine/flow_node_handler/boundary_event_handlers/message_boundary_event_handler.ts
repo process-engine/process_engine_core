@@ -79,7 +79,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
       try {
         this._subscribeToMessageEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
@@ -118,13 +118,11 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       }
       this.messageReceived = true;
 
-      processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, message.currentToken);
       token.payload = message.currentToken;
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute
-      const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-      await processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, oldTokenFormat.current);
+      await processTokenFacade.addResultForFlowNode(this.messageBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageBoundaryEvent);
 

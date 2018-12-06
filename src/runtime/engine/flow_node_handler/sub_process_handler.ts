@@ -194,16 +194,15 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const subProcessInstanceId: string = uuid.v4();
 
-    const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     const currentResults: any = await processTokenFacade.getAllResults();
 
     const subProcessTokenFacade: IProcessTokenFacade =
       new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
 
     subProcessTokenFacade.importResults(currentResults);
-    subProcessTokenFacade.addResultForFlowNode(subProcessStartEvent.id, initialTokenData.current);
+    subProcessTokenFacade.addResultForFlowNode(subProcessStartEvent.id, currentProcessToken.payload);
 
-    const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(initialTokenData.current);
+    const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
     subProcessToken.caller = currentProcessToken.processInstanceId;
 
     await this._executeSubProcessFlowNode(subProcessStartEvent,
@@ -267,7 +266,6 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const subProcessStartEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
     const subProcessStartEvent: Model.Events.StartEvent = subProcessStartEvents[0];
 
-    const initialTokenData: any = await processTokenFacade.getOldTokenFormat();
     const currentResults: any = await processTokenFacade.getAllResults();
 
     const subProcessInstanceId: string = flowNodeInstancesForSubprocess[0].processInstanceId;
@@ -276,9 +274,9 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
       new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
 
     subProcessTokenFacade.importResults(currentResults);
-    subProcessTokenFacade.addResultForFlowNode(subProcessStartEvent.id, initialTokenData.current);
+    subProcessTokenFacade.addResultForFlowNode(subProcessStartEvent.id, currentProcessToken.payload);
 
-    const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(initialTokenData.current);
+    const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
 
     const flowNodeInstanceForStartEvent: Runtime.Types.FlowNodeInstance =
       flowNodeInstancesForSubprocess.find((entry: Runtime.Types.FlowNodeInstance): boolean => {

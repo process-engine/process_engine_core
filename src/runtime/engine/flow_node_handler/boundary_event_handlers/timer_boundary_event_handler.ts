@@ -65,8 +65,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
           // if the timer elapsed before the decorated handler finished execution,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
-          const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-          await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, oldTokenFormat.current);
+          await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
 
           const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
           resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
@@ -102,7 +101,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
     return new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
       let timerSubscription: ISubscription;
 
@@ -122,8 +121,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
           // if the timer elapsed before the decorated handler finished resumption,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
-          const oldTokenFormat: any = await processTokenFacade.getOldTokenFormat();
-          await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, oldTokenFormat.current);
+          await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, onEnterToken.payload);
 
           const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
           resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, onEnterToken, processTokenFacade));
