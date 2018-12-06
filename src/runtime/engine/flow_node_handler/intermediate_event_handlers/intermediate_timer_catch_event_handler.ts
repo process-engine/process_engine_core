@@ -1,6 +1,5 @@
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -17,10 +16,7 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {Logger} from 'loggerhythm';
 import {FlowNodeHandler} from '../index';
-
-const logger: Logger = Logger.createLogger('processengine:runtime:intermediate_timer_catch_event');
 
 export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
@@ -121,7 +117,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       return evaluateFunction.call(tokenData, tokenData);
 
     } catch (err) {
-      logger.error(err);
+      this.logger.error(err);
 
       throw err;
     }

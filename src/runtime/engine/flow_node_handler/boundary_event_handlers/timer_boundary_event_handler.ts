@@ -17,8 +17,6 @@ import {
 import {Logger} from 'loggerhythm';
 import {FlowNodeHandler} from '../index';
 
-const logger: Logger = Logger.createLogger('processengine:runtime:timer_boundary_event');
-
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
@@ -33,6 +31,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     super(flowNodeInstanceService, loggingApiService, metricsService, timerBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
     this._timerFacade = timerFacade;
+    this.logger = Logger.createLogger(`processengine:runtime:timer_boundary_event:${timerBoundaryEventModel.id}`);
   }
 
   private get timerBoundaryEvent(): Model.Events.BoundaryEvent {
@@ -166,7 +165,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
       return evaluateFunction.call(tokenData, tokenData);
 
     } catch (err) {
-      logger.error(err);
+      this.logger.error(err);
       throw err;
     }
   }
