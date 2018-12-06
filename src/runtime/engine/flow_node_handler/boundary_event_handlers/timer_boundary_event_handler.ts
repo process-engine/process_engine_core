@@ -14,19 +14,22 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
+import {Logger} from 'loggerhythm';
 import {FlowNodeHandler} from '../index';
+
+const logger: Logger = Logger.createLogger('processengine:runtime:timer_boundary_event');
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
   private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
   private _timerFacade: ITimerFacade;
 
-constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-            loggingApiService: ILoggingApi,
-            metricsService: IMetricsApi,
-            timerFacade: ITimerFacade,
-            decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
-            timerBoundaryEventModel: Model.Events.BoundaryEvent) {
+  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
+              loggingApiService: ILoggingApi,
+              metricsService: IMetricsApi,
+              timerFacade: ITimerFacade,
+              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+              timerBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, timerBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
     this._timerFacade = timerFacade;
@@ -41,12 +44,13 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       let timerSubscription: ISubscription;
 
       const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerBoundaryEvent.timerEventDefinition);
-      const timerValue: string = this._timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
+      const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
+      const timerValue: string = await this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
       try {
 
@@ -88,5 +92,27 @@ constructor(flowNodeInstanceService: IFlowNodeInstanceService,
         }
       }
     });
+  }
+
+  private async _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): Promise<string> {
+    const tokenVariableName: string = 'token';
+    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
+
+    if (isConstantTimerExpression) {
+      return timerExpression;
+    }
+
+    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+
+    try {
+      const functionString: string = `return ${timerExpression}`;
+      const evaluateFunction: Function = new Function(tokenVariableName, functionString);
+
+      return evaluateFunction.call(tokenData, tokenData);
+
+    } catch (err) {
+      logger.error(err);
+      throw err;
+    }
   }
 }

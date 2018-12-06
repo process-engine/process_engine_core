@@ -45,7 +45,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity,
-                                   ): Promise<NextFlowNodeInfo> {
+  ): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(token);
 
@@ -76,7 +76,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
   private async _executeExternalServiceTask(token: Runtime.Types.ProcessToken,
                                             processTokenFacade: IProcessTokenFacade,
                                             identity: IIdentity,
-                                           ): Promise<any> {
+  ): Promise<any> {
 
     return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
 
@@ -166,12 +166,12 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     logger.verbose('Persist ServiceTask as ExternalTask.');
     await this._externalTaskRepository.create(this.serviceTask.topic,
-                                              token.correlationId,
-                                              token.processModelId,
-                                              token.processInstanceId,
-                                              this.flowNodeInstanceId,
-                                              token.identity,
-                                              exernalTaskPayload);
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNodeInstanceId,
+      token.identity,
+      exernalTaskPayload);
   }
 
   /**
