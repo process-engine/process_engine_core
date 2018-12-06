@@ -171,11 +171,26 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
 
     switch (flowNodeInstance.state) {
-      case Runtime.Types.FlowNodeInstanceState.running:
-        this.logger.verbose(`FlowNodeInstance was unfinished. Resuming from the start.`);
-        const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+      case Runtime.Types.FlowNodeInstanceState.suspended:
+        this.logger.verbose(`FlowNodeInstance was left suspended. Waiting for the resuming event to happen.`);
+        const suspendToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onSuspend);
 
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
+        return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade, identity);
+
+      case Runtime.Types.FlowNodeInstanceState.running:
+        const resumeToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onResume);
+
+        const notSuspendedYet: boolean = resumeToken === undefined;
+        if (notSuspendedYet) {
+          this.logger.verbose(`FlowNodeInstance was interrupted at the beginning. Resuming from the start.`);
+          const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+          return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
+        }
+
+        this.logger.verbose(`The FlowNodeInstance was already suspended and resumed. Finishing up the handler.`);
+
+        return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
 
       case Runtime.Types.FlowNodeInstanceState.finished:
         this.logger.verbose(`FlowNodeInstance was already finished. Skipping ahead.`);
