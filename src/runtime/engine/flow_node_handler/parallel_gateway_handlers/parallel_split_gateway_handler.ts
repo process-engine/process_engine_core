@@ -1,3 +1,4 @@
+import * as clone from 'clone';
 import {Logger} from 'loggerhythm';
 
 import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
@@ -92,11 +93,13 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                    processModelFacade,
                                    identity);
 
+    processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
+
     // Now await the resumption of all the branches. They will only run to the point where they encounter the Join-Gateway.
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
-    const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
+    const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(token, processTokenFacade, nextFlowNodeInfos);
     this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
@@ -121,13 +124,14 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     // The state change must be performed before the parallel branches are executed.
     // Otherwise, the Split Gateway will be in a running state, until all branches have finished.
+    processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
     await this.persistOnExit(token);
 
     // Now await the execution of all the branches. They will only run to the point where they encounter the Join-Gateway.
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
-    const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(processTokenFacade, nextFlowNodeInfos);
+    const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(token, processTokenFacade, nextFlowNodeInfos);
     this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
@@ -330,11 +334,13 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                            flowNodeInstanceForFlowNode.id);
   }
 
-  private async _mergeTokenHistories(processTokenFacade: IProcessTokenFacade,
+  private async _mergeTokenHistories(currentToken: Runtime.Types.ProcessToken,
+                                     processTokenFacade: IProcessTokenFacade,
                                      nextFlowNodeInfos: Array<NextFlowNodeInfo>,
                                     ): Promise<Runtime.Types.ProcessToken> {
 
-    const mergedToken: Runtime.Types.ProcessToken = this._getEmptyProcessToken();
+    const mergedToken: Runtime.Types.ProcessToken = clone(currentToken);
+    mergedToken.payload = {};
     for (const nextFlowNodeInfo of nextFlowNodeInfos) {
       processTokenFacade.mergeTokenHistory(nextFlowNodeInfo.processTokenFacade);
       const nextFlowNodeInfoToken: Runtime.Types.ProcessToken = nextFlowNodeInfo.token;
@@ -343,32 +349,10 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
         await this.flowNodeInstanceService.queryByInstanceId(nextFlowNodeInfo.token.flowNodeInstanceId);
       const flowNodeId: string = flowNode.flowNodeId;
 
+      mergedToken.payload[flowNodeId] = nextFlowNodeInfoToken.payload;
       nextFlowNodeInfoToken.payload = {[`${flowNodeId}`]: nextFlowNodeInfoToken.payload};
-
-      const payloadIsNotEmpty: boolean = mergedToken.payload !== undefined;
-      if (payloadIsNotEmpty) {
-        Object.assign(nextFlowNodeInfoToken.payload, mergedToken.payload);
-      }
-
-      Object.assign(mergedToken, nextFlowNodeInfoToken);
     }
 
     return mergedToken;
-  }
-
-  private _getEmptyProcessToken(): Runtime.Types.ProcessToken {
-    const emptyProcessToken: Runtime.Types.ProcessToken = {
-      processInstanceId: undefined,
-      processModelId: undefined,
-      correlationId: undefined,
-      flowNodeInstanceId: undefined,
-      identity: undefined,
-      createdAt: undefined,
-      caller: undefined,
-      type: undefined,
-      payload: undefined,
-    };
-
-    return emptyProcessToken;
   }
 }
