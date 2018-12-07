@@ -93,14 +93,14 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                    processModelFacade,
                                    identity);
 
+    processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
+
     // Now await the resumption of all the branches. They will only run to the point where they encounter the Join-Gateway.
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
 
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(token, processTokenFacade, nextFlowNodeInfos);
     this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
-
-    processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
@@ -124,6 +124,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
     // The state change must be performed before the parallel branches are executed.
     // Otherwise, the Split Gateway will be in a running state, until all branches have finished.
+    processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
     await this.persistOnExit(token);
 
     // Now await the execution of all the branches. They will only run to the point where they encounter the Join-Gateway.
@@ -132,8 +133,6 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     // After all parallel branches have finished, the collective results are merged into the ProcessTokenFacade.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(token, processTokenFacade, nextFlowNodeInfos);
     this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
-
-    processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
 
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
