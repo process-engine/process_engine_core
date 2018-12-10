@@ -24,11 +24,11 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
   private _externalTaskRepository: IExternalTaskRepository;
 
   constructor(eventAggregator: IEventAggregator,
-              externalTaskRepository: IExternalTaskRepository,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              serviceTaskModel: Model.Activities.ServiceTask) {
+    externalTaskRepository: IExternalTaskRepository,
+    flowNodeInstanceService: IFlowNodeInstanceService,
+    loggingApiService: ILoggingApi,
+    metricsService: IMetricsApi,
+    serviceTaskModel: Model.Activities.ServiceTask) {
 
     super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
 
@@ -42,9 +42,9 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
   ): Promise<NextFlowNodeInfo> {
 
     this.logger.verbose(`Executing external ServiceTask instance ${this.flowNodeInstanceId}`);
@@ -54,13 +54,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                       ): Promise<NextFlowNodeInfo> {
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<NextFlowNodeInfo>(async (resolve: Function, reject: Function): Promise<void> => {
 
       const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
@@ -79,7 +79,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
       }
 
       // Callback for processing an ExternalTask result.
-      const processExternalTaskResult: Function = async(error: Error, result: any): Promise<void> => {
+      const processExternalTaskResult: Function = async (error: Error, result: any): Promise<void> => {
 
         if (error) {
           this.logger.error(`External processing of ServiceTask failed!`, error);
@@ -114,10 +114,10 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<NextFlowNodeInfo> {
 
     this.logger.verbose('Executing external ServiceTask');
     await this.persistOnSuspend(token);
@@ -144,13 +144,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
    * @returns                    The ServiceTask's result.
    */
   private async _executeExternalServiceTask(token: Runtime.Types.ProcessToken,
-                                            processTokenFacade: IProcessTokenFacade,
-                                            identity: IIdentity,
+    processTokenFacade: IProcessTokenFacade,
+    identity: IIdentity,
   ): Promise<any> {
 
-    return new Promise(async(resolve: Function, reject: Function): Promise<any> => {
+    return new Promise(async (resolve: Function, reject: Function): Promise<any> => {
 
-      const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
+      const externalTaskFinishedCallback: Function = async (error: Error, result: any): Promise<void> => {
 
         if (error) {
           this.logger.error(`External processing of ServiceTask failed!`, error);
@@ -188,7 +188,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
 
     const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
 
-    const messageReceivedCallback: Function = async(message: any): Promise<void> => {
+    const messageReceivedCallback: Function = async (message: any): Promise<void> => {
 
       if (subscription) {
         subscription.dispose();
@@ -242,7 +242,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
     if (serviceTaskHasAttachedPayload) {
       const evaluatePayloadFunction: Function = new Function('token', 'identity', `return ${this.serviceTask.payload}`);
 
-      return evaluatePayloadFunction.call(tokenHistory, identity, tokenHistory);
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
     } else {
       return token.payload;
     }
