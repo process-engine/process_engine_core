@@ -14,12 +14,12 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {ActivityHandler, FlowNodeHandler} from '../index';
 
 export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
+  private _decoratedHandler: ActivityHandler<Model.Base.FlowNode>;
 
   private messageReceived: boolean = false;
   private handlerHasFinished: boolean = false;
@@ -30,7 +30,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+              decoratedHandler: ActivityHandler<Model.Base.FlowNode>,
               messageBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, messageBoundaryEventModel);
     this._eventAggregator = eventAggregator;
@@ -117,8 +117,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
         return;
       }
       this.messageReceived = true;
-
       token.payload = message.currentToken;
+      this._decoratedHandler.interrupt(token);
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute

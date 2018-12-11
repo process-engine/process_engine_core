@@ -14,12 +14,12 @@ import {
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {ActivityHandler, FlowNodeHandler} from '../index';
 
 export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
+  private _decoratedHandler: ActivityHandler<Model.Base.FlowNode>;
 
   private signalReceived: boolean = false;
   private handlerHasFinished: boolean = false;
@@ -30,7 +30,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+              decoratedHandler: ActivityHandler<Model.Base.FlowNode>,
               signalBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, signalBoundaryEventModel);
     this._eventAggregator = eventAggregator;
@@ -117,8 +117,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
         return;
       }
       this.signalReceived = true;
-
       token.payload = signal.currentToken;
+      this._decoratedHandler.interrupt(token);
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute

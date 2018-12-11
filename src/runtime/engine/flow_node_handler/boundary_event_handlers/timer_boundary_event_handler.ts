@@ -15,18 +15,18 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {Logger} from 'loggerhythm';
-import {FlowNodeHandler} from '../index';
+import {ActivityHandler, FlowNodeHandler} from '../index';
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
-  private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
+  private _decoratedHandler: ActivityHandler<Model.Base.FlowNode>;
   private _timerFacade: ITimerFacade;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
               timerFacade: ITimerFacade,
-              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+              decoratedHandler: ActivityHandler<Model.Base.FlowNode>,
               timerBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, timerBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
@@ -61,6 +61,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
             return;
           }
           timerHasElapsed = true;
+          this._decoratedHandler.interrupt(token);
 
           // if the timer elapsed before the decorated handler finished execution,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
@@ -117,6 +118,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
             return;
           }
           timerHasElapsed = true;
+          this._decoratedHandler.interrupt(onEnterToken);
 
           // if the timer elapsed before the decorated handler finished resumption,
           // the TimerBoundaryEvent will be used to determine the next FlowNode to execute

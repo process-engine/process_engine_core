@@ -76,7 +76,6 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
       const executionPromise: Bluebird<any> = this._executeInternalServiceTask(token, processTokenFacade, identity);
 
       this.onInterruptedCallback = async(interruptionToken: Runtime.Types.ProcessToken): Promise<void> => {
-        // tslint:disable:no-console
         await processTokenFacade.addResultForFlowNode(this.serviceTask.id, interruptionToken.payload);
         executionPromise.cancel();
         handlerPromise.cancel();
