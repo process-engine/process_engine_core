@@ -1,8 +1,8 @@
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IActivityHandler,
   IFlowNodeInstanceService,
+  IInterruptable,
   Model,
   onInterruptionCallback,
   Runtime,
@@ -10,9 +10,9 @@ import {
 
 import {FlowNodeHandler} from './flow_node_handler';
 
-export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode>
+export abstract class FlowNodeHandlerInterruptable<TFlowNode extends Model.Base.FlowNode>
 extends FlowNodeHandler<TFlowNode>
-implements IActivityHandler<TFlowNode> {
+implements IInterruptable {
 
   private _onInterruptedCallback: onInterruptionCallback;
 

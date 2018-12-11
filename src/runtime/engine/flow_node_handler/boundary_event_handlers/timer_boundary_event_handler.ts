@@ -15,18 +15,18 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {Logger} from 'loggerhythm';
-import {ActivityHandler, FlowNodeHandler} from '../index';
+import {FlowNodeHandler, FlowNodeHandlerInterruptable} from '../index';
 
 export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
-  private _decoratedHandler: ActivityHandler<Model.Base.FlowNode>;
+  private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
   private _timerFacade: ITimerFacade;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
               timerFacade: ITimerFacade,
-              decoratedHandler: ActivityHandler<Model.Base.FlowNode>,
+              decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>,
               timerBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, timerBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;

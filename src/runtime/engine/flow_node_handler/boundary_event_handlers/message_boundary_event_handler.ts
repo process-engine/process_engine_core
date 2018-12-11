@@ -14,12 +14,12 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {ActivityHandler, FlowNodeHandler} from '../index';
+import {FlowNodeHandler, FlowNodeHandlerInterruptable} from '../index';
 
 export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _decoratedHandler: ActivityHandler<Model.Base.FlowNode>;
+  private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
 
   private messageReceived: boolean = false;
   private handlerHasFinished: boolean = false;
@@ -30,7 +30,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: ActivityHandler<Model.Base.FlowNode>,
+              decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>,
               messageBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, messageBoundaryEventModel);
     this._eventAggregator = eventAggregator;
