@@ -1,3 +1,4 @@
+import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -13,9 +14,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {ActivityHandler} from './index';
 
-export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
+export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTask> {
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
@@ -47,43 +48,60 @@ export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTa
                                   identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
-    let result: any = {};
+    const handlerPromise: Bluebird<any> = new Bluebird<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    try {
-      result = await this._executeScriptTask(processTokenFacade, identity);
-    } catch (error) {
-      await this.persistOnError(token, error);
+      let result: any = {};
 
-      throw error;
-    }
+      try {
+        const executionPromise: Bluebird<any> = this._executeScriptTask(processTokenFacade, identity);
 
-    await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
-    token.payload = result;
-    await this.persistOnExit(token);
+        this.onInterruptedCallback = async(interruptionToken: Runtime.Types.ProcessToken): Promise<void> => {
+          await processTokenFacade.addResultForFlowNode(this.scriptTask.id, interruptionToken.payload);
+          executionPromise.cancel();
+          handlerPromise.cancel();
 
-    const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+          return resolve();
+        };
+        result = await executionPromise;
+      } catch (error) {
+        await this.persistOnError(token, error);
+        throw error;
+      }
 
-    return nextFlowNodeInfo;
+      await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
+      token.payload = result;
+      await this.persistOnExit(token);
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
   }
 
-  private async _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
+  private _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Bluebird<any> {
 
-    const script: string = this.scriptTask.script;
+    return new Bluebird<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
-    if (!script) {
-      return undefined;
-    }
+      const script: string = this.scriptTask.script;
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
-    let result: any;
+      if (!script) {
+        return undefined;
+      }
 
-    const scriptFunction: Function = new Function('token', 'identity', script);
+      const tokenData: any = await processTokenFacade.getOldTokenFormat();
+      let result: any;
 
-    result = await scriptFunction.call(this, tokenData, identity);
-    result = result === undefined
-      ? null
-      : result;
+      const scriptFunction: Function = new Function('token', 'identity', script);
 
-    return result;
+      result = await scriptFunction.call(this, tokenData, identity);
+      result = result === undefined
+        ? null
+        : result;
+
+      return resolve(result);
+
+    });
   }
 }
