@@ -14,11 +14,11 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptable} from './index';
 
-export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
+export class ParallelGatewayHandler extends FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway> {
 
-  private _childHandler: FlowNodeHandler<Model.Gateways.ParallelGateway>;
+  private _childHandler: FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -36,13 +36,17 @@ export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.Paral
     return this._childHandler.getInstanceId();
   }
 
-  private _getChildHandler(): FlowNodeHandler<Model.Gateways.ParallelGateway> {
+  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+    return this._childHandler.interrupt(token, terminate);
+  }
+
+  private _getChildHandler(): FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway> {
 
     switch (this.flowNode.gatewayDirection) {
       case Model.Gateways.GatewayDirection.Converging:
-        return this._container.resolve<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelJoinGatewayHandler', [this.flowNode]);
+        return this._container.resolve<FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway>>('ParallelJoinGatewayHandler', [this.flowNode]);
       case Model.Gateways.GatewayDirection.Diverging:
-        return this._container.resolve<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelSplitGatewayHandler', [this.flowNode]);
+        return this._container.resolve<FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway>>('ParallelSplitGatewayHandler', [this.flowNode]);
       default:
         const unsupportedErrorMessage: string =
           `ParallelGateway ${this.flowNode.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
