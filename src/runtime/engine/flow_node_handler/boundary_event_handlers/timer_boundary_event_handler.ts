@@ -26,6 +26,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
   private timerHasElapsed: boolean = false;
   private hasHandlerFinished: boolean = false;
+
+  private handlerPromise: Bluebird<NextFlowNodeInfo>;
   private timerSubscription: ISubscription;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
@@ -49,7 +51,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     if (this.timerSubscription) {
       this.timerSubscription.dispose();
     }
-
+    this.handlerPromise.cancel();
     this._decoratedHandler.interrupt(token, terminate);
   }
 
@@ -58,27 +60,29 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    this.handlerPromise = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       this._executeTimer(resolve, token, processTokenFacade, processModelFacade);
 
       const nextFlowNodeInfo: NextFlowNodeInfo =
         await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
-      if (this.timerHasElapsed) {
-        return;
-      }
+      this.hasHandlerFinished = true;
 
       if (this.timerSubscription) {
         this.timerSubscription.dispose();
       }
 
+      if (this.timerHasElapsed) {
+        return;
+      }
+
       // if the decorated handler finished execution before the timer elapsed,
       // continue the regular execution with the next FlowNode and dispose the timer
-      this.hasHandlerFinished = true;
-
       return resolve(nextFlowNodeInfo);
     });
+
+    return this.handlerPromise;
   }
 
   protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -87,7 +91,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    return new Bluebird<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    this.handlerPromise = new Bluebird<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
       this._executeTimer(resolve, onEnterToken, processTokenFacade, processModelFacade);
@@ -95,12 +99,12 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
       const nextFlowNodeInfo: NextFlowNodeInfo =
         await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
-      if (this.timerHasElapsed) {
-        return;
-      }
-
       if (this.timerSubscription) {
         this.timerSubscription.dispose();
+      }
+
+      if (this.timerHasElapsed) {
+        return;
       }
 
       // if the decorated handler finished resumption before the timer elapsed,
@@ -109,6 +113,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
       return resolve(nextFlowNodeInfo);
     });
+
+    return this.handlerPromise;
   }
 
   private async _executeTimer(resolveFunc: Function,

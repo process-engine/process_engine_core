@@ -26,6 +26,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
   private messageReceived: boolean = false;
   private handlerHasFinished: boolean = false;
 
+  private handlerPromise: Bluebird<NextFlowNodeInfo>;
   private subscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
@@ -48,7 +49,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
     if (this.subscription) {
       this.subscription.dispose();
     }
-
+    this.handlerPromise.cancel();
     this._decoratedHandler.interrupt(token, terminate);
   }
 
@@ -58,26 +59,29 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToMessageEvent(resolve, token, processTokenFacade, processModelFacade);
 
       const nextFlowNodeInfo: NextFlowNodeInfo
         = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
-      if (this.messageReceived) {
-        return;
-      }
+      this.handlerHasFinished = true;
 
       if (this.subscription) {
         this.subscription.dispose();
       }
 
+      if (this.messageReceived) {
+        return;
+      }
+
       // if the decorated handler finished execution before the message was received,
       // continue the regular execution with the next FlowNode and dispose the message subscription
-      this.handlerHasFinished = true;
-      resolve(nextFlowNodeInfo);
+      return resolve(nextFlowNodeInfo);
     });
+
+    return this.handlerPromise;
   }
 
   protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -86,7 +90,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    return new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
@@ -95,19 +99,22 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       const nextFlowNodeInfo: NextFlowNodeInfo
         = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
-      if (this.messageReceived) {
-        return;
-      }
+      this.handlerHasFinished = true;
 
       if (this.subscription) {
         this.subscription.dispose();
       }
 
+      if (this.messageReceived) {
+        return;
+      }
+
       // if the decorated handler finished execution before the message was received,
       // continue the regular execution with the next FlowNode and dispose the message subscription
-      this.handlerHasFinished = true;
-      resolve(nextFlowNodeInfo);
+      return resolve(nextFlowNodeInfo);
     });
+
+    return this.handlerPromise;
   }
 
   private _subscribeToMessageEvent(resolveFunc: Function,
@@ -120,6 +127,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
 
     const messageReceivedCallback: any = (message: MessageEventReachedMessage): void => {
 
+      this.messageReceived = true;
+
       if (this.subscription) {
         this.subscription.dispose();
       }
@@ -127,7 +136,6 @@ export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bo
       if (this.handlerHasFinished) {
         return;
       }
-      this.messageReceived = true;
       token.payload = message.currentToken;
       this._decoratedHandler.interrupt(token);
 

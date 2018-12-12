@@ -91,7 +91,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptable<Model.Activiti
         executionPromise.cancel();
         handlerPromise.cancel();
 
-        return resolve();
+        return;
       };
 
       const userTaskResult: any = await executionPromise;

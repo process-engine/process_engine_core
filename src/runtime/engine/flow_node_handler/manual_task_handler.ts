@@ -91,7 +91,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
         executionPromise.cancel();
         handlerPromise.cancel();
 
-        return resolve();
+        return;
       };
 
       const manualTaskResult: any = await executionPromise;
@@ -121,14 +121,14 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
    *              creating the EventSubscription.
    * @returns     The recevied ManualTask result.
    */
-  private async _waitForManualTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForManualTaskResult(token: Runtime.Types.ProcessToken): Bluebird<any> {
 
     return new Bluebird<any>(async(resolve: Function): Promise<void> => {
 
       const finishManualTaskEvent: string = this._getFinishManualTaskEventName(token.correlationId, token.processInstanceId);
 
       this.manualTaskSubscription =
-        this._eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
+        this._eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
 
           // An empty object is used, because ManualTasks do not yield results.
           const manualTaskResult: any = {};
