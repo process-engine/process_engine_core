@@ -35,14 +35,10 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
     try {
-      const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
-
-      return nextFlowNodeInfo;
+      // Must use return await here to prevent unhandled rejections.
+      return await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
     } catch (err) {
-      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.errorBoundaryEvent);
-
-      return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+      return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
     }
   }
 
@@ -52,17 +48,13 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
-
     try {
-      const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
-
-      return nextFlowNodeInfo;
+      // Must use return await here to prevent unhandled rejections.
+      return await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
     } catch (err) {
-      const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.errorBoundaryEvent);
+      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
-      return new NextFlowNodeInfo(nextFlowNode, onEnterToken, processTokenFacade);
+      return this.getNextFlowNodeInfo(onEnterToken, processTokenFacade, processModelFacade);
     }
   }
 }
