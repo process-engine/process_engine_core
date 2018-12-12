@@ -142,6 +142,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
       // if the timer elapsed before the decorated handler finished execution,
       // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
+      const decoratedFlowNodeId: string = this._decoratedHandler.getFlowNode().id;
+      processTokenFacade.addResultForFlowNode(decoratedFlowNodeId, token.payload);
       processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
