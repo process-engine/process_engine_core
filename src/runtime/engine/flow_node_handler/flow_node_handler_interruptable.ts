@@ -25,10 +25,18 @@ implements IInterruptable {
     this._onInterruptedCallback = (): void => { };
   }
 
+  /**
+   * Gets the callback that gets called when an interrupt-command was received.
+   * This can be used by the derived handlers to perform handler-specific actions
+   * necessary for stopping its work cleanly.
+   */
   protected get onInterruptedCallback(): onInterruptionCallback {
     return this._onInterruptedCallback;
   }
 
+  /**
+   * Sets the callback that gets called when an interrupt-command was received.
+   */
   protected set onInterruptedCallback(value: onInterruptionCallback) {
     this._onInterruptedCallback = value;
   }
