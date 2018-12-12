@@ -118,7 +118,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptable<Model.Activiti
    *              creating the EventSubscription.
    * @returns     The recevied UserTask result.
    */
-  private async _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Bluebird<any> {
 
     return new Bluebird<any>(async(resolve: Function): Promise<void> => {
 
