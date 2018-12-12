@@ -58,8 +58,6 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
 
     const handlerPromise: Bluebird<any> = new Bluebird<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      let nextFlowNodeInfo: NextFlowNodeInfo;
-
       const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
       if (serviceTaskHasNoInvocation) {
         this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
@@ -67,7 +65,9 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, {});
         token.payload = {};
 
-        nextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        await this.persistOnExit(token);
+
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       }
@@ -91,7 +91,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
 
         await this.persistOnExit(token);
 
-        nextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
