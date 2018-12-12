@@ -78,7 +78,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     try {
       nextFlowNode = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
     } catch (error) {
-      await processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
+      processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
       throw error;
     }
 
@@ -104,7 +104,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     try {
       nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
     } catch (error) {
-      await processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
+      processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
       throw error;
     }
 
@@ -538,13 +538,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                              processTokenFacade: IProcessTokenFacade,
                              processModelFacade: IProcessModelFacade): Promise<void> {
 
-    await processTokenFacade.evaluateMapperForFlowNode(this.flowNode);
+    processTokenFacade.evaluateMapperForFlowNode(this.flowNode);
 
     const nextSequenceFlow: Model.Types.SequenceFlow = processModelFacade.getSequenceFlowBetween(this.flowNode, nextFlowNode);
     if (!nextSequenceFlow) {
       return;
     }
 
-    await processTokenFacade.evaluateMapperForSequenceFlow(nextSequenceFlow);
+    processTokenFacade.evaluateMapperForSequenceFlow(nextSequenceFlow);
   }
 }

@@ -141,7 +141,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const subProcessInstanceId: string = uuid.v4();
 
-    const currentResults: any = await processTokenFacade.getAllResults();
+    const currentResults: any = processTokenFacade.getAllResults();
 
     const subProcessTokenFacade: IProcessTokenFacade =
       new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
@@ -213,7 +213,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const subProcessStartEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
     const subProcessStartEvent: Model.Events.StartEvent = subProcessStartEvents[0];
 
-    const currentResults: any = await processTokenFacade.getAllResults();
+    const currentResults: any = processTokenFacade.getAllResults();
 
     const subProcessInstanceId: string = flowNodeInstancesForSubprocess[0].processInstanceId;
 

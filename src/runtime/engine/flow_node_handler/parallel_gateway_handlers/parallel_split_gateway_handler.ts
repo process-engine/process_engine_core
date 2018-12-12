@@ -188,7 +188,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
 
       // To have an isolated ProcessToken for each branch, we fork a new ProcessToken from the original one and use it during execution of this branch
-      const processTokenForBranch: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
+      const processTokenForBranch: IProcessTokenFacade = processTokenFacade.getProcessTokenFacadeForParallelBranch();
       const tokenForBranch: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(token.payload);
 
       const nextFlowNodeInBranch: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);
@@ -250,7 +250,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     return outgoingSequenceFlows.map(async(outgoingSequenceFlow: Model.Types.SequenceFlow): Promise<NextFlowNodeInfo> => {
 
       // To have an isolated ProcessToken for each branch, we fork a new ProcessToken from the original one and use it during execution of this branch
-      const processTokenForBranch: IProcessTokenFacade = await processTokenFacade.getProcessTokenFacadeForParallelBranch();
+      const processTokenForBranch: IProcessTokenFacade = processTokenFacade.getProcessTokenFacadeForParallelBranch();
       const tokenForBranch: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(token.payload);
 
       const firstFlowNodeInBranch: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlow.targetRef);

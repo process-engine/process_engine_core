@@ -1,6 +1,5 @@
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -99,7 +98,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
     onSuspendToken.payload = callActivityResult;
     await this.persistOnResume(onSuspendToken);
-    await processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
     await this.persistOnExit(onSuspendToken);
 
     return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
@@ -121,7 +120,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
     token.payload = processStartResponse.tokenPayload;
 
     await this.persistOnResume(token);
-    await processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
     await this.persistOnExit(token);
 
     return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
@@ -165,7 +164,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
                                    token: Runtime.Types.ProcessToken ,
                                   ): Promise<ProcessStartResponsePayload> {
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+    const tokenData: any = processTokenFacade.getOldTokenFormat();
 
     const processInstanceId: string = token.processInstanceId;
     const correlationId: string = token.correlationId;

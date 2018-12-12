@@ -69,7 +69,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
         return reject(error);
       }
 
-      await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
+      processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
       token.payload = result;
       await this.persistOnExit(token);
 
@@ -91,7 +91,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
         return undefined;
       }
 
-      const tokenData: any = await processTokenFacade.getOldTokenFormat();
+      const tokenData: any = processTokenFacade.getOldTokenFormat();
       let result: any;
 
       const scriptFunction: Function = new Function('token', 'identity', script);

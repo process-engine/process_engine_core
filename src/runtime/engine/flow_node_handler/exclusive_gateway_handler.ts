@@ -168,7 +168,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
   }
 
   private async executeCondition(condition: string, processTokenFacade: IProcessTokenFacade): Promise<boolean> {
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+    const tokenData: any = processTokenFacade.getOldTokenFormat();
 
     try {
       const functionString: string = `return ${condition}`;
