@@ -108,15 +108,15 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
     });
   }
 
-  private async _subscribeToSignalEvent(resolveFunc: Function,
-                                        token: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade): Promise<void> {
+  private _subscribeToSignalEvent(resolveFunc: Function,
+                                  token: Runtime.Types.ProcessToken,
+                                  processTokenFacade: IProcessTokenFacade,
+                                  processModelFacade: IProcessModelFacade): void {
 
     const signalBoundaryEventName: string = eventAggregatorSettings.routePaths.signalEventReached
       .replace(eventAggregatorSettings.routeParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
 
-    const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
+    const signalReceivedCallback: any = (signal: SignalEventReachedMessage): void => {
 
       if (this.subscription) {
         this.subscription.dispose();
@@ -131,7 +131,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute
-      await processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, token.payload);
+      processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalBoundaryEvent);
 

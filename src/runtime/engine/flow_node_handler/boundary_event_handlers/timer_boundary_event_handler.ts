@@ -118,9 +118,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
     const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerBoundaryEvent.timerEventDefinition);
     const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
-    const timerValue: string = await this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
+    const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
-    const timerElapsed: any = async(): Promise<void> => {
+    const timerElapsed: any = (): void => {
 
       // No matter what timer type is used, a TimerBoundaryEvent can only ever run once,
       // given that the decorated handler itself can only run once.
@@ -136,7 +136,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
 
       // if the timer elapsed before the decorated handler finished execution,
       // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
-      await processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
+      processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
       resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
@@ -145,7 +145,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
     this.timerSubscription = this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
   }
 
-  private async _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): Promise<string> {
+  private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
     const tokenVariableName: string = 'token';
     const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
 
@@ -153,7 +153,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.Boun
       return timerExpression;
     }
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+    const tokenData: any = processTokenFacade.getOldTokenFormat();
 
     try {
       const functionString: string = `return ${timerExpression}`;
