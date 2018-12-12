@@ -61,7 +61,6 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
       let nextFlowNodeInfo: NextFlowNodeInfo;
 
       const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
-
       if (serviceTaskHasNoInvocation) {
         this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
 
@@ -84,16 +83,22 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
       };
 
       this.logger.verbose('Executing internal ServiceTask');
-      const result: any = await executionPromise;
+      try {
+        const result: any = await executionPromise;
 
-      processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
-      token.payload = result;
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        token.payload = result;
 
-      await this.persistOnExit(token);
+        await this.persistOnExit(token);
 
-      nextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        nextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
-      return resolve(nextFlowNodeInfo);
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        this.logger.error(error);
+
+        return reject(error);
+      }
     });
 
     return handlerPromise;
@@ -140,12 +145,17 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
       if (!serviceMethod) {
         const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
         await this.persistOnError(token, error);
-        throw error;
+
+        return reject(error);
       }
 
-      const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
+      try {
+        const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
-      return resolve(result);
+        return resolve(result);
+      } catch (error) {
+        return reject(error);
+      }
     });
   }
 }
