@@ -1,3 +1,4 @@
+import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -16,11 +17,12 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {FlowNodeHandlerInterruptable} from '../index';
 
-export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
+export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent> {
 
   private _eventAggregator: IEventAggregator;
+  private subscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -71,30 +73,51 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandler<Model.
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
-    const receivedMessage: MessageEventReachedMessage = await this._waitForMessage();
+    const handlerPromise: Bluebird<any> = new Bluebird<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    token.payload = receivedMessage.currentToken;
-    await this.persistOnResume(token);
+      const messageSubscriptionPromise: Bluebird<MessageEventReachedMessage> = this._waitForMessage();
 
-    processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, receivedMessage.currentToken);
-    await this.persistOnExit(token);
+      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
-    const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageCatchEvent);
+        processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, interruptionToken);
 
-    return new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade);
+        if (this.subscription) {
+          this.subscription.dispose();
+        }
+
+        messageSubscriptionPromise.cancel();
+        handlerPromise.cancel();
+
+        return;
+      };
+
+      const receivedMessage: MessageEventReachedMessage = await messageSubscriptionPromise;
+
+      token.payload = receivedMessage.currentToken;
+      await this.persistOnResume(token);
+
+      processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, receivedMessage.currentToken);
+      await this.persistOnExit(token);
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
   }
 
-  private async _waitForMessage(): Promise<MessageEventReachedMessage> {
+  private _waitForMessage(): Bluebird<MessageEventReachedMessage> {
 
-    return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
+    return new Bluebird<MessageEventReachedMessage>((resolve: Function): void => {
 
       const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
         .replace(eventAggregatorSettings.routeParams.messageReference, this.messageCatchEvent.messageEventDefinition.name);
 
-      const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+      this.subscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
 
-        if (subscription) {
-          subscription.dispose();
+        if (this.subscription) {
+          this.subscription.dispose();
         }
         this.logger.verbose(
           `MessageCatchEvent instance ${this.flowNodeInstanceId} message ${messageEventName} received:`,
