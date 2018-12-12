@@ -65,7 +65,8 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
         result = await executionPromise;
       } catch (error) {
         await this.persistOnError(token, error);
-        throw error;
+
+        return reject(error);
       }
 
       await processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
@@ -94,13 +95,18 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
       let result: any;
 
       const scriptFunction: Function = new Function('token', 'identity', script);
+      try {
+        result = await scriptFunction.call(this, tokenData, identity);
+        result = result === undefined
+          ? null
+          : result;
 
-      result = await scriptFunction.call(this, tokenData, identity);
-      result = result === undefined
-        ? null
-        : result;
+        return resolve(result);
+      } catch (error) {
+        this.logger.error('Failed to run script!', error);
 
-      return resolve(result);
+        return reject(error);
+      }
 
     });
   }
