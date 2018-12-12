@@ -11,8 +11,8 @@ import {
 import {FlowNodeHandler} from './flow_node_handler';
 
 export abstract class FlowNodeHandlerInterruptable<TFlowNode extends Model.Base.FlowNode>
-extends FlowNodeHandler<TFlowNode>
-implements IInterruptable {
+  extends FlowNodeHandler<TFlowNode>
+  implements IInterruptable {
 
   private _onInterruptedCallback: onInterruptionCallback;
 

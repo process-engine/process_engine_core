@@ -81,13 +81,10 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
 
       const executionPromise: Bluebird<any> = this._waitForManualTaskResult(token);
 
-      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
-
+      this.onInterruptedCallback = (): void => {
         if (this.manualTaskSubscription) {
           this.manualTaskSubscription.dispose();
         }
-
-        processTokenFacade.addResultForFlowNode(this.manualTask.id, interruptionToken.payload);
         executionPromise.cancel();
         handlerPromise.cancel();
 

@@ -81,13 +81,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptable<Model.Activiti
 
       const executionPromise: Bluebird<any> = this._waitForUserTaskResult(token);
 
-      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
-
+      this.onInterruptedCallback = (): void => {
         if (this.userTaskSubscription) {
           this.userTaskSubscription.dispose();
         }
-
-        processTokenFacade.addResultForFlowNode(this.userTask.id, interruptionToken.payload);
         executionPromise.cancel();
         handlerPromise.cancel();
 

@@ -74,8 +74,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
 
       const executionPromise: Bluebird<any> = this._executeInternalServiceTask(token, processTokenFacade, identity);
 
-      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, interruptionToken.payload);
+      this.onInterruptedCallback = (): void => {
         executionPromise.cancel();
         handlerPromise.cancel();
 

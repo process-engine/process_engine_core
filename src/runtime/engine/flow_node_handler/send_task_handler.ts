@@ -1,3 +1,4 @@
+import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -16,10 +17,12 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptable} from './index';
 
-export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
+export class SendTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.SendTask> {
+
   private _eventAggregator: IEventAggregator;
+  private responseSubscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -61,7 +64,16 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+
+      this.onInterruptedCallback = (): void => {
+        if (this.responseSubscription) {
+          this.responseSubscription.dispose();
+        }
+        handlerPromise.cancel();
+
+        return;
+      };
 
       const onResponseReceivedCallback: Function = async(): Promise<void> => {
 
@@ -76,6 +88,8 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
       this._waitForResponseFromReceiveTask(onResponseReceivedCallback);
       this._sendMessage(token);
     });
+
+    return handlerPromise;
   }
 
   /**
@@ -92,10 +106,10 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
       .receiveTaskReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-    const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
+    this.responseSubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
 
-      if (subscription) {
-        subscription.dispose();
+      if (this.responseSubscription) {
+        this.responseSubscription.dispose();
       }
       callback();
     });
