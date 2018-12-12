@@ -1,3 +1,5 @@
+import * as Bluebird from 'bluebird';
+
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -41,33 +43,39 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
     return super.flowNode;
   }
 
+  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+
+    if (this.subscription) {
+      this.subscription.dispose();
+    }
+
+    this._decoratedHandler.interrupt(token, terminate);
+  }
+
   // TODO: Add support for non-interrupting signal events.
   protected async executeInternally(token: Runtime.Types.ProcessToken,
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    return new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
-      try {
-        this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
+      this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo
-          = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+      const nextFlowNodeInfo: NextFlowNodeInfo
+        = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
-        if (this.signalReceived) {
-          return;
-        }
-
-        // if the decorated handler finished execution before the signal was received,
-        // continue the regular execution with the next FlowNode and dispose the signal subscription
-        this.handlerHasFinished = true;
-        resolve(nextFlowNodeInfo);
-      } finally {
-        if (this.subscription) {
-          this.subscription.dispose();
-        }
+      if (this.signalReceived) {
+        return;
       }
+      if (this.subscription) {
+        this.subscription.dispose();
+      }
+
+      // if the decorated handler finished execution before the signal was received,
+      // continue the regular execution with the next FlowNode and dispose the signal subscription
+      this.handlerHasFinished = true;
+      resolve(nextFlowNodeInfo);
     });
   }
 
@@ -77,29 +85,26 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    return new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
-      try {
-        this._subscribeToSignalEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
+      this._subscribeToSignalEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo
-          = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      const nextFlowNodeInfo: NextFlowNodeInfo
+        = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
-        if (this.signalReceived) {
-          return;
-        }
-
-        // if the decorated handler finished execution before the signal was received,
-        // continue the regular execution with the next FlowNode and dispose the signal subscription
-        this.handlerHasFinished = true;
-        resolve(nextFlowNodeInfo);
-      } finally {
-        if (this.subscription) {
-          this.subscription.dispose();
-        }
+      if (this.signalReceived) {
+        return;
       }
+      if (this.subscription) {
+        this.subscription.dispose();
+      }
+
+      // if the decorated handler finished execution before the signal was received,
+      // continue the regular execution with the next FlowNode and dispose the signal subscription
+      this.handlerHasFinished = true;
+      resolve(nextFlowNodeInfo);
     });
   }
 
@@ -112,6 +117,10 @@ export class SignalBoundaryEventHandler extends FlowNodeHandler<Model.Events.Bou
       .replace(eventAggregatorSettings.routeParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
 
     const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
+
+      if (this.subscription) {
+        this.subscription.dispose();
+      }
 
       if (this.handlerHasFinished) {
         return;

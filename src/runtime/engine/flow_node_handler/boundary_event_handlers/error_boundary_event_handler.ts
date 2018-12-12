@@ -11,23 +11,22 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
-
+import {FlowNodeHandler, FlowNodeHandlerInterruptable} from '../index';
 export class ErrorBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
 
-  private _decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>;
+  private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandler<Model.Base.FlowNode>,
+              decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>,
               errorBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, errorBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
   }
 
-  private get errorBoundaryEvent(): Model.Events.BoundaryEvent {
-    return super.flowNode;
+  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+    this._decoratedHandler.interrupt(token, terminate);
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,
