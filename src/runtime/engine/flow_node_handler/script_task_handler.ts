@@ -55,8 +55,8 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
       try {
         const executionPromise: Bluebird<any> = this._executeScriptTask(processTokenFacade, identity);
 
-        this.onInterruptedCallback = async(interruptionToken: Runtime.Types.ProcessToken): Promise<void> => {
-          await processTokenFacade.addResultForFlowNode(this.scriptTask.id, interruptionToken.payload);
+        this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
+          processTokenFacade.addResultForFlowNode(this.scriptTask.id, interruptionToken.payload);
           executionPromise.cancel();
           handlerPromise.cancel();
 

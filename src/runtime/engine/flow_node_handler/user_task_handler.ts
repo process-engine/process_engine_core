@@ -1,6 +1,6 @@
+import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -19,11 +19,13 @@ import {
   UserTaskReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptable} from './index';
 
-export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> {
+export class UserTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.UserTask> {
 
   private _eventAggregator: IEventAggregator;
+
+  private userTaskSubscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -75,17 +77,38 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    const userTaskResult: any = await this._waitForUserTaskResult(token);
+    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    token.payload = userTaskResult;
-    await this.persistOnResume(token);
+      const executionPromise: Bluebird<any> = this._waitForUserTaskResult(token);
 
-    processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
+      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
-    await this.persistOnExit(token);
-    this._sendUserTaskFinishedNotification(token);
+        if (this.userTaskSubscription) {
+          this.userTaskSubscription.dispose();
+        }
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        processTokenFacade.addResultForFlowNode(this.userTask.id, interruptionToken.payload);
+        executionPromise.cancel();
+        handlerPromise.cancel();
+
+        return resolve();
+      };
+
+      const userTaskResult: any = await executionPromise;
+      token.payload = userTaskResult;
+      await this.persistOnResume(token);
+
+      processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
+
+      await this.persistOnExit(token);
+      this._sendUserTaskFinishedNotification(token);
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
   }
 
   /**
@@ -100,19 +123,19 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
    */
   private async _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
 
-    return new Promise<any>(async(resolve: Function): Promise<void> => {
+    return new Bluebird<any>(async(resolve: Function): Promise<void> => {
 
       const finishUserTaskEvent: string = this._getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
 
-      const subscription: ISubscription =
+      this.userTaskSubscription =
         this._eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
 
           const userTaskResult: any = {
             form_fields: message.result || null,
           };
 
-          if (subscription) {
-            subscription.dispose();
+          if (this.userTaskSubscription) {
+            this.userTaskSubscription.dispose();
           }
 
           resolve(userTaskResult);
