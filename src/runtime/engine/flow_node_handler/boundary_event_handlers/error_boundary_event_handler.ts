@@ -25,8 +25,16 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     this._decoratedHandler = decoratedHandler;
   }
 
+  // Since ErrorBoundaryEvents can be part of a BoundaryEventChain, they must also implement this method,
+  // so they can tell their decorated handler to abort.
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
-    this._decoratedHandler.interrupt(token, terminate);
+
+    // TODO: This check can probably be removed as soon as CallActivities and SubprocessHandlers can be interrupted.
+    // But that will not happen until we are able to interrupt Subprocesses.
+    const handlerIsInterruptible: boolean = typeof (this._decoratedHandler as any).interrupt === 'function';
+    if (handlerIsInterruptible) {
+      this._decoratedHandler.interrupt(token, terminate);
+    }
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,

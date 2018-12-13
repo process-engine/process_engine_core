@@ -52,7 +52,13 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       this.timerSubscription.dispose();
     }
     this.handlerPromise.cancel();
-    this._decoratedHandler.interrupt(token, terminate);
+
+    // TODO: This check can probably be removed as soon as CallActivities and SubprocessHandlers can be interrupted.
+    // But that will not happen until we are able to interrupt Subprocesses.
+    const handlerIsInterruptible: boolean = typeof (this._decoratedHandler as any).interrupt === 'function';
+    if (handlerIsInterruptible) {
+      this._decoratedHandler.interrupt(token, terminate);
+    }
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,
