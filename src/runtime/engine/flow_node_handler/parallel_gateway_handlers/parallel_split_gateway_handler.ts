@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import * as clone from 'clone';
 import {Logger} from 'loggerhythm';
 
@@ -21,9 +20,9 @@ import {
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandler} from '../index';
 
-export class ParallelSplitGatewayHandler extends FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway> {
+export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;

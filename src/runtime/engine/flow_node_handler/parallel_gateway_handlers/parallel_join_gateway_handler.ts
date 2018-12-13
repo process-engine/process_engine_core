@@ -13,9 +13,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandler} from '../index';
 
-export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptable<Model.Gateways.ParallelGateway> {
+export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
