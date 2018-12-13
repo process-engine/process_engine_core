@@ -16,9 +16,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler, FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptable} from '../index';
 
-export class MessageBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
+export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptable<Model.Events.BoundaryEvent> {
 
   private _eventAggregator: IEventAggregator;
   private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;

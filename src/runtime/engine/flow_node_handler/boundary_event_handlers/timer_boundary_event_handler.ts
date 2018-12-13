@@ -17,9 +17,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {Logger} from 'loggerhythm';
-import {FlowNodeHandler, FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptable} from '../index';
 
-export class TimerBoundaryEventHandler extends FlowNodeHandler<Model.Events.BoundaryEvent> {
+export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptable<Model.Events.BoundaryEvent> {
 
   private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
   private _timerFacade: ITimerFacade;
