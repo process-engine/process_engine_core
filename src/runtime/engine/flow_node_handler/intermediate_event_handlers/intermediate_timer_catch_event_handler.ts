@@ -17,9 +17,9 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent> {
+export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _timerFacade: ITimerFacade;
   private timerSubscription: ISubscription;

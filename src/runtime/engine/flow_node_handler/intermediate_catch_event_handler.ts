@@ -14,11 +14,11 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent> {
+export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
-  private _childHandler: FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent>;
+  private _childHandler: FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -39,24 +39,24 @@ export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptable<
     return this._childHandler.interrupt(token, terminate);
   }
 
-  private _getChildEventHandler(): FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent> {
+  private _getChildEventHandler(): FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
     if (this.flowNode.messageEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [this.flowNode]);
+        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [this.flowNode]);
     }
 
     if (this.flowNode.signalEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [this.flowNode]);
+        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [this.flowNode]);
     }
 
     if (this.flowNode.timerEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [this.flowNode]);
+        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [this.flowNode]);
     }
 
     throw new InternalServerError(`The IntermediateCatchEventType used with FlowNode ${this.flowNode.id} is not supported!`);

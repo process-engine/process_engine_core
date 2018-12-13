@@ -13,11 +13,11 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class ServiceTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.ServiceTask> {
+export class ServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
-  private _childHandler: FlowNodeHandlerInterruptable<Model.Activities.ServiceTask>;
+  private _childHandler: FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -39,13 +39,13 @@ export class ServiceTaskHandler extends FlowNodeHandlerInterruptable<Model.Activ
     return this._childHandler.interrupt(token, terminate);
   }
 
-  private _getChildHandler(): FlowNodeHandlerInterruptable<Model.Activities.ServiceTask> {
+  private _getChildHandler(): FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
     if (this.flowNode.type === Model.Activities.ServiceTaskType.external) {
-      return this._container.resolve<FlowNodeHandlerInterruptable<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [this.flowNode]);
+      return this._container.resolve<FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [this.flowNode]);
     }
 
-    return this._container.resolve<FlowNodeHandlerInterruptable<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [this.flowNode]);
+    return this._container.resolve<FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [this.flowNode]);
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,

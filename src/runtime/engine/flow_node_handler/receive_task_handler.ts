@@ -16,9 +16,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class ReceiveTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.ReceiveTask> {
+export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ReceiveTask> {
 
   private _eventAggregator: IEventAggregator;
   private messageSubscription: ISubscription;

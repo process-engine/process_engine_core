@@ -16,9 +16,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.ServiceTask> {
+export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
 

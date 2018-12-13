@@ -16,12 +16,12 @@ import {
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptable<Model.Events.BoundaryEvent> {
+export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
+  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
 
   private signalReceived: boolean = false;
   private handlerHasFinished: boolean = false;
@@ -33,7 +33,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptable<Mod
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>,
+              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
               signalBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, signalBoundaryEventModel);
     this._eventAggregator = eventAggregator;

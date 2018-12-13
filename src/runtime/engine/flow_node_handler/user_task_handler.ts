@@ -19,9 +19,9 @@ import {
   UserTaskReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class UserTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.UserTask> {
+export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.UserTask> {
 
   private _eventAggregator: IEventAggregator;
 

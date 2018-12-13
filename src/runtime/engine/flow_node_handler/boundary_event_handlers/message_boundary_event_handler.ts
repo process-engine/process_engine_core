@@ -16,12 +16,12 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptable<Model.Events.BoundaryEvent> {
+export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
+  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
 
   private messageReceived: boolean = false;
   private handlerHasFinished: boolean = false;
@@ -33,7 +33,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptable<Mo
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>,
+              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
               messageBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, messageBoundaryEventModel);
     this._eventAggregator = eventAggregator;

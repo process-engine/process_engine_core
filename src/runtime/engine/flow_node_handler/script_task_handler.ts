@@ -14,9 +14,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class ScriptTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.ScriptTask> {
+export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ScriptTask> {
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,

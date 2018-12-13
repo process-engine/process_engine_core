@@ -17,9 +17,9 @@ import {
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterruptable<Model.Events.IntermediateCatchEvent> {
+export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _eventAggregator: IEventAggregator;
   private subscription: ISubscription;

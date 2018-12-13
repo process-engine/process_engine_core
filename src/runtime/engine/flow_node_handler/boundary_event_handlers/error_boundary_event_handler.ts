@@ -11,15 +11,15 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
-export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptable<Model.Events.BoundaryEvent> {
+import {FlowNodeHandlerInterruptible} from '../index';
+export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
 
-  private _decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>;
+  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandlerInterruptable<Model.Base.FlowNode>,
+              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
               errorBoundaryEventModel: Model.Events.BoundaryEvent) {
     super(flowNodeInstanceService, loggingApiService, metricsService, errorBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;

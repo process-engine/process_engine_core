@@ -16,9 +16,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptable} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Model.Activities.ServiceTask> {
+export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
   private _eventAggregator: IEventAggregator;
   private _externalTaskRepository: IExternalTaskRepository;
