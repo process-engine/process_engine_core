@@ -100,7 +100,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptable<Model.Activiti
       await this.persistOnExit(token);
       this._sendUserTaskFinishedNotification(token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
       return resolve(nextFlowNodeInfo);
     });

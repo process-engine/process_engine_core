@@ -97,7 +97,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
         this.timerSubscription.dispose();
       }
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
       return resolve(nextFlowNodeInfo);
     });

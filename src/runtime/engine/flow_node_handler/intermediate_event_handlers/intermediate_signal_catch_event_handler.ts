@@ -99,7 +99,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
       processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
       return resolve(nextFlowNodeInfo);
     });

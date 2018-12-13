@@ -101,7 +101,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptable<Model.Activi
 
       this._sendManualTaskFinishedNotification(token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
       return resolve(nextFlowNodeInfo);
     });

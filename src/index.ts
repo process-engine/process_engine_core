@@ -6,8 +6,8 @@ Bluebird.config({
   cancellation: true,
 });
 
-// This ensures that using Bluebird Promises as a return value for async
-// functions will not cause linter errors.
+// This allows us to use Bluebird Promises as return values for async functions.
+// These usually only take "Promise<T>".
 // Only needs to be imported once. After that, using Bluebird types is safe.
 import * as BluebirdGlobal from 'bluebird-global';
 

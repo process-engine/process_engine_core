@@ -80,7 +80,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptable<Model.Activiti
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       };

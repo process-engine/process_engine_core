@@ -81,7 +81,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
         onSuspendToken.payload = result;
         await this.persistOnExit(onSuspendToken);
 
-        const nextFlowNode: NextFlowNodeInfo = await this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+        const nextFlowNode: NextFlowNodeInfo = this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
 
         return resolve(nextFlowNode);
       }
@@ -103,7 +103,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, onSuspendToken.payload);
         await this.persistOnExit(onSuspendToken);
 
-        const nextFlowNode: NextFlowNodeInfo = await this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+        const nextFlowNode: NextFlowNodeInfo = this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
         resolve(nextFlowNode);
       };
 
@@ -171,7 +171,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptable<Mod
 
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
       return resolve(nextFlowNodeInfo);
     });
