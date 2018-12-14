@@ -6,10 +6,8 @@ Bluebird.config({
   cancellation: true,
 });
 
-// This allows us to use Bluebird Promises as return values for async functions.
-// These usually only take "Promise<T>".
-// Only needs to be imported once. After that, using Bluebird types is safe.
-import * as BluebirdGlobal from 'bluebird-global';
+// This will make Bluebird the default Promise implementation throughout the core package.
+global.Promise = Bluebird;
 
 export * from './iam_service_mock';
 export * from './model';
