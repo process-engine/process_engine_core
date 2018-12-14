@@ -21,9 +21,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {ProcessTokenFacade} from '../process_token_facade';
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
+export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activities.SubProcess> {
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
@@ -44,6 +44,11 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
   private get subProcess(): Model.Activities.SubProcess {
     return super.flowNode;
+  }
+
+  // TODO: We can't interrupt a Subprocess yet, so this will remain inactive.
+  public interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+    return Promise.resolve();
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,
@@ -141,7 +146,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     const subProcessInstanceId: string = uuid.v4();
 
-    const currentResults: any = await processTokenFacade.getAllResults();
+    const currentResults: any = processTokenFacade.getAllResults();
 
     const subProcessTokenFacade: IProcessTokenFacade =
       new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
@@ -213,7 +218,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
     const subProcessStartEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
     const subProcessStartEvent: Model.Events.StartEvent = subProcessStartEvents[0];
 
-    const currentResults: any = await processTokenFacade.getAllResults();
+    const currentResults: any = processTokenFacade.getAllResults();
 
     const subProcessInstanceId: string = flowNodeInstancesForSubprocess[0].processInstanceId;
 

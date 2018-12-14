@@ -1,6 +1,5 @@
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -17,10 +16,12 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> {
+export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.SendTask> {
+
   private _eventAggregator: IEventAggregator;
+  private responseSubscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -62,14 +63,23 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+
+      this.onInterruptedCallback = (): void => {
+        if (this.responseSubscription) {
+          this.responseSubscription.dispose();
+        }
+        handlerPromise.cancel();
+
+        return;
+      };
 
       const onResponseReceivedCallback: Function = async(): Promise<void> => {
 
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = await this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       };
@@ -77,6 +87,8 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
       this._waitForResponseFromReceiveTask(onResponseReceivedCallback);
       this._sendMessage(token);
     });
+
+    return handlerPromise;
   }
 
   /**
@@ -93,10 +105,10 @@ export class SendTaskHandler extends FlowNodeHandler<Model.Activities.SendTask> 
       .receiveTaskReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
-    const subscription: ISubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
+    this.responseSubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
 
-      if (subscription) {
-        subscription.dispose();
+      if (this.responseSubscription) {
+        this.responseSubscription.dispose();
       }
       callback();
     });
