@@ -23,9 +23,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
+export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Activities.CallActivity> {
 
   private _consumerApiService: IConsumerApi;
   private _correlationService: ICorrelationService;
@@ -47,6 +47,11 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
   private get callActivity(): Model.Activities.CallActivity {
     return super.flowNode;
+  }
+
+  // TODO: We can't interrupt a Subprocess yet, so this will remain inactive.
+  public interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+    return Promise.resolve();
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,
