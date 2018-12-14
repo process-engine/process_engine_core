@@ -7,6 +7,7 @@ Bluebird.config({
 });
 
 // This will make Bluebird the default Promise implementation throughout the core package.
+// That means, we can still use the "Promise<T>" syntax and don't have to fall back to "Bluebird<T>"
 global.Promise = Bluebird;
 
 export * from './iam_service_mock';
