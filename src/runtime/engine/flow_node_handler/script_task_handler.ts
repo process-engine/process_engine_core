@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -48,12 +47,12 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
                                   identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<any> = new Bluebird<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
       let result: any = {};
 
       try {
-        const executionPromise: Bluebird<any> = this._executeScriptTask(processTokenFacade, identity);
+        const executionPromise: Promise<any> = this._executeScriptTask(processTokenFacade, identity);
 
         this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
           processTokenFacade.addResultForFlowNode(this.scriptTask.id, interruptionToken.payload);
@@ -81,9 +80,9 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return handlerPromise;
   }
 
-  private _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Bluebird<any> {
+  private _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
 
-    return new Bluebird<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
+    return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
       const script: string = this.scriptTask.script;
 

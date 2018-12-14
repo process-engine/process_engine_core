@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -73,9 +72,9 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<any> = new Bluebird<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const signalSubscriptionPromise: Bluebird<SignalEventReachedMessage> = this._waitForSignal();
+      const signalSubscriptionPromise: Promise<SignalEventReachedMessage> = this._waitForSignal();
 
       this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
@@ -107,9 +106,9 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
     return handlerPromise;
   }
 
-  private _waitForSignal(): Bluebird<SignalEventReachedMessage> {
+  private _waitForSignal(): Promise<SignalEventReachedMessage> {
 
-    return new Bluebird<SignalEventReachedMessage>((resolve: Function): void => {
+    return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
         .replace(eventAggregatorSettings.routeParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);

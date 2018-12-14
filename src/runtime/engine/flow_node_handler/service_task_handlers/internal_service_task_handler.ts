@@ -1,5 +1,4 @@
 import {IContainer} from 'addict-ioc';
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
@@ -70,9 +69,9 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
       return nextFlowNodeInfo;
     }
 
-    const handlerPromise: Bluebird<any> = new Bluebird<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Bluebird<any> = this._executeInternalServiceTask(token, processTokenFacade, identity);
+      const executionPromise: Promise<any> = this._executeInternalServiceTask(token, processTokenFacade, identity);
 
       this.onInterruptedCallback = (): void => {
         executionPromise.cancel();
@@ -117,9 +116,9 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   private _executeInternalServiceTask(token: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       identity: IIdentity,
-                                     ): Bluebird<any> {
+                                     ): Promise<any> {
 
-    return new Bluebird<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
+    return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
       const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 

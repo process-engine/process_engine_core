@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -64,7 +63,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
         if (this.responseSubscription) {

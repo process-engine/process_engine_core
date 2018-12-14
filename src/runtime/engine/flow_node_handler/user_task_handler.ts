@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -77,9 +76,9 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Bluebird<any> = this._waitForUserTaskResult(token);
+      const executionPromise: Promise<any> = this._waitForUserTaskResult(token);
 
       this.onInterruptedCallback = (): void => {
         if (this.userTaskSubscription) {
@@ -118,9 +117,9 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    *              creating the EventSubscription.
    * @returns     The recevied UserTask result.
    */
-  private _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Bluebird<any> {
+  private _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
 
-    return new Bluebird<any>(async(resolve: Function): Promise<void> => {
+    return new Promise<any>(async(resolve: Function): Promise<void> => {
 
       const finishUserTaskEvent: string = this._getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
 

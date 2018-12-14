@@ -1,5 +1,3 @@
-import * as Bluebird from 'bluebird';
-
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -27,7 +25,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
   private timerHasElapsed: boolean = false;
   private hasHandlerFinished: boolean = false;
 
-  private handlerPromise: Bluebird<NextFlowNodeInfo>;
+  private handlerPromise: Promise<NextFlowNodeInfo>;
   private timerSubscription: ISubscription;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
@@ -66,7 +64,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    this.handlerPromise = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       this._executeTimer(resolve, token, processTokenFacade, processModelFacade);
 
@@ -97,7 +95,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    this.handlerPromise = new Bluebird<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    this.handlerPromise = new Promise<NextFlowNodeInfo> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
       this._executeTimer(resolve, onEnterToken, processTokenFacade, processModelFacade);

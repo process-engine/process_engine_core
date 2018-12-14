@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -62,9 +61,9 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Bluebird<MessageEventReachedMessage> = this._waitForMessage();
+      const executionPromise: Promise<MessageEventReachedMessage> = this._waitForMessage();
 
       this.onInterruptedCallback = (): void => {
         if (this.messageSubscription) {
@@ -100,7 +99,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
    */
   private async _waitForMessage(): Promise<MessageEventReachedMessage> {
 
-    return new Bluebird<MessageEventReachedMessage>((resolve: Function): void => {
+    return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
       const messageEventName: string = eventAggregatorSettings
         .routePaths

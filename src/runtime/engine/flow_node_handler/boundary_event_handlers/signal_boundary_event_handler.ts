@@ -1,5 +1,3 @@
-import * as Bluebird from 'bluebird';
-
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -26,7 +24,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   private signalReceived: boolean = false;
   private handlerHasFinished: boolean = false;
 
-  private handlerPromise: Bluebird<NextFlowNodeInfo>;
+  private handlerPromise: Promise<NextFlowNodeInfo>;
   private subscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
@@ -65,7 +63,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    this.handlerPromise = new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
 
@@ -96,7 +94,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
 
-    this.handlerPromise = new Bluebird<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 

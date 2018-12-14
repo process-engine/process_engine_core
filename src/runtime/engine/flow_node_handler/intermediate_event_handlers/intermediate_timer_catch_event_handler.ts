@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -73,9 +72,9 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const timerPromise: Bluebird<void> = this._executeTimer(token, processTokenFacade, processModelFacade);
+      const timerPromise: Promise<void> = this._executeTimer(token, processTokenFacade, processModelFacade);
 
       this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
@@ -107,9 +106,9 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
 
   private _executeTimer(token: Runtime.Types.ProcessToken,
                         processTokenFacade: IProcessTokenFacade,
-                        processModelFacade: IProcessModelFacade): Bluebird<void> {
+                        processModelFacade: IProcessModelFacade): Promise<void> {
 
-    return new Bluebird<void>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
       const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);

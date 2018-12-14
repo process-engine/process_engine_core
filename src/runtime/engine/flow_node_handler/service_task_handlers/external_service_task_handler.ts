@@ -1,4 +1,3 @@
-import * as Bluebird from 'bluebird';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
@@ -64,11 +63,11 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     identity: IIdentity,
   ): Promise<NextFlowNodeInfo> {
 
-    const resumerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const resumerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
-      let externalTaskExecutorPromise: Bluebird<any>;
+      let externalTaskExecutorPromise: Promise<any>;
 
       const noMatchingExteralTaskExists: boolean = !externalTask;
       if (noMatchingExteralTaskExists) {
@@ -146,11 +145,11 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     identity: IIdentity,
   ): Promise<NextFlowNodeInfo> {
 
-    const handlerPromise: Bluebird<NextFlowNodeInfo> = new Bluebird<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.logger.verbose('Executing external ServiceTask');
       await this.persistOnSuspend(token);
-      const externalTaskExecutorPromise: Bluebird<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
+      const externalTaskExecutorPromise: Promise<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
 
       this.onInterruptedCallback = (): void => {
 
@@ -197,7 +196,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     identity: IIdentity,
   ): Promise<any> {
 
-    return new Bluebird<any>(async(resolve: Function, reject: Function): Promise<any> => {
+    return new Promise<any>(async(resolve: Function, reject: Function): Promise<any> => {
 
       const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
 
