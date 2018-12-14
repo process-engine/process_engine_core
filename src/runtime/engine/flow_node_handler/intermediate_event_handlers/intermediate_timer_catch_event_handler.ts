@@ -16,11 +16,12 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
+export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _timerFacade: ITimerFacade;
+  private timerSubscription: ISubscription;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
@@ -71,36 +72,67 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
-    return new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      let timerSubscription: ISubscription;
+      const timerPromise: Promise<void> = this._executeTimer(token, processTokenFacade, processModelFacade);
+
+      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
+
+        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, interruptionToken);
+
+        if (this.timerSubscription) {
+          this.timerSubscription.dispose();
+        }
+
+        timerPromise.cancel();
+        handlerPromise.cancel();
+
+        return;
+      };
+
+      await timerPromise;
+
+      if (this.timerSubscription) {
+        this.timerSubscription.dispose();
+      }
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
+  }
+
+  private _executeTimer(token: Runtime.Types.ProcessToken,
+                        processTokenFacade: IProcessTokenFacade,
+                        processModelFacade: IProcessModelFacade): Promise<void> {
+
+    return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
       const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
-      const timerValue: string = await this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
+      const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
+      const timerElapsed: any = (): void => {
 
-      const timerElapsed: any = async(): Promise<void> => {
-
-        await this.persistOnResume(token);
-
-        await processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
-
-        if (timerSubscription && timerType !== TimerDefinitionType.cycle) {
-          timerSubscription.dispose();
+        if (this.timerSubscription && timerType !== TimerDefinitionType.cycle) {
+          this.timerSubscription.dispose();
         }
 
-        await this.persistOnExit(token);
+        // if the timer elapsed before the decorated handler finished execution,
+        // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
+        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
 
-        resolve(new NextFlowNodeInfo(nextFlowNodeInfo, token, processTokenFacade));
+        const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
+        resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
       };
 
-      timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
+      this.timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
     });
   }
 
-  private async _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): Promise<string> {
+  private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
     const tokenVariableName: string = 'token';
     const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
 
@@ -108,7 +140,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandler<Model.Ev
       return timerExpression;
     }
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+    const tokenData: any = processTokenFacade.getOldTokenFormat();
 
     try {
       const functionString: string = `return ${timerExpression}`;

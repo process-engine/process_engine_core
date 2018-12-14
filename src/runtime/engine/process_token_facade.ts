@@ -30,8 +30,8 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return this._identity;
   }
 
-  public async getAllResults(): Promise<Array<IProcessTokenResult>> {
-    return Promise.resolve(this.processTokenResults);
+  public getAllResults(): Array<IProcessTokenResult> {
+    return this.processTokenResults;
   }
 
   public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
@@ -46,7 +46,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return token;
   }
 
-  public async addResultForFlowNode(flowNodeId: string, result: any): Promise<void> {
+  public addResultForFlowNode(flowNodeId: string, result: any): void {
     const processTokenResult: IProcessTokenResult = {
       flowNodeId: flowNodeId,
       result: result,
@@ -54,28 +54,27 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     this.processTokenResults.push(processTokenResult);
   }
 
-  public async importResults(processTokenResults: Array<IProcessTokenResult>): Promise<void> {
+  public importResults(processTokenResults: Array<IProcessTokenResult>): void {
     Array.prototype.push.apply(this.processTokenResults, processTokenResults);
   }
 
-  public async getProcessTokenFacadeForParallelBranch(): Promise<IProcessTokenFacade> {
+  public getProcessTokenFacadeForParallelBranch(): IProcessTokenFacade {
 
     const processTokenFacade: any = new ProcessTokenFacade(this.processInstanceId, this.processModelId, this.correlationId, this.identity);
-    const allResults: Array<IProcessTokenResult> = await this.getAllResults();
-    await processTokenFacade.importResults(allResults);
+    const allResults: Array<IProcessTokenResult> = this.getAllResults();
+    processTokenFacade.importResults(allResults);
 
     return processTokenFacade;
   }
 
-  public async mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): Promise<void> {
-    const allResultsToMerge: Array<IProcessTokenResult> = await processTokenToMerge.getAllResults();
-
+  public mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): void {
+    const allResultsToMerge: Array<IProcessTokenResult> = processTokenToMerge.getAllResults();
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
 
-  public async getOldTokenFormat(): Promise<any> {
+  public getOldTokenFormat(): any {
 
-    const tokenResults: Array<IProcessTokenResult> = await this.getAllResults();
+    const tokenResults: Array<IProcessTokenResult> = this.getAllResults();
 
     if (tokenResults.length === 0) {
       return {
@@ -102,32 +101,32 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return tokenData;
   }
 
-  public async evaluateMapperForSequenceFlow(sequenceFlow: Model.Types.SequenceFlow): Promise<void> {
+  public evaluateMapperForSequenceFlow(sequenceFlow: Model.Types.SequenceFlow): void {
 
-    const tokenData: any = await this.getOldTokenFormat();
+    const tokenData: any = this.getOldTokenFormat();
 
     const mapper: string = this._getMapper(sequenceFlow);
 
     if (mapper !== undefined) {
       const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
 
-      const allResults: Array<IProcessTokenResult> = await this.getAllResults();
+      const allResults: Array<IProcessTokenResult> = this.getAllResults();
       const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
 
       currentResult.result = newCurrent;
     }
   }
 
-  public async evaluateMapperForFlowNode(flowNode: Model.Base.FlowNode): Promise<void> {
+  public evaluateMapperForFlowNode(flowNode: Model.Base.FlowNode): void {
 
-    const tokenData: any = await this.getOldTokenFormat();
+    const tokenData: any = this.getOldTokenFormat();
 
     const mapper: string = this._getMapper(flowNode);
 
     if (mapper !== undefined) {
       const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
 
-      const allResults: Array<IProcessTokenResult> = await this.getAllResults();
+      const allResults: Array<IProcessTokenResult> = this.getAllResults();
       const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
 
       currentResult.result = newCurrent;

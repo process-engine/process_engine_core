@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -15,9 +15,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
+export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
   private _container: IContainer;
 
@@ -55,24 +55,51 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
                                   identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
-    let result: any;
-
     const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
-
     if (serviceTaskHasNoInvocation) {
       this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
-      result = {};
-    } else {
-      this.logger.verbose('Executing internal ServiceTask');
-      result = await this._executeInternalServiceTask(token, processTokenFacade, identity);
+
+      processTokenFacade.addResultForFlowNode(this.serviceTask.id, {});
+      token.payload = {};
+
+      await this.persistOnExit(token);
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return nextFlowNodeInfo;
     }
 
-    processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
-    token.payload = result;
+    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    await this.persistOnExit(token);
+      const executionPromise: Promise<any> = this._executeInternalServiceTask(token, processTokenFacade, identity);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      this.onInterruptedCallback = (): void => {
+        executionPromise.cancel();
+        handlerPromise.cancel();
+
+        return resolve();
+      };
+
+      try {
+        this.logger.verbose('Executing internal ServiceTask');
+        const result: any = await executionPromise;
+
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        token.payload = result;
+
+        await this.persistOnExit(token);
+
+        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        this.logger.error(error);
+
+        return reject(error);
+      }
+    });
+
+    return handlerPromise;
   }
 
   /**
@@ -86,39 +113,47 @@ export class InternalServiceTaskHandler extends FlowNodeHandler<Model.Activities
    * @param   identity           The identity that started the ProcessInstance.
    * @returns                    The ServiceTask's result.
    */
-  private async _executeInternalServiceTask(token: Runtime.Types.ProcessToken,
-                                            processTokenFacade: IProcessTokenFacade,
-                                            identity: IIdentity,
-                                           ): Promise<any> {
+  private _executeInternalServiceTask(token: Runtime.Types.ProcessToken,
+                                      processTokenFacade: IProcessTokenFacade,
+                                      identity: IIdentity,
+                                     ): Promise<any> {
 
-    const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.MethodInvocation;
+    return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
-    if (!isMethodInvocation) {
-      const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
-      this.logger.error(notSupportedErrorMessage);
+      const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.MethodInvocation;
 
-      throw new UnprocessableEntityError(notSupportedErrorMessage);
-    }
+      if (!isMethodInvocation) {
+        const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
+        this.logger.error(notSupportedErrorMessage);
 
-    const tokenData: any = await processTokenFacade.getOldTokenFormat();
+        throw new UnprocessableEntityError(notSupportedErrorMessage);
+      }
 
-    const invocation: Model.Activities.MethodInvocation = this.serviceTask.invocation as Model.Activities.MethodInvocation;
+      const tokenData: any = processTokenFacade.getOldTokenFormat();
 
-    const serviceInstance: any = await this._container.resolveAsync(invocation.module);
+      const invocation: Model.Activities.MethodInvocation = this.serviceTask.invocation as Model.Activities.MethodInvocation;
 
-    const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
-    const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
+      const serviceInstance: any = await this._container.resolveAsync(invocation.module);
 
-    const serviceMethod: Function = serviceInstance[invocation.method];
+      const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
+      const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
 
-    if (!serviceMethod) {
-      const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
-      await this.persistOnError(token, error);
-      throw error;
-    }
+      const serviceMethod: Function = serviceInstance[invocation.method];
 
-    const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
+      if (!serviceMethod) {
+        const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
+        await this.persistOnError(token, error);
 
-    return result;
+        return reject(error);
+      }
+
+      try {
+        const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
+
+        return resolve(result);
+      } catch (error) {
+        return reject(error);
+      }
+    });
   }
 }

@@ -1,6 +1,5 @@
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -19,11 +18,13 @@ import {
   UserTaskReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> {
+export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.UserTask> {
 
   private _eventAggregator: IEventAggregator;
+
+  private userTaskSubscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -75,17 +76,35 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    const userTaskResult: any = await this._waitForUserTaskResult(token);
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    token.payload = userTaskResult;
-    await this.persistOnResume(token);
+      const executionPromise: Promise<any> = this._waitForUserTaskResult(token);
 
-    processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
+      this.onInterruptedCallback = (): void => {
+        if (this.userTaskSubscription) {
+          this.userTaskSubscription.dispose();
+        }
+        executionPromise.cancel();
+        handlerPromise.cancel();
 
-    await this.persistOnExit(token);
-    this._sendUserTaskFinishedNotification(token);
+        return;
+      };
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const userTaskResult: any = await executionPromise;
+      token.payload = userTaskResult;
+      await this.persistOnResume(token);
+
+      processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
+
+      await this.persistOnExit(token);
+      this._sendUserTaskFinishedNotification(token);
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
   }
 
   /**
@@ -98,21 +117,21 @@ export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> 
    *              creating the EventSubscription.
    * @returns     The recevied UserTask result.
    */
-  private async _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
 
     return new Promise<any>(async(resolve: Function): Promise<void> => {
 
       const finishUserTaskEvent: string = this._getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
 
-      const subscription: ISubscription =
+      this.userTaskSubscription =
         this._eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
 
           const userTaskResult: any = {
             form_fields: message.result || null,
           };
 
-          if (subscription) {
-            subscription.dispose();
+          if (this.userTaskSubscription) {
+            this.userTaskSubscription.dispose();
           }
 
           resolve(userTaskResult);

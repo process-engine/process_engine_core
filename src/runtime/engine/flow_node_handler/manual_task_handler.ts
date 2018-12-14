@@ -1,6 +1,5 @@
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -19,11 +18,13 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
-export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTask> {
+export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ManualTask> {
 
   private _eventAggregator: IEventAggregator;
+
+  private manualTaskSubscription: ISubscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -75,17 +76,36 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
                                   processModelFacade: IProcessModelFacade,
                                  ): Promise<NextFlowNodeInfo> {
 
-    const manualTaskResult: any = await this._waitForManualTaskResult(token);
-    token.payload = manualTaskResult;
+    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    await this.persistOnResume(token);
+      const executionPromise: Promise<any> = this._waitForManualTaskResult(token);
 
-    processTokenFacade.addResultForFlowNode(this.manualTask.id, manualTaskResult);
-    await this.persistOnExit(token);
+      this.onInterruptedCallback = (): void => {
+        if (this.manualTaskSubscription) {
+          this.manualTaskSubscription.dispose();
+        }
+        executionPromise.cancel();
+        handlerPromise.cancel();
 
-    this._sendManualTaskFinishedNotification(token);
+        return;
+      };
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const manualTaskResult: any = await executionPromise;
+      token.payload = manualTaskResult;
+
+      await this.persistOnResume(token);
+
+      processTokenFacade.addResultForFlowNode(this.manualTask.id, manualTaskResult);
+      await this.persistOnExit(token);
+
+      this._sendManualTaskFinishedNotification(token);
+
+      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
   }
 
   /**
@@ -97,20 +117,20 @@ export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTa
    *              creating the EventSubscription.
    * @returns     The recevied ManualTask result.
    */
-  private async _waitForManualTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForManualTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
 
     return new Promise<any>(async(resolve: Function): Promise<void> => {
 
       const finishManualTaskEvent: string = this._getFinishManualTaskEventName(token.correlationId, token.processInstanceId);
 
-      const subscription: ISubscription =
-        this._eventAggregator.subscribeOnce(finishManualTaskEvent, async(message: FinishManualTaskMessage): Promise<void> => {
+      this.manualTaskSubscription =
+        this._eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
 
           // An empty object is used, because ManualTasks do not yield results.
           const manualTaskResult: any = {};
 
-          if (subscription) {
-            subscription.dispose();
+          if (this.manualTaskSubscription) {
+            this.manualTaskSubscription.dispose();
           }
 
           resolve(manualTaskResult);
