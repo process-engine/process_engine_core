@@ -57,6 +57,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
+    await this.persistOnEnter(token);
 
     this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
@@ -68,10 +69,13 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       this.handlerHasFinished = true;
 
       if (this.signalReceived) {
+        await this.persistOnExit(token);
+
         return;
       }
 
       this._eventAggregator.unsubscribe(this.subscription);
+      await this.persistOnExit(token);
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
@@ -91,6 +95,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
+      await this.persistOnEnter(onEnterToken);
+
       this._subscribeToSignalEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
 
       const nextFlowNodeInfo: NextFlowNodeInfo
@@ -99,10 +105,13 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       this.handlerHasFinished = true;
 
       if (this.signalReceived) {
+        await this.persistOnExit(onEnterToken);
+
         return;
       }
 
       this._eventAggregator.unsubscribe(this.subscription);
+      await this.persistOnExit(onEnterToken);
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription

@@ -58,6 +58,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    await this.persistOnEnter(token);
+
     this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToMessageEvent(resolve, token, processTokenFacade, processModelFacade);
@@ -68,10 +70,13 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       this.handlerHasFinished = true;
 
       if (this.messageReceived) {
+        await this.persistOnExit(token);
+
         return;
       }
 
       this._eventAggregator.unsubscribe(this.subscription);
+      await this.persistOnExit(token);
 
       // if the decorated handler finished execution before the message was received,
       // continue the regular execution with the next FlowNode and dispose the message subscription
@@ -91,6 +96,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
 
+      await this.persistOnEnter(onEnterToken);
+
       this._subscribeToMessageEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
 
       const nextFlowNodeInfo: NextFlowNodeInfo
@@ -99,10 +106,13 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       this.handlerHasFinished = true;
 
       if (this.messageReceived) {
+        await this.persistOnExit(onEnterToken);
+
         return;
       }
 
       this._eventAggregator.unsubscribe(this.subscription);
+      await this.persistOnExit(onEnterToken);
 
       // if the decorated handler finished execution before the message was received,
       // continue the regular execution with the next FlowNode and dispose the message subscription
