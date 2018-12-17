@@ -2,7 +2,7 @@ import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
@@ -206,7 +206,7 @@ export class ResumeProcessService implements IResumeProcessService {
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
 
-    const processTerminationSubscription: ISubscription = this._eventAggregator
+    this._eventAggregator
       .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
         this.processTerminatedMessages[processInstanceConfig.processInstanceId] = message;
       });
@@ -220,11 +220,6 @@ export class ResumeProcessService implements IResumeProcessService {
                                flowNodeInstances);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
-
-    const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
-    if (processTerminationSubscriptionIsActive) {
-      processTerminationSubscription.dispose();
-    }
 
     return resultToken.result;
   }

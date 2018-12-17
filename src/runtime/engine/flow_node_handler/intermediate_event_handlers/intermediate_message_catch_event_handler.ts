@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -21,7 +21,7 @@ import {FlowNodeHandlerInterruptible} from '../index';
 export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private subscription: ISubscription;
+  private subscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -81,7 +81,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
         processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, interruptionToken);
 
         if (this.subscription) {
-          this.subscription.dispose();
+          this._eventAggregator.unsubscribe(this.subscription);
         }
 
         messageSubscriptionPromise.cancel();
@@ -113,19 +113,16 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
       const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
         .replace(eventAggregatorSettings.routeParams.messageReference, this.messageCatchEvent.messageEventDefinition.name);
 
-      this.subscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+      this.subscription =
+        this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+          this.logger.verbose(
+            `MessageCatchEvent instance ${this.flowNodeInstanceId} message ${messageEventName} received:`,
+            message,
+            'Resuming execution.',
+          );
 
-        if (this.subscription) {
-          this.subscription.dispose();
-        }
-        this.logger.verbose(
-          `MessageCatchEvent instance ${this.flowNodeInstanceId} message ${messageEventName} received:`,
-          message,
-          'Resuming execution.',
-        );
-
-        return resolve(message);
-      });
+          return resolve(message);
+        });
       this.logger.verbose(`MessageCatchEvent instance ${this.flowNodeInstanceId} waiting for message ${messageEventName}.`);
     });
   }

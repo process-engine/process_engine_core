@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ExternalTask, ExternalTaskState, IExternalTaskRepository} from '@process-engine/external_task_api_contracts';
@@ -22,7 +22,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   private _eventAggregator: IEventAggregator;
   private _externalTaskRepository: IExternalTaskRepository;
 
-  private externalTaskSubscription: ISubscription;
+  private externalTaskSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               externalTaskRepository: IExternalTaskRepository,
@@ -109,7 +109,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
       this.onInterruptedCallback = (): void => {
 
         if (this.externalTaskSubscription) {
-          this.externalTaskSubscription.dispose();
+          this._eventAggregator.unsubscribe(this.externalTaskSubscription);
         }
 
         if (externalTaskExecutorPromise) {
@@ -152,11 +152,6 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
       const externalTaskExecutorPromise: Promise<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
 
       this.onInterruptedCallback = (): void => {
-
-        if (this.externalTaskSubscription) {
-          this.externalTaskSubscription.dispose();
-        }
-
         externalTaskExecutorPromise.cancel();
         handlerPromise.cancel();
 
@@ -236,16 +231,10 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
     const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
 
-    const messageReceivedCallback: Function = async(message: any): Promise<void> => {
-
-      if (this.externalTaskSubscription) {
-        this.externalTaskSubscription.dispose();
-      }
-
-      resolveFunc(message.error, message.result);
-    };
-
-    this.externalTaskSubscription = this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, messageReceivedCallback);
+    this.externalTaskSubscription =
+      this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, async(message: any): Promise<void> => {
+        resolveFunc(message.error, message.result);
+      });
   }
 
   /**

@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -21,7 +21,7 @@ import {FlowNodeHandlerInterruptible} from '../index';
 export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _timerFacade: ITimerFacade;
-  private timerSubscription: ISubscription;
+  private timerSubscription: Subscription;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
@@ -81,7 +81,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
         processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, interruptionToken);
 
         if (this.timerSubscription) {
-          this.timerSubscription.dispose();
+          this._timerFacade.cancelTimerSubscription(this.timerSubscription);
         }
 
         timerPromise.cancel();
@@ -91,10 +91,6 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       };
 
       await timerPromise;
-
-      if (this.timerSubscription) {
-        this.timerSubscription.dispose();
-      }
 
       const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
@@ -117,7 +113,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       const timerElapsed: any = (): void => {
 
         if (this.timerSubscription && timerType !== TimerDefinitionType.cycle) {
-          this.timerSubscription.dispose();
+          this._timerFacade.cancelTimerSubscription(this.timerSubscription);
         }
 
         // if the timer elapsed before the decorated handler finished execution,

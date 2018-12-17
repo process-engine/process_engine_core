@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -24,7 +24,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
   private _eventAggregator: IEventAggregator;
 
-  private userTaskSubscription: ISubscription;
+  private userTaskSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -82,7 +82,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       this.onInterruptedCallback = (): void => {
         if (this.userTaskSubscription) {
-          this.userTaskSubscription.dispose();
+          this._eventAggregator.unsubscribe(this.userTaskSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -125,14 +125,9 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       this.userTaskSubscription =
         this._eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
-
           const userTaskResult: any = {
             form_fields: message.result || null,
           };
-
-          if (this.userTaskSubscription) {
-            this.userTaskSubscription.dispose();
-          }
 
           resolve(userTaskResult);
         });
@@ -206,6 +201,5 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return userTaskFinishedEvent;
-
   }
 }

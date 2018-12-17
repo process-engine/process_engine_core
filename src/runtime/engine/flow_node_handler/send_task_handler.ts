@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -21,7 +21,7 @@ import {FlowNodeHandlerInterruptible} from './index';
 export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.SendTask> {
 
   private _eventAggregator: IEventAggregator;
-  private responseSubscription: ISubscription;
+  private responseSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -67,7 +67,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       this.onInterruptedCallback = (): void => {
         if (this.responseSubscription) {
-          this.responseSubscription.dispose();
+          this._eventAggregator.unsubscribe(this.responseSubscription);
         }
         handlerPromise.cancel();
 
@@ -106,10 +106,6 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
 
     this.responseSubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
-
-      if (this.responseSubscription) {
-        this.responseSubscription.dispose();
-      }
       callback();
     });
   }

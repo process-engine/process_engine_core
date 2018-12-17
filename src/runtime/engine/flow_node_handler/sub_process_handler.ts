@@ -2,7 +2,7 @@ import {Logger} from 'loggerhythm';
 import * as uuid from 'uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -28,6 +28,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
+
+  private terminateEndEventSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -95,6 +97,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(onSuspendToken);
 
+    this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
+
     return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
@@ -113,6 +117,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(token);
 
+    this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
+
     return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
   }
 
@@ -121,15 +127,9 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
-    const terminateEndEventSubscription: ISubscription =
+    this.terminateEndEventSubscription =
       this._eventAggregator.subscribeOnce(processTerminatedEvent, (message: TerminateEndEventReachedMessage): void => {
-
         this._processTerminatedMessage = message;
-
-        const terminationSubscriptionIsActive: boolean = terminateEndEventSubscription !== undefined;
-        if (terminationSubscriptionIsActive) {
-          terminateEndEventSubscription.dispose();
-        }
       });
   }
 

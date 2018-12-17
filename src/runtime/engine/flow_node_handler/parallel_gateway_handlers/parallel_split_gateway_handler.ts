@@ -2,7 +2,7 @@ import * as clone from 'clone';
 import {Logger} from 'loggerhythm';
 
 import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -27,6 +27,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
+
+  private terminateEndEventSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -102,6 +104,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(token, processTokenFacade, nextFlowNodeInfos);
     this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
+    this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
+
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
 
@@ -134,6 +138,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     const mergedToken: Runtime.Types.ProcessToken = await this._mergeTokenHistories(token, processTokenFacade, nextFlowNodeInfos);
     this.logger.verbose(`Finished ${nextFlowNodeInfos.length} parallel branches with final result:`, mergedToken.payload);
 
+    this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
+
     return new NextFlowNodeInfo(joinGateway, mergedToken, processTokenFacade);
   }
 
@@ -142,15 +148,9 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
 
-    const terminateEndEventSubscription: ISubscription =
+    this.terminateEndEventSubscription =
       this._eventAggregator.subscribeOnce(processTerminatedEvent, (message: TerminateEndEventReachedMessage): void => {
-
         this._processTerminatedMessage = message;
-
-        const terminationSubscriptionIsActive: boolean = terminateEndEventSubscription !== undefined;
-        if (terminationSubscriptionIsActive) {
-          terminateEndEventSubscription.dispose();
-        }
       });
   }
 

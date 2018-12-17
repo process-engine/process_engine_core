@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -186,20 +186,14 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
       .replace(eventAggregatorSettings.routeParams.messageReference, messageDefinitionName);
 
-    const subscription: ISubscription =
-      this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
+    this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
+      const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
+      const tokenToReturn: any = messageHasPayload
+        ? messageEventPayload.currentToken
+        : currentToken.payload;
 
-        if (subscription) {
-          subscription.dispose();
-        }
-
-        const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
-        const tokenToReturn: any = messageHasPayload
-          ? messageEventPayload.currentToken
-          : currentToken.payload;
-
-        resolveFunc(tokenToReturn);
-      });
+      resolveFunc(tokenToReturn);
+    });
   }
 
   /**
@@ -216,20 +210,14 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
       .replace(eventAggregatorSettings.routeParams.signalReference, signalDefinitionName);
 
-    const subscription: ISubscription =
-      this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
+    this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
+      const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
+      const tokenToReturn: any = signalHasPayload
+        ? signalEventPayload.currentToken
+        : currentToken.payload;
 
-        if (subscription) {
-          subscription.dispose();
-        }
-
-        const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
-        const tokenToReturn: any = signalHasPayload
-          ? signalEventPayload.currentToken
-          : currentToken.payload;
-
-        resolveFunc(tokenToReturn);
-      });
+      resolveFunc(tokenToReturn);
+    });
   }
 
   /**
@@ -243,7 +231,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     const timerDefinition: Model.EventDefinitions.TimerEventDefinition = this.startEvent.timerEventDefinition;
 
-    let timerSubscription: ISubscription;
+    let timerSubscription: Subscription;
 
     const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(timerDefinition);
     const timerValue: string = this._timerFacade.parseTimerDefinitionValue(timerDefinition);
@@ -251,9 +239,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const timerElapsed: any = (): void => {
 
       const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
-
       if (cancelSubscription) {
-        timerSubscription.dispose();
+        this._eventAggregator.unsubscribe(timerSubscription);
       }
 
       resolveFunc(currentToken.payload);
