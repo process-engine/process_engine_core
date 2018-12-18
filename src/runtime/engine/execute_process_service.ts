@@ -2,7 +2,7 @@ import * as moment from 'moment';
 import * as uuid from 'uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
@@ -85,7 +85,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
       this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
     try {
-
       this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
       const result: IProcessTokenResult = await this._executeProcess(identity, processInstanceConfig);
       this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
@@ -136,14 +135,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
         .replace(eventAggregatorSettings.routeParams.correlationId, processInstanceConfig.correlationId)
         .replace(eventAggregatorSettings.routeParams.processModelId, processModel.id);
 
-      const messageReceivedCallback: Function = async(message: EndEventReachedMessage): Promise<void> => {
+      let eventSubscription: Subscription;
+
+      const messageReceivedCallback: EventReceivedCallback = async(message: EndEventReachedMessage): Promise<void> => {
         const isAwaitedEndEvent: boolean = !endEventId || message.flowNodeId === endEventId;
         if (isAwaitedEndEvent) {
+          this._eventAggregator.unsubscribe(eventSubscription);
           resolve(message);
         }
       };
 
-      const subscription: ISubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
+      eventSubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
 
       try {
 
@@ -153,11 +155,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       } catch (error) {
         this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
-
-        const subscriptionIsActive: boolean = subscription !== undefined;
-        if (subscriptionIsActive) {
-          subscription.dispose();
-        }
 
         // Errors thrown by an ErrorEndEvent ("error.errorCode")
         // and @essential-project errors ("error.code") are thrown as they are.
@@ -246,8 +243,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
 
-    const processTerminationSubscription: ISubscription = this._eventAggregator
-      .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
+    const processTerminatedSubscription: Subscription =
+      this._eventAggregator.subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
         this.processTerminatedMessage = message;
       });
 
@@ -262,10 +259,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
 
-    const processTerminationSubscriptionIsActive: boolean = processTerminationSubscription !== undefined;
-    if (processTerminationSubscriptionIsActive) {
-      processTerminationSubscription.dispose();
-    }
+    this._eventAggregator.unsubscribe(processTerminatedSubscription);
 
     return resultToken.result;
   }

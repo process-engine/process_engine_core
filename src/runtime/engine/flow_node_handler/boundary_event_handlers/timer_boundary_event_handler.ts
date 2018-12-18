@@ -1,4 +1,4 @@
-import {ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -26,7 +26,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
   private hasHandlerFinished: boolean = false;
 
   private handlerPromise: Promise<NextFlowNodeInfo>;
-  private timerSubscription: ISubscription;
+  private timerSubscription: Subscription;
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
@@ -47,7 +47,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
 
     if (this.timerSubscription) {
-      this.timerSubscription.dispose();
+      this._timerFacade.cancelTimerSubscription(this.timerSubscription);
     }
     this.handlerPromise.cancel();
     this._decoratedHandler.interrupt(token, terminate);
@@ -67,13 +67,11 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
       this.hasHandlerFinished = true;
 
-      if (this.timerSubscription) {
-        this.timerSubscription.dispose();
-      }
-
       if (this.timerHasElapsed) {
         return;
       }
+
+      this._timerFacade.cancelTimerSubscription(this.timerSubscription);
 
       // if the decorated handler finished execution before the timer elapsed,
       // continue the regular execution with the next FlowNode and dispose the timer
@@ -97,18 +95,16 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       const nextFlowNodeInfo: NextFlowNodeInfo =
         await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
-      if (this.timerSubscription) {
-        this.timerSubscription.dispose();
-      }
+      this.hasHandlerFinished = true;
 
       if (this.timerHasElapsed) {
         return;
       }
 
+      this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+
       // if the decorated handler finished resumption before the timer elapsed,
       // continue the regular execution with the next FlowNode and dispose the timer
-      this.hasHandlerFinished = true;
-
       return resolve(nextFlowNodeInfo);
     });
 
@@ -129,7 +125,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       // No matter what timer type is used, a TimerBoundaryEvent can only ever run once,
       // given that the decorated handler itself can only run once.
       if (this.timerSubscription) {
-        this.timerSubscription.dispose();
+        this._timerFacade.cancelTimerSubscription(this.timerSubscription);
       }
 
       if (this.hasHandlerFinished) {

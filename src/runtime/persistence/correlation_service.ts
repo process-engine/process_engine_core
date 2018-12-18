@@ -1,5 +1,3 @@
-import * as bluebird from 'bluebird';
-
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -140,7 +138,7 @@ export class CorrelationService implements ICorrelationService {
     const uniqueCorrelationIds: Array<string> = Object.keys(groupedCorrelations);
 
     const mappedCorrelations: Array<Runtime.Types.Correlation> =
-      await bluebird.map(uniqueCorrelationIds, (correlationId: string) => {
+      await Promise.mapSeries(uniqueCorrelationIds, (correlationId: string) => {
         const matchingCorrelationEntries: Array<Runtime.Types.CorrelationFromRepository> = groupedCorrelations[correlationId];
 
         return this._mapCorrelation(correlationId, activeFlowNodeInstances, matchingCorrelationEntries);
@@ -206,7 +204,7 @@ export class CorrelationService implements ICorrelationService {
 
     if (correlationsFromRepo) {
 
-      correlation.processModels = await bluebird.map(correlationsFromRepo, async(entry: Runtime.Types.CorrelationFromRepository) => {
+      correlation.processModels = await Promise.mapSeries(correlationsFromRepo, async(entry: Runtime.Types.CorrelationFromRepository) => {
 
         const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
           await this._processDefinitionRepository.getByHash(entry.processModelHash);
@@ -312,7 +310,7 @@ export class CorrelationService implements ICorrelationService {
     const correlations: Array<Runtime.Types.CorrelationFromRepository> = await this._correlationRepository.getByCorrelationId(correlationId);
 
     const processDefinitions: Array<Runtime.Types.CorrelationProcessModel> =
-      await bluebird.map(correlations, async(correlation: Runtime.Types.CorrelationFromRepository) => {
+      await Promise.mapSeries(correlations, async(correlation: Runtime.Types.CorrelationFromRepository) => {
 
         const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
           await this._processDefinitionRepository.getByHash(correlation.processModelHash);
