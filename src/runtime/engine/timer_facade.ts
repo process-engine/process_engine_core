@@ -1,4 +1,4 @@
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 
@@ -32,7 +32,7 @@ export class TimerFacade implements ITimerFacade {
   public initializeTimer(flowNode: Model.Base.FlowNode,
                          timerType: TimerDefinitionType,
                          timerValue: string,
-                         timerCallback: Function): ISubscription {
+                         timerCallback: Function): Subscription {
 
     const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
 
@@ -87,7 +87,11 @@ export class TimerFacade implements ITimerFacade {
     return undefined;
   }
 
-  private _startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): ISubscription {
+  public cancelTimerSubscription(subscription: Subscription): void {
+    this._eventAggregator.unsubscribe(subscription);
+  }
+
+  private _startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     const duration: moment.Duration = moment.duration(timerDefinition);
 
@@ -100,7 +104,7 @@ export class TimerFacade implements ITimerFacade {
       second: duration.seconds(),
     };
 
-    const subscription: ISubscription = this.eventAggregator.subscribe(callbackEventName, () => {
+    const subscription: Subscription = this.eventAggregator.subscribe(callbackEventName, () => {
       timerCallback();
     });
 
@@ -109,12 +113,12 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private _startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): ISubscription {
+  private _startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     const duration: moment.Duration = moment.duration(timerDefinition);
     const date: moment.Moment = moment().add(duration);
 
-    const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
+    const subscription: Subscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
       timerCallback();
     });
 
@@ -123,11 +127,11 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private _startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): ISubscription {
+  private _startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     const date: moment.Moment = moment(timerDefinition);
 
-    const subscription: ISubscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
+    const subscription: Subscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
       timerCallback();
     });
 

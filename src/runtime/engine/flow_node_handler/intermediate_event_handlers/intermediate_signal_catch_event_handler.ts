@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -21,7 +21,7 @@ import {FlowNodeHandlerInterruptible} from '../index';
 export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _eventAggregator: IEventAggregator;
-  private subscription: ISubscription;
+  private subscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -81,7 +81,7 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
         processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, interruptionToken);
 
         if (this.subscription) {
-          this.subscription.dispose();
+          this._eventAggregator.unsubscribe(this.subscription);
         }
 
         signalSubscriptionPromise.cancel();
@@ -113,19 +113,16 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
       const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
         .replace(eventAggregatorSettings.routeParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
 
-      this.subscription = this._eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
+      this.subscription =
+        this._eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
+          this.logger.verbose(
+            `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
+            signal,
+            'Resuming execution.',
+          );
 
-        if (this.subscription) {
-          this.subscription.dispose();
-        }
-        this.logger.verbose(
-          `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
-          signal,
-          'Resuming execution.',
-        );
-
-        return resolve(signal);
-      });
+          return resolve(signal);
+        });
       this.logger.verbose(`SignalCatchEvent instance ${this.flowNodeInstanceId} waiting for signal ${signalEventName}.`);
     });
   }

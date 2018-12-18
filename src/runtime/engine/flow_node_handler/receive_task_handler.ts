@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
@@ -20,7 +20,7 @@ import {FlowNodeHandlerInterruptible} from './index';
 export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ReceiveTask> {
 
   private _eventAggregator: IEventAggregator;
-  private messageSubscription: ISubscription;
+  private messageSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -67,7 +67,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
 
       this.onInterruptedCallback = (): void => {
         if (this.messageSubscription) {
-          this.messageSubscription.dispose();
+          this._eventAggregator.unsubscribe(this.messageSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -106,14 +106,10 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
         .sendTaskReached
         .replace(eventAggregatorSettings.routeParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
-      this.messageSubscription = this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
-
-        if (this.messageSubscription) {
-          this.messageSubscription.dispose();
-        }
-
-        resolve(message);
-      });
+      this.messageSubscription =
+        this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+          resolve(message);
+        });
     });
   }
 

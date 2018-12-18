@@ -1,4 +1,4 @@
-import {IEventAggregator, ISubscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -25,7 +25,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   private handlerHasFinished: boolean = false;
 
   private handlerPromise: Promise<NextFlowNodeInfo>;
-  private subscription: ISubscription;
+  private subscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
               flowNodeInstanceService: IFlowNodeInstanceService,
@@ -45,7 +45,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
 
     if (this.subscription) {
-      this.subscription.dispose();
+      this._eventAggregator.unsubscribe(this.subscription);
     }
     this.handlerPromise.cancel();
     this._decoratedHandler.interrupt(token, terminate);
@@ -66,13 +66,11 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       this.handlerHasFinished = true;
 
-      if (this.subscription) {
-        this.subscription.dispose();
-      }
-
       if (this.signalReceived) {
         return;
       }
+
+      this._eventAggregator.unsubscribe(this.subscription);
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
@@ -99,13 +97,11 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       this.handlerHasFinished = true;
 
-      if (this.subscription) {
-        this.subscription.dispose();
-      }
-
       if (this.signalReceived) {
         return;
       }
+
+      this._eventAggregator.unsubscribe(this.subscription);
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
@@ -124,11 +120,6 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       .replace(eventAggregatorSettings.routeParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
 
     const signalReceivedCallback: any = (signal: SignalEventReachedMessage): void => {
-
-      if (this.subscription) {
-        this.subscription.dispose();
-      }
-
       if (this.handlerHasFinished) {
         return;
       }
