@@ -28,6 +28,9 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
+  /**
+   * We need to persits the state of the Event Subscription for reacting correctly to Termination Events.
+   **/
   private terminateEndEventSubscription: Subscription;
 
   constructor(eventAggregator: IEventAggregator,
