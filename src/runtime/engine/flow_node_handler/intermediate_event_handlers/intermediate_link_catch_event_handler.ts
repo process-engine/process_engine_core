@@ -44,7 +44,7 @@ export class IntermediateLinkCatchEventHandler extends FlowNodeHandler<Model.Eve
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
 
-    // This type of FlowNode works pretty much like a regular StartEvent, except that it is called in mid-process.
+    // This type of FlowNode works pretty much like a regular StartEvent, except that it is called mid-process.
     processTokenFacade.addResultForFlowNode(this.linkCatchEventModel.id, token.payload);
     await this.persistOnExit(token);
 

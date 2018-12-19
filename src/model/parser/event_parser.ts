@@ -156,8 +156,8 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
       event[targetPropertyName] = retrieveErrorObject(eventRaw);
       break;
     case 'linkEventDefinition':
-      // Unlinke messages and signals, links are not declared globally in a process model,
-      // but exist only on the link event to which they are attached.
+      // Unlinke messages and signals, links are not declared globally on a process model,
+      // but exist only on the event to which they are attached.
       event[targetPropertyName] = new Model.EventDefinitions.LinkEventDefinition(eventDefinitonValue.name);
       break;
     case 'messageEventDefinition':
