@@ -13,9 +13,9 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
+import {FlowNodeHandler} from '../index';
 
-export class IntermediateLinkCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
+export class IntermediateLinkCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
   constructor(flowNodeInstanceService: IFlowNodeInstanceService,
               loggingService: ILoggingApi,
