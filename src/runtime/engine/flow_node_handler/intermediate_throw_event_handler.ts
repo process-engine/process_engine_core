@@ -37,6 +37,12 @@ export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.
 
   private _getChildHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
+    if (this.flowNode.linkEventDefinition) {
+      return this
+        ._container
+        .resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateLinkThrowEventHandler', [this.flowNode]);
+    }
+
     if (this.flowNode.messageEventDefinition) {
       return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageThrowEventHandler', [this.flowNode]);
     }
