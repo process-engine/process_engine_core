@@ -204,8 +204,11 @@ export class ProcessModelFacade implements IProcessModelFacade {
     const matchingIntermediateCatchEvent: Model.Base.FlowNode =
       this.processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
 
-        const flowNodeIsNotALinkEvent: boolean = (flowNode as Model.Events.IntermediateCatchEvent).linkEventDefinition === undefined;
-        if (flowNodeIsNotALinkEvent) {
+        const isNoIntermediateLinkCatchEvent: boolean =
+          !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
+          (flowNode as Model.Events.IntermediateCatchEvent).linkEventDefinition === undefined;
+
+        if (isNoIntermediateLinkCatchEvent) {
           return false;
         }
 
