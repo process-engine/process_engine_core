@@ -199,10 +199,10 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return nextFlowNode;
   }
 
-  public getLinkCatchEventByLinkName(linkName: string): Model.Events.IntermediateCatchEvent {
+  public getLinkCatchEventsByLinkName(linkName: string): Array<Model.Events.IntermediateCatchEvent> {
 
-    const matchingIntermediateCatchEvent: Model.Base.FlowNode =
-      this.processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
+    const matchingIntermediateCatchEvents: Array<Model.Base.FlowNode> =
+      this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
 
         const isNoIntermediateLinkCatchEvent: boolean =
           !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
@@ -217,6 +217,6 @@ export class ProcessModelFacade implements IProcessModelFacade {
         return linkHasMatchingName;
       });
 
-    return <Model.Events.IntermediateCatchEvent> matchingIntermediateCatchEvent;
+    return <Array<Model.Events.IntermediateCatchEvent>> matchingIntermediateCatchEvents;
   }
 }

@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {NotFoundError} from '@essential-projects/errors_ts';
+import {BadRequestError, NotFoundError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
@@ -44,13 +44,26 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandlerInterrupti
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+    const matchingCatchEvents: Array<Model.Events.IntermediateCatchEvent> =
+      processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
+
+    const matchingCatchEvent: Model.Events.IntermediateCatchEvent = await this._getMatchingCatchEvent(token, matchingCatchEvents);
 
     // LinkEvents basically work like SequenceFlows, in that they do nothing but direct
     // the ProcessInstance to another FlowNode.
-    const matchingCatchEvent: Model.Events.IntermediateCatchEvent =
-      processModelFacade.getLinkCatchEventByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
+    // So we can just return the retrieved CatchEvent as a next FlowNode and exit.
+    processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, token.payload);
+    await this.persistOnExit(token);
 
-    const noMatchingLinkCatchEventExists: boolean = !matchingCatchEvent;
+    return new NextFlowNodeInfo(matchingCatchEvent, token, processTokenFacade);
+  }
+
+  private async _getMatchingCatchEvent(
+    token: Runtime.Types.ProcessToken,
+    events: Array<Model.Events.IntermediateCatchEvent>,
+  ): Promise<Model.Events.IntermediateCatchEvent> {
+
+    const noMatchingLinkCatchEventExists: boolean = !events || events.length === 0;
     if (noMatchingLinkCatchEventExists) {
       const errorMessage: string = `No IntermediateCatchEvent with a link called '${this.linkThrowEventModel.linkEventDefinition.name}' exists!`;
       this.logger.error(errorMessage);
@@ -61,9 +74,19 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandlerInterrupti
       throw notFoundError;
     }
 
-    processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, token.payload);
-    await this.persistOnExit(token);
+    // By BPMN Specs, all IntermediateLinkCatchEvents must have unique link names.
+    // So if multiple links with the same name exist, it constitutes an invalid process model.
+    const tooManyMatchingLinkCatchEvents: boolean = events.length > 1;
+    if (tooManyMatchingLinkCatchEvents) {
+      const errorMessage: string = `Too many CatchEvents for link '${this.linkThrowEventModel.linkEventDefinition.name}' exist!`;
+      this.logger.error(errorMessage);
 
-    return new NextFlowNodeInfo(matchingCatchEvent, token, processTokenFacade);
+      const notFoundError: BadRequestError = new BadRequestError(errorMessage);
+      await this.persistOnError(token, notFoundError);
+
+      throw notFoundError;
+    }
+
+    return events[0];
   }
 }
