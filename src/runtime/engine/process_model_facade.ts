@@ -95,7 +95,6 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return endEvents as Array<Model.Events.EndEvent>;
   }
 
-  // TODO (SM): this is a duplicate from the process engine adapter (consumer_api_core)
   public getUserTasks(): Array<Model.Activities.UserTask> {
 
     const userTaskFlowNodes: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
@@ -136,7 +135,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   // TODO:
-  // Supported nested ParallelGateways, or ExclusiveGateways within ParallelGateways.
+  // There is no Support for nested ParallelGateways, or ExclusiveGateways within ParallelGateways.
   // Currently the next Parallel Gateway is always taken as the Parallel Join Gateway.
   // This also effectively prevents us from using TerminateEndEvents reliably, because
   // it is always assumed that every branch must ultimately lead back to the Join Gateway.
@@ -194,9 +193,27 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
   public getFlowNodeById(flowNodeId: string): Model.Base.FlowNode {
     const nextFlowNode: Model.Base.FlowNode = this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
-        return currentFlowNode.id === flowNodeId;
+      return currentFlowNode.id === flowNodeId;
     });
 
     return nextFlowNode;
+  }
+
+  public getLinkCatchEventByLinkName(linkName: string): Model.Events.IntermediateCatchEvent {
+
+    const matchingIntermediateCatchEvent: Model.Base.FlowNode =
+      this.processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
+
+        const flowNodeIsNotALinkEvent: boolean = (flowNode as Model.Events.IntermediateCatchEvent).linkEventDefinition === undefined;
+        if (flowNodeIsNotALinkEvent) {
+          return false;
+        }
+
+        const linkHasMatchingName: boolean = (flowNode as Model.Events.IntermediateCatchEvent).linkEventDefinition.name === linkName;
+
+        return linkHasMatchingName;
+      });
+
+    return <Model.Events.IntermediateCatchEvent> matchingIntermediateCatchEvent;
   }
 }
