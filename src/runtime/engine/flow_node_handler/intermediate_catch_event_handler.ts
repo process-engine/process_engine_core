@@ -36,10 +36,21 @@ export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptible<
   }
 
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
-    return this._childHandler.interrupt(token, terminate);
+
+    // This check is necessary, because "IntermediateLinkCatchEventHandlers" cannot be interrupted.
+    const isInterruptible: boolean = this._childHandler.interrupt !== undefined;
+    if (isInterruptible) {
+      return this._childHandler.interrupt(token, terminate);
+    }
   }
 
   private _getChildEventHandler(): FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
+
+    if (this.flowNode.linkEventDefinition) {
+      return this
+        ._container
+        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [this.flowNode]);
+    }
 
     if (this.flowNode.messageEventDefinition) {
       return this
