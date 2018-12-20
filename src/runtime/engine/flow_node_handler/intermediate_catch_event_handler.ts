@@ -14,11 +14,11 @@ import {
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler, FlowNodeHandlerInterruptible} from './index';
+import {FlowNodeHandlerInterruptible} from './index';
 
 export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
-  private _childHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent>;
+  private _childHandler: FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>;
   private _container: IContainer = undefined;
 
   constructor(container: IContainer,
@@ -38,20 +38,18 @@ export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptible<
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
 
     // This check is necessary, because "IntermediateLinkCatchEventHandlers" cannot be interrupted.
-    const isInterruptible: boolean =
-      (this._childHandler as FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>).interrupt !== undefined;
-
+    const isInterruptible: boolean = this._childHandler.interrupt !== undefined;
     if (isInterruptible) {
-      return (this._childHandler as FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>).interrupt(token, terminate);
+      return this._childHandler.interrupt(token, terminate);
     }
   }
 
-  private _getChildEventHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
+  private _getChildEventHandler(): FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
     if (this.flowNode.linkEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [this.flowNode]);
+        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [this.flowNode]);
     }
 
     if (this.flowNode.messageEventDefinition) {

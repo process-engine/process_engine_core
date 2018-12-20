@@ -204,15 +204,17 @@ export class ProcessModelFacade implements IProcessModelFacade {
     const matchingIntermediateCatchEvents: Array<Model.Base.FlowNode> =
       this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
 
+        const flowNodeAsCatchEvent: Model.Events.IntermediateCatchEvent = flowNode as Model.Events.IntermediateCatchEvent;
+
         const isNoIntermediateLinkCatchEvent: boolean =
           !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
-          (flowNode as Model.Events.IntermediateCatchEvent).linkEventDefinition === undefined;
+          flowNodeAsCatchEvent.linkEventDefinition === undefined;
 
         if (isNoIntermediateLinkCatchEvent) {
           return false;
         }
 
-        const linkHasMatchingName: boolean = (flowNode as Model.Events.IntermediateCatchEvent).linkEventDefinition.name === linkName;
+        const linkHasMatchingName: boolean = flowNodeAsCatchEvent.linkEventDefinition.name === linkName;
 
         return linkHasMatchingName;
       });
