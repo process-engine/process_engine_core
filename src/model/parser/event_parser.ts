@@ -135,10 +135,11 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
 function assignEventDefinitions(event: any, eventRaw: any): void {
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.LinkEventDefinition, 'linkEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
 }
 
 function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnTags.FlowElementProperty, targetPropertyName: string): void {
@@ -153,6 +154,11 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
   switch (targetPropertyName) {
     case 'errorEventDefinition':
       event[targetPropertyName] = retrieveErrorObject(eventRaw);
+      break;
+    case 'linkEventDefinition':
+      // Unlinke messages and signals, links are not declared globally on a process model,
+      // but exist only on the event to which they are attached.
+      event[targetPropertyName] = new Model.EventDefinitions.LinkEventDefinition(eventDefinitonValue.name);
       break;
     case 'messageEventDefinition':
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);

@@ -28,6 +28,8 @@ const {
 const {
   IntermediateCatchEventHandler,
   IntermediateThrowEventHandler,
+  IntermediateLinkCatchEventHandler,
+  IntermediateLinkThrowEventHandler,
   IntermediateMessageCatchEventHandler,
   IntermediateMessageThrowEventHandler,
   IntermediateSignalCatchEventHandler,
@@ -147,6 +149,14 @@ function registerHandlers(container) {
   container
     .register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
     .dependencies('container', 'FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('IntermediateLinkCatchEventHandler', IntermediateLinkCatchEventHandler)
+    .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('IntermediateLinkThrowEventHandler', IntermediateLinkThrowEventHandler)
+    .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container
     .register('IntermediateMessageCatchEventHandler', IntermediateMessageCatchEventHandler)

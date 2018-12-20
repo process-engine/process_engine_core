@@ -92,6 +92,11 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
 
       await timerPromise;
 
+      processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
+
+      await this.persistOnResume(token);
+      await this.persistOnExit(token);
+
       const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
       return resolve(nextFlowNodeInfo);
@@ -105,23 +110,14 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
                         processModelFacade: IProcessModelFacade): Promise<void> {
 
     return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
-
       const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
       const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
       const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
       const timerElapsed: any = (): void => {
-
-        if (this.timerSubscription && timerType !== TimerDefinitionType.cycle) {
-          this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-        }
-
-        // if the timer elapsed before the decorated handler finished execution,
-        // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
-        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
-
-        const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
-        resolve(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
+        // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
+        this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+        resolve();
       };
 
       this.timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
