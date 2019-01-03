@@ -26,7 +26,7 @@
     "@essential-projects/iam_contracts": "~3.3.0",
     "@essential-projects/timing_contracts": "~4.0.0",
     "@process-engine/external_task_api_contracts": "~1.0.0",
-    "@process-engine/consumer_api_contracts": "feature~add_get_token_by_process-instance_functionality",
+    "@process-engine/consumer_api_contracts": "feature~add_process-instance-id_to_start-result",
     "@process-engine/logging_api_contracts": "~0.3.0",
     "@process-engine/metrics_api_contracts": "~0.3.0",
     "@process-engine/process_engine_contracts": "feature~add_get_token_by_process-instance_functionality",
