@@ -48,6 +48,17 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
+    /**
+     * It makes sense to check the definitions before we actually
+     * initalizing the timer.
+     *
+     * todo: We only need to parse the timer type and timer value ones.
+     */
+    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
+    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
+
+    this._validateTimerValue(timerType, timerValueFromDefinition);
+
     return await this._executeHandler(token, processTokenFacade, processModelFacade);
   }
 
@@ -115,8 +126,6 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
       const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
       const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
-
-      this._validateTimerValue(timerType, timerValue);
 
       const timerElapsed: any = (): void => {
         // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
