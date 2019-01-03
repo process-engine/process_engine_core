@@ -43,6 +43,10 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._flowNodeInstanceRepository.queryByCorrelationAndProcessModel(correlationId, processModelId);
   }
 
+  public async queryByProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.queryByProcessInstance(processInstanceId);
+  }
+
   public async queryByState(state: Runtime.Types.FlowNodeInstanceState): Promise<Array<Runtime.Types.FlowNodeInstance>> {
     return this._flowNodeInstanceRepository.queryByState(state);
   }
