@@ -271,6 +271,13 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     this._eventAggregator.unsubscribe(processTerminatedSubscription);
 
+    const resultTokenExists: boolean = resultToken !== undefined
+                                    && resultToken !== null;
+
+    const tokenResult: IProcessTokenResult | {} = resultTokenExists
+                                                ? resultToken
+                                                : {};
+
     const executeProcessResult: IExecuteProcessResult = Object.assign(
       resultToken.result,
       {
