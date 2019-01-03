@@ -11,6 +11,7 @@ import {
   EndEventReachedMessage,
   eventAggregatorSettings,
   ICorrelationService,
+  IExecuteProcessResult,
   IExecuteProcessService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
@@ -243,7 +244,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
    * @param   processInstanceConfig The configs for the ProcessInstance.
    * @returns                       The ProcessInstance's result.
    */
-  private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
+  private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IExecuteProcessResult> {
 
     const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
@@ -270,7 +271,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     this._eventAggregator.unsubscribe(processTerminatedSubscription);
 
-    return resultToken.result;
+    const executeProcessResult: IExecuteProcessResult = Object.assign(
+      resultToken.result,
+      {
+        processInstanceId: processInstanceConfig.processInstanceId,
+      },
+    );
+
+    return executeProcessResult;
   }
 
   /**
