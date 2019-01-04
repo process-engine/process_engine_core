@@ -22,7 +22,7 @@ export class TimerFacade implements ITimerFacade {
   constructor(eventAggregator: IEventAggregator, timerService: ITimerService) {
     this._eventAggregator = eventAggregator;
     this._timerService = timerService;
-    this.logger = new Logger(`processengine:timer_facade`);
+    this._logger = new Logger(`processengine:timer_facade`);
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -188,7 +188,7 @@ export class TimerFacade implements ITimerFacade {
          * This issue currently blocks the validation for Cyclic timers:
          * https://github.com/process-engine/process_engine_runtime/issues/196
          */
-        this._logger.warn('Cyclic timer definitions are currently unsuportet!');
+        this._logger.warn('Cyclic timer definitions are currently unsupported!');
         break;
       }
 
