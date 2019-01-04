@@ -161,17 +161,17 @@ export class TimerFacade implements ITimerFacade {
       case TimerDefinitionType.duration: {
         /**
          * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
-         * we can't really use momentjs to validate the given timer value, if
-         * its in the ISO8601 duration format.
+         * we can't really use momentjs to timer durations against the
+         * ISO8601 duration syntax.
          *
          * There is an isValid() method on moment.Duration objects but its
          * useless since it always returns true.
          */
 
-          /**
-          * Stolen from: https://stackoverflow.com/a/32045167
-          */
-        /*tslint:disable:max-line-length*/
+        /**
+         * Stolen from: https://stackoverflow.com/a/32045167
+         */
+         /*tslint:disable-next-line:max-line-length*/
         const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
         const iso8601DurationIsInvalid: boolean = !durationRegex.test(timerValue);
 
