@@ -2,7 +2,8 @@ import {IEventAggregator, Subscription} from '@essential-projects/event_aggregat
 import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 
-import { BadRequestError } from '@essential-projects/errors_ts';
+import {BadRequestError} from '@essential-projects/errors_ts';
+import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 
@@ -16,10 +17,12 @@ export class TimerFacade implements ITimerFacade {
 
   private _eventAggregator: IEventAggregator;
   private _timerService: ITimerService;
+  private _logger: Logger;
 
   constructor(eventAggregator: IEventAggregator, timerService: ITimerService) {
     this._eventAggregator = eventAggregator;
     this._timerService = timerService;
+    this.logger = new Logger(`processengine:timer_facade`);
   }
 
   private get eventAggregator(): IEventAggregator {
@@ -148,7 +151,8 @@ export class TimerFacade implements ITimerFacade {
       case TimerDefinitionType.date: {
         const iso8601DateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
         if (iso8601DateIsInvalid) {
-          throw new BadRequestError(`The given date definition ${timerValue} is not in ISO8601 format`);
+          const errorMessage: string = `The given date definition ${timerValue} is not in ISO8601 format`;
+          throw new BadRequestError(errorMessage);
         }
 
         break;
@@ -172,7 +176,8 @@ export class TimerFacade implements ITimerFacade {
         const iso8601DurationIsInvalid: boolean = !durationRegex.test(timerValue);
 
         if (iso8601DurationIsInvalid) {
-          throw new BadRequestError(`The given duration defintion ${timerValue} is not in ISO8601 format`);
+          const errorMessage: string = `The given duration defintion ${timerValue} is not in ISO8601 format`;
+          throw new BadRequestError(errorMessage);
         }
 
         break;
@@ -183,10 +188,12 @@ export class TimerFacade implements ITimerFacade {
          * This issue currently blocks the validation for Cyclic timers:
          * https://github.com/process-engine/process_engine_runtime/issues/196
          */
+        this._logger.warn('Cyclic timer definitions are currently unsuportet!');
         break;
       }
 
       default: {
+
         throw new BadRequestError('Unknown Timer definition type');
       }
 
