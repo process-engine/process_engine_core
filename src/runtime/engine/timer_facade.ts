@@ -2,6 +2,7 @@ import {IEventAggregator, Subscription} from '@essential-projects/event_aggregat
 import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 
+import { BadRequestError } from '@essential-projects/errors_ts';
 import * as moment from 'moment';
 import * as uuid from 'uuid';
 
@@ -33,6 +34,8 @@ export class TimerFacade implements ITimerFacade {
                          timerType: TimerDefinitionType,
                          timerValue: string,
                          timerCallback: Function): Subscription {
+
+    this._validateTimerValue(timerType, timerValue);
 
     const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
 
@@ -139,4 +142,55 @@ export class TimerFacade implements ITimerFacade {
 
     return subscription;
   }
+
+  private _validateTimerValue(timerType: TimerDefinitionType, timerValue: string): void {
+    switch (timerType) {
+      case TimerDefinitionType.date: {
+        const iso8601DateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
+        if (iso8601DateIsInvalid) {
+          throw new BadRequestError(`The given date definition ${timerValue} is not in ISO8601 format`);
+        }
+
+        break;
+      }
+
+      case TimerDefinitionType.duration: {
+        /**
+         * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
+         * we can't really use momentjs to validate the given timer value, if
+         * its in the ISO8601 duration format.
+         *
+         * There is an isValid() method on moment.Duration objects but its
+         * useless since it always returns true.
+         */
+
+          /**
+          * Stolen from: https://stackoverflow.com/a/32045167
+          */
+        /*tslint:disable:max-line-length*/
+        const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
+        const iso8601DurationIsInvalid: boolean = !durationRegex.test(timerValue);
+
+        if (iso8601DurationIsInvalid) {
+          throw new BadRequestError(`The given duration defintion ${timerValue} is not in ISO8601 format`);
+        }
+
+        break;
+      }
+
+      case TimerDefinitionType.cycle: {
+        /**
+         * This issue currently blocks the validation for Cyclic timers:
+         * https://github.com/process-engine/process_engine_runtime/issues/196
+         */
+        break;
+      }
+
+      default: {
+        throw new BadRequestError('Unknown Timer definition type');
+      }
+
+    }
+}
+
 }

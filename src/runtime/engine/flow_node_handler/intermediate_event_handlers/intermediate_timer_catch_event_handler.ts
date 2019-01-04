@@ -48,17 +48,6 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
-    /**
-     * It makes sense to check the definitions before we actually
-     * initalizing the timer.
-     *
-     * todo: We only need to parse the timer type and timer value ones.
-     */
-    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
-    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
-
-    this._validateTimerValue(timerType, timerValueFromDefinition);
-
     return await this._executeHandler(token, processTokenFacade, processModelFacade);
   }
 
@@ -103,7 +92,13 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
         return;
       };
 
-      await timerPromise;
+      try {
+        await timerPromise;
+      } catch (error) {
+        reject(error);
+
+        return;
+      }
 
       processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
 
@@ -132,8 +127,13 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
         this._timerFacade.cancelTimerSubscription(this.timerSubscription);
         resolve();
       };
+      try {
+        this.timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
+      } catch (error) {
+        reject(error);
 
-      this.timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
+        return;
+      }
     });
   }
 
@@ -157,56 +157,6 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       this.logger.error(err);
 
       throw err;
-    }
-  }
-
-  private _validateTimerValue(timerType: TimerDefinitionType, timerValue: string): void {
-    switch (timerType) {
-      case TimerDefinitionType.date: {
-        const iso8601DateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
-        if (iso8601DateIsInvalid) {
-          throw new BadRequestError(`The given date definition ${timerValue} is not in ISO8601 format`);
-        }
-
-        break;
-      }
-
-      case TimerDefinitionType.duration: {
-        /**
-         * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
-         * we can't really use momentjs to validate the given timer value, if
-         * its in the ISO8601 duration format.
-         *
-         * There is an isValid() method on moment.Duration objects but its
-         * useless since it always returns true.
-         */
-
-          /**
-          * Stolen from: https://stackoverflow.com/a/32045167
-          */
-        /*tslint:disable:max-line-length*/
-        const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
-        const iso8601DurationIsInvalid: boolean = !durationRegex.test(timerValue);
-
-        if (iso8601DurationIsInvalid) {
-          throw new BadRequestError(`The given duration defintion ${timerValue} is not in ISO8601 format`);
-        }
-
-        break;
-      }
-
-      case TimerDefinitionType.cycle: {
-        /**
-         * This issue currently blocks the validation for Cyclic timers:
-         * https://github.com/process-engine/process_engine_runtime/issues/196
-         */
-        break;
-      }
-
-      default: {
-        throw new BadRequestError('Unknown Timer definition type');
-      }
-
     }
   }
 }
