@@ -16,8 +16,6 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {BadRequestError} from '@essential-projects/errors_ts';
-import * as moment from 'moment';
 import {FlowNodeHandlerInterruptible} from '../index';
 
 export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
