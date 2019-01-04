@@ -110,21 +110,23 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                      processModel: Model.Types.Process,
                                      startEventId: string,
                                      correlationId: string,
+                                     processInstanceId: string,
                                      initialPayload?: any,
                                      caller?: string): Promise<EndEventReachedMessage> {
 
-    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, initialPayload, caller);
+    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, processInstanceId, initialPayload, caller);
   }
 
   public async startAndAwaitSpecificEndEvent(identity: IIdentity,
                                              processModel: Model.Types.Process,
                                              startEventId: string,
                                              correlationId: string,
+                                             processInstanceId: string,
                                              endEventId: string,
                                              initialPayload?: any,
                                              caller?: string): Promise<EndEventReachedMessage> {
 
-    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, initialPayload, caller, endEventId);
+    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, processInstanceId, initialPayload, caller, endEventId);
   }
 
   private async _startAndAwaitEndEvent(identity: IIdentity,
