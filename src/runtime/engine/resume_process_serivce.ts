@@ -363,20 +363,13 @@ export class ResumeProcessService implements IResumeProcessService {
         !activeProcessInstances.some((entry: IProcessInstanceModelAssociation): boolean => {
           return entry.processInstanceId === flowNodeInstance.processInstanceId;
         });
-      //
-      // TODO: This business rule can be simplified, as soon as the callerId is located on the FlowNodeInstance,
-      // where it should have been in the first place.
-      const flowNodeInstanceIsNotPartOfSubprocess: boolean =
-        flowNodeInstance.tokens.some((token: Runtime.Types.ProcessToken): boolean => {
-          return !token.caller;
-        });
+      const flowNodeInstanceIsNotPartOfSubprocess: boolean = !flowNodeInstance.parentProcessInstanceId;
 
       if (processInstanceListHasNoMatchingEntry && flowNodeInstanceIsNotPartOfSubprocess) {
         const newAssociation: IProcessInstanceModelAssociation = {
           processInstanceId: flowNodeInstance.processInstanceId,
           processModelId: flowNodeInstance.processModelId,
-          // TODO: This can be simplified, once the data models for FlowNodeInstance and ProcessToken have been refactored.
-          identity: flowNodeInstance.tokens[0].identity,
+          identity: flowNodeInstance.identity,
         };
         activeProcessInstances.push(newAssociation);
       }
