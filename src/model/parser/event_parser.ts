@@ -177,7 +177,6 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
       break;
     case 'timerEventDefinition':
       event[targetPropertyName] = eventDefinitonValue;
-      debugger;
       validateTimer(eventDefinitonValue);
       break;
     default:
