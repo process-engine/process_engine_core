@@ -85,9 +85,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
     try {
-      this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
       const result: IProcessTokenResult = await this._executeProcess(identity, processInstanceConfig);
-      this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
 
       return result;
     } catch (error) {
@@ -148,11 +146,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       eventSubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
 
       try {
-
-        this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
         await this._executeProcess(identity, processInstanceConfig);
-        this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
-
       } catch (error) {
         this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
 
@@ -250,12 +244,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._saveCorrelation(identity, processInstanceConfig);
 
+    this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+
     await this._executeFlowNode(processInstanceConfig.startEvent,
                                 processInstanceConfig.processToken,
                                 processInstanceConfig.processTokenFacade,
                                 processInstanceConfig.processModelFacade,
                                 identity,
                                 undefined);
+
+    this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
 
