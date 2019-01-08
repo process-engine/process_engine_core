@@ -21,6 +21,7 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
+  ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -79,15 +80,25 @@ export class ExecuteProcessService implements IExecuteProcessService {
                      startEventId: string,
                      correlationId: string,
                      initialPayload?: any,
-                     caller?: string): Promise<IProcessTokenResult> {
+                     caller?: string): Promise<ProcessStartedMessage> {
 
     const processInstanceConfig: IProcessInstanceConfig =
       this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
     try {
-      const result: IProcessTokenResult = await this._executeProcess(identity, processInstanceConfig);
+      // This UseCase is designed to resolve immediately after the ProcessInstance
+      // was started, so we must not await the execution here.
+      this._executeProcess(identity, processInstanceConfig);
 
-      return result;
+      return new ProcessStartedMessage(correlationId,
+                                       processModel.id,
+                                       processInstanceConfig.processInstanceId,
+                                       startEventId,
+                                       // We don't know the StartEvents instanceId at this point.
+                                       // It will be contained in the ProcessStarted Notification, the StartEventHandler sends.
+                                       undefined,
+                                       identity,
+                                       initialPayload);
     } catch (error) {
       this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
       throw error;
