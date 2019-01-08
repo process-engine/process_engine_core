@@ -49,36 +49,39 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
+                                      identity: IIdentity,
                                      ): Promise<NextFlowNodeInfo> {
 
     await this.persistOnSuspend(onEnterToken);
 
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                         onSuspendToken: Runtime.Types.ProcessToken,
                                         processTokenFacade: IProcessTokenFacade,
                                         processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
                                        ): Promise<NextFlowNodeInfo> {
 
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
     const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Promise<any> = this._waitForManualTaskResult(token);
+      const executionPromise: Promise<any> = this._waitForManualTaskResult(identity, token);
 
       this.onInterruptedCallback = (): void => {
         if (this.manualTaskSubscription) {
@@ -98,7 +101,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       processTokenFacade.addResultForFlowNode(this.manualTask.id, manualTaskResult);
       await this.persistOnExit(token);
 
-      this._sendManualTaskFinishedNotification(token);
+      this._sendManualTaskFinishedNotification(identity, token);
 
       const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
@@ -113,11 +116,12 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
    * Upon receiving the messsage, the handler will be resumed.
    *
    * @async
-   * @param token Contains all relevant info the EventAggregator will need for
-   *              creating the EventSubscription.
-   * @returns     The recevied ManualTask result.
+   * @param identity The identity that owns the ManualTask instance.
+   * @param token    Contains all relevant info the EventAggregator will need for
+   *                 creating the EventSubscription.
+   * @returns        The recevied ManualTask result.
    */
-  private _waitForManualTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForManualTaskResult(identity: IIdentity, token: Runtime.Types.ProcessToken): Promise<any> {
 
     return new Promise<any>(async(resolve: Function): Promise<void> => {
 
@@ -131,7 +135,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
           resolve(manualTaskResult);
         });
 
-      this._sendManualTaskReachedNotification(token);
+      this._sendManualTaskReachedNotification(identity, token);
     });
   }
 
@@ -139,15 +143,17 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
    * Publishes a notification on the EventAggregator, informing about a new
    * suspended ManualTask.
    *
-   * @param token Contains all infos required for the Notification message.
+   * @param identity The identity that owns the ManualTask instance.
+   * @param token    Contains all infos required for the Notification message.
    */
-  private _sendManualTaskReachedNotification(token: Runtime.Types.ProcessToken): void {
+  private _sendManualTaskReachedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     const message: ManualTaskReachedMessage = new ManualTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
                                                                        token.processInstanceId,
                                                                        this.manualTask.id,
                                                                        this.flowNodeInstanceId,
+                                                                       identity,
                                                                        token.payload);
 
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
@@ -161,15 +167,17 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
    * - A global notification that everybody can receive
    * - A notification specifically for this ManualTask.
    *
-   * @param token Contains all infos required for the Notification message.
+   * @param identity The identity that owns the ManualTask instance.
+   * @param token    Contains all infos required for the Notification message.
    */
-  private _sendManualTaskFinishedNotification(token: Runtime.Types.ProcessToken): void {
+  private _sendManualTaskFinishedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     const message: ManualTaskFinishedMessage = new ManualTaskFinishedMessage(token.correlationId,
                                                                          token.processModelId,
                                                                          token.processInstanceId,
                                                                          this.manualTask.id,
                                                                          this.flowNodeInstanceId,
+                                                                         identity,
                                                                          token.payload);
 
     // FlowNode-specific notification

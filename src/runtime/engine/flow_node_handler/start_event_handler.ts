@@ -131,7 +131,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
   /**
    * Sends a message that the ProcessInstance was started.
    *
-   * @param token Current token object, which contains all necessary Process Metadata.
+   * @param identity     The identity that owns the StartEvent instance.
+   * @param token        Current token object, which contains all necessary Process Metadata.
    * @param startEventId Id of the used StartEvent.
    */
   private _sendProcessStartedMessage(identity: IIdentity, token: Runtime.Types.ProcessToken, startEventId: string): void {

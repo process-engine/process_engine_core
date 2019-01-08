@@ -44,12 +44,13 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     this.logger.verbose(`Executing MessageThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
@@ -61,6 +62,8 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                token.processModelId,
                                                                                token.processInstanceId,
                                                                                this.messageThrowEvent.id,
+                                                                               this.flowNodeInstanceId,
+                                                                               identity,
                                                                                token.payload);
 
     this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);

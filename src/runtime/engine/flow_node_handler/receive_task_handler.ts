@@ -45,21 +45,23 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                         onSuspendToken: Runtime.Types.ProcessToken,
                                         processTokenFacade: IProcessTokenFacade,
                                         processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
                                        ): Promise<NextFlowNodeInfo> {
 
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -78,7 +80,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
       const receivedMessage: MessageEventReachedMessage = await executionPromise;
 
       await this.persistOnResume(token);
-      this._sendReplyToSender(token);
+      this._sendReplyToSender(identity, token);
 
       processTokenFacade.addResultForFlowNode(this.receiveTask.id, receivedMessage.currentToken);
       await this.persistOnExit(receivedMessage.currentToken);
@@ -117,9 +119,10 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
    * Publishes a message to the EventAggregator, informing any SendTasks that
    * may be listening about the receit of the message.
    *
-   * @param token The current ProcessToken.
+   * @param identity The identity that owns the ReceiveTask instance.
+   * @param token    The current ProcessToken.
    */
-  private _sendReplyToSender(token: Runtime.Types.ProcessToken): void {
+  private _sendReplyToSender(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     const messageName: string = this.receiveTask.messageEventDefinition.name;
 
@@ -135,6 +138,8 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
       token.processModelId,
       token.processInstanceId,
       this.receiveTask.id,
+      this.flowNodeInstanceId,
+      identity,
       token.payload);
 
     this._eventAggregator.publish(messageEventName, messageToSend);

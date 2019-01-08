@@ -46,21 +46,23 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                         onSuspendToken: Runtime.Types.ProcessToken,
                                         processTokenFacade: IProcessTokenFacade,
                                         processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
                                        ): Promise<NextFlowNodeInfo> {
 
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
     const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
@@ -85,7 +87,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       };
 
       this._waitForResponseFromReceiveTask(onResponseReceivedCallback);
-      this._sendMessage(token);
+      this._sendMessage(identity, token);
     });
 
     return handlerPromise;
@@ -113,9 +115,10 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   /**
    * Publishes the message stored in this SendTask on the EventAggregator.
    *
-   * @param token The current process token.
+   * @param identity The identity that owns the SendTask instance.
+   * @param token    The current process token.
    */
-  private _sendMessage(token: Runtime.Types.ProcessToken): void {
+  private _sendMessage(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     const messageName: string = this.sendTask.messageEventDefinition.name;
 
@@ -130,6 +133,8 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                                                     token.processModelId,
                                                                     token.processInstanceId,
                                                                     this.sendTask.id,
+                                                                    this.flowNodeInstanceId,
+                                                                    identity,
                                                                     token);
 
     this._eventAggregator.publish(messageEventName, messageToSend);

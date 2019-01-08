@@ -116,9 +116,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * result set.
    *
    * @async
-   * @param token Contains all relevant info the EventAggregator will need for
-   *              creating the EventSubscription.
-   * @returns     The recevied UserTask result.
+   * @param identity The identity that owns the UserTask instance.
+   * @param token    Contains all relevant info the EventAggregator will need for
+   *                 creating the EventSubscription.
+   * @returns        The recevied UserTask result.
    */
   private _waitForUserTaskResult(identity: IIdentity, token: Runtime.Types.ProcessToken): Promise<any> {
 
@@ -143,7 +144,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * Publishes a notification on the EventAggregator, informing about a new
    * suspended UserTask.
    *
-   * @param identity The identity that owns the UserTask.
+   * @param identity The identity that owns the UserTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
   private _sendUserTaskReachedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
@@ -167,7 +168,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * - A global notification that everybody can receive
    * - A notification specifically for this UserTask.
    *
-   * @param identity The identity that owns the UserTask.
+   * @param identity The identity that owns the UserTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
   private _sendUserTaskFinishedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
