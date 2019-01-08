@@ -192,10 +192,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
   private _getFinishUserTaskEventName(correlationId: string, processInstanceId: string): string {
 
-    const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.finishUserTask
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const finishUserTaskEvent: string = eventAggregatorSettings.messagePaths.finishUserTask
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return finishUserTaskEvent;
   }
@@ -203,10 +203,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   private _getUserTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     // FlowNode-specific notification
-    const userTaskFinishedEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const userTaskFinishedEvent: string = eventAggregatorSettings.messagePaths.userTaskWithInstanceIdFinished
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return userTaskFinishedEvent;
   }

@@ -146,8 +146,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
 
-    const processStartedBaseName: string = eventAggregatorSettings.routePaths.processInstanceStarted;
-    const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
+    const processStartedBaseName: string = eventAggregatorSettings.messagePaths.processInstanceStarted;
+    const processModelIdParam: string = eventAggregatorSettings.messageParams.processModelId;
     const processWithIdStartedMessage: string =
       processStartedBaseName
         .replace(processModelIdParam, token.processModelId);
@@ -187,8 +187,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     const messageDefinitionName: string = this.startEvent.messageEventDefinition.name;
 
-    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageDefinitionName);
+    const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageDefinitionName);
 
     this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
       const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
@@ -211,8 +211,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     const signalDefinitionName: string = this.startEvent.signalEventDefinition.name;
 
-    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalDefinitionName);
+    const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      .replace(eventAggregatorSettings.messageParams.signalReference, signalDefinitionName);
 
     this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
       const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);

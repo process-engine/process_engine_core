@@ -54,8 +54,8 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
-    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+    const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
     const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
                                                                                token.correlationId,

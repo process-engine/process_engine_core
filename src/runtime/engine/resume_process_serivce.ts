@@ -203,8 +203,8 @@ export class ResumeProcessService implements IResumeProcessService {
                                        flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                       ): Promise<any> {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
+    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     this._eventAggregator
       .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {

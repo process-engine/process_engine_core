@@ -104,8 +104,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     // Send message to processes that may be waiting for it.
     const messageName: string = this.endEvent.messageEventDefinition.name;
 
-    const eventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+    const eventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
     const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
                                                                                token.correlationId,
@@ -133,8 +133,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     // Send message to processes that may be waiting for it.
     const signalName: string = this.endEvent.signalEventDefinition.name;
 
-    const eventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
+    const eventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      .replace(eventAggregatorSettings.messageParams.signalReference, signalName);
 
     const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalName,
                                                                              token.correlationId,
@@ -160,8 +160,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     // Publish termination message to cancel all FlowNodeInstance executions and
     // finish with an error.
-    const eventName: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, token.processInstanceId);
+    const eventName: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const message: TerminateEndEventReachedMessage = new TerminateEndEventReachedMessage(token.correlationId,
                                                                                          token.processModelId,
@@ -206,9 +206,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _notifyAboutRegularEnd(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     // Publish regular success messsage.
-    const processEndMessageName: string = eventAggregatorSettings.routePaths.endEventReached
-      .replace(eventAggregatorSettings.routeParams.correlationId, token.correlationId)
-      .replace(eventAggregatorSettings.routeParams.processModelId, token.processModelId);
+    const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
+      .replace(eventAggregatorSettings.messageParams.correlationId, token.correlationId)
+      .replace(eventAggregatorSettings.messageParams.processModelId, token.processModelId);
 
     const message: EndEventReachedMessage = new EndEventReachedMessage(token.correlationId,
                                                                        token.processModelId,

@@ -103,9 +103,9 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     const messageName: string = this.sendTask.messageEventDefinition.name;
 
     const messageEventName: string = eventAggregatorSettings
-      .routePaths
+      .messagePaths
       .receiveTaskReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
     this.responseSubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
       callback();
@@ -123,9 +123,9 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     const messageName: string = this.sendTask.messageEventDefinition.name;
 
     const messageEventName: string = eventAggregatorSettings
-      .routePaths
+      .messagePaths
       .sendTaskReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
     const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
                                                                     messageName,

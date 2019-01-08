@@ -190,10 +190,10 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
   private _getFinishManualTaskEventName(correlationId: string, processInstanceId: string): string {
 
-    const finishManualTaskEvent: string = eventAggregatorSettings.routePaths.finishManualTask
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const finishManualTaskEvent: string = eventAggregatorSettings.messagePaths.finishManualTask
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return finishManualTaskEvent;
   }
@@ -201,10 +201,10 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private _getManualTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     // FlowNode-specific notification
-    const manualTaskFinishedEvent: string = eventAggregatorSettings.routePaths.manualTaskFinished
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const manualTaskFinishedEvent: string = eventAggregatorSettings.messagePaths.manualTaskWithInstanceIdFinished
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return manualTaskFinishedEvent;
   }

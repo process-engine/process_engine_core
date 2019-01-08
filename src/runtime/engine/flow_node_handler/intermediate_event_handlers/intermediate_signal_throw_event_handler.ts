@@ -54,8 +54,8 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     const signalName: string = this.signalThrowEvent.signalEventDefinition.name;
 
-    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
+    const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      .replace(eventAggregatorSettings.messageParams.signalReference, signalName);
 
     const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalName,
                                                                              token.correlationId,

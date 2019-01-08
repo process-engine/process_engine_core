@@ -104,9 +104,9 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
       const messageEventName: string = eventAggregatorSettings
-        .routePaths
+        .messagePaths
         .sendTaskReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, this.receiveTask.messageEventDefinition.name);
+        .replace(eventAggregatorSettings.messageParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
       this.messageSubscription =
         this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
@@ -128,9 +128,9 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
 
     const messageEventName: string =
       eventAggregatorSettings
-        .routePaths
+        .messagePaths
         .receiveTaskReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+        .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
     const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
       messageName,

@@ -140,9 +140,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const processInstanceConfig: IProcessInstanceConfig =
         this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
-      const processEndMessageName: string = eventAggregatorSettings.routePaths.endEventReached
-        .replace(eventAggregatorSettings.routeParams.correlationId, processInstanceConfig.correlationId)
-        .replace(eventAggregatorSettings.routeParams.processModelId, processModel.id);
+      const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
+        .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
+        .replace(eventAggregatorSettings.messageParams.processModelId, processModel.id);
 
       let eventSubscription: Subscription;
 
@@ -245,8 +245,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
    */
   private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
+    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const processTerminatedSubscription: Subscription =
       this._eventAggregator.subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
