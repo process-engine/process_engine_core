@@ -51,7 +51,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     this.logger.verbose(`Executing StartEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -93,9 +93,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    this._sendProcessStartedMessage(token, this.startEvent.id);
+    this._sendProcessStartedMessage(identity, token, this.startEvent.id);
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -133,11 +134,13 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * @param token Current token object, which contains all necessary Process Metadata.
    * @param startEventId Id of the used StartEvent.
    */
-  private _sendProcessStartedMessage(token: Runtime.Types.ProcessToken, startEventId: string): void {
+  private _sendProcessStartedMessage(identity: IIdentity, token: Runtime.Types.ProcessToken, startEventId: string): void {
     const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(token.correlationId,
       token.processModelId,
       token.processInstanceId,
       startEventId,
+      this.flowNodeInstanceId,
+      identity,
       token.payload);
 
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
