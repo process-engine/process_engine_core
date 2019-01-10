@@ -184,9 +184,16 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     const processModelId: string = this.callActivity.calledReference;
 
-    const result: ProcessStartResponsePayload =
-      await this._consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
+    try {
+      const result: ProcessStartResponsePayload =
+        await this._consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
 
-    return result;
+      return result;
+    } catch (error) {
+      // We must change the state of the CallActivity here, or it will remain in a suspended state forever.
+      this.logger.error(error);
+      this.persistOnError(token, error);
+      throw error;
+    }
   }
 }

@@ -51,7 +51,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     this.logger.verbose(`Executing StartEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
@@ -93,9 +93,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
-    this._sendProcessStartedMessage(token, this.startEvent.id);
+    this._sendProcessStartedMessage(identity, token, this.startEvent.id);
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -130,20 +131,23 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
   /**
    * Sends a message that the ProcessInstance was started.
    *
-   * @param token Current token object, which contains all necessary Process Metadata.
+   * @param identity     The identity that owns the StartEvent instance.
+   * @param token        Current token object, which contains all necessary Process Metadata.
    * @param startEventId Id of the used StartEvent.
    */
-  private _sendProcessStartedMessage(token: Runtime.Types.ProcessToken, startEventId: string): void {
+  private _sendProcessStartedMessage(identity: IIdentity, token: Runtime.Types.ProcessToken, startEventId: string): void {
     const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(token.correlationId,
       token.processModelId,
       token.processInstanceId,
       startEventId,
+      this.flowNodeInstanceId,
+      identity,
       token.payload);
 
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
 
-    const processStartedBaseName: string = eventAggregatorSettings.routePaths.processInstanceStarted;
-    const processModelIdParam: string = eventAggregatorSettings.routeParams.processModelId;
+    const processStartedBaseName: string = eventAggregatorSettings.messagePaths.processInstanceStarted;
+    const processModelIdParam: string = eventAggregatorSettings.messageParams.processModelId;
     const processWithIdStartedMessage: string =
       processStartedBaseName
         .replace(processModelIdParam, token.processModelId);
@@ -183,8 +187,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     const messageDefinitionName: string = this.startEvent.messageEventDefinition.name;
 
-    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageDefinitionName);
+    const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageDefinitionName);
 
     this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
       const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
@@ -207,8 +211,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     const signalDefinitionName: string = this.startEvent.signalEventDefinition.name;
 
-    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalDefinitionName);
+    const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      .replace(eventAggregatorSettings.messageParams.signalReference, signalDefinitionName);
 
     this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
       const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);

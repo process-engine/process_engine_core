@@ -116,8 +116,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade): void {
 
-    const signalBoundaryEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
+    const signalBoundaryEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      .replace(eventAggregatorSettings.messageParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
 
     const signalReceivedCallback: any = (signal: SignalEventReachedMessage): void => {
       if (this.handlerHasFinished) {

@@ -110,8 +110,8 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
 
     return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
-      const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-        .replace(eventAggregatorSettings.routeParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
+      const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+        .replace(eventAggregatorSettings.messageParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
 
       this.subscription =
         this._eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {

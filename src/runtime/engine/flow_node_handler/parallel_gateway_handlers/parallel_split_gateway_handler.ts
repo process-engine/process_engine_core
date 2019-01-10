@@ -148,8 +148,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
   private _subscribeToProcessTerminatedEvent(processInstanceId: string): void {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
+    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId);
 
     this.terminateEndEventSubscription =
       this._eventAggregator.subscribeOnce(processTerminatedEvent, (message: TerminateEndEventReachedMessage): void => {
