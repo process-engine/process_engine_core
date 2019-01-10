@@ -30,9 +30,9 @@ import {ProcessTokenFacade} from './process_token_facade';
 const logger: Logger = new Logger('processengine:runtime:resume_process_service');
 
 interface IProcessInstanceModelAssociation {
-  identity: IIdentity;
   processModelId: string;
   processInstanceId: string;
+  processInstanceOwner: IIdentity;
 }
 
 interface IProcessInstanceConfig {
@@ -101,7 +101,7 @@ export class ResumeProcessService implements IResumeProcessService {
       //
       // Lets say, Process A sends signals/messages to Process B,
       // then these processes must run in concert, not sequentially.
-      this.resumeProcessInstanceById(processInstance.identity, processInstance.processModelId, processInstance.processInstanceId);
+      this.resumeProcessInstanceById(processInstance.processInstanceOwner, processInstance.processModelId, processInstance.processInstanceId);
     }
   }
 
@@ -203,8 +203,8 @@ export class ResumeProcessService implements IResumeProcessService {
                                        flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                       ): Promise<any> {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
+    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     this._eventAggregator
       .subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
@@ -363,20 +363,13 @@ export class ResumeProcessService implements IResumeProcessService {
         !activeProcessInstances.some((entry: IProcessInstanceModelAssociation): boolean => {
           return entry.processInstanceId === flowNodeInstance.processInstanceId;
         });
-      //
-      // TODO: This business rule can be simplified, as soon as the callerId is located on the FlowNodeInstance,
-      // where it should have been in the first place.
-      const flowNodeInstanceIsNotPartOfSubprocess: boolean =
-        flowNodeInstance.tokens.some((token: Runtime.Types.ProcessToken): boolean => {
-          return !token.caller;
-        });
+      const flowNodeInstanceIsNotPartOfSubprocess: boolean = !flowNodeInstance.parentProcessInstanceId;
 
       if (processInstanceListHasNoMatchingEntry && flowNodeInstanceIsNotPartOfSubprocess) {
         const newAssociation: IProcessInstanceModelAssociation = {
           processInstanceId: flowNodeInstance.processInstanceId,
           processModelId: flowNodeInstance.processModelId,
-          // TODO: This can be simplified, once the data models for FlowNodeInstance and ProcessToken have been refactored.
-          identity: flowNodeInstance.tokens[0].identity,
+          processInstanceOwner: flowNodeInstance.owner,
         };
         activeProcessInstances.push(newAssociation);
       }

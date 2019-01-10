@@ -49,36 +49,39 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
+                                      identity: IIdentity,
                                      ): Promise<NextFlowNodeInfo> {
 
     await this.persistOnSuspend(onEnterToken);
 
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                         onSuspendToken: Runtime.Types.ProcessToken,
                                         processTokenFacade: IProcessTokenFacade,
                                         processModelFacade: IProcessModelFacade,
+                                        identity: IIdentity,
                                        ): Promise<NextFlowNodeInfo> {
 
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
+    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity,
                                  ): Promise<NextFlowNodeInfo> {
 
     const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Promise<any> = this._waitForUserTaskResult(token);
+      const executionPromise: Promise<any> = this._waitForUserTaskResult(identity, token);
 
       this.onInterruptedCallback = (): void => {
         if (this.userTaskSubscription) {
@@ -97,7 +100,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
 
       await this.persistOnExit(token);
-      this._sendUserTaskFinishedNotification(token);
+      this._sendUserTaskFinishedNotification(identity, token);
 
       const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
@@ -113,11 +116,12 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * result set.
    *
    * @async
-   * @param token Contains all relevant info the EventAggregator will need for
-   *              creating the EventSubscription.
-   * @returns     The recevied UserTask result.
+   * @param identity The identity that owns the UserTask instance.
+   * @param token    Contains all relevant info the EventAggregator will need for
+   *                 creating the EventSubscription.
+   * @returns        The recevied UserTask result.
    */
-  private _waitForUserTaskResult(token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForUserTaskResult(identity: IIdentity, token: Runtime.Types.ProcessToken): Promise<any> {
 
     return new Promise<any>(async(resolve: Function): Promise<void> => {
 
@@ -132,7 +136,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
           resolve(userTaskResult);
         });
 
-      this._sendUserTaskReachedNotification(token);
+      this._sendUserTaskReachedNotification(identity, token);
     });
   }
 
@@ -140,15 +144,17 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * Publishes a notification on the EventAggregator, informing about a new
    * suspended UserTask.
    *
-   * @param token Contains all infos required for the Notification message.
+   * @param identity The identity that owns the UserTask instance.
+   * @param token    Contains all infos required for the Notification message.
    */
-  private _sendUserTaskReachedNotification(token: Runtime.Types.ProcessToken): void {
+  private _sendUserTaskReachedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     const message: UserTaskReachedMessage = new UserTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
                                                                        token.processInstanceId,
                                                                        this.userTask.id,
                                                                        this.flowNodeInstanceId,
+                                                                       identity,
                                                                        token.payload);
 
     this._eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
@@ -162,9 +168,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * - A global notification that everybody can receive
    * - A notification specifically for this UserTask.
    *
-   * @param token Contains all infos required for the Notification message.
+   * @param identity The identity that owns the UserTask instance.
+   * @param token    Contains all infos required for the Notification message.
    */
-  private _sendUserTaskFinishedNotification(token: Runtime.Types.ProcessToken): void {
+  private _sendUserTaskFinishedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
     const message: UserTaskFinishedMessage = new UserTaskFinishedMessage(token.payload,
                                                                          token.correlationId,
@@ -172,6 +179,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                                                          token.processInstanceId,
                                                                          this.userTask.id,
                                                                          this.flowNodeInstanceId,
+                                                                         identity,
                                                                          token.payload);
 
     // FlowNode-specific notification
@@ -184,10 +192,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
   private _getFinishUserTaskEventName(correlationId: string, processInstanceId: string): string {
 
-    const finishUserTaskEvent: string = eventAggregatorSettings.routePaths.finishUserTask
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const finishUserTaskEvent: string = eventAggregatorSettings.messagePaths.finishUserTask
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return finishUserTaskEvent;
   }
@@ -195,10 +203,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   private _getUserTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     // FlowNode-specific notification
-    const userTaskFinishedEvent: string = eventAggregatorSettings.routePaths.userTaskFinished
-      .replace(eventAggregatorSettings.routeParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.routeParams.flowNodeInstanceId, this.flowNodeInstanceId);
+    const userTaskFinishedEvent: string = eventAggregatorSettings.messagePaths.userTaskWithInstanceIdFinished
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return userTaskFinishedEvent;
   }

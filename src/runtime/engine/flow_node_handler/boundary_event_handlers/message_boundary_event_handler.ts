@@ -116,8 +116,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade): void {
 
-    const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, this.messageBoundaryEvent.messageEventDefinition.name);
+    const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, this.messageBoundaryEvent.messageEventDefinition.name);
 
     const messageReceivedCallback: any = (message: MessageEventReachedMessage): void => {
 

@@ -110,8 +110,8 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
-      const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-        .replace(eventAggregatorSettings.routeParams.messageReference, this.messageCatchEvent.messageEventDefinition.name);
+      const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+        .replace(eventAggregatorSettings.messageParams.messageReference, this.messageCatchEvent.messageEventDefinition.name);
 
       this.subscription =
         this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {

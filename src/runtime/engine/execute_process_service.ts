@@ -21,6 +21,7 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
+  ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -79,17 +80,25 @@ export class ExecuteProcessService implements IExecuteProcessService {
                      startEventId: string,
                      correlationId: string,
                      initialPayload?: any,
-                     caller?: string): Promise<IProcessTokenResult> {
+                     caller?: string): Promise<ProcessStartedMessage> {
 
     const processInstanceConfig: IProcessInstanceConfig =
       this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
     try {
-      this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
-      const result: IProcessTokenResult = await this._executeProcess(identity, processInstanceConfig);
-      this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
+      // This UseCase is designed to resolve immediately after the ProcessInstance
+      // was started, so we must not await the execution here.
+      this._executeProcess(identity, processInstanceConfig);
 
-      return result;
+      return new ProcessStartedMessage(correlationId,
+                                       processModel.id,
+                                       processInstanceConfig.processInstanceId,
+                                       startEventId,
+                                       // We don't know the StartEvents instanceId at this point.
+                                       // It will be contained in the ProcessStarted Notification, the StartEventHandler sends.
+                                       undefined,
+                                       identity,
+                                       initialPayload);
     } catch (error) {
       this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
       throw error;
@@ -131,9 +140,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const processInstanceConfig: IProcessInstanceConfig =
         this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
-      const processEndMessageName: string = eventAggregatorSettings.routePaths.endEventReached
-        .replace(eventAggregatorSettings.routeParams.correlationId, processInstanceConfig.correlationId)
-        .replace(eventAggregatorSettings.routeParams.processModelId, processModel.id);
+      const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
+        .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
+        .replace(eventAggregatorSettings.messageParams.processModelId, processModel.id);
 
       let eventSubscription: Subscription;
 
@@ -148,11 +157,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       eventSubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
 
       try {
-
-        this._logProcessStarted(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
         await this._executeProcess(identity, processInstanceConfig);
-        this._logProcessFinished(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId);
-
       } catch (error) {
         this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
 
@@ -240,8 +245,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
    */
   private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceConfig.processInstanceId);
+    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const processTerminatedSubscription: Subscription =
       this._eventAggregator.subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
@@ -250,12 +255,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     await this._saveCorrelation(identity, processInstanceConfig);
 
+    this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+
     await this._executeFlowNode(processInstanceConfig.startEvent,
                                 processInstanceConfig.processToken,
                                 processInstanceConfig.processTokenFacade,
                                 processInstanceConfig.processModelFacade,
                                 identity,
                                 undefined);
+
+    this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
 

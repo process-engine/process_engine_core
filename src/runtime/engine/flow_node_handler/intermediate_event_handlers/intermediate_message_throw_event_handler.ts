@@ -44,23 +44,26 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     this.logger.verbose(`Executing MessageThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
-    const messageEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, messageName);
+    const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
     const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
                                                                                token.correlationId,
                                                                                token.processModelId,
                                                                                token.processInstanceId,
                                                                                this.messageThrowEvent.id,
+                                                                               this.flowNodeInstanceId,
+                                                                               identity,
                                                                                token.payload);
 
     this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
