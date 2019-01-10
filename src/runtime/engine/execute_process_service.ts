@@ -79,12 +79,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
                      processModel: Model.Types.Process,
                      startEventId: string,
                      correlationId: string,
-                     processInstanceId: string,
                      initialPayload?: any,
                      caller?: string): Promise<ProcessStartedMessage> {
 
     const processInstanceConfig: IProcessInstanceConfig =
-      this._createProcessInstanceConfig(identity, processModel, correlationId, processInstanceId, startEventId, initialPayload, caller);
+      this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
     try {
       // This UseCase is designed to resolve immediately after the ProcessInstance
@@ -110,30 +109,27 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                      processModel: Model.Types.Process,
                                      startEventId: string,
                                      correlationId: string,
-                                     processInstanceId: string,
                                      initialPayload?: any,
                                      caller?: string): Promise<EndEventReachedMessage> {
 
-    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, processInstanceId, initialPayload, caller);
+    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, initialPayload, caller);
   }
 
   public async startAndAwaitSpecificEndEvent(identity: IIdentity,
                                              processModel: Model.Types.Process,
                                              startEventId: string,
                                              correlationId: string,
-                                             processInstanceId: string,
                                              endEventId: string,
                                              initialPayload?: any,
                                              caller?: string): Promise<EndEventReachedMessage> {
 
-    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, processInstanceId, initialPayload, caller, endEventId);
+    return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, initialPayload, caller, endEventId);
   }
 
   private async _startAndAwaitEndEvent(identity: IIdentity,
                                        processModel: Model.Types.Process,
                                        startEventId: string,
                                        correlationId: string,
-                                       processInstanceId: string,
                                        initialPayload?: any,
                                        caller?: string,
                                        endEventId?: string,
@@ -142,7 +138,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const processInstanceConfig: IProcessInstanceConfig =
-        this._createProcessInstanceConfig(identity, processModel, correlationId, processInstanceId, startEventId, initialPayload, caller);
+        this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
       const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
         .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
@@ -201,7 +197,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private _createProcessInstanceConfig(identity: IIdentity,
                                        processModel: Model.Types.Process,
                                        correlationId: string,
-                                       processInstanceId: string,
                                        startEventId: string,
                                        payload: any,
                                        caller: string): IProcessInstanceConfig {
@@ -210,10 +205,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
 
-    const processInstanceIdNotSet: boolean = processInstanceId === undefined;
-    if (processInstanceIdNotSet) {
-      processInstanceId = uuid.v4();
-    }
+    const processInstanceId: string = uuid.v4();
 
     if (!correlationId) {
       correlationId = uuid.v4();
