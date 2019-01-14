@@ -48,7 +48,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       this._eventAggregator.unsubscribe(this.subscription);
     }
     this.handlerPromise.cancel();
-    this._decoratedHandler.interrupt(token, terminate);
+
+    return this._decoratedHandler.interrupt(token, terminate);
   }
 
   // TODO: Add support for non-interrupting signal events.
@@ -119,13 +120,14 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
     const signalBoundaryEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
       .replace(eventAggregatorSettings.messageParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
 
-    const signalReceivedCallback: any = (signal: SignalEventReachedMessage): void => {
+    const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
       if (this.handlerHasFinished) {
         return;
       }
       this.signalReceived = true;
       token.payload = signal.currentToken;
-      this._decoratedHandler.interrupt(token);
+
+      await this._decoratedHandler.interrupt(token);
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute
