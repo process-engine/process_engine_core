@@ -174,7 +174,9 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     } catch (error) {
       // We must change the state of the Subprocess here, or it will remain in a suspended state forever.
       this.logger.error(error);
-      this.persistOnError(currentProcessToken, error);
+
+      await this.persistOnError(currentProcessToken, error);
+
       throw error;
     }
   }
