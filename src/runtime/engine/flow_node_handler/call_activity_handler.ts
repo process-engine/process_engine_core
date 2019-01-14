@@ -192,7 +192,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     } catch (error) {
       // We must change the state of the CallActivity here, or it will remain in a suspended state forever.
       this.logger.error(error);
-      this.persistOnError(token, error);
+      await this.persistOnError(token, error);
       throw error;
     }
   }

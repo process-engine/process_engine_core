@@ -94,6 +94,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         return resolve(nextFlowNodeInfo);
       } catch (error) {
         this.logger.error(error);
+        await this.persistOnError(token, error);
 
         return reject(error);
       }
@@ -152,9 +153,6 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         return resolve(result);
       } catch (error) {
-        this.logger.error(error);
-        this.persistOnError(token, error);
-
         return reject(error);
       }
     });
