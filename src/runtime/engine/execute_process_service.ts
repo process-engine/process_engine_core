@@ -21,6 +21,7 @@ import {
   IProcessTokenResult,
   Model,
   NextFlowNodeInfo,
+  ProcessEndedMessage,
   ProcessStartedMessage,
   Runtime,
   TerminateEndEventReachedMessage,
@@ -267,6 +268,20 @@ export class ExecuteProcessService implements IExecuteProcessService {
     this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
+
+    // Send notification about the finished ProcessInstance.
+    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceEnded
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+    const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
+      processInstanceConfig.correlationId,
+      processInstanceConfig.processModelId,
+      processInstanceConfig.processInstanceId,
+      resultToken.flowNodeId,
+      undefined, // TODO: Add FlowNodeInstanceId to final result token.
+      identity,
+      resultToken.result);
+    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
 
     this._eventAggregator.unsubscribe(processTerminatedSubscription);
 

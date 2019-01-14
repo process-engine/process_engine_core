@@ -50,7 +50,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       this._timerFacade.cancelTimerSubscription(this.timerSubscription);
     }
     this.handlerPromise.cancel();
-    this._decoratedHandler.interrupt(token, terminate);
+
+    return this._decoratedHandler.interrupt(token, terminate);
   }
 
   protected async executeInternally(token: Runtime.Types.ProcessToken,
@@ -120,7 +121,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
     const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
-    const timerElapsed: any = (): void => {
+    const timerElapsed: any = async(): Promise<void> => {
 
       // No matter what timer type is used, a TimerBoundaryEvent can only ever run once,
       // given that the decorated handler itself can only run once.
@@ -132,7 +133,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
         return;
       }
       this.timerHasElapsed = true;
-      this._decoratedHandler.interrupt(token);
+
+      await this._decoratedHandler.interrupt(token);
 
       // if the timer elapsed before the decorated handler finished execution,
       // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
