@@ -433,9 +433,10 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
   return callActivities;
 }
 
-function parseSubProcesses(processData: any,
-                           errors: Array<Model.Types.Error>,
-                           eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+function parseSubProcesses(
+  processData: any,
+  errors: Array<Model.Types.Error>,
+  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
 ): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
