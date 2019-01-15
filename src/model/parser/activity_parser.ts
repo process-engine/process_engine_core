@@ -271,18 +271,18 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
 }
 
 function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask): string {
-  return getValueFromExtensionProperty('preferredControl', userTaskRaw)
+  return getValueFromExtensionProperty('preferredControl', userTaskRaw);
 }
 
 function getDescriptionForUserTask(userTaskRaw: Model.Activities.UserTask): string {
-  return getValueFromExtensionProperty('description', userTaskRaw)
+  return getValueFromExtensionProperty('description', userTaskRaw);
 }
 
 function getFinishedMessageForUserTask(userTaskRaw: Model.Activities.UserTask): string {
-  return getValueFromExtensionProperty('finishedMessage', userTaskRaw)
+  return getValueFromExtensionProperty('finishedMessage', userTaskRaw);
 }
 
-function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activities.UserTask) {
+function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activities.UserTask): string {
   const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
 
   const extensionElementsIsNotExisting: boolean = extensionElements === undefined;
@@ -391,7 +391,7 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
 }
 
 function findExtensionPropertyByName(propertyName: string,
-  extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
+                                     extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
 ): Model.Base.CamundaExtensionProperty {
 
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
@@ -416,7 +416,7 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
       // NOTE: There is also a CMMN type, which is not supported yet.
       callActivity.type = Model.Activities.CallActivityType.BPMN;
       callActivity.calledReference = callActivityRaw.calledElement;
-      callActivity.bindingType = <Model.Activities.CallActivityBindingType>callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
+      callActivity.bindingType = <Model.Activities.CallActivityBindingType> callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
 
       if (callActivity.bindingType === Model.Activities.CallActivityBindingType.version) {
         callActivity.calledElementVersion = callActivityRaw[BpmnTags.CamundaProperty.CalledElementVersion];
@@ -433,8 +433,8 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
 }
 
 function parseSubProcesses(processData: any,
-  errors: Array<Model.Types.Error>,
-  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+                           errors: Array<Model.Types.Error>,
+                           eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
 ): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
@@ -480,7 +480,7 @@ function determineCallActivityMappingType(callActivity: Model.Activities.CallAct
 function createActivityInstance<TActivity extends Model.Activities.Activity>(data: any, type: Model.Base.IConstructor<TActivity>): TActivity {
 
   let instance: TActivity = new type();
-  instance = <TActivity>setCommonObjectPropertiesFromData(data, instance);
+  instance = <TActivity> setCommonObjectPropertiesFromData(data, instance);
 
   instance.incoming = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowIncoming) || [];
   instance.outgoing = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowOutgoing) || [];
@@ -499,5 +499,6 @@ function getDefinitionForEvent<TEventDefinition extends Model.EventDefinitions.E
       return entry.id === eventDefinitionId;
     });
 
-  return <TEventDefinition>matchingEventDefintion;
+  return <TEventDefinition> matchingEventDefintion;
+  // tslint:disable-next-line:max-file-line-count
 }
