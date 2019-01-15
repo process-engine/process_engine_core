@@ -390,8 +390,9 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
   return methodInvocation;
 }
 
-function findExtensionPropertyByName(propertyName: string,
-                                     extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
+function findExtensionPropertyByName(
+  propertyName: string,
+  extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
 ): Model.Base.CamundaExtensionProperty {
 
   return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
