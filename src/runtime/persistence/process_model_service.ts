@@ -208,7 +208,8 @@ export class ProcessModelService implements IProcessModelService {
       return correlationProcessModel.processModelId === processModelId;
     });
 
-    if (!matchingProcessModel) {
+    const noMatchingProcessModelFound: boolean = matchingProcessModel === undefined;
+    if (noMatchingProcessModelFound) {
       throw new NotFoundError(`ProcessModel with id ${processModelId} not found!`);
     }
 
