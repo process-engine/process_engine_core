@@ -35,10 +35,15 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
                                     processTokenFacade: IProcessTokenFacade,
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
+    this.persistOnEnter(token);
     try {
       // Must use return await here to prevent unhandled rejections.
+      this.persistOnExit(token);
+
       return await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
     } catch (err) {
+      this.persistOnError(token, err);
+
       return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
     }
   }

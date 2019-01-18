@@ -58,6 +58,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.persistOnEnter(token);
     this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToMessageEvent(resolve, token, processTokenFacade, processModelFacade);
@@ -77,6 +78,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       // continue the regular execution with the next FlowNode and dispose the message subscription
       return resolve(nextFlowNodeInfo);
     });
+
+    this.persistOnExit(token);
 
     return this.handlerPromise;
   }

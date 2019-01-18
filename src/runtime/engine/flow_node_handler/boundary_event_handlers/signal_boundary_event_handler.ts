@@ -58,6 +58,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.persistOnEnter(token);
     this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
@@ -77,6 +78,8 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       // continue the regular execution with the next FlowNode and dispose the signal subscription
       return resolve(nextFlowNodeInfo);
     });
+
+    this.persistOnExit(token);
 
     return this.handlerPromise;
   }

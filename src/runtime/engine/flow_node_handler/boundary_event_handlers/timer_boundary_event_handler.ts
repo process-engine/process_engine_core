@@ -59,6 +59,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
                                     processModelFacade: IProcessModelFacade,
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
+    this.persistOnEnter(token);
     this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
 
       this._executeTimer(resolve, token, processTokenFacade, processModelFacade);
@@ -78,6 +79,8 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       // continue the regular execution with the next FlowNode and dispose the timer
       return resolve(nextFlowNodeInfo);
     });
+
+    this.persistOnExit(token);
 
     return this.handlerPromise;
   }
