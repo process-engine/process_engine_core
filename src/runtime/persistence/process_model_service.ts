@@ -11,8 +11,10 @@ import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ForbiddenError, NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 
-import * as BluebirdPromise from 'bluebird';
 import * as clone from 'clone';
+import {Logger} from 'loggerhythm';
+
+const logger: Logger = Logger.createLogger('processengine:persistence:process_model_service');
 
 export class ProcessModelService implements IProcessModelService {
 
@@ -111,19 +113,26 @@ export class ProcessModelService implements IProcessModelService {
     try {
       parsedProcessDefinition = await this._bpmnModelParser.parseXmlToObjectModel(xml);
     } catch (error) {
+      logger.error(`The XML for process "${name}" could not be parsed: ${error.message}`);
       throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
     }
 
     const processDefinitionHasMoreThanOneProcessModel: boolean = parsedProcessDefinition.processes.length > 1;
     if (processDefinitionHasMoreThanOneProcessModel) {
-      throw new UnprocessableEntityError(`The XML for process "${name}" contains more than one ProcessModel. This is currently not supported.`);
+      const tooManyProcessModelsError: string = `The XML for process "${name}" contains more than one ProcessModel. This is currently not supported.`;
+      logger.error(tooManyProcessModelsError);
+
+      throw new UnprocessableEntityError(tooManyProcessModelsError);
     }
 
     const processsModel: Model.Types.Process = parsedProcessDefinition.processes[0];
 
     const processModelIdIsNotEqualToDefinitionName: boolean = processsModel.id !== name;
     if (processModelIdIsNotEqualToDefinitionName) {
-      throw new UnprocessableEntityError(`The ProcessModel contained within the diagram "${name}" must also use the name "${name}"!`);
+      const namesDoNotMatchError: string = `The ProcessModel contained within the diagram "${name}" must also use the name "${name}"!`;
+      logger.error(namesDoNotMatchError);
+
+      throw new UnprocessableEntityError(namesDoNotMatchError);
     }
   }
 
@@ -184,7 +193,7 @@ export class ProcessModelService implements IProcessModelService {
     };
 
     const definitionsList: Array<Definitions> =
-      await BluebirdPromise.map<Runtime.Types.ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
+      await Promise.map<Runtime.Types.ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
 
     return definitionsList;
   }
