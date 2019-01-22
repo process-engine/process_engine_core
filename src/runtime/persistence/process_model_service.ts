@@ -105,10 +105,25 @@ export class ProcessModelService implements IProcessModelService {
    * @param xml  The xml code of the ProcessDefinition to validate.
    */
   private async _validateDefinition(name: string, xml: string): Promise<void> {
+
+    let parsedProcessDefinition: Definitions;
+
     try {
-      await this._bpmnModelParser.parseXmlToObjectModel(xml);
+      parsedProcessDefinition = await this._bpmnModelParser.parseXmlToObjectModel(xml);
     } catch (error) {
       throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
+    }
+
+    const processDefinitionHasMoreThanOneProcessModel: boolean = parsedProcessDefinition.processes.length > 1;
+    if (processDefinitionHasMoreThanOneProcessModel) {
+      throw new UnprocessableEntityError(`The XML for process "${name}" contains more than one ProcessModel. This is currently not supported.`);
+    }
+
+    const processsModel: Model.Types.Process = parsedProcessDefinition.processes[0];
+
+    const processModelIdIsNotEqualToDefinitionName: boolean = processsModel.id !== name;
+    if (processModelIdIsNotEqualToDefinitionName) {
+      throw new UnprocessableEntityError(`The ProcessModel contained within the diagram "${name}" must also use the name "${name}"!`);
     }
   }
 
