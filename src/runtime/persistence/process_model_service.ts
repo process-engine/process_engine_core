@@ -191,7 +191,8 @@ export class ProcessModelService implements IProcessModelService {
 
     const processModelCopy: Model.Types.Process = clone(processModel);
 
-    if (!processModel.laneSet) {
+    const processModelHasNoLanes: boolean = !(processModel.laneSet && processModel.laneSet.lanes && processModel.laneSet.lanes.length > 0);
+    if (processModelHasNoLanes) {
       return processModelCopy;
     }
 
