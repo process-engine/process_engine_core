@@ -26,7 +26,7 @@
     "@essential-projects/iam_contracts": "~3.4.0",
     "@essential-projects/timing_contracts": "~4.0.0",
     "@process-engine/external_task_api_contracts": "~1.0.0",
-    "@process-engine/consumer_api_contracts": "~3.0.0",
+    "@process-engine/consumer_api_contracts": "~4.0.0",
     "@process-engine/logging_api_contracts": "~0.3.0",
     "@process-engine/metrics_api_contracts": "~0.3.0",
     "@process-engine/process_engine_contracts": "~36.5.0",
