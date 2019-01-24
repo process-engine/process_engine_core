@@ -254,8 +254,8 @@ function validateTimer(rawTimerDefinition: any): void {
 function validateTimerValue(timerType: TimerDefinitionType, timerValue: string): void {
   switch (timerType) {
     case TimerDefinitionType.date: {
-      const iso8601DateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
-      if (iso8601DateIsInvalid) {
+      const dateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
+      if (dateIsInvalid) {
         const errorMessage: string = `The given date definition ${timerValue} is not in ISO8601 format`;
         throw new UnprocessableEntityError(errorMessage);
       }
@@ -278,9 +278,9 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string):
        */
        /*tslint:disable-next-line:max-line-length*/
       const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
-      const iso8601DurationIsInvalid: boolean = !durationRegex.test(timerValue);
+      const durationIsInvalid: boolean = !durationRegex.test(timerValue);
 
-      if (iso8601DurationIsInvalid) {
+      if (durationIsInvalid) {
         const errorMessage: string = `The given duration definition ${timerValue} is not in ISO8601 format`;
         throw new UnprocessableEntityError(errorMessage);
       }
