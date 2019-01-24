@@ -176,8 +176,8 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
       break;
     case 'timerEventDefinition':
-      event[targetPropertyName] = eventDefinitonValue;
       validateTimer(eventDefinitonValue);
+      event[targetPropertyName] = eventDefinitonValue;
       break;
     default:
       event[targetPropertyName] = {};
