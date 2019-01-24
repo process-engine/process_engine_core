@@ -289,12 +289,7 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string):
     }
 
     case TimerDefinitionType.cycle: {
-      /**
-       * This issue currently blocks the validation for Cyclic timers:
-       * https://github.com/process-engine/process_engine_runtime/issues/196
-       */
       throw new UnprocessableEntityError('Cyclic timer definitions are currently unsupported!');
-      break;
     }
 
     default: {
@@ -303,12 +298,6 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string):
   }
 }
 
-/**
- * TODO: Both of the following functions are copied from the
- * timer_facade.
- * It would be nicer, if we could use an actual timer_facade instance here,
- * which we can obtain from the ioc container.
- */
 function parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
 
   const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
