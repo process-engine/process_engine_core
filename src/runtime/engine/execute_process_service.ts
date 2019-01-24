@@ -1,5 +1,5 @@
 import * as moment from 'moment';
-import * as uuid from 'uuid';
+import * as uuid from 'node-uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
