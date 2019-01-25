@@ -114,7 +114,12 @@ export class ProcessModelService implements IProcessModelService {
       parsedProcessDefinition = await this._bpmnModelParser.parseXmlToObjectModel(xml);
     } catch (error) {
       logger.error(`The XML for process "${name}" could not be parsed: ${error.message}`);
-      throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
+      const errorMessage: string = `The XML for process "${name}" could not be parsed.`;
+      const parsingError: UnprocessableEntityError = new UnprocessableEntityError(errorMessage);
+
+      parsingError.additionalInformation = error;
+
+      throw parsingError;
     }
 
     const processDefinitionHasMoreThanOneProcessModel: boolean = parsedProcessDefinition.processes.length > 1;
