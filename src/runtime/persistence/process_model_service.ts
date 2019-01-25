@@ -11,8 +11,10 @@ import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ForbiddenError, NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 
-import * as BluebirdPromise from 'bluebird';
 import * as clone from 'clone';
+import {Logger} from 'loggerhythm';
+
+const logger: Logger = Logger.createLogger('processengine:persistence:process_model_service');
 
 export class ProcessModelService implements IProcessModelService {
 
@@ -105,10 +107,37 @@ export class ProcessModelService implements IProcessModelService {
    * @param xml  The xml code of the ProcessDefinition to validate.
    */
   private async _validateDefinition(name: string, xml: string): Promise<void> {
+
+    let parsedProcessDefinition: Definitions;
+
     try {
-      await this._bpmnModelParser.parseXmlToObjectModel(xml);
+      parsedProcessDefinition = await this._bpmnModelParser.parseXmlToObjectModel(xml);
     } catch (error) {
-      throw new UnprocessableEntityError(`The XML for process "${name}" could not be parsed.`);
+      logger.error(`The XML for process "${name}" could not be parsed: ${error.message}`);
+      const errorMessage: string = `The XML for process "${name}" could not be parsed.`;
+      const parsingError: UnprocessableEntityError = new UnprocessableEntityError(errorMessage);
+
+      parsingError.additionalInformation = error;
+
+      throw parsingError;
+    }
+
+    const processDefinitionHasMoreThanOneProcessModel: boolean = parsedProcessDefinition.processes.length > 1;
+    if (processDefinitionHasMoreThanOneProcessModel) {
+      const tooManyProcessModelsError: string = `The XML for process "${name}" contains more than one ProcessModel. This is currently not supported.`;
+      logger.error(tooManyProcessModelsError);
+
+      throw new UnprocessableEntityError(tooManyProcessModelsError);
+    }
+
+    const processsModel: Model.Types.Process = parsedProcessDefinition.processes[0];
+
+    const processModelIdIsNotEqualToDefinitionName: boolean = processsModel.id !== name;
+    if (processModelIdIsNotEqualToDefinitionName) {
+      const namesDoNotMatchError: string = `The ProcessModel contained within the diagram "${name}" must also use the name "${name}"!`;
+      logger.error(namesDoNotMatchError);
+
+      throw new UnprocessableEntityError(namesDoNotMatchError);
     }
   }
 
@@ -169,7 +198,7 @@ export class ProcessModelService implements IProcessModelService {
     };
 
     const definitionsList: Array<Definitions> =
-      await BluebirdPromise.map<Runtime.Types.ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
+      await Promise.map<Runtime.Types.ProcessDefinitionFromRepository, Definitions>(definitionsRaw, definitionsMapper);
 
     return definitionsList;
   }
@@ -191,7 +220,8 @@ export class ProcessModelService implements IProcessModelService {
 
     const processModelCopy: Model.Types.Process = clone(processModel);
 
-    if (!processModel.laneSet) {
+    const processModelHasNoLanes: boolean = !(processModel.laneSet && processModel.laneSet.lanes && processModel.laneSet.lanes.length > 0);
+    if (processModelHasNoLanes) {
       return processModelCopy;
     }
 

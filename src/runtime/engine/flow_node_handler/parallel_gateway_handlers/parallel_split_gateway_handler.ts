@@ -124,15 +124,15 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     const joinGateway: Model.Gateways.ParallelGateway = await this._findJoinGateway(token, processModelFacade);
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
 
-    // Create Promises for each branch.
-    this.logger.verbose(`Executing ${outgoingSequenceFlows.length} parallel branches to the Join-Gateway.`);
-    const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
-      this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, identity);
-
     // The state change must be performed before the parallel branches are executed.
     // Otherwise, the Split Gateway will be in a running state, until all branches have finished.
     processTokenFacade.addResultForFlowNode(this.parallelGateway.id, token.payload);
     await this.persistOnExit(token);
+
+    // Create Promises for each branch.
+    this.logger.verbose(`Executing ${outgoingSequenceFlows.length} parallel branches to the Join-Gateway.`);
+    const parallelBranchExecutionPromises: Array<Promise<NextFlowNodeInfo>> =
+      this._executeParallelBranches(outgoingSequenceFlows, joinGateway, token, processTokenFacade, processModelFacade, identity);
 
     // Now await the execution of all the branches. They will only run to the point where they encounter the Join-Gateway.
     const nextFlowNodeInfos: Array<NextFlowNodeInfo> = await Promise.all(parallelBranchExecutionPromises);
@@ -148,8 +148,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
 
   private _subscribeToProcessTerminatedEvent(processInstanceId: string): void {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.routePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.routeParams.processInstanceId, processInstanceId);
+    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId);
 
     this.terminateEndEventSubscription =
       this._eventAggregator.subscribeOnce(processTerminatedEvent, (message: TerminateEndEventReachedMessage): void => {

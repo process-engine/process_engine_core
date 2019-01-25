@@ -1,7 +1,7 @@
 // tslint:disable:max-file-line-count
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
-import * as uuid from 'uuid';
+import * as uuid from 'node-uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';

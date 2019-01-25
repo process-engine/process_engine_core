@@ -3,7 +3,7 @@ import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 
 import * as moment from 'moment';
-import * as uuid from 'uuid';
+import * as uuid from 'node-uuid';
 
 enum TimerBpmnType {
   Duration = 'bpmn:timeDuration',

@@ -44,23 +44,26 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     this.logger.verbose(`Executing SignalThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+                                  processModelFacade: IProcessModelFacade,
+                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     const signalName: string = this.signalThrowEvent.signalEventDefinition.name;
 
-    const signalEventName: string = eventAggregatorSettings.routePaths.signalEventReached
-      .replace(eventAggregatorSettings.routeParams.signalReference, signalName);
+    const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      .replace(eventAggregatorSettings.messageParams.signalReference, signalName);
 
     const message: SignalEventReachedMessage = new SignalEventReachedMessage(signalName,
                                                                              token.correlationId,
                                                                              token.processModelId,
                                                                              token.processInstanceId,
                                                                              this.signalThrowEvent.id,
+                                                                             this.flowNodeInstanceId,
+                                                                             identity,
                                                                              token.payload);
 
     this.logger.verbose(`SignalThrowEvent instance ${this.flowNodeInstanceId} now sending signal ${signalName}...`);

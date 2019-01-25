@@ -95,6 +95,8 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
       } catch (error) {
         this.logger.error(error);
 
+        await this.persistOnError(token, error);
+
         return reject(error);
       }
     });

@@ -48,7 +48,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       this._eventAggregator.unsubscribe(this.subscription);
     }
     this.handlerPromise.cancel();
-    this._decoratedHandler.interrupt(token, terminate);
+
+    return this._decoratedHandler.interrupt(token, terminate);
   }
 
   // TODO: Add support for non-interrupting message events.
@@ -116,10 +117,10 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade): void {
 
-    const messageBoundaryEventName: string = eventAggregatorSettings.routePaths.messageEventReached
-      .replace(eventAggregatorSettings.routeParams.messageReference, this.messageBoundaryEvent.messageEventDefinition.name);
+    const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      .replace(eventAggregatorSettings.messageParams.messageReference, this.messageBoundaryEvent.messageEventDefinition.name);
 
-    const messageReceivedCallback: any = (message: MessageEventReachedMessage): void => {
+    const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 
       this.messageReceived = true;
 
@@ -127,7 +128,8 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
         return;
       }
       token.payload = message.currentToken;
-      this._decoratedHandler.interrupt(token);
+
+      await this._decoratedHandler.interrupt(token);
 
       // if the message was received before the decorated handler finished execution,
       // the MessageBoundaryEvent will be used to determine the next FlowNode to execute

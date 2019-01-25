@@ -2,13 +2,7 @@ import {Logger} from 'loggerhythm';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {
-  IConsumerApi,
-  ProcessModel,
-  ProcessStartRequestPayload,
-  ProcessStartResponsePayload,
-  StartCallbackType,
-} from '@process-engine/consumer_api_contracts';
+import {DataModels as ConsumerApiTypes, IConsumerApi} from '@process-engine/consumer_api_contracts';
 
 import {ILoggingApi} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
@@ -91,7 +85,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
       // Subprocess not yet started. We need to run the handler again.
       const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
-      const processStartResponse: ProcessStartResponsePayload =
+      const processStartResponse: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
         await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
 
       callActivityResult = processStartResponse.tokenPayload;
@@ -119,7 +113,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     await this.persistOnSuspend(token);
 
-    const processStartResponse: ProcessStartResponsePayload =
+    const processStartResponse: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
       await this._executeSubprocess(identity, startEventId, processTokenFacade, token);
 
     token.payload = processStartResponse.tokenPayload;
@@ -141,7 +135,8 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
    */
   private async _getAccessibleCallActivityStartEvent(identity: IIdentity): Promise<string> {
 
-    const processModel: ProcessModel = await this._consumerApiService.getProcessModelById(identity, this.callActivity.calledReference);
+    const processModel: ConsumerApiTypes.ProcessModels.ProcessModel =
+      await this._consumerApiService.getProcessModelById(identity, this.callActivity.calledReference);
 
     /*
      * Note: If the user cannot access the process model and/or its start events,
@@ -167,16 +162,17 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
                                    startEventId: string,
                                    processTokenFacade: IProcessTokenFacade,
                                    token: Runtime.Types.ProcessToken ,
-                                  ): Promise<ProcessStartResponsePayload> {
+                                  ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
 
     const tokenData: any = processTokenFacade.getOldTokenFormat();
 
     const processInstanceId: string = token.processInstanceId;
     const correlationId: string = token.correlationId;
 
-    const startCallbackType: StartCallbackType = StartCallbackType.CallbackOnProcessInstanceFinished;
+    const startCallbackType: ConsumerApiTypes.ProcessModels.StartCallbackType =
+      ConsumerApiTypes.ProcessModels.StartCallbackType.CallbackOnProcessInstanceFinished;
 
-    const payload: ProcessStartRequestPayload = {
+    const payload: ConsumerApiTypes.ProcessModels.ProcessStartRequestPayload = {
       correlationId: correlationId,
       callerId: processInstanceId,
       inputValues: tokenData.current || {},
@@ -184,9 +180,17 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     const processModelId: string = this.callActivity.calledReference;
 
-    const result: ProcessStartResponsePayload =
-      await this._consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
+    try {
+      const result: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
+        await this._consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
 
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(error);
+
+      await this.persistOnError(token, error);
+
+      throw error;
+    }
   }
 }
