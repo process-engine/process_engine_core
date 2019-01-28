@@ -84,6 +84,8 @@ function registerServices(container) {
       'LoggingApiService',
       'MetricsApiService',
       'ProcessModelService'
+      'CorrelationService',
+      'BpmnModelParser'
     );
 
   container

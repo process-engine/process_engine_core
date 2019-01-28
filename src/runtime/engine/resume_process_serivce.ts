@@ -9,10 +9,13 @@ import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   BpmnType,
+  Definitions,
   eventAggregatorSettings,
+  ICorrelationService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
+  IModelParser,
   IProcessModelFacade,
   IProcessModelService,
   IProcessTokenFacade,
@@ -64,6 +67,8 @@ export class ResumeProcessService implements IResumeProcessService {
   private readonly _loggingApiService: ILoggingApi;
   private readonly _metricsApiService: IMetricsApi;
   private readonly _processModelService: IProcessModelService;
+  private readonly _correlationService: ICorrelationService;
+  private readonly _bpmnModelParser: IModelParser;
 
   private processTerminatedMessages: {[processInstanceId: string]: TerminateEndEventReachedMessage} = {};
 
@@ -73,6 +78,8 @@ export class ResumeProcessService implements IResumeProcessService {
               loggingApiService: ILoggingApi,
               metricsApiService: IMetricsApi,
               processModelService: IProcessModelService) {
+              correlationService: ICorrelationService,
+              modelParser: IModelParser) {
 
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
@@ -80,6 +87,8 @@ export class ResumeProcessService implements IResumeProcessService {
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
     this._processModelService = processModelService;
+    this._correlationService = correlationService;
+    this._bpmnModelParser = modelParser;
   }
 
   public async findAndResumeInterruptedProcessInstances(identity: IIdentity): Promise<void> {
