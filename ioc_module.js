@@ -83,7 +83,6 @@ function registerServices(container) {
       'FlowNodeInstanceService',
       'LoggingApiService',
       'MetricsApiService',
-      'ProcessModelService'
       'CorrelationService',
       'BpmnModelParser'
     );

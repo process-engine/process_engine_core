@@ -17,7 +17,6 @@ import {
   IFlowNodeInstanceService,
   IModelParser,
   IProcessModelFacade,
-  IProcessModelService,
   IProcessTokenFacade,
   IProcessTokenResult,
   IResumeProcessService,
@@ -66,7 +65,6 @@ export class ResumeProcessService implements IResumeProcessService {
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
   private readonly _loggingApiService: ILoggingApi;
   private readonly _metricsApiService: IMetricsApi;
-  private readonly _processModelService: IProcessModelService;
   private readonly _correlationService: ICorrelationService;
   private readonly _bpmnModelParser: IModelParser;
 
@@ -77,7 +75,6 @@ export class ResumeProcessService implements IResumeProcessService {
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
               metricsApiService: IMetricsApi,
-              processModelService: IProcessModelService) {
               correlationService: ICorrelationService,
               modelParser: IModelParser) {
 
@@ -86,7 +83,6 @@ export class ResumeProcessService implements IResumeProcessService {
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
-    this._processModelService = processModelService;
     this._correlationService = correlationService;
     this._bpmnModelParser = modelParser;
   }
