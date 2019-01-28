@@ -118,17 +118,10 @@ export class ResumeProcessService implements IResumeProcessService {
 
     logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
-    // TODO: This could be merged, if the FlowNodeInstanceService had a `queryByProcessInstance` UseCase.
-    // ----
-    const flowNodeInstancesForProcessModel: Array<Runtime.Types.FlowNodeInstance> =
-      await this._flowNodeInstanceService.queryByProcessModel(processModelId);
-
     const flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstancesForProcessModel.filter((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        return entry.processInstanceId === processInstanceId;
-      });
-    // ----
+      await this._flowNodeInstanceService.queryByProcessInstance(processInstanceId);
 
+    // ----
     // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
     // There is no point in trying to resume anything that's already finished.
     const processHasActiveFlowNodeInstances: boolean =
