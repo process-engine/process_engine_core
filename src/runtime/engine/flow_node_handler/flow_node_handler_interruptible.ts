@@ -1,7 +1,4 @@
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IInterruptible,
   Model,
   onInterruptionCallback,
@@ -14,16 +11,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   extends FlowNodeHandler<TFlowNode>
   implements IInterruptible {
 
-  private _onInterruptedCallback: onInterruptionCallback;
-
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsApiService: IMetricsApi,
-              flowNode: TFlowNode) {
-    super(flowNodeInstanceService, loggingApiService, metricsApiService, flowNode);
     // tslint:disable-next-line:no-empty
-    this._onInterruptedCallback = (): void => { };
-  }
+  private _onInterruptedCallback: onInterruptionCallback = (): void => { };
 
   /**
    * Gets the callback that gets called when an interrupt-command was received.
