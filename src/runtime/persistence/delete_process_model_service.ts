@@ -34,7 +34,7 @@ export class DeleteProcessModelService implements IDeleteProcessModelService {
     await this._iamService.ensureHasClaim(identity, this._canDeleteProcessModel);
 
     await this._processModelService.deleteProcessDefinitionById(processModelId);
-    await this._correlationService.deleteCorrelationByProcessModelId(processModelId);
+    await this._correlationService.deleteCorrelationByProcessModelId(identity, processModelId);
     await this._flowNodeInstanceService.deleteByProcessModelId(processModelId);
     await this._externalTaskRepository.deleteExternalTasksByProcessModelId(processModelId);
   }

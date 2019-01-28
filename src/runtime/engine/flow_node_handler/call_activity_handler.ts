@@ -68,7 +68,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     // First we need to find out if the Subprocess was already started.
     const correlation: Runtime.Types.Correlation
-      = await this._correlationService.getSubprocessesForProcessInstance(flowNodeInstance.processInstanceId);
+      = await this._correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
     const noSubProcessesFound: boolean = correlation === undefined;
 
