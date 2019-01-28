@@ -95,7 +95,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     handlerToDecorate: IFlowNodeHandler<TFlowNode>,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
 
-    // First the boundary events are ordered by typeand priority.
+    // First the boundary events are ordered by type and priority.
     // e.g.: the ErrorBoundaryEventHandler has to be applied before other BoundaryEvents
     // so that it only catches errors from the actual FlowNode it is attached to.
     this._orderBoundaryEventsByPriority(boundaryEvents);

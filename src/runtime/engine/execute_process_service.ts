@@ -57,8 +57,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private readonly _metricsApiService: IMetricsApi;
   private readonly _processModelService: IProcessModelService;
 
-  private processTerminatedMessage: TerminateEndEventReachedMessage;
-
   constructor(correlationService: ICorrelationService,
               eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
@@ -246,24 +244,20 @@ export class ExecuteProcessService implements IExecuteProcessService {
    */
   private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
 
-    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
-
-    const processTerminatedSubscription: Subscription =
-      this._eventAggregator.subscribeOnce(processTerminatedEvent, async(message: TerminateEndEventReachedMessage): Promise<void> => {
-        this.processTerminatedMessage = message;
-      });
-
     await this._saveCorrelation(identity, processInstanceConfig);
 
     this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
-    await this._executeFlowNode(processInstanceConfig.startEvent,
-                                processInstanceConfig.processToken,
-                                processInstanceConfig.processTokenFacade,
-                                processInstanceConfig.processModelFacade,
-                                identity,
-                                undefined);
+    const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+      await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
+
+    // Because of the usage of Promise-Chains, we only need to run the StartEvent and wait for the ProcessInstance to run its course.
+    await startEventHandler.execute(
+      processInstanceConfig.processToken,
+      processInstanceConfig.processTokenFacade,
+      processInstanceConfig.processModelFacade,
+      identity,
+    );
 
     this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
@@ -281,9 +275,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
       undefined, // TODO: Add FlowNodeInstanceId to final result token.
       identity,
       resultToken.result);
-    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
 
-    this._eventAggregator.unsubscribe(processTerminatedSubscription);
+    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
 
     return resultToken.result;
   }
@@ -307,63 +300,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                processDefinition.name,
                                                processDefinition.hash,
                                                processInstanceConfig.parentProcessInstanceId);
-  }
-
-  /**
-   * Handles the execution of each FlowNode in the given ProcessInstance.
-   *
-   * @async
-   * @param flowNode           The FlowNode to run next.
-   * @param processToken       The current ProcessToken.
-   * @param processTokenFacade The Facade for the current ProcessToken.
-   * @param processModelFacade The Facade for the ProcessModel that describes
-   *                           the running ProcessInstance.
-   * @param identity           The Identity of the user that started the
-   *                           ProcessInstance.
-   * @param terminationMessage Optional: Contains a message from a TerminateEndEvent.
-   *                           If set, this will cause the ProcessInstance to exit
-   *                           immediately.
-   * @throws                   500, if the ProcessInstance was interrupted
-   *                           prematurely by a TerminateEndEvent.
-   */
-  private async _executeFlowNode(flowNode: Model.Base.FlowNode,
-                                 processToken: Runtime.Types.ProcessToken,
-                                 processTokenFacade: IProcessTokenFacade,
-                                 processModelFacade: IProcessModelFacade,
-                                 identity: IIdentity,
-                                 previousFlowNodeInstanceId: string,
-                                ): Promise<void> {
-
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
-
-    const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-
-    const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
-
-    // If the Process was terminated during the FlowNodes execution, abort the ProcessInstance immediately.
-    const processWasTerminated: boolean = this.processTerminatedMessage !== undefined;
-    if (processWasTerminated) {
-
-      await this._flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, processToken.payload);
-
-      const error: InternalServerError =
-        new InternalServerError(`Process was terminated through TerminateEndEvent "${this.processTerminatedMessage.flowNodeId}."`);
-
-      throw error;
-    }
-
-    // If more FlowNodes exist after the current one, continue execution.
-    // Otherwise we will have arrived at the end of the current ProcessInstance.
-    const processInstanceHasAdditionalFlowNode: boolean = nextFlowNodeInfo.flowNode !== undefined;
-    if (processInstanceHasAdditionalFlowNode) {
-      await this._executeFlowNode(nextFlowNodeInfo.flowNode,
-                                  nextFlowNodeInfo.token,
-                                  nextFlowNodeInfo.processTokenFacade,
-                                  processModelFacade,
-                                  identity,
-                                  currentFlowNodeInstanceId);
-    }
   }
 
   /**
