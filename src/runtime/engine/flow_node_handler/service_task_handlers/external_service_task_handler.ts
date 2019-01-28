@@ -193,32 +193,39 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
     return new Promise<any>(async(resolve: Function, reject: Function): Promise<any> => {
 
-      const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
+      try {
 
-        if (error) {
-          this.logger.error(`External processing of ServiceTask failed!`, error);
-          await this.persistOnError(token, error);
+        const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
 
-          throw error;
-        }
+          if (error) {
+            this.logger.error(`The external worker failed to process the ExternalTask!`, error);
+            throw error;
+          }
 
-        this.logger.verbose('External processing of the ServiceTask finished successfully.');
-        token.payload = result;
+          this.logger.verbose('The external worker successfully finished processing the ExternalTask.');
+          token.payload = result;
 
-        await this.persistOnResume(token);
+          await this.persistOnResume(token);
 
-        resolve(result);
-      };
+          resolve(result);
+        };
 
-      this._waitForExternalTaskResult(externalTaskFinishedCallback);
+        this._waitForExternalTaskResult(externalTaskFinishedCallback);
 
-      const tokenHistory: any = processTokenFacade.getOldTokenFormat();
-      const payload: any = this._getServiceTaskPayload(token, tokenHistory, identity);
+        const tokenHistory: any = processTokenFacade.getOldTokenFormat();
+        const payload: any = this._getServiceTaskPayload(token, tokenHistory, identity);
 
-      await this._createExternalTask(token, payload);
-      this._publishExternalTaskCreatedNotification();
+        await this._createExternalTask(token, payload);
+        this._publishExternalTaskCreatedNotification();
 
-      this.logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
+        this.logger.verbose('Waiting for external ServiceTask to be finished by an external worker.');
+
+      } catch (error) {
+        this.logger.error('Failed to execute external ServiceTask!');
+        this.logger.error(error);
+        await this.persistOnError(token, error);
+        throw error;
+      }
     });
   }
 
