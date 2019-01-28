@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -147,27 +148,30 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
     const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.logger.verbose('Executing external ServiceTask');
-      await this.persistOnSuspend(token);
-      const externalTaskExecutorPromise: Promise<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
+      try {
+        this.logger.verbose('Executing external ServiceTask');
+        await this.persistOnSuspend(token);
+        const externalTaskExecutorPromise: Promise<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
 
-      this.onInterruptedCallback = (): void => {
-        externalTaskExecutorPromise.cancel();
-        handlerPromise.cancel();
+        this.onInterruptedCallback = (): void => {
+          externalTaskExecutorPromise.cancel();
+          handlerPromise.cancel();
 
-        return;
-      };
+          return;
+        };
+        const result: any = await externalTaskExecutorPromise;
 
-      const result: any = await externalTaskExecutorPromise;
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        token.payload = result;
 
-      processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
-      token.payload = result;
+        await this.persistOnExit(token);
 
-      await this.persistOnExit(token);
+        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
-
-      return resolve(nextFlowNodeInfo);
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        return reject(error);
+      }
     });
 
     return handlerPromise;
@@ -193,32 +197,39 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
     return new Promise<any>(async(resolve: Function, reject: Function): Promise<any> => {
 
-      const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
+      try {
+        const externalTaskFinishedCallback: Function = async(error: Error, result: any): Promise<void> => {
 
-        if (error) {
-          this.logger.error(`External processing of ServiceTask failed!`, error);
-          await this.persistOnError(token, error);
+          if (error) {
+            this.logger.error(`The external worker failed to process the ExternalTask!`, error);
 
-          throw error;
-        }
+            return reject(error);
+          }
 
-        this.logger.verbose('External processing of the ServiceTask finished successfully.');
-        token.payload = result;
+          this.logger.verbose('The external worker successfully finished processing the ExternalTask.');
+          token.payload = result;
 
-        await this.persistOnResume(token);
+          await this.persistOnResume(token);
 
-        resolve(result);
-      };
+          return resolve(result);
+        };
 
-      this._waitForExternalTaskResult(externalTaskFinishedCallback);
+        this._waitForExternalTaskResult(externalTaskFinishedCallback);
 
-      const tokenHistory: any = processTokenFacade.getOldTokenFormat();
-      const payload: any = this._getServiceTaskPayload(token, tokenHistory, identity);
+        const tokenHistory: any = processTokenFacade.getOldTokenFormat();
+        const payload: any = this._getServiceTaskPayload(token, tokenHistory, identity);
 
-      await this._createExternalTask(token, payload);
-      this._publishExternalTaskCreatedNotification();
+        await this._createExternalTask(token, payload);
+        this._publishExternalTaskCreatedNotification();
 
-      this.logger.verbose('Waiting for ServiceTask to be finished by an external worker.');
+        this.logger.verbose('Waiting for external ServiceTask to be finished by an external worker.');
+      } catch (error) {
+        this.logger.error('Failed to execute external ServiceTask!');
+        this.logger.error(error);
+        await this.persistOnError(token, error);
+
+        return reject(error);
+      }
     });
   }
 
@@ -273,14 +284,21 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    */
   private _getServiceTaskPayload(token: Runtime.Types.ProcessToken, tokenHistory: any, identity: IIdentity): any {
 
-    const serviceTaskHasAttachedPayload: boolean = this.serviceTask.payload !== undefined;
+    try {
+      const serviceTaskHasAttachedPayload: boolean = this.serviceTask.payload !== undefined;
 
-    if (serviceTaskHasAttachedPayload) {
-      const evaluatePayloadFunction: Function = new Function('token', 'identity', `return ${this.serviceTask.payload}`);
+      if (serviceTaskHasAttachedPayload) {
+        const evaluatePayloadFunction: Function = new Function('token', 'identity', `return ${this.serviceTask.payload}`);
 
-      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
-    } else {
-      return token.payload;
+        return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
+      } else {
+        return token.payload;
+      }
+    } catch (error) {
+      const errorMessage: string = `ExternalTask payload configuration '${this.serviceTask.payload}' is invalid!`;
+      this.logger.error(errorMessage);
+
+      throw new InternalServerError(errorMessage);
     }
   }
 
