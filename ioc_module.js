@@ -78,13 +78,13 @@ function registerServices(container) {
   container
     .register('ResumeProcessService', ResumeProcessService)
     .dependencies(
+      'BpmnModelParser',
+      'CorrelationService',
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
       'LoggingApiService',
-      'MetricsApiService',
-      'CorrelationService',
-      'BpmnModelParser'
+      'MetricsApiService'
     );
 
   container

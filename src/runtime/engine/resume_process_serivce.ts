@@ -60,31 +60,31 @@ interface IProcessInstanceConfig {
  */
 export class ResumeProcessService implements IResumeProcessService {
 
+  private readonly _bpmnModelParser: IModelParser;
+  private readonly _correlationService: ICorrelationService;
   private readonly _eventAggregator: IEventAggregator;
   private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
   private readonly _loggingApiService: ILoggingApi;
   private readonly _metricsApiService: IMetricsApi;
-  private readonly _correlationService: ICorrelationService;
-  private readonly _bpmnModelParser: IModelParser;
 
   private processTerminatedMessages: {[processInstanceId: string]: TerminateEndEventReachedMessage} = {};
 
-  constructor(eventAggregator: IEventAggregator,
+  constructor(bpmnModelParser: IModelParser,
+              correlationService: ICorrelationService,
+              eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
-              metricsApiService: IMetricsApi,
-              correlationService: ICorrelationService,
-              modelParser: IModelParser) {
+              metricsApiService: IMetricsApi) {
 
+    this._bpmnModelParser = bpmnModelParser;
+    this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
-    this._correlationService = correlationService;
-    this._bpmnModelParser = modelParser;
   }
 
   public async findAndResumeInterruptedProcessInstances(identity: IIdentity): Promise<void> {
