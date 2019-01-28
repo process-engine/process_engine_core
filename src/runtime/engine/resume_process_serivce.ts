@@ -2,7 +2,7 @@ import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
