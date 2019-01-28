@@ -170,7 +170,15 @@ export class ResumeProcessService implements IResumeProcessService {
                                              flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                             ): Promise<IProcessInstanceConfig> {
 
-    const processModel: Model.Types.Process = await this._processModelService.getProcessModelById(identity, processModelId);
+    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(processInstanceId);
+
+    const processModelCorrelation: Runtime.Types.CorrelationProcessModel =
+      correlation.processModels.find((correlationProcessModel: Runtime.Types.CorrelationProcessModel) => {
+        return correlationProcessModel.processModelId === processModelId;
+      });
+
+    const processModelDefinitions: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
+    const processModel: Model.Types.Process = processModelDefinitions.processes[0];
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     // Find the StartEvent the ProcessInstance was started with.
