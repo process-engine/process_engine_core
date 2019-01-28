@@ -1,14 +1,12 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   FinishUserTaskMessage,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -26,12 +24,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
   private userTaskSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              userTaskModel: Model.Activities.UserTask) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, userTaskModel);
+  constructor(container: IContainer, eventAggregator: IEventAggregator, userTaskModel: Model.Activities.UserTask) {
+    super(container, userTaskModel);
     this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:user_task_handler:${userTaskModel.id}`);
   }

@@ -1,11 +1,8 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -17,11 +14,8 @@ import {FlowNodeHandler} from '../index';
 
 export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              parallelGatewayModel: Model.Gateways.ParallelGateway) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, parallelGatewayModel);
+  constructor(container: IContainer, parallelGatewayModel: Model.Gateways.ParallelGateway) {
+    super(container, parallelGatewayModel);
     this.logger = Logger.createLogger(`processengine:parallel_join_gateway:${parallelGatewayModel.id}`);
   }
 

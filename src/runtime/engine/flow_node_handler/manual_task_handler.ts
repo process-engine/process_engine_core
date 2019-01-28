@@ -1,14 +1,12 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   FinishManualTaskMessage,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   ManualTaskFinishedMessage,
@@ -26,12 +24,8 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
   private manualTaskSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              manualTaskModel: Model.Activities.ManualTask) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, manualTaskModel);
+  constructor(container: IContainer, eventAggregator: IEventAggregator, manualTaskModel: Model.Activities.ManualTask) {
+    super(container, manualTaskModel);
     this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:manual_task_handler:${manualTaskModel.id}`);
   }

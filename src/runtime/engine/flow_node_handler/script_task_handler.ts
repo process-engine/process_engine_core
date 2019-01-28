@@ -1,11 +1,8 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -17,11 +14,8 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ScriptTask> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              scriptTaskModel: Model.Activities.ScriptTask) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, scriptTaskModel);
+  constructor(container: IContainer, scriptTaskModel: Model.Activities.ScriptTask) {
+    super(container, scriptTaskModel);
     this.logger = new Logger(`processengine:script_task_handler:${scriptTaskModel.id}`);
   }
 

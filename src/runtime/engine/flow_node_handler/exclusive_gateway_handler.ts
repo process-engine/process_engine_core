@@ -1,12 +1,9 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -18,11 +15,8 @@ import {FlowNodeHandler} from './index';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              exclusiveGatewayModel: Model.Gateways.ExclusiveGateway) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, exclusiveGatewayModel);
+  constructor(container: IContainer, exclusiveGatewayModel: Model.Gateways.ExclusiveGateway) {
+    super(container, exclusiveGatewayModel);
     this.logger = new Logger(`processengine:exclusive_gateway_handler:${exclusiveGatewayModel.id}`);
   }
 

@@ -1,14 +1,11 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {DataModels as ConsumerApiTypes, IConsumerApi} from '@process-engine/consumer_api_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   ICorrelationService,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
@@ -26,13 +23,11 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
   private _resumeProcessService: IResumeProcessService;
 
   constructor(consumerApiService: IConsumerApi,
+              container: IContainer,
               correlationService: ICorrelationService,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
               resumeProcessService: IResumeProcessService,
               callActivityModel: Model.Activities.CallActivity) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, callActivityModel);
+    super(container, callActivityModel);
     this._consumerApiService = consumerApiService;
     this._correlationService = correlationService;
     this._resumeProcessService = resumeProcessService;

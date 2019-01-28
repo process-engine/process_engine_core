@@ -1,12 +1,10 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -22,12 +20,8 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
   private _eventAggregator: IEventAggregator;
   private messageSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingService: ILoggingApi,
-              metricsService: IMetricsApi,
-              receiveTaskModel: Model.Activities.ReceiveTask) {
-    super(flowNodeInstanceService, loggingService, metricsService, receiveTaskModel);
+  constructor(container: IContainer, eventAggregator: IEventAggregator, receiveTaskModel: Model.Activities.ReceiveTask) {
+    super(container, receiveTaskModel);
     this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:receive_task_handler:${receiveTaskModel.id}`);
   }

@@ -1,11 +1,7 @@
 import {IContainer} from 'addict-ioc';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -18,16 +14,9 @@ import {FlowNodeHandlerInterruptible} from './index';
 export class ServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
   private _childHandler: FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>;
-  private _container: IContainer = undefined;
 
-  constructor(container: IContainer,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              serviceTaskModel: Model.Activities.ServiceTask) {
-
-    super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
-    this._container = container;
+  constructor(container: IContainer, serviceTaskModel: Model.Activities.ServiceTask) {
+    super(container, serviceTaskModel);
     this._childHandler = this._getChildHandler();
   }
 

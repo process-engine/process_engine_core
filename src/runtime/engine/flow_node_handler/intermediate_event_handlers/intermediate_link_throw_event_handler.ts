@@ -1,12 +1,9 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {BadRequestError, NotFoundError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -18,11 +15,8 @@ import {FlowNodeHandler} from '../index';
 
 export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingService: ILoggingApi,
-              metricsService: IMetricsApi,
-              linkThrowEventModel: Model.Events.IntermediateCatchEvent) {
-    super(flowNodeInstanceService, loggingService, metricsService, linkThrowEventModel);
+  constructor(container: IContainer, linkThrowEventModel: Model.Events.IntermediateCatchEvent) {
+    super(container, linkThrowEventModel);
     this.logger = Logger.createLogger(`processengine:link_throw_event_handler:${linkThrowEventModel.id}`);
   }
 

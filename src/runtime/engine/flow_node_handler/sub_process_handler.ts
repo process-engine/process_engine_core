@@ -1,3 +1,4 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
@@ -5,13 +6,9 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   IFlowNodeHandler,
-  IFlowNodeHandlerFactory,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -26,21 +23,14 @@ import {FlowNodeHandlerInterruptible} from './index';
 export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activities.SubProcess> {
 
   private _eventAggregator: IEventAggregator;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
   private terminateEndEventSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              subProcessModel: Model.Activities.SubProcess) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, subProcessModel);
+  constructor(container: IContainer, eventAggregator: IEventAggregator, subProcessModel: Model.Activities.SubProcess) {
+    super(container, subProcessModel);
 
     this._eventAggregator = eventAggregator;
-    this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this.logger = Logger.createLogger(`processengine:sub_process_handler:${subProcessModel.id}`);
   }
 
@@ -189,7 +179,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
                                            previousFlowNodeInstanceId: string,
                                           ): Promise<void> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
 
@@ -269,7 +259,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
                                           flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance>,
                                           ): Promise<NextFlowNodeInfo> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.resume(flowNodeInstanceForFlowNode, processTokenFacade, processModelFacade, identity);

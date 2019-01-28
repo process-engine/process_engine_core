@@ -1,13 +1,10 @@
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -23,12 +20,8 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
   private _eventAggregator: IEventAggregator;
   private subscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingService: ILoggingApi,
-              metricsService: IMetricsApi,
-              signalCatchEventModel: Model.Events.IntermediateCatchEvent) {
-    super(flowNodeInstanceService, loggingService, metricsService, signalCatchEventModel);
+  constructor(container: IContainer, eventAggregator: IEventAggregator, signalCatchEventModel: Model.Events.IntermediateCatchEvent) {
+    super(container, signalCatchEventModel);
     this._eventAggregator = eventAggregator;
     this.logger = Logger.createLogger(`processengine:signal_catch_event_handler:${signalCatchEventModel.id}`);
   }

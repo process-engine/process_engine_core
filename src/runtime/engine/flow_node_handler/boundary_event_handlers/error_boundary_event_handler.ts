@@ -1,9 +1,7 @@
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IContainer} from 'addict-ioc';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -16,12 +14,12 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
   private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-              errorBoundaryEventModel: Model.Events.BoundaryEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, errorBoundaryEventModel);
+  constructor(
+    container: IContainer,
+    decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
+    errorBoundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(container, errorBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
   }
 

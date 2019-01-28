@@ -2,11 +2,7 @@ import {IContainer} from 'addict-ioc';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -19,16 +15,9 @@ import {FlowNodeHandler} from './index';
 export class ParallelGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   private _childHandler: FlowNodeHandler<Model.Gateways.ParallelGateway>;
-  private _container: IContainer = undefined;
 
-  constructor(container: IContainer,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              serviceTaskModel: Model.Gateways.ParallelGateway) {
-
-    super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
-    this._container = container;
+  constructor(container: IContainer, serviceTaskModel: Model.Gateways.ParallelGateway) {
+    super(container, serviceTaskModel);
     this._childHandler = this._getChildHandler();
   }
 

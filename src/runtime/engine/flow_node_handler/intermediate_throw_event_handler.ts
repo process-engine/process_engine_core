@@ -2,11 +2,7 @@ import {IContainer} from 'addict-ioc';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -19,23 +15,17 @@ import {FlowNodeHandler} from './index';
 export class IntermediateThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
   private _childHandler: FlowNodeHandler<Model.Events.IntermediateCatchEvent>;
-  private _container: IContainer = undefined;
 
-  constructor(container: IContainer,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              intermediateThrowEventModel: Model.Events.IntermediateThrowEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, intermediateThrowEventModel);
-    this._container = container;
-    this._childHandler = this._getChildHandler();
+  constructor(container: IContainer, intermediateThrowEventModel: Model.Events.IntermediateThrowEvent) {
+    super(container, intermediateThrowEventModel);
+    this._childHandler = this._getChildEventHandler();
   }
 
   public getInstanceId(): string {
     return this._childHandler.getInstanceId();
   }
 
-  private _getChildHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
+  private _getChildEventHandler(): FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
     if (this.flowNode.linkEventDefinition) {
       return this

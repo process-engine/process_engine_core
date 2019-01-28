@@ -1,5 +1,5 @@
 // tslint:disable:max-file-line-count
-import {InvocationContainer} from 'addict-ioc';
+import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
@@ -27,14 +27,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected logger: Logger;
 
-  private readonly _container: InvocationContainer;
+  protected readonly _container: IContainer;
 
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _loggingApiService: ILoggingApi;
   private _metricsApiService: IMetricsApi;
 
-  constructor(container: InvocationContainer, flowNode: TFlowNode) {
+  constructor(container: IContainer, flowNode: TFlowNode) {
     this._container = container;
     this._flowNode = flowNode;
     this._flowNodeInstanceId = uuid.v4();

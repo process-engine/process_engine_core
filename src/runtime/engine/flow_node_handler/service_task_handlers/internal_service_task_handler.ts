@@ -3,11 +3,7 @@ import {Logger} from 'loggerhythm';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -19,17 +15,8 @@ import {FlowNodeHandlerInterruptible} from '../index';
 
 export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
-  private _container: IContainer;
-
-  constructor(container: IContainer,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              serviceTaskModel: Model.Activities.ServiceTask) {
-
-    super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
-
-    this._container = container;
+  constructor(container: IContainer, serviceTaskModel: Model.Activities.ServiceTask) {
+    super(container, serviceTaskModel);
     this.logger = Logger.createLogger(`processengine:internal_service_task:${serviceTaskModel.id}`);
   }
 

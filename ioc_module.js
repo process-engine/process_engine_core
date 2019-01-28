@@ -124,8 +124,8 @@ function registerHandlers(container) {
 
   container
     .register('CallActivityHandler', CallActivityHandler)
-    .dependencies('container',
-                  'ConsumerApiService',
+    .dependencies('ConsumerApiService',
+                  'container',
                   'CorrelationService',
                   'ResumeProcessService');
 

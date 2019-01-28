@@ -1,10 +1,9 @@
+import {IContainer} from 'addict-ioc';
+import {Logger} from 'loggerhythm';
+
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
@@ -14,7 +13,6 @@ import {
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {Logger} from 'loggerhythm';
 import {FlowNodeHandlerInterruptible} from '../index';
 
 export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
@@ -28,13 +26,13 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
   private handlerPromise: Promise<NextFlowNodeInfo>;
   private timerSubscription: Subscription;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              timerFacade: ITimerFacade,
-              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-              timerBoundaryEventModel: Model.Events.BoundaryEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, timerBoundaryEventModel);
+  constructor(
+    container: IContainer,
+    timerFacade: ITimerFacade,
+    decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
+    timerBoundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(container, timerBoundaryEventModel);
     this._decoratedHandler = decoratedHandler;
     this._timerFacade = timerFacade;
     this.logger = Logger.createLogger(`processengine:runtime:timer_boundary_event:${timerBoundaryEventModel.id}`);

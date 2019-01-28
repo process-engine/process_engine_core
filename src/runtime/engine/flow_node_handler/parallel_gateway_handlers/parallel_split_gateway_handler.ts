@@ -1,17 +1,13 @@
+import {IContainer} from 'addict-ioc';
 import * as clone from 'clone';
 import {Logger} from 'loggerhythm';
 
 import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   IFlowNodeHandler,
-  IFlowNodeHandlerFactory,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -25,23 +21,13 @@ import {FlowNodeHandler} from '../index';
 export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   private _eventAggregator: IEventAggregator;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _processTerminatedMessage: TerminateEndEventReachedMessage;
 
-  /**
-   * We need to persits the state of the Event Subscription for reacting correctly to Termination Events.
-   **/
   private terminateEndEventSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              parallelGatewayModel: Model.Gateways.ParallelGateway) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, parallelGatewayModel);
+  constructor(container: IContainer, eventAggregator: IEventAggregator, parallelGatewayModel: Model.Gateways.ParallelGateway) {
+    super(container, parallelGatewayModel);
     this._eventAggregator = eventAggregator;
-    this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this.logger = Logger.createLogger(`processengine:parallel_split_gateway:${parallelGatewayModel.id}`);
   }
 
@@ -71,17 +57,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     this.logger.verbose(`Subscribing to ProcessTerminated event.`);
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
-    // TODO: This can probably be removed, when we have refactored the way we handle ParallelGateways in general.
-    // For now, we need that data here for use in the parallel branches.
-    // ----
-    const flowNodeInstancesForProcessModel: Array<Runtime.Types.FlowNodeInstance> =
-      await this.flowNodeInstanceService.queryByProcessModel(token.processModelId);
-
     const flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstancesForProcessModel.filter((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        return entry.processInstanceId === token.processInstanceId;
-      });
-    // ----
+      await this.flowNodeInstanceService.queryByProcessInstance(token.processInstanceId);
 
     // First, find the Join-Gateway that will finish the Parallel branches.
     const joinGateway: Model.Gateways.ParallelGateway = await this._findJoinGateway(token, processModelFacade);
@@ -214,7 +191,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                             identity: IIdentity,
                                             previousFlowNodeInstanceId: string): Promise<NextFlowNodeInfo> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNode, processModelFacade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
 
     const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
 
@@ -284,7 +261,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
                                            flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance>,
                                           ): Promise<NextFlowNodeInfo> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this._flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
+    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
 
     const nextFlowNodeInfo: NextFlowNodeInfo =
       await flowNodeHandler.resume(flowNodeInstanceForFlowNode, processTokenFacade, processModelFacade, identity);

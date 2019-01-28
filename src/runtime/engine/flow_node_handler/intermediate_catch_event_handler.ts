@@ -2,11 +2,7 @@ import {IContainer} from 'addict-ioc';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -19,15 +15,9 @@ import {FlowNodeHandlerInterruptible} from './index';
 export class IntermediateCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
   private _childHandler: FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>;
-  private _container: IContainer = undefined;
 
-  constructor(container: IContainer,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              intermediateCatchEventModel: Model.Events.IntermediateThrowEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, intermediateCatchEventModel);
-    this._container = container;
+  constructor(container: IContainer, intermediateCatchEventModel: Model.Events.IntermediateThrowEvent) {
+    super(container, intermediateCatchEventModel);
     this._childHandler = this._getChildEventHandler();
   }
 

@@ -1,11 +1,9 @@
+import {IContainer} from 'addict-ioc';
+
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -27,13 +25,13 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
   private handlerPromise: Promise<NextFlowNodeInfo>;
   private subscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-              messageBoundaryEventModel: Model.Events.BoundaryEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, messageBoundaryEventModel);
+  constructor(
+    container: IContainer,
+    eventAggregator: IEventAggregator,
+    decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
+    messageBoundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(container, messageBoundaryEventModel);
     this._eventAggregator = eventAggregator;
     this._decoratedHandler = decoratedHandler;
   }
