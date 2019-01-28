@@ -1,4 +1,5 @@
 // tslint:disable:max-file-line-count
+import {InvocationContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
@@ -9,6 +10,7 @@ import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeHandler,
+  IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -25,17 +27,15 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected logger: Logger;
 
+  private readonly _container: InvocationContainer;
+
+  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _loggingApiService: ILoggingApi;
   private _metricsApiService: IMetricsApi;
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsApiService: IMetricsApi,
-              flowNode: TFlowNode) {
-    this._flowNodeInstanceService = flowNodeInstanceService;
-    this._loggingApiService = loggingApiService;
-    this._metricsApiService = metricsApiService;
+  constructor(container: InvocationContainer, flowNode: TFlowNode) {
+    this._container = container;
     this._flowNode = flowNode;
     this._flowNodeInstanceId = uuid.v4();
   }
@@ -52,6 +52,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this._previousFlowNodeInstanceId;
   }
 
+  protected get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
+    return this._flowNodeHandlerFactory;
+  }
+
   protected get flowNodeInstanceService(): IFlowNodeInstanceService {
     return this._flowNodeInstanceService;
   }
@@ -62,6 +66,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected get metricsApiService(): IMetricsApi {
     return this._metricsApiService;
+  }
+
+  public async initialize(): Promise<void> {
+    this._flowNodeHandlerFactory = await this._container.resolveAsync<IFlowNodeHandlerFactory>('FlowNodeHandlerFactory');
+    this._flowNodeInstanceService = await this._container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
+    this._loggingApiService = await this._container.resolveAsync<ILoggingApi>('LoggingApiService');
+    this._metricsApiService = await this._container.resolveAsync<IMetricsApi>('MetricsApiService');
   }
 
   public async execute(token: Runtime.Types.ProcessToken,
