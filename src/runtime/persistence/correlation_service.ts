@@ -1,5 +1,6 @@
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
+import {ForbiddenError} from '@essential-projects/errors_ts';
 import {
   ICorrelationRepository,
   ICorrelationService,
@@ -56,7 +57,10 @@ export class CorrelationService implements ICorrelationService {
 
     const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(activeFlowNodeInstances);
 
-    return activeCorrelations;
+    const filteredActiveCorrelations: Array<Runtime.Types.Correlation> =
+      this._filterActiveCorrelationsByIdentity(identity, activeCorrelations);
+
+    return filteredActiveCorrelations;
   }
 
   public async getAll(identity: IIdentity): Promise<Array<Runtime.Types.Correlation>> {
@@ -64,7 +68,10 @@ export class CorrelationService implements ICorrelationService {
 
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> = await this._correlationRepository.getAll();
 
-    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(correlationsFromRepo);
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
+    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(filteredCorrelationsFromRepo);
 
     return correlations;
   }
@@ -75,7 +82,10 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getByProcessModelId(processModelId);
 
-    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(correlationsFromRepo);
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
+    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(filteredCorrelationsFromRepo);
 
     return correlations;
   }
@@ -88,11 +98,14 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getByCorrelationId(correlationId);
 
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     // All correlations will have the same ID here, so we can just use the top entry as a base.
     const correlation: Runtime.Types.Correlation =
-      await this._mapCorrelation(correlationsFromRepo[0].id, activeFlowNodeInstances, correlationsFromRepo);
+      await this._mapCorrelation(filteredCorrelationsFromRepo[0].id, activeFlowNodeInstances, filteredCorrelationsFromRepo);
 
     return correlation;
   }
@@ -102,6 +115,12 @@ export class CorrelationService implements ICorrelationService {
 
     const correlationFromRepo: Runtime.Types.CorrelationFromRepository =
       await this._correlationRepository.getByProcessInstanceId(processInstanceId);
+
+    const wrongIdentity: boolean = identity.userId !== correlationFromRepo.identity.userId;
+
+    if (wrongIdentity) {
+      throw new ForbiddenError('Access denied.');
+    }
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
@@ -117,7 +136,11 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getSubprocessesForProcessInstance(processInstanceId);
 
-    if (correlationsFromRepo.length === 0) {
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
+    const noFilteredCorrelations: boolean = filteredCorrelationsFromRepo.length === 0;
+    if (noFilteredCorrelations) {
       return undefined;
     }
 
@@ -133,6 +156,26 @@ export class CorrelationService implements ICorrelationService {
     await this._iamService.ensureHasClaim(identity, canDeleteProcessModel);
 
     this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
+  }
+
+  private _filterActiveCorrelationsByIdentity(
+    identity: IIdentity,
+    activeCorrelations: Array<Runtime.Types.Correlation>,
+    ): Array<Runtime.Types.Correlation> {
+
+    return activeCorrelations.filter((activeCorrelation: Runtime.Types.Correlation) => {
+      return identity === activeCorrelation.identity;
+    });
+  }
+
+  private _filterCorrelationsFromRepoByIdentity(
+    identity: IIdentity,
+    correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>,
+    ): Array<Runtime.Types.CorrelationFromRepository> {
+
+    return correlationsFromRepo.filter((correlationFromRepo: Runtime.Types.CorrelationFromRepository) => {
+      return identity === correlationFromRepo.identity;
+    });
   }
 
   /**
