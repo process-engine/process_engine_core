@@ -73,6 +73,10 @@ export class FlowNodeInstanceService implements IFlowNodeInstanceService {
     return this._flowNodeInstanceRepository.querySuspendedByProcessModel(processModelId);
   }
 
+  public async querySuspendedByProcessInstance(processInstanceId: string): Promise<Array<Runtime.Types.FlowNodeInstance>> {
+    return this._flowNodeInstanceRepository.querySuspendedByProcessInstance(processInstanceId);
+  }
+
   public async queryProcessTokensByProcessInstanceId(processInstanceId: string): Promise<Array<Runtime.Types.ProcessToken>> {
     return this._flowNodeInstanceRepository.queryProcessTokensByProcessInstanceId(processInstanceId);
   }
