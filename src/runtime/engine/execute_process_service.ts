@@ -20,11 +20,9 @@ import {
   IProcessTokenFacade,
   IProcessTokenResult,
   Model,
-  NextFlowNodeInfo,
   ProcessEndedMessage,
   ProcessStartedMessage,
   Runtime,
-  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
@@ -259,24 +257,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
       identity,
     );
 
-    this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
-
     const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
 
-    // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceEnded
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
-
-    const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
-      processInstanceConfig.correlationId,
-      processInstanceConfig.processModelId,
-      processInstanceConfig.processInstanceId,
-      resultToken.flowNodeId,
-      undefined, // TODO: Add FlowNodeInstanceId to final result token.
-      identity,
-      resultToken.result);
-
-    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
+    this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+    this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
 
     return resultToken.result;
   }
@@ -377,5 +361,27 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
 
     return allResults.pop();
+  }
+
+  private _sendProcessInstanceFinishedNotification(
+    identity: IIdentity,
+    processInstanceConfig: IProcessInstanceConfig,
+    resultToken: IProcessTokenResult,
+  ): void {
+
+    // Send notification about the finished ProcessInstance.
+    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceEnded
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+    const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
+      processInstanceConfig.correlationId,
+      processInstanceConfig.processModelId,
+      processInstanceConfig.processInstanceId,
+      resultToken.flowNodeId,
+      undefined, // TODO: Add FlowNodeInstanceId to final result token.
+      identity,
+      resultToken.result);
+
+    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
   }
 }
