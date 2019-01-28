@@ -1,6 +1,7 @@
 import {
   BpmnTags,
   Model,
+  TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
 import {
@@ -8,7 +9,15 @@ import {
   getModelPropertyAsArray,
 } from '../type_factory';
 
-import {NotFoundError} from '@essential-projects/errors_ts';
+import {NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+
+import * as moment from 'moment';
+
+enum TimerBpmnType {
+  Duration = 'bpmn:timeDuration',
+  Cycle = 'bpmn:timeCycle',
+  Date = 'bpmn:timeDate',
+}
 
 let errors: Array<Model.Types.Error> = [];
 let eventDefinitions: Array<Model.EventDefinitions.EventDefinition> = [];
@@ -167,6 +176,7 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
       break;
     case 'timerEventDefinition':
+      validateTimer(eventDefinitonValue);
       event[targetPropertyName] = eventDefinitonValue;
       break;
     default:
@@ -234,3 +244,96 @@ function getErrorById(errorId: string): Model.Types.Error {
 
   return matchingError;
 }
+
+function validateTimer(rawTimerDefinition: any): void {
+  const timerDefinitionType: TimerDefinitionType = parseTimerDefinitionType(rawTimerDefinition);
+  const timerDefinitionValue: string = parseTimerDefinitionValue(rawTimerDefinition);
+  validateTimerValue(timerDefinitionType, timerDefinitionValue);
+}
+
+function validateTimerValue(timerType: TimerDefinitionType, timerValue: string): void {
+  switch (timerType) {
+    case TimerDefinitionType.date: {
+      const dateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
+      if (dateIsInvalid) {
+        const errorMessage: string = `The given date definition ${timerValue} is not in ISO8601 format`;
+        throw new UnprocessableEntityError(errorMessage);
+      }
+
+      break;
+    }
+
+    case TimerDefinitionType.duration: {
+      /**
+       * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
+       * we can't really use momentjs to validate durations against the
+       * ISO8601 duration syntax.
+       *
+       * There is an isValid() method on moment.Duration objects but its
+       * useless since it always returns true.
+       */
+
+      /**
+       * Stolen from: https://stackoverflow.com/a/32045167
+       */
+       /*tslint:disable-next-line:max-line-length*/
+      const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
+      const durationIsInvalid: boolean = !durationRegex.test(timerValue);
+
+      if (durationIsInvalid) {
+        const errorMessage: string = `The given duration definition ${timerValue} is not in ISO8601 format`;
+        throw new UnprocessableEntityError(errorMessage);
+      }
+
+      break;
+    }
+
+    case TimerDefinitionType.cycle: {
+      throw new UnprocessableEntityError('Cyclic timer definitions are currently unsupported!');
+    }
+
+    default: {
+      throw new UnprocessableEntityError('Unknown Timer definition type');
+    }
+  }
+}
+
+function parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
+
+  const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+  if (timerIsDuration) {
+    return TimerDefinitionType.duration;
+  }
+
+  const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+  if (timerIsCyclic) {
+    return TimerDefinitionType.cycle;
+  }
+
+  const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+  if (timerIsDate) {
+    return TimerDefinitionType.date;
+  }
+
+  return undefined;
+}
+
+function parseTimerDefinitionValue(eventDefinition: any): string {
+
+    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    if (timerIsDuration) {
+      return eventDefinition[TimerBpmnType.Duration]._;
+    }
+
+    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+    if (timerIsCyclic) {
+      return eventDefinition[TimerBpmnType.Cycle]._;
+    }
+
+    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+    if (timerIsDate) {
+      return eventDefinition[TimerBpmnType.Date]._;
+    }
+
+    return undefined;
+  }
