@@ -8,7 +8,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -29,10 +28,12 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing SignalThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -40,10 +41,12 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     const signalName: string = this.signalThrowEvent.signalEventDefinition.name;
 
@@ -65,6 +68,6 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 }
