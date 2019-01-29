@@ -1,3 +1,4 @@
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {
   BpmnType,
   IFlowNodeHandler,
@@ -15,12 +16,42 @@ enum BoundaryEventType {
   Signal = 3,
 }
 
+/**
+ * Maps all supported BPMN Types to the name of the matching handler as it is registered in the ioc container.
+ */
+const bpmnTypeToRegistrationMap: {[bpmnType: string]: string} = {
+  'bpmn:StartEvent': 'StartEventHandler',
+  'bpmn:CallActivity': 'CallActivityHandler',
+  'bpmn:ExclusiveGateway': 'ExclusiveGatewayHandler',
+  'bpmn:ScriptTask': 'ScriptTaskHandler',
+  'bpmn:EndEvent': 'EndEventHandler',
+  'bpmn:SubProcess': 'SubProcessHandler',
+  'bpmn:UserTask': 'UserTaskHandler',
+  'bpmn:SendTask': 'SendTaskHandler',
+  'bpmn:ReceiveTask': 'ReceiveTaskHandler',
+  'bpmn:ManualTask': 'ManualTaskHandler',
+};
+
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   private _container: IContainer;
+  private _intermediateCatchEventHandlerFactory: IFlowNodeHandlerFactory;
+  private _intermediateThrowEventHandlerFactory: IFlowNodeHandlerFactory;
+  private _parallelGatewayHandlerFactory: IFlowNodeHandlerFactory;
+  private _serviceTaskHandlerFactory: IFlowNodeHandlerFactory;
 
-  constructor(container: IContainer) {
+  constructor(
+    container: IContainer,
+    intermediateCatchEventHandlerFactory: IFlowNodeHandlerFactory,
+    intermediateThrowEventHandlerFactory: IFlowNodeHandlerFactory,
+    parallelGatewayHandlerFactory: IFlowNodeHandlerFactory,
+    serviceTaskHandlerFactory: IFlowNodeHandlerFactory,
+  ) {
     this._container = container;
+    this._intermediateCatchEventHandlerFactory = intermediateCatchEventHandlerFactory;
+    this._intermediateThrowEventHandlerFactory = intermediateThrowEventHandlerFactory;
+    this._parallelGatewayHandlerFactory = parallelGatewayHandlerFactory;
+    this._serviceTaskHandlerFactory = serviceTaskHandlerFactory;
   }
 
   public async create<TFlowNode extends Model.Base.FlowNode>(
@@ -28,7 +59,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     processModelFacade: IProcessModelFacade,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
 
-    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._create<TFlowNode>(flowNode);
+    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._createHandler<TFlowNode>(flowNode);
 
     const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
@@ -43,47 +74,39 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return this._decorateWithBoundaryEventHandlers<TFlowNode>(boundaryEvents, flowNodeHandler);
   }
 
-  // tslint:disable-next-line:cyclomatic-complexity
-  private async _create<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode): Promise<IFlowNodeHandler<TFlowNode>> {
+  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode): Promise<IFlowNodeHandler<TFlowNode>> {
     switch (flowNode.bpmnType) {
-      case BpmnType.startEvent:
-        return this._createHandler<TFlowNode>('StartEventHandler', flowNode);
-      case BpmnType.callActivity:
-        return this._createHandler<TFlowNode>('CallActivityHandler', flowNode);
-      case BpmnType.exclusiveGateway:
-        return this._createHandler<TFlowNode>('ExclusiveGatewayHandler', flowNode);
+
       case BpmnType.parallelGateway:
-        return this._createHandler<TFlowNode>('ParallelGatewayHandler', flowNode);
+        return this._parallelGatewayHandlerFactory.create(flowNode);
+
       case BpmnType.serviceTask:
-        return this._createHandler<TFlowNode>('ServiceTaskHandler', flowNode);
-      case BpmnType.scriptTask:
-        return this._createHandler<TFlowNode>('ScriptTaskHandler', flowNode);
+        return this._serviceTaskHandlerFactory.create(flowNode);
+
       case BpmnType.intermediateCatchEvent:
-        return this._createHandler<TFlowNode>('IntermediateCatchEventHandler', flowNode);
+        return this._intermediateCatchEventHandlerFactory.create(flowNode);
+
       case BpmnType.intermediateThrowEvent:
-        return this._createHandler<TFlowNode>('IntermediateThrowEventHandler', flowNode);
-      case BpmnType.endEvent:
-        return this._createHandler<TFlowNode>('EndEventHandler', flowNode);
-      case BpmnType.subProcess:
-        return this._createHandler<TFlowNode>('SubProcessHandler', flowNode);
-      case BpmnType.userTask:
-        return this._createHandler<TFlowNode>('UserTaskHandler', flowNode);
-      case BpmnType.sendTask:
-        return this._createHandler<TFlowNode>('SendTaskHandler', flowNode);
-      case BpmnType.receiveTask:
-        return this._createHandler<TFlowNode>('ReceiveTaskHandler', flowNode);
-      case BpmnType.manualTask:
-        return this._createHandler<TFlowNode>('ManualTaskHandler', flowNode);
+        return this._intermediateThrowEventHandlerFactory.create(flowNode);
+
       default:
-        throw Error(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" found.`);
+        const handlerRegistrationKey: string = bpmnTypeToRegistrationMap[flowNode.bpmnType];
+
+        return this._resolveHandlerInstance(handlerRegistrationKey, flowNode);
     }
   }
 
-  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(
-    registrationKey: string,
+  private async _resolveHandlerInstance<TFlowNode extends Model.Base.FlowNode>(
+    handlerRegistrationKey: string,
     flowNode: TFlowNode,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
-    return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey, [flowNode]);
+
+    const handlerIsNotRegistered: boolean = this._container.isRegistered(handlerRegistrationKey);
+    if (handlerIsNotRegistered) {
+      throw new InternalServerError(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" found.`);
+    }
+
+    return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>(handlerRegistrationKey, [flowNode]);
   }
 
   private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(
