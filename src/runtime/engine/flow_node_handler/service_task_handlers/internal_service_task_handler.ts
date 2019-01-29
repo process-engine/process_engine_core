@@ -7,7 +7,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -24,11 +23,12 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity,
-                                   ): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing internal ServiceTask instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -36,11 +36,12 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
     if (serviceTaskHasNoInvocation) {
@@ -51,7 +52,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
 
       return nextFlowNodeInfo;
     }
@@ -76,7 +77,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {

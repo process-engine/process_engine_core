@@ -10,7 +10,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -45,7 +44,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<NextFlowNodeInfo> {
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing external ServiceTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -59,9 +58,10 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<NextFlowNodeInfo> {
+  ): Promise<Model.Base.FlowNode> {
 
-    const resumerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const resumerPromise: Promise<Model.Base.FlowNode> =
+      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
@@ -78,7 +78,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         onSuspendToken.payload = result;
         await this.persistOnExit(onSuspendToken);
 
-        const nextFlowNode: NextFlowNodeInfo = this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+        const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
 
         return resolve(nextFlowNode);
       }
@@ -100,7 +100,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, onSuspendToken.payload);
         await this.persistOnExit(onSuspendToken);
 
-        const nextFlowNode: NextFlowNodeInfo = this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+        const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
         resolve(nextFlowNode);
       };
 
@@ -141,9 +141,10 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<NextFlowNodeInfo> {
+  ): Promise<Model.Base.FlowNode> {
 
-    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Model.Base.FlowNode> =
+      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
 
       try {
         this.logger.verbose('Executing external ServiceTask');
@@ -163,7 +164,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
