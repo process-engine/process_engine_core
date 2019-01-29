@@ -1,3 +1,4 @@
+import {NotFoundError} from '@essential-projects/errors_ts';
 import {BpmnType, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
 
 import {SubProcessModelFacade} from './index';
@@ -16,6 +17,49 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
   public getIsExecutable(): boolean {
     return this.processModel.isExecutable;
+  }
+
+  public getSubProcessModelFacade(subProcessNode: Model.Activities.SubProcess): IProcessModelFacade {
+    return new SubProcessModelFacade(this.processModel, subProcessNode);
+  }
+
+  public getStartEvents(): Array<Model.Events.StartEvent> {
+    return this._filterFlowNodesByType<Model.Events.StartEvent>(Model.Events.StartEvent);
+  }
+
+  public getStartEventById(startEventId: string): Model.Events.StartEvent {
+
+    const startEvents: Array<Model.Events.StartEvent> = this.getStartEvents();
+
+    const matchingStartEvent: Model.Events.StartEvent = startEvents.find((startEvent: Model.Events.StartEvent): boolean => {
+      return startEvent.id === startEventId;
+    });
+
+    if (!matchingStartEvent) {
+      throw new NotFoundError(`Start event with id '${startEventId}' not found!`);
+    }
+
+    return matchingStartEvent;
+  }
+
+  public getEndEvents(): Array<Model.Events.EndEvent> {
+    return this._filterFlowNodesByType<Model.Events.EndEvent>(Model.Events.EndEvent);
+  }
+
+  public getUserTasks(): Array<Model.Activities.UserTask> {
+    return this._filterFlowNodesByType<Model.Activities.UserTask>(Model.Activities.UserTask);
+  }
+
+  public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
+    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+      return sequenceFlow.targetRef === flowNodeId;
+    });
+  }
+
+  public getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
+    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+      return sequenceFlow.sourceRef === flowNodeId;
+    });
   }
 
   public getSequenceFlowBetween(flowNode: Model.Base.FlowNode, nextFlowNode: Model.Base.FlowNode): Model.Types.SequenceFlow {
@@ -44,94 +88,6 @@ export class ProcessModelFacade implements IProcessModelFacade {
         }
       }
     }
-  }
-
-  public getSubProcessModelFacade(subProcessNode: Model.Activities.SubProcess): IProcessModelFacade {
-    return new SubProcessModelFacade(this.processModel, subProcessNode);
-  }
-
-  public getStartEvents(): Array<Model.Events.StartEvent> {
-
-    const startEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
-      return flowNode instanceof Model.Events.StartEvent;
-    });
-
-    return startEvents as Array<Model.Events.StartEvent>;
-  }
-
-  public getStartEventById(startEventId: string): Model.Events.StartEvent {
-
-    const startEvents: Array<Model.Events.StartEvent> = this.getStartEvents();
-
-    // TODO:
-    // For backwards compatibility only.
-    // This allows the old process engine service to use the new object model.
-    //
-    // Note that is not the desired default behavior.
-    // Aside from the ProcessEngineService, no component should ever pass an empty start event to the executeProcessService!
-    //
-    // In future versions, passing an empty start event id should result in an error!
-    if (!startEventId) {
-      return startEvents[0];
-    }
-
-    const matchingStartEvent: Model.Events.StartEvent = startEvents.find((startEvent: Model.Events.StartEvent): boolean => {
-      return startEvent.id === startEventId;
-    });
-
-    if (!matchingStartEvent) {
-      throw new Error(`Start event with id '${startEventId}' not found!`);
-    }
-
-    return matchingStartEvent;
-  }
-
-  public getEndEvents(): Array<Model.Events.EndEvent> {
-
-    const endEvents: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
-      return flowNode instanceof Model.Events.EndEvent;
-    });
-
-    return endEvents as Array<Model.Events.EndEvent>;
-  }
-
-  public getUserTasks(): Array<Model.Activities.UserTask> {
-
-    const userTaskFlowNodes: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
-      return flowNode instanceof Model.Activities.UserTask;
-    });
-
-    const laneUserTasks: Array<Model.Activities.UserTask> = this._getUserTasksFromFlowNodeList(this.processModel);
-
-    return [
-      ...userTaskFlowNodes,
-      ...laneUserTasks,
-    ] as Array<Model.Activities.UserTask>;
-  }
-
-  private _getUserTasksFromFlowNodeList(processModel: Model.Types.Process): Array<Model.Activities.UserTask> {
-
-    if (!processModel.laneSet) {
-      return [];
-    }
-
-    const userTasks: Array<Model.Base.FlowNode> = processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
-      return flowNode instanceof Model.Activities.UserTask;
-    });
-
-    return userTasks as Array<Model.Activities.UserTask>;
-  }
-
-  public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
-    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
-      return sequenceFlow.targetRef === flowNodeId;
-    });
-  }
-
-  public getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
-    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
-      return sequenceFlow.sourceRef === flowNodeId;
-    });
   }
 
   // TODO:
@@ -220,5 +176,14 @@ export class ProcessModelFacade implements IProcessModelFacade {
       });
 
     return <Array<Model.Events.IntermediateCatchEvent>> matchingIntermediateCatchEvents;
+  }
+
+  private _filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
+
+    const flowNodes: Array<Model.Base.FlowNode> = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
+      return flowNode instanceof type;
+    });
+
+    return flowNodes as Array<TFlowNode>;
   }
 }
