@@ -10,7 +10,6 @@ import {
   IProcessTokenFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   Runtime,
   SignalEventReachedMessage,
   TerminateEndEventReachedMessage,
@@ -32,10 +31,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing EndEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -43,10 +44,12 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
     const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;
@@ -81,7 +84,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       return Promise.reject(errorObj);
     }
 
-    return new NextFlowNodeInfo(undefined, token, processTokenFacade);
+    return undefined;
   }
 
   /**

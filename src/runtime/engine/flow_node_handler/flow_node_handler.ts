@@ -82,29 +82,27 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     previousFlowNodeInstanceId?: string,
   ): Promise<void> {
 
-    this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
-    token.flowNodeInstanceId = this.flowNodeInstanceId;
-    let nextFlowNode: Model.Base.FlowNode;
-
     try {
+      this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
+      token.flowNodeInstanceId = this.flowNodeInstanceId;
+      let nextFlowNode: Model.Base.FlowNode;
+
       nextFlowNode = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+
+      const processIsNotYetFinished: boolean = nextFlowNode !== undefined;
+      if (processIsNotYetFinished) {
+        const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
+
+        return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+      }
     } catch (error) {
       processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
       throw error;
     }
-
-    if (!nextFlowNode) {
-      throw new InternalServerError(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
-    }
-
-    type NextFlowNodeType = typeof nextFlowNode;
-
-    const nextFlowNodeHandler: IFlowNodeHandler<NextFlowNodeType> =
-      await this.flowNodeHandlerFactory.create<NextFlowNodeType>(nextFlowNode, processModelFacade);
-
-    return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
   }
 
+  // TODO: Add Collection of a ProcessInstance's FlowNodeInstances to call signature
   public async resume(
     flowNodeInstance: Runtime.Types.FlowNodeInstance,
     processTokenFacade: IProcessTokenFacade,
@@ -112,26 +110,27 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     identity: IIdentity,
   ): Promise<void> {
 
-    this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
-    this._flowNodeInstanceId = flowNodeInstance.id;
-
-    let nextFlowNode: Model.Base.FlowNode;
-
     try {
+      this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
+      this._flowNodeInstanceId = flowNodeInstance.id;
+
+      let nextFlowNode: Model.Base.FlowNode;
+
       nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+
+      const processIsNotYetFinished: boolean = nextFlowNode !== undefined;
+      if (processIsNotYetFinished) {
+        // ----------------------------
+        // TODO - WIP; Still needs refactoring
+        // - Get FlowNodeInstance for next FlowNode from received collection
+        // - If any exists: Call "resume"
+        // - otherwise continue with "execute"
+        // ----------------------------
+      }
     } catch (error) {
       processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
       throw error;
     }
-
-    if (!nextFlowNode) {
-      throw new InternalServerError(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
-    }
-
-    // ----------------------------
-    // TODO - WIP; Still needs refactoring
-    // return nextFlowNode;
-    // ----------------------------
   }
 
   public getInstanceId(): string {

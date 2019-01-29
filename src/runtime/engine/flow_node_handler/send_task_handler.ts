@@ -9,7 +9,6 @@ import {
   IProcessTokenFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -30,10 +29,12 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing SendTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -42,23 +43,26 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                       ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
-    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Model.Base.FlowNode> =
+      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
         if (this.responseSubscription) {
@@ -74,7 +78,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
 
         return resolve(nextFlowNodeInfo);
       };
@@ -120,15 +124,15 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       .sendTaskReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
-    const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
-                                                                    messageName,
-                                                                    token.correlationId,
-                                                                    token.processModelId,
-                                                                    token.processInstanceId,
-                                                                    this.sendTask.id,
-                                                                    this.flowNodeInstanceId,
-                                                                    identity,
-                                                                    token);
+    const messageToSend: MessageEventReachedMessage =
+      new MessageEventReachedMessage(messageName,
+                                     token.correlationId,
+                                     token.processModelId,
+                                     token.processInstanceId,
+                                     this.sendTask.id,
+                                     this.flowNodeInstanceId,
+                                     identity,
+                                     token);
 
     this._eventAggregator.publish(messageEventName, messageToSend);
   }

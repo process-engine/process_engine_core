@@ -11,7 +11,6 @@ import {
   ITimerFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   ProcessStartedMessage,
   Runtime,
   SignalEventReachedMessage,
@@ -36,10 +35,12 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing StartEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -47,11 +48,12 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                      ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+  ): Promise<Model.Base.FlowNode> {
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -81,13 +83,13 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+                                  identity: IIdentity): Promise<Model.Base.FlowNode> {
 
     this._sendProcessStartedMessage(identity, token, this.startEvent.id);
 
@@ -118,7 +120,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   /**

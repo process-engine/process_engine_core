@@ -12,7 +12,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
@@ -43,10 +42,12 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return Promise.resolve();
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing SubProcess instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -54,12 +55,13 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                       ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this._subscribeToProcessTerminatedEvent(onSuspendToken.processInstanceId);
 
@@ -89,13 +91,15 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
 
-    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this._subscribeToProcessTerminatedEvent(token.processInstanceId);
 
@@ -109,7 +113,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   private _subscribeToProcessTerminatedEvent(processInstanceId: string): void {
@@ -148,12 +152,10 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     subProcessToken.caller = currentProcessToken.processInstanceId;
 
     try {
-      await this._executeSubProcessFlowNode(subProcessStartEvent,
-                                            subProcessToken,
-                                            subProcessTokenFacade,
-                                            subProcessModelFacade,
-                                            identity,
-                                            undefined);
+      const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+        await this.flowNodeHandlerFactory.create(subProcessStartEvent, processModelFacade);
+
+      await flowNodeHandler.execute(subProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
 
       // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
       // and on the original ProcessTokenFacade, so that is is accessible by the original Process
@@ -168,40 +170,6 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
       await this.persistOnError(currentProcessToken, error);
 
       throw error;
-    }
-  }
-
-  private async _executeSubProcessFlowNode(flowNode: Model.Base.FlowNode,
-                                           token: Runtime.Types.ProcessToken,
-                                           processTokenFacade: IProcessTokenFacade,
-                                           processModelFacade: IProcessModelFacade,
-                                           identity: IIdentity,
-                                           previousFlowNodeInstanceId: string,
-                                          ): Promise<void> {
-
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNode, processModelFacade);
-
-    const currentFlowNodeInstanceId: string = flowNodeHandler.getInstanceId();
-
-    const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
-
-    const processWasTerminated: boolean = this._processTerminatedMessage !== undefined;
-    if (processWasTerminated) {
-      await this.flowNodeInstanceService.persistOnTerminate(flowNode, currentFlowNodeInstanceId, token);
-      await this.persistOnTerminate(token);
-      const terminateEndEventId: string = this._processTerminatedMessage.flowNodeId;
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${terminateEndEventId}".`);
-    }
-
-    const subProcessHasAnotherFlowNodeToExecute: boolean = nextFlowNodeInfo.flowNode !== undefined;
-    if (subProcessHasAnotherFlowNodeToExecute) {
-      await this._executeSubProcessFlowNode(nextFlowNodeInfo.flowNode,
-                                  nextFlowNodeInfo.token,
-                                  nextFlowNodeInfo.processTokenFacade,
-                                  processModelFacade,
-                                  identity,
-                                  currentFlowNodeInstanceId);
     }
   }
 
@@ -234,13 +202,16 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
         return entry.flowNodeId === subProcessStartEvent.id;
       });
 
-    await this._resumeSubProcessFlowNode(subProcessStartEvent,
-                                         flowNodeInstanceForStartEvent,
-                                         subProcessToken,
-                                         subProcessTokenFacade,
-                                         subProcessModelFacade,
-                                         identity,
-                                         flowNodeInstancesForSubprocess);
+    // TODO - WIP
+    // Still needs refactoring
+
+    // await this._resumeSubProcessFlowNode(subProcessStartEvent,
+    //                                      flowNodeInstanceForStartEvent,
+    //                                      subProcessToken,
+    //                                      subProcessTokenFacade,
+    //                                      subProcessModelFacade,
+    //                                      identity,
+    //                                      flowNodeInstancesForSubprocess);
 
     // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
     // and on the original ProcessTokenFacade, so that is is accessible by the original Process
@@ -248,63 +219,5 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     const subProcessResult: any = subProcessTokenData.current || {};
 
     return subProcessResult;
-  }
-
-  private async _resumeSubProcessFlowNode(flowNodeToResume: Model.Base.FlowNode,
-                                          flowNodeInstanceForFlowNode: Runtime.Types.FlowNodeInstance,
-                                          token: Runtime.Types.ProcessToken,
-                                          processTokenFacade: IProcessTokenFacade,
-                                          processModelFacade: IProcessModelFacade,
-                                          identity: IIdentity,
-                                          flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance>,
-                                          ): Promise<NextFlowNodeInfo> {
-
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> = await this.flowNodeHandlerFactory.create(flowNodeToResume, processModelFacade);
-
-    const nextFlowNodeInfo: NextFlowNodeInfo =
-      await flowNodeHandler.resume(flowNodeInstanceForFlowNode, processTokenFacade, processModelFacade, identity);
-
-    const processWasTerminated: boolean = this._processTerminatedMessage !== undefined;
-    if (processWasTerminated) {
-      await this.flowNodeInstanceService.persistOnTerminate(flowNodeToResume, flowNodeInstanceForFlowNode.id, token);
-      throw new InternalServerError(`Process was terminated through TerminateEndEvent "${this._processTerminatedMessage.flowNodeId}".`);
-    }
-
-    const subProcessHasAnotherFlowNodeToExecute: boolean = nextFlowNodeInfo.flowNode !== undefined;
-    if (!subProcessHasAnotherFlowNodeToExecute) {
-      return;
-    }
-
-    // Check if a FlowNodeInstance for the next FlowNode has already been persisted
-    // during a previous execution of the ProcessInstance.
-    const flowNodeInstanceForNextFlowNode: Runtime.Types.FlowNodeInstance =
-      flowNodeInstancesForProcessInstance.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        return entry.flowNodeId === nextFlowNodeInfo.flowNode.id;
-      });
-
-    const resumingNotFinished: boolean = flowNodeInstanceForNextFlowNode !== undefined;
-    if (resumingNotFinished) {
-      this.logger.info(`Resuming FlowNode ${flowNodeInstanceForNextFlowNode.flowNodeId} for SubProcess instance ${this.flowNodeInstanceId}.`);
-      // If a matching FlowNodeInstance exists, continue resuming.
-      await this._resumeSubProcessFlowNode(nextFlowNodeInfo.flowNode,
-                                           flowNodeInstanceForNextFlowNode,
-                                           nextFlowNodeInfo.token,
-                                           nextFlowNodeInfo.processTokenFacade,
-                                           processModelFacade,
-                                           identity,
-                                           flowNodeInstancesForProcessInstance);
-    } else {
-      // Otherwise, we will have arrived at the point at which the branch was previously interrupted,
-      // and we can continue with normal execution.
-      this.logger.info(`All interrupted FlowNodeInstances resumed and finished.`);
-      this.logger.info(`Continuing SubProcess normally.`);
-      await this._executeSubProcessFlowNode(nextFlowNodeInfo.flowNode,
-                                            nextFlowNodeInfo.token,
-                                            nextFlowNodeInfo.processTokenFacade,
-                                            processModelFacade,
-                                            identity,
-                                            flowNodeInstanceForFlowNode.id);
-    }
-
   }
 }

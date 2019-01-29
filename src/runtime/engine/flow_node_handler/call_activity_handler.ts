@@ -10,7 +10,6 @@ import {
   IProcessTokenFacade,
   IResumeProcessService,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -43,10 +42,12 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     return Promise.resolve();
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing CallActivity instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -54,12 +55,13 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                      ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     // First we need to find out if the Subprocess was already started.
     const correlation: Runtime.Types.Correlation
@@ -95,14 +97,15 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
@@ -117,7 +120,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   /**
@@ -153,11 +156,12 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
    * @param processTokenFacade The Facade for accessing the current process' tokens.
    * @param token              The current ProcessToken.
    */
-  private async _executeSubprocess(identity: IIdentity,
-                                   startEventId: string,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   token: Runtime.Types.ProcessToken ,
-                                  ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
+  private async _executeSubprocess(
+    identity: IIdentity,
+    startEventId: string,
+    processTokenFacade: IProcessTokenFacade,
+    token: Runtime.Types.ProcessToken,
+  ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
 
     const tokenData: any = processTokenFacade.getOldTokenFormat();
 
