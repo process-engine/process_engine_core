@@ -81,24 +81,19 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processInstanceConfig: IProcessInstanceConfig =
       this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
 
-    try {
-      // This UseCase is designed to resolve immediately after the ProcessInstance
-      // was started, so we must not await the execution here.
-      this._executeProcess(identity, processInstanceConfig);
+    // This UseCase is designed to resolve immediately after the ProcessInstance
+    // was started, so we must not await the execution here.
+    this._executeProcess(identity, processInstanceConfig);
 
-      return new ProcessStartedMessage(correlationId,
-                                       processModel.id,
-                                       processInstanceConfig.processInstanceId,
-                                       startEventId,
-                                       // We don't know the StartEvents instanceId at this point.
-                                       // It will be contained in the ProcessStarted Notification, the StartEventHandler sends.
-                                       undefined,
-                                       identity,
-                                       initialPayload);
-    } catch (error) {
-      this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
-      throw error;
-    }
+    return new ProcessStartedMessage(correlationId,
+                                      processModel.id,
+                                      processInstanceConfig.processInstanceId,
+                                      startEventId,
+                                      // We don't know the StartEvents instanceId at this point.
+                                      // It will be contained in the ProcessStarted Notification, the StartEventHandler sends.
+                                      undefined,
+                                      identity,
+                                      initialPayload);
   }
 
   public async startAndAwaitEndEvent(
@@ -158,8 +153,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
       try {
         await this._executeProcess(identity, processInstanceConfig);
       } catch (error) {
-        this._logProcessError(processInstanceConfig.correlationId, processModel.id, processInstanceConfig.processInstanceId, error);
-
         // Errors thrown by an ErrorEndEvent ("error.errorCode")
         // and @essential-project errors ("error.code") are thrown as they are.
         // Everything else is thrown as an InternalServerError.
@@ -245,26 +238,32 @@ export class ExecuteProcessService implements IExecuteProcessService {
    */
   private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
-    await this._saveCorrelation(identity, processInstanceConfig);
+    try {
+      await this._saveCorrelation(identity, processInstanceConfig);
 
-    this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+      const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+        await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
 
-    const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-      await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
+      this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
-    // Because of the usage of Promise-Chains, we only need to run the StartEvent and wait for the ProcessInstance to run its course.
-    await startEventHandler.execute(
-      processInstanceConfig.processToken,
-      processInstanceConfig.processTokenFacade,
-      processInstanceConfig.processModelFacade,
-      identity,
-    );
+      // Because of the usage of Promise-Chains, we only need to run the StartEvent and wait for the ProcessInstance to run its course.
+      await startEventHandler.execute(
+        processInstanceConfig.processToken,
+        processInstanceConfig.processTokenFacade,
+        processInstanceConfig.processModelFacade,
+        identity,
+      );
 
-    const allResults: Array<IProcessTokenResult> = await processInstanceConfig.processTokenFacade.getAllResults();
-    const resultToken: IProcessTokenResult = allResults.pop();
+      const allResults: Array<IProcessTokenResult> = await processInstanceConfig.processTokenFacade.getAllResults();
+      const resultToken: IProcessTokenResult = allResults.pop();
 
-    this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
-    this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
+      this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+      this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
+    } catch (error) {
+      this
+        ._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
+      throw error;
+    }
   }
 
   /**
