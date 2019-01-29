@@ -361,20 +361,20 @@ function parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
 
 function parseTimerDefinitionValue(eventDefinition: any): string {
 
-    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
-    if (timerIsDuration) {
-      return eventDefinition[TimerBpmnType.Duration]._;
-    }
-
-    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
-    if (timerIsCyclic) {
-      return eventDefinition[TimerBpmnType.Cycle]._;
-    }
-
-    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
-    if (timerIsDate) {
-      return eventDefinition[TimerBpmnType.Date]._;
-    }
-
-    return undefined;
+  const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+  if (timerIsDuration) {
+    return eventDefinition[TimerBpmnType.Duration]._;
   }
+
+  const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+  if (timerIsCyclic) {
+    return eventDefinition[TimerBpmnType.Cycle]._;
+  }
+
+  const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+  if (timerIsDate) {
+    return eventDefinition[TimerBpmnType.Date]._;
+  }
+
+  return undefined;
+}
