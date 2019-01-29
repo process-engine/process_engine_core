@@ -6,7 +6,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -19,10 +18,12 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     this.logger = Logger.createLogger(`processengine:parallel_join_gateway:${parallelGatewayModel.id}`);
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -30,13 +31,16 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     return await this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
+
     await this.persistOnExit(token);
     processTokenFacade.addResultForFlowNode(this.flowNode.id, token.payload);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 }
