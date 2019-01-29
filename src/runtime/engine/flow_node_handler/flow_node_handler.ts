@@ -80,7 +80,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                        processModelFacade: IProcessModelFacade,
                        identity: IIdentity,
                        previousFlowNodeInstanceId?: string,
-                      ): Promise<NextFlowNodeInfo> {
+                      ): Promise<void> {
 
     this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
     token.flowNodeInstanceId = this.flowNodeInstanceId;
@@ -104,7 +104,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                       processTokenFacade: IProcessTokenFacade,
                       processModelFacade: IProcessModelFacade,
                       identity: IIdentity,
-                     ): Promise<NextFlowNodeInfo> {
+                     ): Promise<void> {
 
     this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
     this._flowNodeInstanceId = flowNodeInstance.id;
