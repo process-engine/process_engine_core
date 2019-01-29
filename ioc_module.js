@@ -11,13 +11,11 @@ const {
   InternalServiceTaskHandler,
   ManualTaskHandler,
   MessageBoundaryEventHandler,
-  ParallelGatewayHandler,
   ParallelJoinGatewayHandler,
   ParallelSplitGatewayHandler,
   ReceiveTaskHandler,
   ScriptTaskHandler,
   SendTaskHandler,
-  ServiceTaskHandler,
   SignalBoundaryEventHandler,
   StartEventHandler,
   SubProcessHandler,
@@ -26,8 +24,6 @@ const {
 } = require('./dist/commonjs/index');
 
 const {
-  IntermediateCatchEventHandler,
-  IntermediateThrowEventHandler,
   IntermediateLinkCatchEventHandler,
   IntermediateLinkThrowEventHandler,
   IntermediateMessageCatchEventHandler,
@@ -42,6 +38,7 @@ const {
   FlowNodeInstanceService,
   DeleteProcessModelService,
   ProcessModelService,
+  TimerFacade,
 } = require('./dist/commonjs/index');
 
 const {ExecuteProcessService} = require('./dist/commonjs/index');
@@ -49,19 +46,23 @@ const {ResumeProcessService} = require('./dist/commonjs/index');
 
 const {
   FlowNodeHandlerFactory,
+  IntermediateCatchEventFactory,
+  IntermediateThrowEventFactory,
+  ParallelGatewayFactory,
   ProcessModelFacadeFactory,
   ProcessTokenFacadeFactory,
-  TimerFacade,
+  ServiceTaskFactory,
 } = require('./dist/commonjs/index');
 
 function registerInContainer(container) {
-
-  container.register('BpmnModelParser', BpmnModelParser);
   registerServices(container);
+  registerFactories(container);
   registerHandlers(container);
 }
 
 function registerServices(container) {
+
+  container.register('BpmnModelParser', BpmnModelParser);
 
   container
     .register('ExecuteProcessService', ExecuteProcessService)
@@ -99,35 +100,66 @@ function registerServices(container) {
     .dependencies('FlowNodeInstanceRepository', 'IamService');
 
   container
-    .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
-    .dependencies('container')
-    .singleton();
-
-  container
-    .register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
-    .singleton();
-
-  container
     .register('ProcessModelService', ProcessModelService)
     .dependencies('BpmnModelParser', 'CorrelationRepository', 'IamService', 'ProcessDefinitionRepository');
-
-  container
-    .register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
-    .singleton();
 
   container
     .register('TimerFacade', TimerFacade)
     .dependencies('EventAggregator', 'TimerService');
 }
 
+function registerFactories(container) {
+
+  container
+    .register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
+    .singleton();
+
+  container
+    .register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
+    .singleton();
+
+  container
+    .register('IntermediateCatchEventFactory', IntermediateCatchEventFactory)
+    .dependencies('container')
+    .singleton();
+
+  container
+    .register('IntermediateThrowEventFactory', IntermediateThrowEventFactory)
+    .dependencies('container')
+    .singleton();
+
+  container
+    .register('ParallelGatewayFactory', ParallelGatewayFactory)
+    .dependencies('container')
+    .singleton();
+
+  container
+    .register('ServiceTaskFactory', ServiceTaskFactory)
+    .dependencies('container')
+    .singleton();
+
+  container
+    .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
+    .dependencies(
+      'container',
+      'IntermediateCatchEventFactory',
+      'IntermediateThrowEventFactory',
+      'ParallelGatewayFactory',
+      'ServiceTaskFactory',
+    )
+    .singleton();
+}
+
 function registerHandlers(container) {
 
   container
     .register('CallActivityHandler', CallActivityHandler)
-    .dependencies('ConsumerApiService',
-                  'container',
-                  'CorrelationService',
-                  'ResumeProcessService');
+    .dependencies(
+      'ConsumerApiService',
+      'container',
+      'CorrelationService',
+      'ResumeProcessService',
+    );
 
   container
     .register('EndEventHandler', EndEventHandler)

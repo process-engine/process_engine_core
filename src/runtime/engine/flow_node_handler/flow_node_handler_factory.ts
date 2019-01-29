@@ -23,10 +23,6 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     this._container = container;
   }
 
-  private get container(): IContainer {
-    return this._container;
-  }
-
   public async create<TFlowNode extends Model.Base.FlowNode>(
     flowNode: TFlowNode,
     processModelFacade: IProcessModelFacade,
@@ -87,7 +83,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     registrationKey: string,
     flowNode: TFlowNode,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
-    return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey, [flowNode]);
+    return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>(registrationKey, [flowNode]);
   }
 
   private async _decorateWithBoundaryEventHandlers<TFlowNode extends Model.Base.FlowNode>(
@@ -141,13 +137,13 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
     switch (eventDefinitionType) {
       case BoundaryEventType.Error:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
+        return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventType.Message:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('MessageBoundaryEventHandler', argumentsToPassThrough);
+        return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>('MessageBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventType.Signal:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SignalBoundaryEventHandler', argumentsToPassThrough);
+        return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>('SignalBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventType.Timer:
-        return this.container.resolveAsync<IFlowNodeHandler<TFlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
+        return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
       default:
         throw Error(`No BoundaryEventHandler for EventDefinitionType ${eventDefinitionType} found.`);
     }
