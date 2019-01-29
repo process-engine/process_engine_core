@@ -15,7 +15,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -75,16 +74,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     this._metricsApiService = await this._container.resolveAsync<IMetricsApi>('MetricsApiService');
   }
 
-  public async execute(token: Runtime.Types.ProcessToken,
-                       processTokenFacade: IProcessTokenFacade,
-                       processModelFacade: IProcessModelFacade,
-                       identity: IIdentity,
-                       previousFlowNodeInstanceId?: string,
-                      ): Promise<void> {
+  public async execute(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    previousFlowNodeInstanceId?: string,
+  ): Promise<void> {
 
     this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
     token.flowNodeInstanceId = this.flowNodeInstanceId;
-    let nextFlowNode: NextFlowNodeInfo;
+    let nextFlowNode: Model.Base.FlowNode;
 
     try {
       nextFlowNode = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
@@ -94,22 +94,28 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     }
 
     if (!nextFlowNode) {
-      throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
+      throw new InternalServerError(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
 
-    return nextFlowNode;
+    type NextFlowNodeType = typeof nextFlowNode;
+
+    const nextFlowNodeHandler: IFlowNodeHandler<NextFlowNodeType> =
+      await this.flowNodeHandlerFactory.create<NextFlowNodeType>(nextFlowNode, processModelFacade);
+
+    return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
   }
 
-  public async resume(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                      processTokenFacade: IProcessTokenFacade,
-                      processModelFacade: IProcessModelFacade,
-                      identity: IIdentity,
-                     ): Promise<void> {
+  public async resume(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
 
     this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
     this._flowNodeInstanceId = flowNodeInstance.id;
 
-    let nextFlowNode: NextFlowNodeInfo;
+    let nextFlowNode: Model.Base.FlowNode;
 
     try {
       nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
@@ -119,10 +125,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     }
 
     if (!nextFlowNode) {
-      throw new Error(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
+      throw new InternalServerError(`Next flow node after node with id "${this.flowNode.id}" could not be found.`);
     }
 
-    return nextFlowNode;
+    // ----------------------------
+    // TODO - WIP; Still needs refactoring
+    // return nextFlowNode;
+    // ----------------------------
   }
 
   public getInstanceId(): string {
@@ -140,18 +149,19 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Here, the actual execution of the FlowNodes takes place.
    *
    * @async
-   * @param token              The current ProcessToken.
-   * @param processTokenFacade The ProcessTokenFacade of the curently
-   *                           running process.
-   * @param processModelFacade The ProcessModelFacade of the curently
-   *                           running process.
-   * @param identity           The requesting users identity.
+   * @param   token              The current ProcessToken.
+   * @param   processTokenFacade The ProcessTokenFacade of the curently
+   *                             running process.
+   * @param   processModelFacade The ProcessModelFacade of the curently
+   *                             running process.
+   * @param   identity           The requesting users identity.
+   * @returns                    The FlowNode that follows after this one.
    */
   protected async abstract executeInternally(token: Runtime.Types.ProcessToken,
                                              processTokenFacade: IProcessTokenFacade,
                                              processModelFacade: IProcessModelFacade,
                                              identity: IIdentity,
-                                            ): Promise<NextFlowNodeInfo>;
+                                            ): Promise<Model.Base.FlowNode>;
 
   /**
    * This is the method where the derived handlers must implement their logic
@@ -169,13 +179,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                             running process.
    * @param   identity           The identity of the user that originally
    *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
+   * @returns                    The FlowNode that follows after this one.
    */
   protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
                                    processTokenFacade: IProcessTokenFacade,
                                    processModelFacade: IProcessModelFacade,
                                    identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
+                                  ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
 
@@ -244,7 +254,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                       processTokenFacade: IProcessTokenFacade,
                                       processModelFacade: IProcessModelFacade,
                                       identity?: IIdentity,
-                                     ): Promise<NextFlowNodeInfo> {
+                                     ): Promise<Model.Base.FlowNode> {
     return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
@@ -267,12 +277,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                         processTokenFacade: IProcessTokenFacade,
                                         processModelFacade: IProcessModelFacade,
                                         identity?: IIdentity,
-                                       ): Promise<NextFlowNodeInfo> {
+                                       ): Promise<Model.Base.FlowNode> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onSuspendToken.payload);
     await this.persistOnResume(onSuspendToken);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   /**
@@ -292,11 +302,11 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                        processTokenFacade: IProcessTokenFacade,
                                        processModelFacade: IProcessModelFacade,
                                        identity?: IIdentity,
-                                      ): Promise<NextFlowNodeInfo> {
+                                      ): Promise<Model.Base.FlowNode> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);
 
-    return this.getNextFlowNodeInfo(resumeToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   /**
@@ -319,10 +329,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                      processTokenFacade: IProcessTokenFacade,
                                      processModelFacade: IProcessModelFacade,
                                      identity?: IIdentity,
-                                    ): Promise<NextFlowNodeInfo> {
+                                    ): Promise<Model.Base.FlowNode> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);
 
-    return this.getNextFlowNodeInfo(onExitToken, processTokenFacade, processModelFacade);
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   /**
@@ -339,8 +349,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
                                   identity?: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+                                 ): Promise<Model.Base.FlowNode> {
+    return this.getNextFlowNodeInfo(processModelFacade);
   }
 
   /**
@@ -513,21 +523,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * Gets the FlowNodeInfo about the next FlowNode to execute after this
-   * handler has finished.
+   * Gets the next FlowNode to execute after this handler has finished.
    *
-   * @param token              The current Processtoken.
-   * @param processTokenFacade The ProcessTokenFacade to use with the next FlowNode.
-   * @param processModelFacade The ProcessModelFacade to use with the next FlowNode.
-   * @returns                  The NextFlowNodeInfo object for the next FlowNode
-   *                           to run.
+   * @param processModelFacade The ProcessModelFacade on which to search for
+   *                           the next FlowNode.
+   * @returns                  The next FlowNode to run.
    */
-  protected getNextFlowNodeInfo(token: Runtime.Types.ProcessToken,
-                                processTokenFacade: IProcessTokenFacade,
-                                processModelFacade: IProcessModelFacade,
-                               ): NextFlowNodeInfo {
-    const nextFlowNode: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.flowNode);
-
-    return new NextFlowNodeInfo(nextFlowNode, token, processTokenFacade);
+  protected getNextFlowNodeInfo(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
+    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 }
