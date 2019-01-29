@@ -101,7 +101,8 @@ function registerServices(container) {
 
   container
     .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
-    .dependencies('container');
+    .dependencies('container')
+    .singleton();
 
   container
     .register('ProcessModelFacadeFactory', ProcessModelFacadeFactory)
