@@ -8,7 +8,6 @@ import {
   IProcessTokenFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -144,9 +143,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageBoundaryEvent);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade);
-
-      return resolveFunc(nextFlowNodeInfo);
+      return resolveFunc(nextNodeAfterBoundaryEvent);
     };
 
     this.subscription = this._eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback);

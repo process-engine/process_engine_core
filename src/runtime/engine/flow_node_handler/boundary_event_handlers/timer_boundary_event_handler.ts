@@ -8,7 +8,6 @@ import {
   IProcessTokenFacade,
   ITimerFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
@@ -59,7 +58,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     identity: IIdentity,
   ): Promise<Model.Base.FlowNode> {
 
-    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this._executeTimer(resolve, token, processTokenFacade, processModelFacade);
 
@@ -90,7 +89,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     identity: IIdentity,
   ): Promise<Model.Base.FlowNode> {
 
-    this.handlerPromise = new Promise<Model.Base.FlowNode> (async(resolve: Function, reject: Function): Promise<NextFlowNodeInfo> => {
+    this.handlerPromise = new Promise<Model.Base.FlowNode> (async(resolve: Function, reject: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
       this._executeTimer(resolve, onEnterToken, processTokenFacade, processModelFacade);
@@ -146,7 +145,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
-      resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));
+      resolveFunc(nextNodeAfterBoundaryEvent);
     };
 
     this.timerSubscription = this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);

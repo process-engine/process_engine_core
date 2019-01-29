@@ -5,7 +5,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
