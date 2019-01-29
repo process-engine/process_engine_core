@@ -29,31 +29,38 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     return this._decoratedHandler.interrupt(token, terminate);
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
     try {
-      // Must use return await here to prevent unhandled rejections.
-      return await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+      await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+
+      const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
+
+      return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
     } catch (err) {
-      return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      return this.getNextFlowNodeInfo(processModelFacade);
     }
   }
 
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
     try {
-      // Must use return await here to prevent unhandled rejections.
-      return await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
-    } catch (err) {
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+      await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
-      return this.getNextFlowNodeInfo(onEnterToken, processTokenFacade, processModelFacade);
+      const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
+
+      return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
+    } catch (err) {
+      return this.getNextFlowNodeInfo(processModelFacade);
     }
   }
 }

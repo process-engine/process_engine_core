@@ -22,7 +22,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   private signalReceived: boolean = false;
   private handlerHasFinished: boolean = false;
 
-  private handlerPromise: Promise<NextFlowNodeInfo>;
+  private handlerPromise: Promise<Model.Base.FlowNode>;
   private subscription: Subscription;
 
   constructor(
@@ -51,17 +51,18 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   // TODO: Add support for non-interrupting signal events.
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
-    this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+      await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
       this.handlerHasFinished = true;
 
@@ -73,26 +74,28 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
-      return resolve(nextFlowNodeInfo);
+      const nextFlowNodeAfterDecoratedHandler: Model.Base.FlowNode = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
+
+      return resolve(nextFlowNodeAfterDecoratedHandler);
     });
 
     return this.handlerPromise;
   }
 
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
+  protected async resumeInternally(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Model.Base.FlowNode> {
 
-    this.handlerPromise = new Promise<NextFlowNodeInfo>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
       this._subscribeToSignalEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo
-        = await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
       this.handlerHasFinished = true;
 
@@ -104,7 +107,9 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
-      return resolve(nextFlowNodeInfo);
+      const nextFlowNodeAfterDecoratedHandler: Model.Base.FlowNode = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
+
+      return resolve(nextFlowNodeAfterDecoratedHandler);
     });
 
     return this.handlerPromise;
@@ -141,5 +146,11 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
     };
 
     this.subscription = this._eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback);
+  }
+
+  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
+    const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
+
+    return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
   }
 }
