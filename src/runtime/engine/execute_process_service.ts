@@ -14,7 +14,6 @@ import {
   IExecuteProcessService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessModelService,
   IProcessTokenFacade,
@@ -49,35 +48,35 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private readonly _eventAggregator: IEventAggregator;
   private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
 
-  private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
   private readonly _correlationService: ICorrelationService;
   private readonly _loggingApiService: ILoggingApi;
   private readonly _metricsApiService: IMetricsApi;
   private readonly _processModelService: IProcessModelService;
 
-  constructor(correlationService: ICorrelationService,
-              eventAggregator: IEventAggregator,
-              flowNodeHandlerFactory: IFlowNodeHandlerFactory,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsApiService: IMetricsApi,
-              processModelService: IProcessModelService) {
-
+  constructor(
+    correlationService: ICorrelationService,
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    loggingApiService: ILoggingApi,
+    metricsApiService: IMetricsApi,
+    processModelService: IProcessModelService,
+  ) {
     this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
     this._processModelService = processModelService;
   }
 
-  public async start(identity: IIdentity,
-                     processModel: Model.Types.Process,
-                     startEventId: string,
-                     correlationId: string,
-                     initialPayload?: any,
-                     caller?: string): Promise<ProcessStartedMessage> {
+  public async start(
+    identity: IIdentity,
+    processModel: Model.Types.Process,
+    startEventId: string,
+    correlationId: string,
+    initialPayload?: any,
+    caller?: string,
+  ): Promise<ProcessStartedMessage> {
 
     const processInstanceConfig: IProcessInstanceConfig =
       this._createProcessInstanceConfig(identity, processModel, correlationId, startEventId, initialPayload, caller);
@@ -102,35 +101,38 @@ export class ExecuteProcessService implements IExecuteProcessService {
     }
   }
 
-  public async startAndAwaitEndEvent(identity: IIdentity,
-                                     processModel: Model.Types.Process,
-                                     startEventId: string,
-                                     correlationId: string,
-                                     initialPayload?: any,
-                                     caller?: string): Promise<EndEventReachedMessage> {
-
+  public async startAndAwaitEndEvent(
+    identity: IIdentity,
+    processModel: Model.Types.Process,
+    startEventId: string,
+    correlationId: string,
+    initialPayload?: any,
+    caller?: string,
+  ): Promise<EndEventReachedMessage> {
     return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, initialPayload, caller);
   }
 
-  public async startAndAwaitSpecificEndEvent(identity: IIdentity,
-                                             processModel: Model.Types.Process,
-                                             startEventId: string,
-                                             correlationId: string,
-                                             endEventId: string,
-                                             initialPayload?: any,
-                                             caller?: string): Promise<EndEventReachedMessage> {
-
+  public async startAndAwaitSpecificEndEvent(
+    identity: IIdentity,
+    processModel: Model.Types.Process,
+    startEventId: string,
+    correlationId: string,
+    endEventId: string,
+    initialPayload?: any,
+    caller?: string,
+  ): Promise<EndEventReachedMessage> {
     return this._startAndAwaitEndEvent(identity, processModel, startEventId, correlationId, initialPayload, caller, endEventId);
   }
 
-  private async _startAndAwaitEndEvent(identity: IIdentity,
-                                       processModel: Model.Types.Process,
-                                       startEventId: string,
-                                       correlationId: string,
-                                       initialPayload?: any,
-                                       caller?: string,
-                                       endEventId?: string,
-                                      ): Promise<EndEventReachedMessage> {
+  private async _startAndAwaitEndEvent(
+    identity: IIdentity,
+    processModel: Model.Types.Process,
+    startEventId: string,
+    correlationId: string,
+    initialPayload?: any,
+    caller?: string,
+    endEventId?: string,
+  ): Promise<EndEventReachedMessage> {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -191,12 +193,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
    *                      ProcessToken and the StartEvent that has the ID specified
    *                      in startEventId.
    */
-  private _createProcessInstanceConfig(identity: IIdentity,
-                                       processModel: Model.Types.Process,
-                                       correlationId: string,
-                                       startEventId: string,
-                                       payload: any,
-                                       caller: string): IProcessInstanceConfig {
+  private _createProcessInstanceConfig(
+    identity: IIdentity,
+    processModel: Model.Types.Process,
+    correlationId: string,
+    startEventId: string,
+    payload: any,
+    caller: string,
+  ): IProcessInstanceConfig {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
@@ -238,9 +242,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
    * @async
    * @param   identity              The identity of the requesting user.
    * @param   processInstanceConfig The configs for the ProcessInstance.
-   * @returns                       The ProcessInstance's result.
    */
-  private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<IProcessTokenResult> {
+  private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
     await this._saveCorrelation(identity, processInstanceConfig);
 
@@ -257,12 +260,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
       identity,
     );
 
-    const resultToken: IProcessTokenResult = await this._getFinalResult(processInstanceConfig.processTokenFacade);
+    const allResults: Array<IProcessTokenResult> = await processInstanceConfig.processTokenFacade.getAllResults();
+    const resultToken: IProcessTokenResult = allResults.pop();
 
     this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
     this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
-
-    return resultToken.result;
   }
 
   /**
@@ -348,19 +350,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                     LogLevel.error,
                                                     error.message,
                                                     errorTime.toDate());
-  }
-
-  /**
-   * Gets the final result from the given ProcessTokenFacade.
-   *
-   * @param   processTokenFacade The facade containing the full ProcessToken.
-   * @returns                    The final result stored in the ProcessTokenFacade.
-   */
-  private async _getFinalResult(processTokenFacade: IProcessTokenFacade): Promise<IProcessTokenResult> {
-
-    const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
-
-    return allResults.pop();
   }
 
   private _sendProcessInstanceFinishedNotification(
