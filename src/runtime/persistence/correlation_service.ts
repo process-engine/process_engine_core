@@ -297,8 +297,8 @@ export class CorrelationService implements ICorrelationService {
           });
 
         processModel.state = processHasActiveFlowNodeInstances
-          ? Runtime.Types.FlowNodeInstanceState.running
-          : Runtime.Types.FlowNodeInstanceState.finished;
+          ? Runtime.Types.CorrelationState.running
+          : Runtime.Types.CorrelationState.finished;
 
         return processModel;
       });
@@ -360,7 +360,7 @@ export class CorrelationService implements ICorrelationService {
     // Therefore it doesn't matter which one is being used here.
     const correlation: Runtime.Types.Correlation = new Runtime.Types.Correlation();
     correlation.id = flowNodeInstance.tokens[0].correlationId;
-    correlation.state = Runtime.Types.FlowNodeInstanceState.running;
+    correlation.state = Runtime.Types.CorrelationState.running;
     correlation.identity = flowNodeInstance.tokens[0].identity;
     correlation.createdAt = flowNodeInstance.tokens[0].createdAt;
     correlation.processModels = await this._getProcessDefinitionsForCorrelation(flowNodeInstance.correlationId);
@@ -398,7 +398,7 @@ export class CorrelationService implements ICorrelationService {
         processModel.parentProcessInstanceId = correlation.parentProcessInstanceId;
         // For this UseCase, we can safely assume the running-state,
         // because we already made sure that only active correlations have been retrieved.
-        processModel.state = Runtime.Types.FlowNodeInstanceState.running;
+        processModel.state = Runtime.Types.CorrelationState.running;
 
         return processModel;
       });
