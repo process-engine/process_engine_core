@@ -2,19 +2,21 @@ import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   BpmnType,
+  Definitions,
   eventAggregatorSettings,
+  ICorrelationService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
+  IModelParser,
   IProcessModelFacade,
-  IProcessModelService,
   IProcessTokenFacade,
   IProcessTokenResult,
   IResumeProcessService,
@@ -58,28 +60,31 @@ interface IProcessInstanceConfig {
  */
 export class ResumeProcessService implements IResumeProcessService {
 
+  private readonly _bpmnModelParser: IModelParser;
+  private readonly _correlationService: ICorrelationService;
   private readonly _eventAggregator: IEventAggregator;
   private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
   private readonly _loggingApiService: ILoggingApi;
   private readonly _metricsApiService: IMetricsApi;
-  private readonly _processModelService: IProcessModelService;
 
   private processTerminatedMessages: {[processInstanceId: string]: TerminateEndEventReachedMessage} = {};
 
-  constructor(eventAggregator: IEventAggregator,
+  constructor(bpmnModelParser: IModelParser,
+              correlationService: ICorrelationService,
+              eventAggregator: IEventAggregator,
               flowNodeHandlerFactory: IFlowNodeHandlerFactory,
               flowNodeInstanceService: IFlowNodeInstanceService,
               loggingApiService: ILoggingApi,
-              metricsApiService: IMetricsApi,
-              processModelService: IProcessModelService) {
+              metricsApiService: IMetricsApi) {
 
+    this._bpmnModelParser = bpmnModelParser;
+    this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
-    this._processModelService = processModelService;
   }
 
   public async findAndResumeInterruptedProcessInstances(identity: IIdentity): Promise<void> {
@@ -109,17 +114,10 @@ export class ResumeProcessService implements IResumeProcessService {
 
     logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
-    // TODO: This could be merged, if the FlowNodeInstanceService had a `queryByProcessInstance` UseCase.
-    // ----
-    const flowNodeInstancesForProcessModel: Array<Runtime.Types.FlowNodeInstance> =
-      await this._flowNodeInstanceService.queryByProcessModel(processModelId);
-
     const flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstancesForProcessModel.filter((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        return entry.processInstanceId === processInstanceId;
-      });
-    // ----
+      await this._flowNodeInstanceService.queryByProcessInstance(processInstanceId);
 
+    // ----
     // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
     // There is no point in trying to resume anything that's already finished.
     const processHasActiveFlowNodeInstances: boolean =
@@ -161,7 +159,12 @@ export class ResumeProcessService implements IResumeProcessService {
                                              flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                             ): Promise<IProcessInstanceConfig> {
 
-    const processModel: Model.Types.Process = await this._processModelService.getProcessModelById(identity, processModelId);
+    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(processInstanceId);
+
+    const processModelCorrelation: Runtime.Types.CorrelationProcessModel = correlation.processModels[0];
+
+    const processModelDefinitions: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
+    const processModel: Model.Types.Process = processModelDefinitions.processes[0];
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     // Find the StartEvent the ProcessInstance was started with.
