@@ -1,6 +1,6 @@
 import {
   Definitions,
-  ICorrelationService,
+  ICorrelationRepository,
   IModelParser,
   IProcessDefinitionRepository,
   IProcessModelService,
@@ -19,7 +19,7 @@ const logger: Logger = Logger.createLogger('processengine:persistence:process_mo
 
 export class ProcessModelService implements IProcessModelService {
 
-  private readonly _correlationService: ICorrelationService;
+  private readonly _correlationRepository: ICorrelationRepository;
   private readonly _processDefinitionRepository: IProcessDefinitionRepository;
   private readonly _iamService: IIAMService;
   private readonly _bpmnModelParser: IModelParser = undefined;
@@ -27,7 +27,7 @@ export class ProcessModelService implements IProcessModelService {
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
-  constructor(correlationService: ICorrelationService,
+  constructor(correlationRepository: ICorrelationRepository,
               processDefinitionRepository: IProcessDefinitionRepository,
               iamService: IIAMService,
               bpmnModelParser: IModelParser) {
@@ -35,7 +35,7 @@ export class ProcessModelService implements IProcessModelService {
     this._processDefinitionRepository = processDefinitionRepository;
     this._iamService = iamService;
     this._bpmnModelParser = bpmnModelParser;
-    this._correlationService = correlationService;
+    this._correlationRepository = correlationRepository;
   }
 
   public async persistProcessDefinitions(identity: IIdentity,
@@ -193,27 +193,16 @@ export class ProcessModelService implements IProcessModelService {
    */
   private async _getProcessModelByProcessInstanceId(processInstanceId: string): Promise<Model.Types.Process> {
 
-    const processModelList: Array<Model.Types.Process> = await this._getProcessModelList();
+    const correlation: Runtime.Types.CorrelationFromRepository = await this._correlationRepository.getByProcessInstanceId(processInstanceId);
 
-    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(processInstanceId);
+    const processDefinitionRaw: Runtime.Types.ProcessDefinitionFromRepository =
+      await this._processDefinitionRepository.getByHash(correlation.processModelHash);
 
-    const correlationProcessModel: Runtime.Types.CorrelationProcessModel = correlation.processModels.find(
-      (currentCorrelationProcessModel: Runtime.Types.CorrelationProcessModel) => {
-        return currentCorrelationProcessModel.processInstanceId === processInstanceId;
-      });
+    const parsedDefinition: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processDefinitionRaw.xml);
 
-    const processModelId: string = correlationProcessModel.processModelId;
+    const processModel: Model.Types.Process = parsedDefinition.processes[0];
 
-    const matchingProcessModel: Model.Types.Process = processModelList.find((processModel: Model.Types.Process): boolean => {
-      return correlationProcessModel.processModelId === processModelId;
-    });
-
-    const noMatchingProcessModelFound: boolean = matchingProcessModel === undefined;
-    if (noMatchingProcessModelFound) {
-      throw new NotFoundError(`ProcessModel with id ${processModelId} not found!`);
-    }
-
-    return matchingProcessModel;
+    return processModel;
   }
 
   /**
