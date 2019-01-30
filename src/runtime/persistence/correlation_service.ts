@@ -108,7 +108,7 @@ export class CorrelationService implements ICorrelationService {
     }
 
     const correlation: Runtime.Types.Correlation =
-      await this._mapCorrelation(filteredCorrelationsFromRepo[0].id, activeFlowNodeInstances, filteredCorrelationsFromRepo);
+      await this._mapCorrelation(correlationsFromRepo[0].id, correlationsFromRepo);
 
     return correlation;
   }
@@ -128,7 +128,7 @@ export class CorrelationService implements ICorrelationService {
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const correlation: Runtime.Types.Correlation =
-      await this._mapCorrelation(correlationFromRepo.id, activeFlowNodeInstances, [correlationFromRepo]);
+      await this._mapCorrelation(correlationFromRepo.id, [correlationFromRepo]);
 
     return correlation;
   }
@@ -150,7 +150,7 @@ export class CorrelationService implements ICorrelationService {
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const correlation: Runtime.Types.Correlation =
-      await this._mapCorrelation(correlationsFromRepo[0].id, activeFlowNodeInstances, correlationsFromRepo);
+      await this._mapCorrelation(correlationsFromRepo[0].id, correlationsFromRepo);
 
     return correlation;
   }
@@ -189,7 +189,7 @@ export class CorrelationService implements ICorrelationService {
       await Promise.mapSeries(uniqueCorrelationIds, (correlationId: string) => {
         const matchingCorrelationEntries: Array<Runtime.Types.CorrelationFromRepository> = groupedCorrelations[correlationId];
 
-        return this._mapCorrelation(correlationId, activeFlowNodeInstances, matchingCorrelationEntries);
+        return this._mapCorrelation(correlationId, matchingCorrelationEntries);
       });
 
     return mappedCorrelations;
@@ -226,13 +226,10 @@ export class CorrelationService implements ICorrelationService {
    *
    * @async
    * @param   correlationId           The ID of the Correlation to map.
-   * @param   activeFlowNodeInstances A list of active FlowNodeInstances. This is
-   *                                  used to determine the Correlation's state.
    * @param   correlationEntriess     The list of entries to map.
    * @returns                         The mapped Correlation.
    */
   private async _mapCorrelation(correlationId: string,
-                                activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                 correlationsFromRepo?: Array<Runtime.Types.CorrelationFromRepository>,
                                ): Promise<Runtime.Types.Correlation> {
 
@@ -288,15 +285,7 @@ export class CorrelationService implements ICorrelationService {
         processModel.processInstanceId = entry.processInstanceId;
         processModel.parentProcessInstanceId = entry.parentProcessInstanceId;
         processModel.createdAt = entry.createdAt;
-
-        const processHasActiveFlowNodeInstances: boolean =
-          activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
-            return flowNodeInstance.processInstanceId === entry.processInstanceId;
-          });
-
-        processModel.state = processHasActiveFlowNodeInstances
-          ? Runtime.Types.CorrelationState.running
-          : Runtime.Types.CorrelationState.finished;
+        processModel.state = entry.state;
 
         return processModel;
       });
