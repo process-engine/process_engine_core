@@ -96,11 +96,6 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getByCorrelationId(correlationId);
 
-    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
-      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
-
     // All correlations will have the same ID here, so we can just use the top entry as a base.
     const noFilteredCorrelationsFromRepo: boolean = filteredCorrelationsFromRepo.length === 0;
     if (noFilteredCorrelationsFromRepo) {
@@ -118,14 +113,6 @@ export class CorrelationService implements ICorrelationService {
 
     const correlationFromRepo: Runtime.Types.CorrelationFromRepository =
       await this._correlationRepository.getByProcessInstanceId(processInstanceId);
-
-    const correlationBelongsToDifferentUser: boolean = identity.userId !== correlationFromRepo.identity.userId;
-
-    if (correlationBelongsToDifferentUser) {
-      throw new ForbiddenError('Access denied.');
-    }
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const correlation: Runtime.Types.Correlation =
       await this._mapCorrelation(correlationFromRepo.id, [correlationFromRepo]);
@@ -146,8 +133,6 @@ export class CorrelationService implements ICorrelationService {
     if (noFilteredCorrelations) {
       return undefined;
     }
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     const correlation: Runtime.Types.Correlation =
       await this._mapCorrelation(correlationsFromRepo[0].id, correlationsFromRepo);
@@ -178,9 +163,6 @@ export class CorrelationService implements ICorrelationService {
    * @returns                      The mapped Correlation.
    */
   private async _mapCorrelationList(correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>): Promise<Array<Runtime.Types.Correlation>> {
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
-
     const groupedCorrelations: GroupedCorrelations = this._groupCorrelations(correlationsFromRepo);
 
     const uniqueCorrelationIds: Array<string> = Object.keys(groupedCorrelations);
@@ -292,20 +274,6 @@ export class CorrelationService implements ICorrelationService {
     }
 
     return correlation;
-  }
-
-  /**
-   * Queries all "running" and "suspended" FlowNodeInstances from the repository.
-   *
-   * @async
-   * @returns All retrieved active FlowNodeInstances.
-   */
-  private async _getActiveFlowNodeInstances(): Promise<Array<Runtime.Types.FlowNodeInstance>> {
-
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
-      await this._flowNodeInstanceRepository.queryActive();
-
-    return activeFlowNodeInstances;
   }
 
   /**
