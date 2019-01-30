@@ -1,5 +1,6 @@
 import {
   Definitions,
+  ICorrelationRepository,
   IModelParser,
   IProcessDefinitionRepository,
   IProcessModelService,
@@ -18,6 +19,7 @@ const logger: Logger = Logger.createLogger('processengine:persistence:process_mo
 
 export class ProcessModelService implements IProcessModelService {
 
+  private readonly _correlationRepository: ICorrelationRepository;
   private readonly _processDefinitionRepository: IProcessDefinitionRepository;
   private readonly _iamService: IIAMService;
   private readonly _bpmnModelParser: IModelParser = undefined;
@@ -25,13 +27,15 @@ export class ProcessModelService implements IProcessModelService {
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
-  constructor(processDefinitionRepository: IProcessDefinitionRepository,
+  constructor(bpmnModelParser: IModelParser,
+              correlationRepository: ICorrelationRepository,
               iamService: IIAMService,
-              bpmnModelParser: IModelParser) {
+              processDefinitionRepository: IProcessDefinitionRepository) {
 
     this._processDefinitionRepository = processDefinitionRepository;
     this._iamService = iamService;
     this._bpmnModelParser = bpmnModelParser;
+    this._correlationRepository = correlationRepository;
   }
 
   public async persistProcessDefinitions(identity: IIdentity,
@@ -64,6 +68,21 @@ export class ProcessModelService implements IProcessModelService {
     }
 
     return filteredList;
+  }
+
+  public async getProcessModelByProcessInstanceId(identity: IIdentity, processInstanceId: string): Promise<Model.Types.Process> {
+
+    await this._iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
+
+    const processModel: Model.Types.Process = await this._getProcessModelByProcessInstanceId(processInstanceId);
+
+    const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(identity, processModel);
+
+    if (!filteredProcessModel) {
+      throw new ForbiddenError('Access denied.');
+    }
+
+    return filteredProcessModel;
   }
 
   public async getProcessModelById(identity: IIdentity, processModelId: string): Promise<Model.Types.Process> {
@@ -162,6 +181,28 @@ export class ProcessModelService implements IProcessModelService {
     }
 
     return matchingProcessModel;
+  }
+
+  /**
+   * Retrieves a ProcessModel by a ProcessInstanceId.
+   * This is achieved by first retrieving a list of ProcessDefinitions and then
+   * looking for the process that has the matching ProcessInstanceID.
+   *
+   * @param   processInstanceId  The ProcessInstanceID of the ProcessModel to retrieve.
+   * @returns                    The retrieved ProcessModel.
+   */
+  private async _getProcessModelByProcessInstanceId(processInstanceId: string): Promise<Model.Types.Process> {
+
+    const correlation: Runtime.Types.CorrelationFromRepository = await this._correlationRepository.getByProcessInstanceId(processInstanceId);
+
+    const processDefinitionRaw: Runtime.Types.ProcessDefinitionFromRepository =
+      await this._processDefinitionRepository.getByHash(correlation.processModelHash);
+
+    const parsedDefinition: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processDefinitionRaw.xml);
+
+    const processModel: Model.Types.Process = parsedDefinition.processes[0];
+
+    return processModel;
   }
 
   /**
