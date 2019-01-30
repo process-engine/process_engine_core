@@ -86,6 +86,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
   ): Promise<Model.Base.FlowNode> {
 
     this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function): Promise<void> => {
@@ -94,7 +95,7 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
 
       this._subscribeToMessageEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
 
-      await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
 
       this.handlerHasFinished = true;
 

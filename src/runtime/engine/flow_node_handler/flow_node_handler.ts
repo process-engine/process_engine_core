@@ -122,7 +122,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
       let nextFlowNode: Model.Base.FlowNode;
 
-      nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity, flowNodeInstances);
 
       // EndEvents will return "undefined" as the next FlowNode.
       // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
@@ -196,20 +196,23 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * Handlers that use suspension and resumption must override this function.
    *
    * @async
-   * @param   flowNodeInstance   The current ProcessToken.
-   * @param   processTokenFacade The ProcessTokenFacade of the curently
-   *                             running process.
-   * @param   processModelFacade The ProcessModelFacade of the curently
-   *                             running process.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The FlowNode that follows after this one.
+   * @param   flowNodeInstance         The current ProcessToken.
+   * @param   processTokenFacade       The ProcessTokenFacade of the curently
+   *                                   running process.
+   * @param   processModelFacade       The ProcessModelFacade of the curently
+   *                                   running process.
+   * @param   identity                 The identity of the user that originally
+   *                                   started the ProcessInstance.
+   * @param   processFlowNodeInstances Optional: The Process' FlowNodeInstances.
+   *                                   BoundaryEvents require these.
+   * @returns                          The FlowNode that follows after this one.
    */
   protected async resumeInternally(
     flowNodeInstance: Runtime.Types.FlowNodeInstance,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    processFlowNodeInstances?: Array<Runtime.Types.FlowNodeInstance>,
   ): Promise<Model.Base.FlowNode> {
 
     this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);

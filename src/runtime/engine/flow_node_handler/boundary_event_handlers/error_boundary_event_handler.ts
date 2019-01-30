@@ -50,10 +50,11 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
   ): Promise<Model.Base.FlowNode> {
 
     try {
-      await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
 
       const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
 

@@ -87,6 +87,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
   ): Promise<Model.Base.FlowNode> {
 
     this.handlerPromise = new Promise<Model.Base.FlowNode> (async(resolve: Function, reject: Function): Promise<void> => {
@@ -94,7 +95,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
       this._executeTimer(resolve, onEnterToken, processTokenFacade, processModelFacade);
 
-      await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+      await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
 
       this.hasHandlerFinished = true;
 
