@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
@@ -16,12 +16,10 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.SendTask> {
 
-  private _eventAggregator: IEventAggregator;
   private responseSubscription: Subscription;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, sendTaskModel: Model.Activities.SendTask) {
+  constructor(container: IContainer, sendTaskModel: Model.Activities.SendTask) {
     super(container, sendTaskModel);
-    this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:send_task_handler:${sendTaskModel.id}`);
   }
 
@@ -66,7 +64,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       this.onInterruptedCallback = (): void => {
         if (this.responseSubscription) {
-          this._eventAggregator.unsubscribe(this.responseSubscription);
+          this.eventAggregator.unsubscribe(this.responseSubscription);
         }
         handlerPromise.cancel();
 
@@ -104,7 +102,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       .receiveTaskReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
-    this.responseSubscription = this._eventAggregator.subscribeOnce(messageEventName, () => {
+    this.responseSubscription = this.eventAggregator.subscribeOnce(messageEventName, () => {
       callback();
     });
   }
@@ -134,6 +132,6 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                      identity,
                                      token);
 
-    this._eventAggregator.publish(messageEventName, messageToSend);
+    this.eventAggregator.publish(messageEventName, messageToSend);
   }
 }

@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -21,12 +21,10 @@ import {FlowNodeHandler} from './index';
 
 export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> {
 
-  private _eventAggregator: IEventAggregator;
   private _timerFacade: ITimerFacade;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, timerFacade: ITimerFacade, startEventModel: Model.Events.StartEvent) {
+  constructor(container: IContainer, timerFacade: ITimerFacade, startEventModel: Model.Events.StartEvent) {
     super(container, startEventModel);
-    this._eventAggregator = eventAggregator;
     this._timerFacade = timerFacade;
     this.logger = new Logger(`processengine:start_event_handler:${startEventModel.id}`);
   }
@@ -139,7 +137,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       identity,
       token.payload);
 
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
 
     const processStartedBaseName: string = eventAggregatorSettings.messagePaths.processInstanceStarted;
     const processModelIdParam: string = eventAggregatorSettings.messageParams.processModelId;
@@ -147,7 +145,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       processStartedBaseName
         .replace(processModelIdParam, token.processModelId);
 
-    this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
+    this.eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
   }
 
   private async _suspendAndWaitForMessage(currentToken: Runtime.Types.ProcessToken): Promise<any> {
@@ -185,7 +183,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageDefinitionName);
 
-    this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
+    this.eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
       const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
       const tokenToReturn: any = messageHasPayload
         ? messageEventPayload.currentToken
@@ -209,7 +207,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
       .replace(eventAggregatorSettings.messageParams.signalReference, signalDefinitionName);
 
-    this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
+    this.eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
       const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
       const tokenToReturn: any = signalHasPayload
         ? signalEventPayload.currentToken
@@ -239,7 +237,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
       const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
       if (cancelSubscription) {
-        this._eventAggregator.unsubscribe(timerSubscription);
+        this.eventAggregator.unsubscribe(timerSubscription);
       }
 
       resolveFunc(currentToken.payload);

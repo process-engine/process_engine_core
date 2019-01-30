@@ -1,7 +1,6 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   EndEventReachedMessage,
@@ -19,11 +18,8 @@ import {FlowNodeHandler} from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
-  private _eventAggregator: IEventAggregator;
-
-  constructor(container: IContainer, eventAggregator: IEventAggregator, endEventModel: Model.Events.EndEvent) {
+  constructor(container: IContainer, endEventModel: Model.Events.EndEvent) {
     super(container, endEventModel);
-    this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:end_event_handler:${endEventModel.id}`);
   }
 
@@ -111,7 +107,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                this.flowNodeInstanceId,
                                                                                identity,
                                                                                token.payload);
-    this._eventAggregator.publish(eventName, message);
+    this.eventAggregator.publish(eventName, message);
 
     this._notifyAboutRegularEnd(identity, token);
   }
@@ -140,7 +136,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                              this.flowNodeInstanceId,
                                                                              identity,
                                                                              token.payload);
-    this._eventAggregator.publish(eventName, message);
+    this.eventAggregator.publish(eventName, message);
 
     this._notifyAboutRegularEnd(identity, token);
   }
@@ -166,10 +162,10 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                          this.flowNodeInstanceId,
                                                                                          identity,
                                                                                          token.payload);
-    this._eventAggregator.publish(eventName, message);
+    this.eventAggregator.publish(eventName, message);
 
     // Send global message about a reached TerminateEndEvent
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
   /**
@@ -213,9 +209,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                        this.flowNodeInstanceId,
                                                                        identity,
                                                                        token.payload);
-    this._eventAggregator.publish(processEndMessageName, message);
+    this.eventAggregator.publish(processEndMessageName, message);
 
     // Send global message about a reached EndEvent
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
 }

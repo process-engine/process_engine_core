@@ -163,7 +163,7 @@ function registerHandlers(container) {
 
   container
     .register('EndEventHandler', EndEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
@@ -191,19 +191,19 @@ function registerHandlers(container) {
 
   container
     .register('IntermediateMessageCatchEventHandler', IntermediateMessageCatchEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('IntermediateSignalCatchEventHandler', IntermediateSignalCatchEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('IntermediateSignalThrowEventHandler', IntermediateSignalThrowEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)
@@ -211,7 +211,7 @@ function registerHandlers(container) {
 
   container
     .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('ParallelGatewayHandler', ParallelGatewayHandler)
@@ -223,15 +223,15 @@ function registerHandlers(container) {
 
   container
     .register('ParallelSplitGatewayHandler', ParallelSplitGatewayHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('ManualTaskHandler', ManualTaskHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('ReceiveTaskHandler', ReceiveTaskHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('ScriptTaskHandler', ScriptTaskHandler)
@@ -239,7 +239,7 @@ function registerHandlers(container) {
 
   container
     .register('SendTaskHandler', SendTaskHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('ServiceTaskHandler', ServiceTaskHandler)
@@ -247,7 +247,7 @@ function registerHandlers(container) {
 
   container
     .register('ExternalServiceTaskHandler', ExternalServiceTaskHandler)
-    .dependencies('container', 'EventAggregator', 'ExternalTaskRepository');
+    .dependencies('container', 'ExternalTaskRepository');
 
   container
     .register('InternalServiceTaskHandler', InternalServiceTaskHandler)
@@ -255,15 +255,15 @@ function registerHandlers(container) {
 
   container
     .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('StartEventHandler', StartEventHandler)
-    .dependencies('container', 'EventAggregator', 'TimerFacade');
+    .dependencies('container', 'TimerFacade');
 
   container
     .register('SubProcessHandler', SubProcessHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
@@ -271,7 +271,7 @@ function registerHandlers(container) {
 
   container
     .register('UserTaskHandler', UserTaskHandler)
-    .dependencies('container', 'EventAggregator');
+    .dependencies('container');
 }
 
 module.exports.registerInContainer = registerInContainer;

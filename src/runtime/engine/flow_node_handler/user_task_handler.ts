@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -19,13 +19,10 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.UserTask> {
 
-  private _eventAggregator: IEventAggregator;
-
   private userTaskSubscription: Subscription;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, userTaskModel: Model.Activities.UserTask) {
+  constructor(container: IContainer, userTaskModel: Model.Activities.UserTask) {
     super(container, userTaskModel);
-    this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:user_task_handler:${userTaskModel.id}`);
   }
 
@@ -84,7 +81,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       this.onInterruptedCallback = (): void => {
         if (this.userTaskSubscription) {
-          this._eventAggregator.unsubscribe(this.userTaskSubscription);
+          this.eventAggregator.unsubscribe(this.userTaskSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -127,7 +124,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       const finishUserTaskEvent: string = this._getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
 
       this.userTaskSubscription =
-        this._eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
+        this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
           const userTaskResult: any = {
             form_fields: message.result || null,
           };
@@ -156,7 +153,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                                                        identity,
                                                                        token.payload);
 
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
   }
 
   /**
@@ -183,10 +180,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
     // FlowNode-specific notification
     const userTaskFinishedEvent: string = this._getUserTaskFinishedEventName(token.correlationId, token.processInstanceId);
-    this._eventAggregator.publish(userTaskFinishedEvent, message);
+    this.eventAggregator.publish(userTaskFinishedEvent, message);
 
     // Global notification
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
   }
 
   private _getFinishUserTaskEventName(correlationId: string, processInstanceId: string): string {

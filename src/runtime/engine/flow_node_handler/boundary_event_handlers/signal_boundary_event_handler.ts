@@ -1,6 +1,6 @@
 import {IContainer} from 'addict-ioc';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
@@ -15,7 +15,6 @@ import {FlowNodeHandlerInterruptible} from '../index';
 
 export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
 
-  private _eventAggregator: IEventAggregator;
   private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
 
   private signalReceived: boolean = false;
@@ -26,12 +25,10 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
   constructor(
     container: IContainer,
-    eventAggregator: IEventAggregator,
     decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
     signalBoundaryEventModel: Model.Events.BoundaryEvent,
   ) {
     super(container, signalBoundaryEventModel);
-    this._eventAggregator = eventAggregator;
     this._decoratedHandler = decoratedHandler;
   }
 
@@ -42,7 +39,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
 
     if (this.subscription) {
-      this._eventAggregator.unsubscribe(this.subscription);
+      this.eventAggregator.unsubscribe(this.subscription);
     }
     this.handlerPromise.cancel();
 
@@ -69,7 +66,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
         return;
       }
 
-      this._eventAggregator.unsubscribe(this.subscription);
+      this.eventAggregator.unsubscribe(this.subscription);
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
@@ -103,7 +100,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
         return;
       }
 
-      this._eventAggregator.unsubscribe(this.subscription);
+      this.eventAggregator.unsubscribe(this.subscription);
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
@@ -143,7 +140,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       return resolveFunc(nextNodeAfterBoundaryEvent);
     };
 
-    this.subscription = this._eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback);
+    this.subscription = this.eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback);
   }
 
   private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {

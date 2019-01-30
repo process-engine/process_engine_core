@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
@@ -16,12 +16,10 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ReceiveTask> {
 
-  private _eventAggregator: IEventAggregator;
   private messageSubscription: Subscription;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, receiveTaskModel: Model.Activities.ReceiveTask) {
+  constructor(container: IContainer, receiveTaskModel: Model.Activities.ReceiveTask) {
     super(container, receiveTaskModel);
-    this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:receive_task_handler:${receiveTaskModel.id}`);
   }
 
@@ -68,7 +66,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
 
       this.onInterruptedCallback = (): void => {
         if (this.messageSubscription) {
-          this._eventAggregator.unsubscribe(this.messageSubscription);
+          this.eventAggregator.unsubscribe(this.messageSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -108,7 +106,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
         .replace(eventAggregatorSettings.messageParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
       this.messageSubscription =
-        this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+        this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
           resolve(message);
         });
     });
@@ -141,6 +139,6 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
       identity,
       token.payload);
 
-    this._eventAggregator.publish(messageEventName, messageToSend);
+    this.eventAggregator.publish(messageEventName, messageToSend);
   }
 }

@@ -17,20 +17,13 @@ import {FlowNodeHandlerInterruptible} from '../index';
 
 export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
-  private _eventAggregator: IEventAggregator;
   private _externalTaskRepository: IExternalTaskRepository;
 
   private externalTaskSubscription: Subscription;
 
-  constructor(
-    container: IContainer,
-    eventAggregator: IEventAggregator,
-    externalTaskRepository: IExternalTaskRepository,
-    serviceTaskModel: Model.Activities.ServiceTask,
-  ) {
+  constructor(container: IContainer, externalTaskRepository: IExternalTaskRepository, serviceTaskModel: Model.Activities.ServiceTask) {
     super(container, serviceTaskModel);
 
-    this._eventAggregator = eventAggregator;
     this._externalTaskRepository = externalTaskRepository;
     this.logger = Logger.createLogger(`processengine:external_service_task:${serviceTaskModel.id}`);
   }
@@ -107,7 +100,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
       this.onInterruptedCallback = (): void => {
 
         if (this.externalTaskSubscription) {
-          this._eventAggregator.unsubscribe(this.externalTaskSubscription);
+          this.eventAggregator.unsubscribe(this.externalTaskSubscription);
         }
 
         if (externalTaskExecutorPromise) {
@@ -241,7 +234,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     const externalTaskFinishedEventName: string = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
 
     this.externalTaskSubscription =
-      this._eventAggregator.subscribeOnce(externalTaskFinishedEventName, async(message: any): Promise<void> => {
+      this.eventAggregator.subscribeOnce(externalTaskFinishedEventName, async(message: any): Promise<void> => {
         resolveFunc(message.error, message.result);
       });
   }
@@ -326,6 +319,6 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    */
   private _publishExternalTaskCreatedNotification(): void {
     const externalTaskCreatedEventName: string = `/externaltask/topic/${this.serviceTask.topic}/created`;
-    this._eventAggregator.publish(externalTaskCreatedEventName);
+    this.eventAggregator.publish(externalTaskCreatedEventName);
   }
 }

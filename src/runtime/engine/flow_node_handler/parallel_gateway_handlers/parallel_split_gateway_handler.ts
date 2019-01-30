@@ -6,27 +6,19 @@ import {InternalServerError, UnprocessableEntityError} from '@essential-projects
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeHandler,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
   Runtime,
-  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from '../index';
 
 export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
-  private _eventAggregator: IEventAggregator;
-  private _processTerminatedMessage: TerminateEndEventReachedMessage;
-
-  private terminateEndEventSubscription: Subscription;
-
-  constructor(container: IContainer, eventAggregator: IEventAggregator, parallelGatewayModel: Model.Gateways.ParallelGateway) {
+  constructor(container: IContainer, parallelGatewayModel: Model.Gateways.ParallelGateway) {
     super(container, parallelGatewayModel);
-    this._eventAggregator = eventAggregator;
     this.logger = Logger.createLogger(`processengine:parallel_split_gateway:${parallelGatewayModel.id}`);
   }
 

@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
@@ -16,12 +16,10 @@ import {FlowNodeHandlerInterruptible} from '../index';
 
 export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent> {
 
-  private _eventAggregator: IEventAggregator;
   private subscription: Subscription;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, messageCatchEventModel: Model.Events.IntermediateCatchEvent) {
+  constructor(container: IContainer, messageCatchEventModel: Model.Events.IntermediateCatchEvent) {
     super(container, messageCatchEventModel);
-    this._eventAggregator = eventAggregator;
     this.logger = Logger.createLogger(`processengine:message_catch_event_handler:${messageCatchEventModel.id}`);
   }
 
@@ -79,7 +77,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
         processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, interruptionToken);
 
         if (this.subscription) {
-          this._eventAggregator.unsubscribe(this.subscription);
+          this.eventAggregator.unsubscribe(this.subscription);
         }
 
         messageSubscriptionPromise.cancel();
@@ -112,7 +110,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
         .replace(eventAggregatorSettings.messageParams.messageReference, this.messageCatchEvent.messageEventDefinition.name);
 
       this.subscription =
-        this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+        this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
           this.logger.verbose(
             `MessageCatchEvent instance ${this.flowNodeInstanceId} message ${messageEventName} received:`,
             message,

@@ -1,7 +1,6 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
@@ -16,11 +15,8 @@ import {FlowNodeHandler} from '../index';
 
 export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
-  private _eventAggregator: IEventAggregator;
-
-  constructor(container: IContainer, eventAggregator: IEventAggregator, messageThrowEventModel: Model.Events.IntermediateThrowEvent) {
+  constructor(container: IContainer, messageThrowEventModel: Model.Events.IntermediateThrowEvent) {
     super(container, messageThrowEventModel);
-    this._eventAggregator = eventAggregator;
     this.logger = Logger.createLogger(`processengine:message_throw_event_handler:${messageThrowEventModel.id}`);
   }
 
@@ -63,7 +59,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                token.payload);
 
     this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
-    this._eventAggregator.publish(messageEventName, message);
+    this.eventAggregator.publish(messageEventName, message);
     this.logger.verbose(`Done.`);
 
     await this.persistOnExit(token);

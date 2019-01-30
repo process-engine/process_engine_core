@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -19,13 +19,10 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ManualTask> {
 
-  private _eventAggregator: IEventAggregator;
-
   private manualTaskSubscription: Subscription;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, manualTaskModel: Model.Activities.ManualTask) {
+  constructor(container: IContainer, manualTaskModel: Model.Activities.ManualTask) {
     super(container, manualTaskModel);
-    this._eventAggregator = eventAggregator;
     this.logger = new Logger(`processengine:manual_task_handler:${manualTaskModel.id}`);
   }
 
@@ -84,7 +81,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
       this.onInterruptedCallback = (): void => {
         if (this.manualTaskSubscription) {
-          this._eventAggregator.unsubscribe(this.manualTaskSubscription);
+          this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -127,7 +124,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       const finishManualTaskEvent: string = this._getFinishManualTaskEventName(token.correlationId, token.processInstanceId);
 
       this.manualTaskSubscription =
-        this._eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
+        this.eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
           // An empty object is used, because ManualTasks do not yield results.
           const manualTaskResult: any = {};
 
@@ -155,7 +152,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
                                                                        identity,
                                                                        token.payload);
 
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
   }
 
   /**
@@ -181,10 +178,10 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     // FlowNode-specific notification
     const manualTaskFinishedEvent: string = this._getManualTaskFinishedEventName(token.correlationId, token.processInstanceId);
-    this._eventAggregator.publish(manualTaskFinishedEvent, message);
+    this.eventAggregator.publish(manualTaskFinishedEvent, message);
 
     // Global notification
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
   }
 
   private _getFinishManualTaskEventName(correlationId: string, processInstanceId: string): string {

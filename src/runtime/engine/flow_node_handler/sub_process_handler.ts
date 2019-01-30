@@ -2,18 +2,15 @@ import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
-  eventAggregatorSettings,
   IFlowNodeHandler,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
   Runtime,
-  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 import {ProcessTokenFacade} from '../process_token_facade';
@@ -21,15 +18,10 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activities.SubProcess> {
 
-  private _eventAggregator: IEventAggregator;
-  private _processTerminatedMessage: TerminateEndEventReachedMessage;
-
   private terminateEndEventSubscription: Subscription;
 
-  constructor(container: IContainer, eventAggregator: IEventAggregator, subProcessModel: Model.Activities.SubProcess) {
+  constructor(container: IContainer, subProcessModel: Model.Activities.SubProcess) {
     super(container, subProcessModel);
-
-    this._eventAggregator = eventAggregator;
     this.logger = Logger.createLogger(`processengine:sub_process_handler:${subProcessModel.id}`);
   }
 
@@ -63,20 +55,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     identity: IIdentity,
   ): Promise<Model.Base.FlowNode> {
 
-    this._subscribeToProcessTerminatedEvent(onSuspendToken.processInstanceId);
-
-    // TODO: This can probably be removed, when we have refactored the way we handle ParallelGateways in general.
-    // For now, we need that data here for use in the parallel branches.
-    // ----
-    const flowNodeInstancesForProcessModel: Array<Runtime.Types.FlowNodeInstance> =
-      await this.flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
-
     const flowNodeInstancesForSubProcess: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstancesForProcessModel.filter((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        // TODO: Can be simplified, as soon as the DataModels for FlowNodeInstance and ProcessToken have been refactored.
-        return entry.tokens[0].caller === onSuspendToken.processInstanceId;
-      });
-    // ----
+      await this.flowNodeInstanceService.queryByProcessInstance(flowNodeInstance.processInstanceId);
 
     const subProcessWasNotStarted: boolean = flowNodeInstancesForSubProcess.length === 0;
     const subProcessResult: any = subProcessWasNotStarted
@@ -89,7 +69,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(onSuspendToken);
 
-    this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
+    this.eventAggregator.unsubscribe(this.terminateEndEventSubscription);
 
     return processModelFacade.getNextFlowNodeFor(this.subProcess);
   }
@@ -101,8 +81,6 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     identity: IIdentity,
   ): Promise<Model.Base.FlowNode> {
 
-    this._subscribeToProcessTerminatedEvent(token.processInstanceId);
-
     await this.persistOnSuspend(token);
     const subProcessResult: any = await this._executeSubprocess(token, processTokenFacade, processModelFacade, identity);
     token.payload = subProcessResult;
@@ -111,20 +89,9 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(token);
 
-    this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
+    this.eventAggregator.unsubscribe(this.terminateEndEventSubscription);
 
     return processModelFacade.getNextFlowNodeFor(this.subProcess);
-  }
-
-  private _subscribeToProcessTerminatedEvent(processInstanceId: string): void {
-
-    const processTerminatedEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId);
-
-    this.terminateEndEventSubscription =
-      this._eventAggregator.subscribeOnce(processTerminatedEvent, (message: TerminateEndEventReachedMessage): void => {
-        this._processTerminatedMessage = message;
-      });
   }
 
   private async _executeSubprocess(currentProcessToken: Runtime.Types.ProcessToken,
