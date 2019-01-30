@@ -1,8 +1,6 @@
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
@@ -10,7 +8,6 @@ import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   BpmnType,
   Definitions,
-  eventAggregatorSettings,
   ICorrelationService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
@@ -59,7 +56,6 @@ export class ResumeProcessService implements IResumeProcessService {
 
   private readonly _bpmnModelParser: IModelParser;
   private readonly _correlationService: ICorrelationService;
-  private readonly _eventAggregator: IEventAggregator;
   private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
   private readonly _loggingApiService: ILoggingApi;
@@ -68,7 +64,6 @@ export class ResumeProcessService implements IResumeProcessService {
   constructor(
     bpmnModelParser: IModelParser,
     correlationService: ICorrelationService,
-    eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodeInstanceService: IFlowNodeInstanceService,
     loggingApiService: ILoggingApi,
@@ -77,7 +72,6 @@ export class ResumeProcessService implements IResumeProcessService {
 
     this._bpmnModelParser = bpmnModelParser;
     this._correlationService = correlationService;
-    this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;

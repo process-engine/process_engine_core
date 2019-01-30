@@ -80,7 +80,6 @@ function registerServices(container) {
     .dependencies(
       'BpmnModelParser',
       'CorrelationService',
-      'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
       'LoggingApiService',
