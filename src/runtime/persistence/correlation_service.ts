@@ -54,7 +54,7 @@ export class CorrelationService implements ICorrelationService {
     await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     const activeCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>
-      = await this._correlationRepository.getCorrelationsForState(Runtime.Types.CorrelationState.running);
+      = await this._correlationRepository.getCorrelationsByState(Runtime.Types.CorrelationState.running);
 
     const activeCorrelations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(activeCorrelationsFromRepo);
 
@@ -150,7 +150,7 @@ export class CorrelationService implements ICorrelationService {
     this._correlationRepository.finishCorrelation(correlationId);
   }
 
-  public async finishWithError(correlationId: string, error?: Error): Promise<void> {
+  public async finishWithError(correlationId: string, error: Error): Promise<void> {
     this._correlationRepository.finishWithError(correlationId, error);
   }
 
