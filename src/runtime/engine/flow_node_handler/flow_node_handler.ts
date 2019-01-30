@@ -5,6 +5,7 @@ import * as moment from 'moment';
 import * as uuid from 'node-uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
@@ -29,6 +30,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected readonly _container: IContainer;
 
+  private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _loggingApiService: ILoggingApi;
@@ -52,6 +54,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this._previousFlowNodeInstanceId;
   }
 
+  protected get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
+  }
+
   protected get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
   }
@@ -69,6 +75,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   public async initialize(): Promise<void> {
+    this._eventAggregator = await this._container.resolveAsync<IEventAggregator>('EventAggregator');
     this._flowNodeHandlerFactory = await this._container.resolveAsync<IFlowNodeHandlerFactory>('FlowNodeHandlerFactory');
     this._flowNodeInstanceService = await this._container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
     this._loggingApiService = await this._container.resolveAsync<ILoggingApi>('LoggingApiService');
@@ -88,7 +95,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       token.flowNodeInstanceId = this.flowNodeInstanceId;
       let nextFlowNode: Model.Base.FlowNode;
 
+      await this.beforeExecute(token);
       nextFlowNode = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+      await this.afterExecute(token);
 
       // EndEvents will return "undefined" as the next FlowNode.
       // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
@@ -105,7 +114,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     }
   }
 
-  // TODO: Add Collection of a ProcessInstance's FlowNodeInstances to call signature
   public async resume(
     flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
@@ -122,10 +130,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
       let nextFlowNode: Model.Base.FlowNode;
 
+      // It doesn't really matter which token is used here, since payload-specific operations should
+      // only ever be done during the handlers execution.
+      // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
+      const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+      await this.beforeExecute(tokenForHandlerHooks);
       nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity, flowNodeInstances);
+      await this.afterExecute(tokenForHandlerHooks);
 
       // EndEvents will return "undefined" as the next FlowNode.
-      // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
+      // So if no FlowNode is returned, we have arrived at the end of the ProcessInstance.
       const processIsNotYetFinished: boolean = nextFlowNode !== undefined;
       if (processIsNotYetFinished) {
 
@@ -141,8 +156,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         }
 
         // No instance for the next FlowNode was found.
-        // We have arrived at the point at which the ProcessInstance was interrupted
-        // and can continue normally.
+        // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
         const currentResult: IProcessTokenResult = processTokenFacade
           .getAllResults()
           .pop();
@@ -166,6 +180,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
+   * Allows each handler to perform custom preprations prior to being executed.
+   * For example, creating subscriptions for specific events.
+   *
+   * @async
+   * @param token The current ProcessToken.
+   */
+  protected async beforeExecute(token?: Runtime.Types.ProcessToken): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /**
    * This is the method where the derived handlers must implement their logic
    * for executing new FlowNodeInstances.
    *
@@ -173,9 +198,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *
    * @async
    * @param   token              The current ProcessToken.
-   * @param   processTokenFacade The ProcessTokenFacade of the curently
+   * @param   processTokenFacade The ProcessTokenFacade of the currently
    *                             running process.
-   * @param   processModelFacade The ProcessModelFacade of the curently
+   * @param   processModelFacade The ProcessModelFacade of the currently
    *                             running process.
    * @param   identity           The requesting users identity.
    * @returns                    The FlowNode that follows after this one.
@@ -188,6 +213,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   ): Promise<Model.Base.FlowNode>;
 
   /**
+   * Allows each handler to perform custom cleanup operations.
+   * For example, cleaning up EventAggregator Subscriptions.
+   *
+   * @async
+   * @param token The current ProcessToken.
+   */
+  protected async afterExecute(token?: Runtime.Types.ProcessToken): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /**
    * This is the method where the derived handlers must implement their logic
    * for resuming a previously interrupted instance.
    *
@@ -197,9 +233,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *
    * @async
    * @param   flowNodeInstance         The current ProcessToken.
-   * @param   processTokenFacade       The ProcessTokenFacade of the curently
+   * @param   processTokenFacade       The ProcessTokenFacade of the currently
    *                                   running process.
-   * @param   processModelFacade       The ProcessModelFacade of the curently
+   * @param   processModelFacade       The ProcessModelFacade of the currently
    *                                   running process.
    * @param   identity                 The identity of the user that originally
    *                                   started the ProcessInstance.
