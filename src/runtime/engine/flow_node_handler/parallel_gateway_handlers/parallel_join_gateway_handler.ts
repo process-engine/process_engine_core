@@ -37,6 +37,9 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Model.Base.FlowNode> {
+    // --------------------------------
+    // TODO - WIP
+    // --------------------------------
 
     await this.persistOnExit(token);
     processTokenFacade.addResultForFlowNode(this.flowNode.id, token.payload);
