@@ -1,4 +1,4 @@
-'use strict';
+'tionuse strict';
 
 const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 
