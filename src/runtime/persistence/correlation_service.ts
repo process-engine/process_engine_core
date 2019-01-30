@@ -247,7 +247,7 @@ export class CorrelationService implements ICorrelationService {
     if (correlationsContainRunningCorrelation) {
       correlation.state = Runtime.Types.CorrelationState.running;
     } else {
-      correlation.state = (correlationsContainCorrelationWithError)
+      correlation.state = correlationsContainCorrelationWithError
                             ? Runtime.Types.CorrelationState.error
                             : Runtime.Types.CorrelationState.finished;
     }
