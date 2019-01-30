@@ -262,6 +262,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     } catch (error) {
       this
         ._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
+      this._correlationService.finishWithError(identity, processInstanceConfig.correlationId, error);
       throw error;
     }
   }
