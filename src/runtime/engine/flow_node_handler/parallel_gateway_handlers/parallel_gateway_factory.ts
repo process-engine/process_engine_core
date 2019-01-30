@@ -21,9 +21,9 @@ export class ParallelGatewayFactory implements IFlowNodeHandlerDedicatedFactory<
 
     switch (flowNode.gatewayDirection) {
       case Model.Gateways.GatewayDirection.Converging:
-        return this._container.resolve<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelJoinGatewayHandler', [flowNode]);
+        return this._container.resolveAsync<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelJoinGatewayHandler', [flowNode]);
       case Model.Gateways.GatewayDirection.Diverging:
-        return this._container.resolve<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelSplitGatewayHandler', [flowNode]);
+        return this._container.resolveAsync<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelSplitGatewayHandler', [flowNode]);
       default:
         const unsupportedErrorMessage: string =
           `ParallelGateway ${flowNode.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;

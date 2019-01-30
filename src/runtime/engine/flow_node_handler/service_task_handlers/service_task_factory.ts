@@ -19,9 +19,9 @@ export class ServiceTaskFactory implements IFlowNodeHandlerDedicatedFactory<Mode
   public async create(flowNode: Model.Activities.ServiceTask): Promise<IFlowNodeHandler<Model.Activities.ServiceTask>> {
 
     if (flowNode.type === Model.Activities.ServiceTaskType.external) {
-      return this._container.resolve<FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [flowNode]);
+      return this._container.resolveAsync<FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [flowNode]);
     }
 
-    return this._container.resolve<FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [flowNode]);
+    return this._container.resolveAsync<FlowNodeHandlerInterruptible<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [flowNode]);
   }
 }

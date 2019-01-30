@@ -22,15 +22,15 @@ export class IntermediateThrowEventFactory implements IFlowNodeHandlerDedicatedF
     if (flowNode.linkEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateLinkThrowEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateLinkThrowEventHandler', [flowNode]);
     }
 
     if (flowNode.messageEventDefinition) {
-      return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageThrowEventHandler', [flowNode]);
+      return this._container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageThrowEventHandler', [flowNode]);
     }
 
     if (flowNode.signalEventDefinition) {
-      return this._container.resolve<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalThrowEventHandler', [flowNode]);
+      return this._container.resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalThrowEventHandler', [flowNode]);
     }
 
     throw new UnprocessableEntityError(`The IntermediateThrowEventType used with FlowNode ${flowNode.id} is not supported!`);

@@ -22,25 +22,25 @@ export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedF
     if (flowNode.linkEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.messageEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.signalEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.timerEventDefinition) {
       return this
         ._container
-        .resolve<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
     }
 
     throw new UnprocessableEntityError(`The IntermediateCatchEventType used with FlowNode ${flowNode.id} is not supported!`);
