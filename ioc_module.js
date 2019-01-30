@@ -109,7 +109,7 @@ function registerServices(container) {
 
   container
     .register('ProcessModelService', ProcessModelService)
-    .dependencies('CorrelationService', 'ProcessDefinitionRepository', 'IamService', 'BpmnModelParser');
+    .dependencies('BpmnModelParser', 'CorrelationService', 'IamService', 'ProcessDefinitionRepository');
 
   container
     .register('ProcessTokenFacadeFactory', ProcessTokenFacadeFactory)
