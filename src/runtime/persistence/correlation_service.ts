@@ -259,7 +259,7 @@ export class CorrelationService implements ICorrelationService {
         const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
           await this._processDefinitionRepository.getByHash(entry.processModelHash);
 
-        const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
+        const processModel: Runtime.Types.CorrelationProcessInstance = new Runtime.Types.CorrelationProcessInstance();
         processModel.processDefinitionName = processDefinition.name;
         processModel.xml = processDefinition.xml;
         processModel.hash = entry.processModelHash;
@@ -355,17 +355,17 @@ export class CorrelationService implements ICorrelationService {
    * @param   correlationId The correlationId for which to get the ProcessModels.
    * @returns               The retrieved ProcessModels.
    */
-  private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.CorrelationProcessModel>> {
+  private async _getProcessDefinitionsForCorrelation(correlationId: string): Promise<Array<Runtime.Types.CorrelationProcessInstance>> {
 
     const correlations: Array<Runtime.Types.CorrelationFromRepository> = await this._correlationRepository.getByCorrelationId(correlationId);
 
-    const processDefinitions: Array<Runtime.Types.CorrelationProcessModel> =
+    const processDefinitions: Array<Runtime.Types.CorrelationProcessInstance> =
       await Promise.mapSeries(correlations, async(correlation: Runtime.Types.CorrelationFromRepository) => {
 
         const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
           await this._processDefinitionRepository.getByHash(correlation.processModelHash);
 
-        const processModel: Runtime.Types.CorrelationProcessModel = new Runtime.Types.CorrelationProcessModel();
+        const processModel: Runtime.Types.CorrelationProcessInstance = new Runtime.Types.CorrelationProcessInstance();
         processModel.processDefinitionName = processDefinition.name;
         processModel.hash = processDefinition.hash;
         processModel.xml = processDefinition.xml;
