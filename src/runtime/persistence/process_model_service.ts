@@ -27,10 +27,10 @@ export class ProcessModelService implements IProcessModelService {
   private _canReadProcessModelClaim: string = 'can_read_process_model';
   private _canWriteProcessModelClaim: string = 'can_write_process_model';
 
-  constructor(correlationRepository: ICorrelationRepository,
-              processDefinitionRepository: IProcessDefinitionRepository,
+  constructor(bpmnModelParser: IModelParser,
+              correlationRepository: ICorrelationRepository,
               iamService: IIAMService,
-              bpmnModelParser: IModelParser) {
+              processDefinitionRepository: IProcessDefinitionRepository) {
 
     this._processDefinitionRepository = processDefinitionRepository;
     this._iamService = iamService;
