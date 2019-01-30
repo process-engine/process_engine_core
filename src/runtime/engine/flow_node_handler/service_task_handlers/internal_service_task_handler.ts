@@ -52,7 +52,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
+      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.serviceTask);
 
       return nextFlowNodeInfo;
     }
@@ -77,7 +77,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
+        const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.serviceTask);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {

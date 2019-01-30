@@ -56,6 +56,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     // --------------------------------
     // TODO - WIP
     // --------------------------------
+    return processModelFacade.getNextFlowNodeFor(this.parallelGateway);
   }
 
 }

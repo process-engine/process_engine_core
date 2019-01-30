@@ -68,6 +68,6 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.signalThrowEvent);
   }
 }

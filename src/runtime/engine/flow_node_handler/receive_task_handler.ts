@@ -84,7 +84,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
       processTokenFacade.addResultForFlowNode(this.receiveTask.id, receivedMessage.currentToken);
       await this.persistOnExit(receivedMessage.currentToken);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
+      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.receiveTask);
 
       return resolve(nextFlowNodeInfo);
     });

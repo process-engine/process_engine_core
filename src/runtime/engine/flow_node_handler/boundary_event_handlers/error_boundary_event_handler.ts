@@ -41,7 +41,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
       return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
     } catch (err) {
-      return this.getNextFlowNodeInfo(processModelFacade);
+      return processModelFacade.getNextFlowNodeFor(this.flowNode);
     }
   }
 
@@ -59,7 +59,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
       return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
     } catch (err) {
-      return this.getNextFlowNodeInfo(processModelFacade);
+      return processModelFacade.getNextFlowNodeFor(this.flowNode);
     }
   }
 }

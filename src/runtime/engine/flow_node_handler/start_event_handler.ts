@@ -83,7 +83,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.startEvent);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
@@ -120,7 +120,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.startEvent);
   }
 
   /**

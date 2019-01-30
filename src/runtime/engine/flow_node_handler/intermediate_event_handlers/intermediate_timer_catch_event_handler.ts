@@ -96,7 +96,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       await this.persistOnResume(token);
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
+      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });

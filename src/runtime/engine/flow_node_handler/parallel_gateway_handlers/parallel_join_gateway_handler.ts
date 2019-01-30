@@ -41,6 +41,6 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     await this.persistOnExit(token);
     processTokenFacade.addResultForFlowNode(this.flowNode.id, token.payload);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 }

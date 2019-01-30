@@ -97,7 +97,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.callActivity);
   }
 
   protected async _executeHandler(
@@ -120,7 +120,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.callActivity);
   }
 
   /**

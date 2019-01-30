@@ -67,7 +67,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       token.payload = result;
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
+      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.scriptTask);
 
       return resolve(nextFlowNodeInfo);
     });

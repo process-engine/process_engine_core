@@ -45,6 +45,6 @@ export class IntermediateLinkCatchEventHandler extends FlowNodeHandler<Model.Eve
     processTokenFacade.addResultForFlowNode(this.linkCatchEventModel.id, token.payload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.linkCatchEventModel);
   }
 }

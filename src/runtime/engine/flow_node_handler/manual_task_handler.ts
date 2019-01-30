@@ -102,7 +102,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
       this._sendManualTaskFinishedNotification(identity, token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = this.getNextFlowNodeInfo(processModelFacade);
+      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.manualTask);
 
       return resolve(nextFlowNodeInfo);
     });

@@ -309,7 +309,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     await this.persistOnResume(onSuspendToken);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 
   /**
@@ -334,7 +334,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade.addResultForFlowNode(this.flowNode.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 
   /**
@@ -361,7 +361,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   ): Promise<Model.Base.FlowNode> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 
   /**
@@ -380,7 +380,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<Model.Base.FlowNode> {
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 
   /**
@@ -550,16 +550,5 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
                                                this.flowNode.id,
                                                LogLevel.info,
                                                'Flow Node execution resumed.');
-  }
-
-  /**
-   * Gets the next FlowNode to execute after this handler has finished.
-   *
-   * @param processModelFacade The ProcessModelFacade on which to search for
-   *                           the next FlowNode.
-   * @returns                  The next FlowNode to run.
-   */
-  protected getNextFlowNodeInfo(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
-    return processModelFacade.getNextFlowNodeFor(this.flowNode);
   }
 }

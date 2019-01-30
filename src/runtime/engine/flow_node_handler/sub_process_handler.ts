@@ -91,7 +91,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.subProcess);
   }
 
   protected async _executeHandler(
@@ -113,7 +113,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     this._eventAggregator.unsubscribe(this.terminateEndEventSubscription);
 
-    return this.getNextFlowNodeInfo(processModelFacade);
+    return processModelFacade.getNextFlowNodeFor(this.subProcess);
   }
 
   private _subscribeToProcessTerminatedEvent(processInstanceId: string): void {
