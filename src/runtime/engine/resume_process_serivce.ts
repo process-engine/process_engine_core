@@ -18,7 +18,6 @@ import {
   IModelParser,
   IProcessModelFacade,
   IProcessTokenFacade,
-  IProcessTokenResult,
   IResumeProcessService,
   Model,
   Runtime,
