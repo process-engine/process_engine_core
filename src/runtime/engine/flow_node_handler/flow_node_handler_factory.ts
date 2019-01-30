@@ -16,22 +16,6 @@ enum BoundaryEventType {
   Signal = 3,
 }
 
-/**
- * Maps all supported BPMN Types to the name of the matching handler as it is registered in the ioc container.
- */
-const bpmnTypeToRegistrationMap: {[bpmnType: string]: string} = {
-  'bpmn:StartEvent': 'StartEventHandler',
-  'bpmn:CallActivity': 'CallActivityHandler',
-  'bpmn:ExclusiveGateway': 'ExclusiveGatewayHandler',
-  'bpmn:ScriptTask': 'ScriptTaskHandler',
-  'bpmn:EndEvent': 'EndEventHandler',
-  'bpmn:SubProcess': 'SubProcessHandler',
-  'bpmn:UserTask': 'UserTaskHandler',
-  'bpmn:SendTask': 'SendTaskHandler',
-  'bpmn:ReceiveTask': 'ReceiveTaskHandler',
-  'bpmn:ManualTask': 'ManualTaskHandler',
-};
-
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   private _container: IContainer;
@@ -74,8 +58,14 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     return this._decorateWithBoundaryEventHandlers<TFlowNode>(boundaryEvents, flowNodeHandler);
   }
 
+  // tslint:disable-next-line:cyclomatic-complexity
   private async _createHandler<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode): Promise<IFlowNodeHandler<TFlowNode>> {
     switch (flowNode.bpmnType) {
+      case BpmnType.intermediateCatchEvent:
+        return this._intermediateCatchEventHandlerFactory.create(flowNode);
+
+      case BpmnType.intermediateThrowEvent:
+        return this._intermediateThrowEventHandlerFactory.create(flowNode);
 
       case BpmnType.parallelGateway:
         return this._parallelGatewayHandlerFactory.create(flowNode);
@@ -83,21 +73,38 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BpmnType.serviceTask:
         return this._serviceTaskHandlerFactory.create(flowNode);
 
-      case BpmnType.intermediateCatchEvent:
-        return this._intermediateCatchEventHandlerFactory.create(flowNode);
+      case BpmnType.startEvent:
+        return this._resolveHandlerInstance<TFlowNode>('StartEventHandler', flowNode);
 
-      case BpmnType.intermediateThrowEvent:
-        return this._intermediateThrowEventHandlerFactory.create(flowNode);
+      case BpmnType.callActivity:
+        return this._resolveHandlerInstance<TFlowNode>('CallActivityHandler', flowNode);
+
+      case BpmnType.exclusiveGateway:
+        return this._resolveHandlerInstance<TFlowNode>('ExclusiveGatewayHandler', flowNode);
+
+      case BpmnType.scriptTask:
+        return this._resolveHandlerInstance<TFlowNode>('ScriptTaskHandler', flowNode);
+
+      case BpmnType.endEvent:
+        return this._resolveHandlerInstance<TFlowNode>('EndEventHandler', flowNode);
+
+      case BpmnType.subProcess:
+        return this._resolveHandlerInstance<TFlowNode>('SubProcessHandler', flowNode);
+
+      case BpmnType.userTask:
+        return this._resolveHandlerInstance<TFlowNode>('UserTaskHandler', flowNode);
+
+      case BpmnType.sendTask:
+        return this._resolveHandlerInstance<TFlowNode>('SendTaskHandler', flowNode);
+
+      case BpmnType.receiveTask:
+        return this._resolveHandlerInstance<TFlowNode>('ReceiveTaskHandler', flowNode);
+
+      case BpmnType.manualTask:
+        return this._resolveHandlerInstance<TFlowNode>('ManualTaskHandler', flowNode);
 
       default:
-        const handlerRegistrationKey: string = bpmnTypeToRegistrationMap[flowNode.bpmnType];
-
-        const typeNotSupported: boolean = !handlerRegistrationKey;
-        if (typeNotSupported) {
-          throw new InternalServerError(`BPMN type "${flowNode.bpmnType}" is currently not supported.`);
-        }
-
-        return this._resolveHandlerInstance(handlerRegistrationKey, flowNode);
+        throw Error(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" found.`);
     }
   }
 
@@ -106,7 +113,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     flowNode: TFlowNode,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
 
-    const handlerIsNotRegistered: boolean = this._container.isRegistered(handlerRegistrationKey);
+    const handlerIsNotRegistered: boolean = !this._container.isRegistered(handlerRegistrationKey);
     if (handlerIsNotRegistered) {
       throw new InternalServerError(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" is registered at the ioc container.`);
     }
