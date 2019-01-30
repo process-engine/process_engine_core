@@ -277,33 +277,6 @@ export class CorrelationService implements ICorrelationService {
   }
 
   /**
-   * Returns all suspended FlowNodeInstances from the repository.
-   *
-   * @async
-   * @returns A list of all retrieved FlowNodeInstances.
-   */
-  private async _getActiveCorrelationsFromFlowNodeList(flowNodes: Array<Runtime.Types.FlowNodeInstance>): Promise<Array<Runtime.Types.Correlation>> {
-
-    const correlations: Array<Runtime.Types.Correlation> = [];
-
-    const correlationsContainsMatchingEntry: Function = (flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
-
-      return correlations.some((correlation: Runtime.Types.Correlation) => {
-        return correlation.id === flowNodeInstance.correlationId;
-      });
-    };
-
-    for (const flowNode of flowNodes) {
-      if (!correlationsContainsMatchingEntry(flowNode)) {
-        const correlation: Runtime.Types.Correlation = await this._createCorrelationFromActiveFlowNodeInstance(flowNode);
-        correlations.push(correlation);
-      }
-    }
-
-    return correlations;
-  }
-
-  /**
    * Creates a Correlation Object from the given FlowNodeInstance.
    *
    * @async
