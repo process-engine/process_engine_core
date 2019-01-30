@@ -53,12 +53,10 @@ export class CorrelationService implements ICorrelationService {
   public async getActive(identity: IIdentity): Promise<Array<Runtime.Types.Correlation>> {
     await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
+    const activeCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>
+      = await this._correlationRepository.getCorrelationsForState(Runtime.Types.CorrelationState.running);
 
-    const filteredActiveFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
-      this._filterActiveFlowNodeInstancesByIdentity(identity, activeFlowNodeInstances);
-
-    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(filteredActiveFlowNodeInstances);
+    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(activeCorrelationsFromRepo);
 
     return activeCorrelations;
   }
