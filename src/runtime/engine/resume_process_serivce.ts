@@ -209,7 +209,7 @@ export class ResumeProcessService implements IResumeProcessService {
       await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
 
     await flowNodeHandler.resume(
-      processInstanceConfig.startEventInstance,
+      flowNodeInstances,
       processInstanceConfig.processTokenFacade,
       processInstanceConfig.processModelFacade,
       identity,
@@ -317,18 +317,4 @@ export class ResumeProcessService implements IResumeProcessService {
                                                     LogLevel.error,
                                                     error.message,
                                                     errorTime.toDate());
-  }
-
-  /**
-   * Gets the final result from the given ProcessTokenFacade.
-   *
-   * @param   processTokenFacade The facade containing the full ProcessToken.
-   * @returns                    The final result stored in the ProcessTokenFacade.
-   */
-  private async _getFinalResult(processTokenFacade: IProcessTokenFacade): Promise<IProcessTokenResult> {
-
-    const allResults: Array<IProcessTokenResult> = await processTokenFacade.getAllResults();
-
-    return allResults.pop();
-  }
-}
+  }}
