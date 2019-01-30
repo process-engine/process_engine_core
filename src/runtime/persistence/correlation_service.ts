@@ -116,9 +116,9 @@ export class CorrelationService implements ICorrelationService {
     const correlationFromRepo: Runtime.Types.CorrelationFromRepository =
       await this._correlationRepository.getByProcessInstanceId(processInstanceId);
 
-    const wrongIdentity: boolean = identity.userId !== correlationFromRepo.identity.userId;
+    const correlationBelongsToDifferentUser: boolean = identity.userId !== correlationFromRepo.identity.userId;
 
-    if (wrongIdentity) {
+    if (correlationBelongsToDifferentUser) {
       throw new ForbiddenError('Access denied.');
     }
 
