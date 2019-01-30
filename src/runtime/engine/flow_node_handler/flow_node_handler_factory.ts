@@ -92,6 +92,11 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       default:
         const handlerRegistrationKey: string = bpmnTypeToRegistrationMap[flowNode.bpmnType];
 
+        const typeNotSupported: boolean = !handlerRegistrationKey;
+        if (typeNotSupported) {
+          throw new InternalServerError(`BPMN type "${flowNode.bpmnType}" is currently not supported.`);
+        }
+
         return this._resolveHandlerInstance(handlerRegistrationKey, flowNode);
     }
   }
@@ -103,7 +108,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
     const handlerIsNotRegistered: boolean = this._container.isRegistered(handlerRegistrationKey);
     if (handlerIsNotRegistered) {
-      throw new InternalServerError(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" found.`);
+      throw new InternalServerError(`No FlowNodeHandler for BPMN type "${flowNode.bpmnType}" is registered at the ioc container.`);
     }
 
     return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>(handlerRegistrationKey, [flowNode]);
@@ -156,9 +161,9 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
     // This causes the decorated handler to be injected last, after all other dependencies.
     const argumentsToPassThrough: Array<any> = [handlerToDecorate, boundaryEventNode];
 
-    const eventDefinitionType: BoundaryEventType = this._getEventDefinitionType(boundaryEventNode);
+    const boundaryEventType: BoundaryEventType = this._getEventDefinitionType(boundaryEventNode);
 
-    switch (eventDefinitionType) {
+    switch (boundaryEventType) {
       case BoundaryEventType.Error:
         return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>('ErrorBoundaryEventHandler', argumentsToPassThrough);
       case BoundaryEventType.Message:
@@ -168,7 +173,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BoundaryEventType.Timer:
         return this._container.resolveAsync<IFlowNodeHandler<TFlowNode>>('TimerBoundaryEventHandler', argumentsToPassThrough);
       default:
-        throw Error(`No BoundaryEventHandler for EventDefinitionType ${eventDefinitionType} found.`);
+        throw Error(`No BoundaryEventHandler for EventDefinitionType ${boundaryEventType} found.`);
     }
   }
 
