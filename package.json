@@ -29,7 +29,7 @@
     "@process-engine/consumer_api_contracts": "~4.1.0",
     "@process-engine/logging_api_contracts": "~0.3.0",
     "@process-engine/metrics_api_contracts": "~0.3.0",
-    "@process-engine/process_engine_contracts": "~38.0.0",
+    "@process-engine/process_engine_contracts": "feature~add_correlation_state_flag",
     "@types/clone": "~0.1.30",
     "@types/socket.io": "~2.1.2",
     "addict-ioc": "~2.5.1",
