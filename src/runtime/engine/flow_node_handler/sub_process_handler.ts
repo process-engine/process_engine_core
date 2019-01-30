@@ -2,7 +2,6 @@ import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -17,8 +16,6 @@ import {ProcessTokenFacade} from '../process_token_facade';
 import {FlowNodeHandlerInterruptible} from './index';
 
 export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activities.SubProcess> {
-
-  private terminateEndEventSubscription: Subscription;
 
   constructor(container: IContainer, subProcessModel: Model.Activities.SubProcess) {
     super(container, subProcessModel);
@@ -69,8 +66,6 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(onSuspendToken);
 
-    this.eventAggregator.unsubscribe(this.terminateEndEventSubscription);
-
     return processModelFacade.getNextFlowNodeFor(this.subProcess);
   }
 
@@ -89,16 +84,15 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(token);
 
-    this.eventAggregator.unsubscribe(this.terminateEndEventSubscription);
-
     return processModelFacade.getNextFlowNodeFor(this.subProcess);
   }
 
-  private async _executeSubprocess(currentProcessToken: Runtime.Types.ProcessToken,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<any> {
+  private async _executeSubprocess(
+    currentProcessToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<any> {
 
     const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
 
@@ -140,12 +134,13 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     }
   }
 
-  private async _resumeSubProcess(flowNodeInstancesForSubprocess: Array<Runtime.Types.FlowNodeInstance>,
-                                  currentProcessToken: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<any> {
+  private async _resumeSubProcess(
+    flowNodeInstancesForSubprocess: Array<Runtime.Types.FlowNodeInstance>,
+    currentProcessToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<any> {
 
     const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
 
@@ -164,27 +159,35 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
 
-    const flowNodeInstanceForStartEvent: Runtime.Types.FlowNodeInstance =
-      flowNodeInstancesForSubprocess.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        return entry.flowNodeId === subProcessStartEvent.id;
-      });
+    try {
+      const flowNodeInstanceForStartEvent: Runtime.Types.FlowNodeInstance =
+        flowNodeInstancesForSubprocess.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
+          return entry.flowNodeId === subProcessStartEvent.id;
+        });
 
-    // TODO - WIP
-    // Still needs refactoring
+      const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+        await this.flowNodeHandlerFactory.create(subProcessStartEvent, processModelFacade);
 
-    // await this._resumeSubProcessFlowNode(subProcessStartEvent,
-    //                                      flowNodeInstanceForStartEvent,
-    //                                      subProcessToken,
-    //                                      subProcessTokenFacade,
-    //                                      subProcessModelFacade,
-    //                                      identity,
-    //                                      flowNodeInstancesForSubprocess);
+      const startEventWasNotYetStarted: boolean = !flowNodeInstanceForStartEvent;
+      if (startEventWasNotYetStarted) {
+        await flowNodeHandler.execute(subProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
+      }
 
-    // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
-    // and on the original ProcessTokenFacade, so that is is accessible by the original Process
-    const subProcessTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
-    const subProcessResult: any = subProcessTokenData.current || {};
+      await flowNodeHandler.resume(flowNodeInstancesForSubprocess, subProcessTokenFacade, subProcessModelFacade, identity);
 
-    return subProcessResult;
+      // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
+      // and on the original ProcessTokenFacade, so that is is accessible by the original Process
+      const subProcessTokenData: any = await subProcessTokenFacade.getOldTokenFormat();
+      const subProcessResult: any = subProcessTokenData.current || {};
+
+      return subProcessResult;
+    } catch (error) {
+      // We must change the state of the Subprocess here, or it will remain in a suspended state forever.
+      this.logger.error(error);
+
+      await this.persistOnError(currentProcessToken, error);
+
+      throw error;
+    }
   }
 }
