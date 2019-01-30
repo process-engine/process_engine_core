@@ -243,14 +243,37 @@ export class CorrelationService implements ICorrelationService {
     correlation.identity = correlationsFromRepo[0].identity;
     correlation.createdAt = correlationsFromRepo[0].createdAt;
 
-    const correlationHasActiveProcessInstances: boolean =
-      activeFlowNodeInstances.some((flowNodeInstance: Runtime.Types.FlowNodeInstance): boolean => {
-        return flowNodeInstance.correlationId === correlationId;
-      });
+    const checkStateOfCorrelations: (stateToCheck: Runtime.Types.CorrelationState) => boolean =
+      (stateToCheck: Runtime.Types.CorrelationState): boolean => {
 
-    correlation.state = correlationHasActiveProcessInstances
-      ? Runtime.Types.FlowNodeInstanceState.running
-      : Runtime.Types.FlowNodeInstanceState.finished;
+        const correlationsContainState: boolean = correlationsFromRepo.some(
+          (currentCorrelationEntry: Runtime.Types.CorrelationFromRepository): boolean => {
+            return currentCorrelationEntry.state === stateToCheck;
+          });
+
+        return correlationsContainState;
+    };
+
+    /**
+     * If a correlation entry with the given CorrelationID has a running
+     * state, we want the whole Correlation to be marked as running.
+     *
+     * If not, we check if the Correlation Entries contains a Correlation with
+     * an error state. If also not, we set the state to finished.
+     */
+    const correlationsContainRunningCorrelation: boolean =
+      checkStateOfCorrelations(Runtime.Types.CorrelationState.running);
+
+    const correlationsContainCorrelationWithError: boolean =
+      checkStateOfCorrelations(Runtime.Types.CorrelationState.error);
+
+    if (correlationsContainRunningCorrelation) {
+      correlation.state = Runtime.Types.CorrelationState.running;
+    } else {
+      correlation.state = (correlationsContainCorrelationWithError)
+                            ? Runtime.Types.CorrelationState.error
+                            : Runtime.Types.CorrelationState.finished;
+    }
 
     if (correlationsFromRepo) {
 
