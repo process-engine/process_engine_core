@@ -163,24 +163,12 @@ export class CorrelationService implements ICorrelationService {
     this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
   }
 
-  private _filterActiveFlowNodeInstancesByIdentity(
-    identity: IIdentity,
-    activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Array<Runtime.Types.FlowNodeInstance> {
-
-    return activeFlowNodeInstances.filter((activeFlowNodeInstance: Runtime.Types.FlowNodeInstance) => {
-      return identity.userId === activeFlowNodeInstance.owner.userId;
-    });
+  public async finishCorrelation(correlationId: string): Promise<void> {
+    this._correlationRepository.finishCorrelation(correlationId);
   }
 
-  private _filterCorrelationsFromRepoByIdentity(
-    identity: IIdentity,
-    correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>,
-  ): Array<Runtime.Types.CorrelationFromRepository> {
-
-    return correlationsFromRepo.filter((correlationFromRepo: Runtime.Types.CorrelationFromRepository) => {
-      return identity.userId === correlationFromRepo.identity.userId;
-    });
+  public async finishWithError(correlationId: string, error?: Error): Promise<void> {
+    this._correlationRepository.finishWithError(correlationId, error);
   }
 
   /**
