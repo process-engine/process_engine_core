@@ -55,12 +55,12 @@ export class CorrelationService implements ICorrelationService {
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
-    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(activeFlowNodeInstances);
+    const filteredActiveFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      this._filterActiveFlowNodeInstancesByIdentity(identity, activeFlowNodeInstances);
 
-    const filteredActiveCorrelations: Array<Runtime.Types.Correlation> =
-      this._filterActiveCorrelationsByIdentity(identity, activeCorrelations);
+    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(filteredActiveFlowNodeInstances);
 
-    return filteredActiveCorrelations;
+    return activeCorrelations;
   }
 
   public async getAll(identity: IIdentity): Promise<Array<Runtime.Types.Correlation>> {
@@ -158,20 +158,20 @@ export class CorrelationService implements ICorrelationService {
     this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
   }
 
-  private _filterActiveCorrelationsByIdentity(
+  private _filterActiveFlowNodeInstancesByIdentity(
     identity: IIdentity,
-    activeCorrelations: Array<Runtime.Types.Correlation>,
-    ): Array<Runtime.Types.Correlation> {
+    activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+  ): Array<Runtime.Types.FlowNodeInstance> {
 
-    return activeCorrelations.filter((activeCorrelation: Runtime.Types.Correlation) => {
-      return identity === activeCorrelation.identity;
+    return activeFlowNodeInstances.filter((activeFlowNodeInstance: Runtime.Types.FlowNodeInstance) => {
+      return identity === activeFlowNodeInstance.owner;
     });
   }
 
   private _filterCorrelationsFromRepoByIdentity(
     identity: IIdentity,
     correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>,
-    ): Array<Runtime.Types.CorrelationFromRepository> {
+  ): Array<Runtime.Types.CorrelationFromRepository> {
 
     return correlationsFromRepo.filter((correlationFromRepo: Runtime.Types.CorrelationFromRepository) => {
       return identity === correlationFromRepo.identity;
