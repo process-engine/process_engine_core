@@ -1,6 +1,6 @@
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
-import {ForbiddenError} from '@essential-projects/errors_ts';
+import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 import {
   ICorrelationRepository,
   ICorrelationService,
@@ -104,6 +104,11 @@ export class CorrelationService implements ICorrelationService {
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     // All correlations will have the same ID here, so we can just use the top entry as a base.
+    const noFilteredCorrelationsFromRepo: boolean = filteredCorrelationsFromRepo.length === 0;
+    if (noFilteredCorrelationsFromRepo) {
+      throw new NotFoundError('No such correlations for the user.');
+    }
+
     const correlation: Runtime.Types.Correlation =
       await this._mapCorrelation(filteredCorrelationsFromRepo[0].id, activeFlowNodeInstances, filteredCorrelationsFromRepo);
 
