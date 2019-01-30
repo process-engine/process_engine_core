@@ -199,7 +199,7 @@ export class ProcessModelService implements IProcessModelService {
 
     const correlationProcessModel: Runtime.Types.CorrelationProcessModel = correlation.processModels.find(
       (currentCorrelationProcessModel: Runtime.Types.CorrelationProcessModel) => {
-      return currentCorrelationProcessModel.processInstanceId === processInstanceId;
+        return currentCorrelationProcessModel.processInstanceId === processInstanceId;
       });
 
     const processModelId: string = correlationProcessModel.processModelId;
