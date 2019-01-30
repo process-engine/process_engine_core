@@ -173,14 +173,6 @@ function registerHandlers(container) {
     .dependencies('container');
 
   container
-    .register('IntermediateCatchEventHandler', IntermediateCatchEventHandler)
-    .dependencies('container');
-
-  container
-    .register('IntermediateThrowEventHandler', IntermediateThrowEventHandler)
-    .dependencies('container');
-
-  container
     .register('IntermediateLinkCatchEventHandler', IntermediateLinkCatchEventHandler)
     .dependencies('container');
 
@@ -213,10 +205,6 @@ function registerHandlers(container) {
     .dependencies('container');
 
   container
-    .register('ParallelGatewayHandler', ParallelGatewayHandler)
-    .dependencies('container');
-
-  container
     .register('ParallelJoinGatewayHandler', ParallelJoinGatewayHandler)
     .dependencies('container');
 
@@ -238,10 +226,6 @@ function registerHandlers(container) {
 
   container
     .register('SendTaskHandler', SendTaskHandler)
-    .dependencies('container');
-
-  container
-    .register('ServiceTaskHandler', ServiceTaskHandler)
     .dependencies('container');
 
   container
