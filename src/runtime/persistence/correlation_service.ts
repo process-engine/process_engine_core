@@ -217,45 +217,25 @@ export class CorrelationService implements ICorrelationService {
     correlation.identity = correlationsFromRepo[0].identity;
     correlation.createdAt = correlationsFromRepo[0].createdAt;
 
-    const checkStateOfCorrelations: (stateToCheck: Runtime.Types.CorrelationState) => boolean =
-      (stateToCheck: Runtime.Types.CorrelationState): boolean => {
-
-        const correlationsContainState: boolean = correlationsFromRepo.some(
-          (currentCorrelationEntry: Runtime.Types.CorrelationFromRepository): boolean => {
-            return currentCorrelationEntry.state === stateToCheck;
-          });
-
-        return correlationsContainState;
-    };
-
-    /**
-     * If a correlation entry with the given CorrelationID has a running
-     * state, we want the whole Correlation to be marked as running.
-     *
-     * If not, we check if the Correlation Entries contains a Correlation with
-     * an error state. If also not, we set the state to finished.
-     */
-    const correlationsContainRunningCorrelation: boolean =
-      checkStateOfCorrelations(Runtime.Types.CorrelationState.running);
-
-    if (correlationsContainRunningCorrelation) {
-      correlation.state = Runtime.Types.CorrelationState.running;
-    } else {
-      const correlationsContainCorrelationWithError: boolean =
-      checkStateOfCorrelations(Runtime.Types.CorrelationState.error);
-
-      correlation.state = correlationsContainCorrelationWithError
-                            ? Runtime.Types.CorrelationState.error
-                            : Runtime.Types.CorrelationState.finished;
-    }
-
     if (correlationsFromRepo) {
 
+      let correlationsContainRunningCorrelation: boolean = false;
+      let correlationsContainCorrelationWithError: boolean = false;
+
       correlation.processModels = await Promise.mapSeries(correlationsFromRepo, async(entry: Runtime.Types.CorrelationFromRepository) => {
+
+        /**
+         * If this is already set to true, we dont must check this again for
+         * all other Correlation entries.
+         */
+        correlationsContainRunningCorrelation =
+          !correlationsContainRunningCorrelation
+          && entry.state === Runtime.Types.CorrelationState.running;
 
         const correlationEntryHasErrorAttached: boolean = entry.error !== null || entry.error !== undefined;
 
         if (correlationEntryHasErrorAttached) {
+          correlationsContainCorrelationWithError = true;
           correlation.error = entry.error;
         }
 
@@ -278,6 +258,21 @@ export class CorrelationService implements ICorrelationService {
 
         return processModel;
       });
+
+    /**
+     * If a correlation entry with the given CorrelationID has a running
+     * state, we want the whole Correlation to be marked as running.
+     *
+     * If not, we check if the Correlation Entries contains a Correlation with
+     * an error state. If also not, we set the state to finished.
+     */
+      if (correlationsContainRunningCorrelation) {
+        correlation.state = Runtime.Types.CorrelationState.running;
+      } else {
+        correlation.state = correlationsContainCorrelationWithError
+                              ? Runtime.Types.CorrelationState.error
+                              : Runtime.Types.CorrelationState.finished;
+      }
     }
 
     return correlation;
