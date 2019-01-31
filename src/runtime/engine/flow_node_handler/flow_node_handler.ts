@@ -103,10 +103,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
       const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
       if (processIsNotYetFinished) {
-        const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNodes[0], processModelFacade); // TODO
 
-        return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+        await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
+          const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
+
+          return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+        });
       }
     } catch (error) {
       processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
@@ -145,26 +148,29 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
       if (processIsNotYetFinished) {
 
-        const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNodes[0], processModelFacade); // TODO
+        await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
 
-        const nextFlowNodeHasInstance: boolean =
-          flowNodeInstances.some((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNodes[0].id); // TODO
+          const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
 
-        // An instance for the next FlowNode has already been created. Continue resuming
-        if (nextFlowNodeHasInstance) {
-          return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-        }
+          const nextFlowNodeHasInstance: boolean =
+            flowNodeInstances.some((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);
 
-        // No instance for the next FlowNode was found.
-        // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
-        const currentResult: IProcessTokenResult = processTokenFacade
-          .getAllResults()
-          .pop();
+          // An instance for the next FlowNode has already been created. Continue resuming
+          if (nextFlowNodeHasInstance) {
+            return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+          }
 
-        const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
+          // No instance for the next FlowNode was found.
+          // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
+          const currentResult: IProcessTokenResult = processTokenFacade
+            .getAllResults()
+            .pop();
 
-        return nextFlowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+          const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
+
+          return nextFlowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+        });
       }
     } catch (error) {
       processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
