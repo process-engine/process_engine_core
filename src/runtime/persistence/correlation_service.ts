@@ -232,7 +232,9 @@ export class CorrelationService implements ICorrelationService {
           !correlationsContainRunningCorrelation
           && entry.state === Runtime.Types.CorrelationState.running;
 
-        const correlationEntryHasErrorAttached: boolean = entry.error !== null || entry.error !== undefined;
+        const correlationEntryHasErrorAttached: boolean =
+          entry.error !== null
+          && entry.error !== undefined;
 
         if (correlationEntryHasErrorAttached) {
           correlationsContainCorrelationWithError = true;
