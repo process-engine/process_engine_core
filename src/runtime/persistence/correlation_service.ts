@@ -238,12 +238,12 @@ export class CorrelationService implements ICorrelationService {
     const correlationsContainRunningCorrelation: boolean =
       checkStateOfCorrelations(Runtime.Types.CorrelationState.running);
 
-    const correlationsContainCorrelationWithError: boolean =
-      checkStateOfCorrelations(Runtime.Types.CorrelationState.error);
-
     if (correlationsContainRunningCorrelation) {
       correlation.state = Runtime.Types.CorrelationState.running;
     } else {
+      const correlationsContainCorrelationWithError: boolean =
+      checkStateOfCorrelations(Runtime.Types.CorrelationState.error);
+
       correlation.state = correlationsContainCorrelationWithError
                             ? Runtime.Types.CorrelationState.error
                             : Runtime.Types.CorrelationState.finished;
@@ -252,6 +252,12 @@ export class CorrelationService implements ICorrelationService {
     if (correlationsFromRepo) {
 
       correlation.processModels = await Promise.mapSeries(correlationsFromRepo, async(entry: Runtime.Types.CorrelationFromRepository) => {
+
+        const correlationEntryHasErrorAttached: boolean = entry.error !== null || entry.error !== undefined;
+
+        if (correlationEntryHasErrorAttached) {
+          correlation.error = entry.error;
+        }
 
         const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
           await this._processDefinitionRepository.getByHash(entry.processModelHash);
@@ -265,6 +271,10 @@ export class CorrelationService implements ICorrelationService {
         processModel.parentProcessInstanceId = entry.parentProcessInstanceId;
         processModel.createdAt = entry.createdAt;
         processModel.state = entry.state;
+
+        if (correlationEntryHasErrorAttached) {
+          processModel.error = entry.error;
+        }
 
         return processModel;
       });
