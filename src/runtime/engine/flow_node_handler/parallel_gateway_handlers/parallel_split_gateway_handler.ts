@@ -1,12 +1,8 @@
 import {IContainer} from 'addict-ioc';
-import * as clone from 'clone';
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
-  IFlowNodeHandler,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -46,12 +42,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
-
-    const flowNodesToRunInParallel: Array<Model.Base.FlowNode> =
-      outgoingSequenceFlows.map((flow: Model.Types.SequenceFlow) => processModelFacade.getFlowNodeById(flow.targetRef));
-
-    return flowNodesToRunInParallel;
+    return processModelFacade.getNextFlowNodesFor(this.parallelGateway);
   }
 
 }
