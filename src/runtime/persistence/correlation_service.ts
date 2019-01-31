@@ -225,8 +225,8 @@ export class CorrelationService implements ICorrelationService {
       correlation.processModels = await Promise.mapSeries(correlationsFromRepo, async(entry: Runtime.Types.CorrelationFromRepository) => {
 
         /**
-         * If this is already set to true, we dont must check this again for
-         * all other Correlation entries.
+         * If this is already set to true, we don't need to check this again for
+         * any of the other Correlation entries.
          */
         correlationsContainRunningCorrelation =
           !correlationsContainRunningCorrelation
