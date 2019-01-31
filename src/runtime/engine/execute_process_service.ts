@@ -86,14 +86,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
     this._executeProcess(identity, processInstanceConfig);
 
     return new ProcessStartedMessage(correlationId,
-                                      processModel.id,
-                                      processInstanceConfig.processInstanceId,
-                                      startEventId,
-                                      // We don't know the StartEvents instanceId at this point.
-                                      // It will be contained in the ProcessStarted Notification, the StartEventHandler sends.
-                                      undefined,
-                                      identity,
-                                      initialPayload);
+                                     processModel.id,
+                                     processInstanceConfig.processInstanceId,
+                                     startEventId,
+                                     // We don't yet know the StartEvent's instanceId, because it hasn't been created yet.
+                                     // It will be contained in the ProcessStarted Notification that the StartEventHandler sends.
+                                     undefined,
+                                     identity,
+                                     initialPayload);
   }
 
   public async startAndAwaitEndEvent(
