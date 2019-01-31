@@ -24,17 +24,14 @@ const canDeleteProcessModel: string = 'can_delete_process_model';
 export class CorrelationService implements ICorrelationService {
 
   private readonly _correlationRepository: ICorrelationRepository;
-  private readonly _flowNodeInstanceRepository: IFlowNodeInstanceRepository;
   private readonly _iamService: IIAMService;
   private readonly _processDefinitionRepository: IProcessDefinitionRepository;
 
   constructor(correlationRepository: ICorrelationRepository,
-              flowNodeInstanceRepository: IFlowNodeInstanceRepository,
               iamService: IIAMService,
               processDefinitionRepository: IProcessDefinitionRepository) {
 
     this._correlationRepository = correlationRepository;
-    this._flowNodeInstanceRepository = flowNodeInstanceRepository;
     this._iamService = iamService;
     this._processDefinitionRepository = processDefinitionRepository;
   }
