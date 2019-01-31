@@ -39,10 +39,12 @@ export class ProcessModelFacadeTestFixture {
 
     should(expectedFlowNodeId).be.eql(currentFlowNode.id);
 
-    const nextFlowNode: Model.Base.FlowNode = this.processModelFacade.getNextFlowNodeFor(currentFlowNode);
+    const nextFlowNodes: Array<Model.Base.FlowNode> = this.processModelFacade.getNextFlowNodesFor(currentFlowNode);
 
-    if (nextFlowNode) {
-      this.assertFlowNodeSequence(expectedFlowNodeIds, nextFlowNode);
+    if (nextFlowNodes && nextFlowNodes.length > 0) {
+      for (const nextFlowNode of nextFlowNodes) {
+        this.assertFlowNodeSequence(expectedFlowNodeIds, nextFlowNode);
+      }
     }
   }
 }
