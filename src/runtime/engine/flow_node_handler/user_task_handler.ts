@@ -35,7 +35,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing UserTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -49,7 +49,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     await this.persistOnSuspend(onEnterToken);
 
@@ -62,7 +62,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
@@ -72,10 +72,10 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-    ): Promise<Model.Base.FlowNode> {
+    ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Model.Base.FlowNode> =
-      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const executionPromise: Promise<any> = this._waitForUserTaskResult(identity, token);
 
@@ -98,7 +98,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       await this.persistOnExit(token);
       this._sendUserTaskFinishedNotification(identity, token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.userTask);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
 
       return resolve(nextFlowNodeInfo);
     });

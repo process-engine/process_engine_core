@@ -27,7 +27,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ScriptTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -40,7 +40,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -67,7 +67,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       token.payload = result;
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.scriptTask);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.scriptTask);
 
       return resolve(nextFlowNodeInfo);
     });

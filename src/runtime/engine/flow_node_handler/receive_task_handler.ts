@@ -32,7 +32,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ReceiveTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -47,7 +47,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
@@ -57,10 +57,10 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Model.Base.FlowNode> =
-      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const executionPromise: Promise<MessageEventReachedMessage> = this._waitForMessage();
 
@@ -82,7 +82,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
       processTokenFacade.addResultForFlowNode(this.receiveTask.id, receivedMessage.currentToken);
       await this.persistOnExit(receivedMessage.currentToken);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.receiveTask);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.receiveTask);
 
       return resolve(nextFlowNodeInfo);
     });

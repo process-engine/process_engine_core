@@ -33,15 +33,15 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     try {
       await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
 
       const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
 
-      return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
+      return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
     } catch (err) {
-      return processModelFacade.getNextFlowNodeFor(this.flowNode);
+      return processModelFacade.getNextFlowNodesFor(this.flowNode);
     }
   }
 
@@ -51,16 +51,16 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     try {
       await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
 
       const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
 
-      return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
+      return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
     } catch (err) {
-      return processModelFacade.getNextFlowNodeFor(this.flowNode);
+      return processModelFacade.getNextFlowNodesFor(this.flowNode);
     }
   }
 }

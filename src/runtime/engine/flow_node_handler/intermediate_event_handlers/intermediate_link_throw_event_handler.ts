@@ -28,7 +28,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing LinkThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -40,7 +40,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     const matchingCatchEvents: Array<Model.Events.IntermediateCatchEvent> =
       processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
 
@@ -52,7 +52,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, token.payload);
     await this.persistOnExit(token);
 
-    return matchingCatchEvent;
+    return [matchingCatchEvent];
   }
 
   private async _getMatchingCatchEvent(

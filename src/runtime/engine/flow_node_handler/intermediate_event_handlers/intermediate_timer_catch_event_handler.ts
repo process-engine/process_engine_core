@@ -34,7 +34,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing TimerCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -47,7 +47,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     onEnterToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     await this.persistOnSuspend(onEnterToken);
 
@@ -59,7 +59,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     onSuspendToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
@@ -68,10 +68,10 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Model.Base.FlowNode> =
-      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const timerPromise: Promise<void> = this._executeTimer(token, processTokenFacade, processModelFacade);
 
@@ -96,7 +96,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       await this.persistOnResume(token);
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerCatchEvent);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });

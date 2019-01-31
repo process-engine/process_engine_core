@@ -22,7 +22,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
   private timerHasElapsed: boolean = false;
   private hasHandlerFinished: boolean = false;
 
-  private handlerPromise: Promise<Model.Base.FlowNode>;
+  private handlerPromise: Promise<Array<Model.Base.FlowNode>>;
   private timerSubscription: Subscription;
 
   constructor(
@@ -56,9 +56,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
+    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this._executeTimer(resolve, token, processTokenFacade, processModelFacade);
 
@@ -74,7 +74,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
       // if the decorated handler finished execution before the timer elapsed,
       // continue the regular execution with the next FlowNode and dispose the timer
-      const nextFlowNodeAfterDecoratedHandler: Model.Base.FlowNode = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
+      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
 
       return resolve(nextFlowNodeAfterDecoratedHandler);
     });
@@ -88,9 +88,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.handlerPromise = new Promise<Model.Base.FlowNode> (async(resolve: Function, reject: Function): Promise<void> => {
+    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>> (async(resolve: Function, reject: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
       this._executeTimer(resolve, onEnterToken, processTokenFacade, processModelFacade);
@@ -107,7 +107,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
       // if the decorated handler finished resumption before the timer elapsed,
       // continue the regular execution with the next FlowNode and dispose the timer
-      const nextFlowNodeAfterDecoratedHandler: Model.Base.FlowNode = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
+      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
 
       return resolve(nextFlowNodeAfterDecoratedHandler);
     });
@@ -145,7 +145,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       processTokenFacade.addResultForFlowNode(decoratedFlowNodeId, token.payload);
       processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
 
-      const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
+      const nextNodeAfterBoundaryEvent: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.timerBoundaryEvent);
       resolveFunc(nextNodeAfterBoundaryEvent);
     };
 
@@ -174,9 +174,9 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
     }
   }
 
-  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
+  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Array<Model.Base.FlowNode> {
     const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
 
-    return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
+    return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
   }
 }

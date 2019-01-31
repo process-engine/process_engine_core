@@ -36,7 +36,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing SubProcess instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -50,7 +50,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const flowNodeInstancesForSubProcess: Array<Runtime.Types.FlowNodeInstance> =
       await this.flowNodeInstanceService.queryByProcessInstance(flowNodeInstance.processInstanceId);
@@ -66,7 +66,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(onSuspendToken);
 
-    return processModelFacade.getNextFlowNodeFor(this.subProcess);
+    return processModelFacade.getNextFlowNodesFor(this.subProcess);
   }
 
   protected async _executeHandler(
@@ -74,7 +74,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     await this.persistOnSuspend(token);
     const subProcessResult: any = await this._executeSubprocess(token, processTokenFacade, processModelFacade, identity);
@@ -84,7 +84,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
     await this.persistOnExit(token);
 
-    return processModelFacade.getNextFlowNodeFor(this.subProcess);
+    return processModelFacade.getNextFlowNodesFor(this.subProcess);
   }
 
   private async _executeSubprocess(

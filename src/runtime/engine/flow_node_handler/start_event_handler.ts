@@ -38,7 +38,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing StartEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -51,7 +51,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     onSuspendToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -81,13 +81,13 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
 
-    return processModelFacade.getNextFlowNodeFor(this.startEvent);
+    return processModelFacade.getNextFlowNodesFor(this.startEvent);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<Model.Base.FlowNode> {
+                                  identity: IIdentity): Promise<Array<Model.Base.FlowNode>> {
 
     this._sendProcessStartedMessage(identity, token, this.startEvent.id);
 
@@ -118,7 +118,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
     await this.persistOnExit(token);
 
-    return processModelFacade.getNextFlowNodeFor(this.startEvent);
+    return processModelFacade.getNextFlowNodesFor(this.startEvent);
   }
 
   /**

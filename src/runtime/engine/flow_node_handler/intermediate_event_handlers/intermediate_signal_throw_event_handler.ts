@@ -29,7 +29,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing SignalThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -42,7 +42,7 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const signalName: string = this.signalThrowEvent.signalEventDefinition.name;
 
@@ -64,6 +64,6 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
 
     await this.persistOnExit(token);
 
-    return processModelFacade.getNextFlowNodeFor(this.signalThrowEvent);
+    return processModelFacade.getNextFlowNodesFor(this.signalThrowEvent);
   }
 }

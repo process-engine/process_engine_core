@@ -93,18 +93,18 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     try {
       this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
-      let nextFlowNode: Model.Base.FlowNode;
+      let nextFlowNodes: Array<Model.Base.FlowNode>;
 
       await this.beforeExecute(token);
-      nextFlowNode = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+      nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
       await this.afterExecute(token);
 
       // EndEvents will return "undefined" as the next FlowNode.
       // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
-      const processIsNotYetFinished: boolean = nextFlowNode !== undefined;
+      const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
       if (processIsNotYetFinished) {
         const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
+          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNodes[0], processModelFacade); // TODO
 
         return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
       }
@@ -128,7 +128,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
       this._flowNodeInstanceId = flowNodeInstance.id;
 
-      let nextFlowNode: Model.Base.FlowNode;
+      // WIth regards to ParallelGateways, we need to be able to handle multiple results here.
+      let nextFlowNodes: Array<Model.Base.FlowNode>;
 
       // It doesn't really matter which token is used here, since payload-specific operations should
       // only ever be done during the handlers execution.
@@ -136,19 +137,19 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
       await this.beforeExecute(tokenForHandlerHooks);
-      nextFlowNode = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity, flowNodeInstances);
+      nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity, flowNodeInstances);
       await this.afterExecute(tokenForHandlerHooks);
 
       // EndEvents will return "undefined" as the next FlowNode.
       // So if no FlowNode is returned, we have arrived at the end of the ProcessInstance.
-      const processIsNotYetFinished: boolean = nextFlowNode !== undefined;
+      const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
       if (processIsNotYetFinished) {
 
         const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
+          await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNodes[0], processModelFacade); // TODO
 
         const nextFlowNodeHasInstance: boolean =
-          flowNodeInstances.some((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);
+          flowNodeInstances.some((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNodes[0].id); // TODO
 
         // An instance for the next FlowNode has already been created. Continue resuming
         if (nextFlowNodeHasInstance) {
@@ -210,7 +211,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode>;
+  ): Promise<Array<Model.Base.FlowNode>>;
 
   /**
    * Allows each handler to perform custom cleanup operations.
@@ -249,7 +250,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     processFlowNodeInstances?: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
 
@@ -319,7 +320,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
@@ -343,12 +344,12 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onSuspendToken.payload);
     await this.persistOnResume(onSuspendToken);
     await this.persistOnExit(onSuspendToken);
 
-    return processModelFacade.getNextFlowNodeFor(this.flowNode);
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
   /**
@@ -369,11 +370,11 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, resumeToken.payload);
     await this.persistOnExit(resumeToken);
 
-    return processModelFacade.getNextFlowNodeFor(this.flowNode);
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
   /**
@@ -397,10 +398,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);
 
-    return processModelFacade.getNextFlowNodeFor(this.flowNode);
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
   /**
@@ -418,8 +419,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
-    return processModelFacade.getNextFlowNodeFor(this.flowNode);
+  ): Promise<Array<Model.Base.FlowNode>> {
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
   /**

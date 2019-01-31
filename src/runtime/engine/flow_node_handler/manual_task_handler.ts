@@ -35,7 +35,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ManualTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -49,7 +49,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     await this.persistOnSuspend(onEnterToken);
 
@@ -62,7 +62,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
@@ -72,10 +72,10 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Model.Base.FlowNode> =
-      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const executionPromise: Promise<any> = this._waitForManualTaskResult(identity, token);
 
@@ -99,7 +99,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
       this._sendManualTaskFinishedNotification(identity, token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.manualTask);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.manualTask);
 
       return resolve(nextFlowNodeInfo);
     });

@@ -20,7 +20,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
   private signalReceived: boolean = false;
   private handlerHasFinished: boolean = false;
 
-  private handlerPromise: Promise<Model.Base.FlowNode>;
+  private handlerPromise: Promise<Array<Model.Base.FlowNode>>;
   private subscription: Subscription;
 
   constructor(
@@ -52,9 +52,9 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function): Promise<void> => {
 
       this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
 
@@ -70,7 +70,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
-      const nextFlowNodeAfterDecoratedHandler: Model.Base.FlowNode = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
+      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
 
       return resolve(nextFlowNodeAfterDecoratedHandler);
     });
@@ -84,9 +84,9 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.handlerPromise = new Promise<Model.Base.FlowNode>(async(resolve: Function): Promise<void> => {
+    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function): Promise<void> => {
 
       const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
@@ -104,7 +104,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
-      const nextFlowNodeAfterDecoratedHandler: Model.Base.FlowNode = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
+      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
 
       return resolve(nextFlowNodeAfterDecoratedHandler);
     });
@@ -135,7 +135,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       processTokenFacade.addResultForFlowNode(decoratedFlowNodeId, token.payload);
       processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, token.payload);
 
-      const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.signalBoundaryEvent);
+      const nextNodeAfterBoundaryEvent: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.signalBoundaryEvent);
 
       return resolveFunc(nextNodeAfterBoundaryEvent);
     };
@@ -143,9 +143,9 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
     this.subscription = this.eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback);
   }
 
-  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
+  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Array<Model.Base.FlowNode> {
     const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
 
-    return processModelFacade.getNextFlowNodeFor(decoratedHandlerFlowNode);
+    return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
   }
 }

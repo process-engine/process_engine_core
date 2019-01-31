@@ -32,7 +32,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing MessageCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -45,7 +45,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
     onEnterToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     await this.persistOnSuspend(onEnterToken);
 
@@ -57,7 +57,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
     onSuspendToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
@@ -66,7 +66,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
@@ -94,7 +94,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
       processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.messageCatchEvent);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });

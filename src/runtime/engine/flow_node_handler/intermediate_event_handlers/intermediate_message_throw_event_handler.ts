@@ -29,7 +29,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing MessageThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -42,7 +42,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
@@ -64,6 +64,6 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
 
     await this.persistOnExit(token);
 
-    return processModelFacade.getNextFlowNodeFor(this.messageThrowEvent);
+    return processModelFacade.getNextFlowNodesFor(this.messageThrowEvent);
   }
 }

@@ -31,7 +31,7 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ParallelSplitGateway instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -44,11 +44,14 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<any> {
-    // --------------------------------
-    // TODO - WIP
-    // --------------------------------
-    return processModelFacade.getNextFlowNodeFor(this.parallelGateway);
+  ): Promise<Array<Model.Base.FlowNode>> {
+
+    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.parallelGateway.id);
+
+    const flowNodesToRunInParallel: Array<Model.Base.FlowNode> =
+      outgoingSequenceFlows.map((flow: Model.Types.SequenceFlow) => processModelFacade.getFlowNodeById(flow.targetRef));
+
+    return flowNodesToRunInParallel;
   }
 
 }

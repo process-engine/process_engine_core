@@ -32,7 +32,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing EndEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -45,7 +45,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
     const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;

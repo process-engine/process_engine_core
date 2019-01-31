@@ -32,7 +32,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing SendTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -47,7 +47,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
@@ -57,10 +57,10 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Model.Base.FlowNode> =
-      new Promise<Model.Base.FlowNode>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
         if (this.responseSubscription) {
@@ -76,7 +76,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.sendTask);
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.sendTask);
 
         return resolve(nextFlowNodeInfo);
       };

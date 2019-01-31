@@ -23,7 +23,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -36,7 +36,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
     // --------------------------------
     // TODO - WIP
     // --------------------------------
@@ -44,6 +44,6 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     await this.persistOnExit(token);
     processTokenFacade.addResultForFlowNode(this.flowNode.id, token.payload);
 
-    return processModelFacade.getNextFlowNodeFor(this.flowNode);
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 }

@@ -28,7 +28,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ExclusiveGateway instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -40,13 +40,13 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     onExitToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, onExitToken.payload);
 
     const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
     if (isExclusiveJoinGateway) {
-      return processModelFacade.getNextFlowNodeFor(this.exclusiveGateway);
+      return processModelFacade.getNextFlowNodesFor(this.exclusiveGateway);
     }
 
     const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
@@ -58,14 +58,14 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlows[0].targetRef);
 
-    return nextFlowNodeAfterSplit;
+    return [nextFlowNodeAfterSplit];
   }
 
   protected async _executeHandler(
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const gatewayTypeIsNotSupported: boolean =
       this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
@@ -94,7 +94,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
       await this.persistOnExit(token);
 
-      return nextFlowNodeAfterJoin;
+      return [nextFlowNodeAfterJoin];
     }
 
     // If this is a split gateway, find the SequenceFlow that has a truthy condition
@@ -104,7 +104,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(nextFlowNodeId);
 
-    return nextFlowNodeAfterSplit;
+    return [nextFlowNodeAfterSplit];
   }
 
   private async determineBranchToTake(

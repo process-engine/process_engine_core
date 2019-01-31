@@ -47,7 +47,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing CallActivity instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -61,7 +61,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     // First we need to find out if the Subprocess was already started.
     const correlation: Runtime.Types.Correlation
@@ -97,7 +97,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
     await this.persistOnExit(onSuspendToken);
 
-    return processModelFacade.getNextFlowNodeFor(this.callActivity);
+    return processModelFacade.getNextFlowNodesFor(this.callActivity);
   }
 
   protected async _executeHandler(
@@ -105,7 +105,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Model.Base.FlowNode> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
@@ -120,7 +120,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
     await this.persistOnExit(token);
 
-    return processModelFacade.getNextFlowNodeFor(this.callActivity);
+    return processModelFacade.getNextFlowNodesFor(this.callActivity);
   }
 
   /**
