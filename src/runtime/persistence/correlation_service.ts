@@ -169,7 +169,7 @@ export class CorrelationService implements ICorrelationService {
   ): Array<Runtime.Types.FlowNodeInstance> {
 
     return activeFlowNodeInstances.filter((activeFlowNodeInstance: Runtime.Types.FlowNodeInstance) => {
-      return identity === activeFlowNodeInstance.owner;
+      return identity.userId === activeFlowNodeInstance.owner.userId;
     });
   }
 
@@ -179,7 +179,7 @@ export class CorrelationService implements ICorrelationService {
   ): Array<Runtime.Types.CorrelationFromRepository> {
 
     return correlationsFromRepo.filter((correlationFromRepo: Runtime.Types.CorrelationFromRepository) => {
-      return identity === correlationFromRepo.identity;
+      return identity.userId === correlationFromRepo.identity.userId;
     });
   }
 
