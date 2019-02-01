@@ -17,10 +17,13 @@ export class ParallelGatewayFactory implements IFlowNodeHandlerDedicatedFactory<
     this._container = container;
   }
 
+  // TODO: The factory should accept a ProcessToken, so it can store unique FlowNodeInstances at the container.
   public async create(flowNode: Model.Gateways.ParallelGateway): Promise<IFlowNodeHandler<Model.Gateways.ParallelGateway>> {
 
     switch (flowNode.gatewayDirection) {
       case Model.Gateways.GatewayDirection.Converging:
+        // TODO: Store created Join-Gateway Instances as Singletons, marked with the correlationId, processInstanceId and flowNodeId.
+        // This will allow us to pass the same instance of the Join-Gateway to multiple FlowNodes.
         return this._container.resolveAsync<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelJoinGatewayHandler', [flowNode]);
       case Model.Gateways.GatewayDirection.Diverging:
         return this._container.resolveAsync<FlowNodeHandler<Model.Gateways.ParallelGateway>>('ParallelSplitGatewayHandler', [flowNode]);
