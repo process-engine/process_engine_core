@@ -113,10 +113,10 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     subProcessToken.caller = currentProcessToken.processInstanceId;
 
     try {
-      const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+      const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
         await this.flowNodeHandlerFactory.create(subProcessStartEvent, processModelFacade);
 
-      await flowNodeHandler.execute(subProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
+      await startEventHandler.execute(subProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
 
       // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
       // and on the original ProcessTokenFacade, so that is is accessible by the original Process
@@ -165,15 +165,15 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
           return entry.flowNodeId === subProcessStartEvent.id;
         });
 
-      const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+      const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
         await this.flowNodeHandlerFactory.create(subProcessStartEvent, processModelFacade);
 
       const startEventWasNotYetStarted: boolean = !flowNodeInstanceForStartEvent;
       if (startEventWasNotYetStarted) {
-        await flowNodeHandler.execute(subProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
+        await startEventHandler.execute(subProcessToken, subProcessTokenFacade, subProcessModelFacade, identity);
       }
 
-      await flowNodeHandler.resume(flowNodeInstancesForSubprocess, subProcessTokenFacade, subProcessModelFacade, identity);
+      await startEventHandler.resume(flowNodeInstancesForSubprocess, subProcessTokenFacade, subProcessModelFacade, identity);
 
       // After all FlowNodes in the SubProcess have been executed, set the last "current" token value as a result of the whole SubProcess
       // and on the original ProcessTokenFacade, so that is is accessible by the original Process
