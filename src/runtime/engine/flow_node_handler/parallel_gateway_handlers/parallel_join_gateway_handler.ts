@@ -34,7 +34,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     processModelFacade: IProcessModelFacade,
   ): Promise<void> {
 
-    await super.beforeExecute();
+    await super.beforeExecute(token, processTokenFacade, processModelFacade);
 
     const expectedResultsAlreadySet: boolean = this.expectedNumberOfResults > -1;
     if (expectedResultsAlreadySet) {
