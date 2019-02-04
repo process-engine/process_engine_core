@@ -1,7 +1,5 @@
-// tslint:disable:max-file-line-count
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
-import * as moment from 'moment';
 import * as uuid from 'node-uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
@@ -13,6 +11,7 @@ import {
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   IProcessTokenResult,
@@ -33,6 +32,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _flowNodeInstanceService: IFlowNodeInstanceService;
+  private _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
   private _loggingApiService: ILoggingApi;
   private _metricsApiService: IMetricsApi;
 
@@ -66,6 +66,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this._flowNodeInstanceService;
   }
 
+  protected get flowNodePersistenceFacade(): IFlowNodePersistenceFacade {
+    return this._flowNodePersistenceFacade;
+  }
+
   protected get loggingApiService(): ILoggingApi {
     return this._loggingApiService;
   }
@@ -78,6 +82,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     this._eventAggregator = await this._container.resolveAsync<IEventAggregator>('EventAggregator');
     this._flowNodeHandlerFactory = await this._container.resolveAsync<IFlowNodeHandlerFactory>('FlowNodeHandlerFactory');
     this._flowNodeInstanceService = await this._container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
+    this._flowNodePersistenceFacade = await this._container.resolveAsync<IFlowNodePersistenceFacade>('FlowNodePersistenceFacade');
     this._loggingApiService = await this._container.resolveAsync<ILoggingApi>('LoggingApiService');
     this._metricsApiService = await this._container.resolveAsync<IMetricsApi>('MetricsApiService');
   }
@@ -456,172 +461,27 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  /**
-   * Persists the current state of the FlowNodeInstance, after it successfully started execution.
-   *
-   * @async
-   * @param processToken               The current ProcessToken of the FlowNodeInstance.
-   */
   protected async persistOnEnter(processToken: Runtime.Types.ProcessToken): Promise<void> {
-
-    await this.flowNodeInstanceService.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
-
-    const now: moment.Moment = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceEnter(processToken.correlationId,
-                                                     processToken.processModelId,
-                                                     this.flowNodeInstanceId,
-                                                     this.flowNode.id,
-                                                     processToken,
-                                                     now);
-
-    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
-                                               processToken.processModelId,
-                                               processToken.processInstanceId,
-                                               this.flowNodeInstanceId,
-                                               this.flowNode.id,
-                                               LogLevel.info,
-                                               'Flow Node execution started.');
+    await this._flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
   }
 
-  /**
-   * Persists the current state of the FlowNodeInstance, after it successfully finished execution.
-   *
-   * @async
-   * @param processToken     The current ProcessToken of the FlowNodeInstance.
-   */
   protected async persistOnExit(processToken: Runtime.Types.ProcessToken): Promise<void> {
-
-    await this.flowNodeInstanceService.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
-
-    const now: moment.Moment = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
-                                                    processToken.processModelId,
-                                                    this.flowNodeInstanceId,
-                                                    this.flowNode.id,
-                                                    processToken,
-                                                    now);
-
-    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
-                                               processToken.processModelId,
-                                               processToken.processInstanceId,
-                                               this.flowNodeInstanceId,
-                                               this.flowNode.id,
-                                               LogLevel.info,
-                                               'Flow Node execution finished.');
+    await this._flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
-  /**
-   * Persists the current state of the FlowNodeInstance, after it was aborted, due to process termination.
-   *
-   * @async
-   * @param processToken     The current ProcessToken of the FlowNodeInstance.
-   */
   protected async persistOnTerminate(processToken: Runtime.Types.ProcessToken): Promise<void> {
-
-    await this.flowNodeInstanceService.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
-
-    const now: moment.Moment = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
-                                                    processToken.processModelId,
-                                                    this.flowNodeInstanceId,
-                                                    this.flowNode.id,
-                                                    processToken,
-                                                    now);
-
-    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
-                                               processToken.processModelId,
-                                               processToken.processInstanceId,
-                                               this.flowNodeInstanceId,
-                                               this.flowNode.id,
-                                               LogLevel.error,
-                                               'Flow Node execution terminated.');
+    await this._flowNodePersistenceFacade.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
-  /**
-   * Persists the current state of the FlowNodeInstance, after it encountered an error.
-   *
-   * @async
-   * @param processToken     The current ProcessToken of the FlowNodeInstance.
-   */
   protected async persistOnError(processToken: Runtime.Types.ProcessToken, error: Error): Promise<void> {
-
-    await this.flowNodeInstanceService.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
-
-    const now: moment.Moment = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceError(processToken.correlationId,
-                                                     processToken.processModelId,
-                                                     this.flowNodeInstanceId,
-                                                     this.flowNode.id,
-                                                     processToken,
-                                                     error,
-                                                     now);
-
-    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
-                                               processToken.processModelId,
-                                               processToken.processInstanceId,
-                                               this.flowNodeInstanceId,
-                                               this.flowNode.id,
-                                               LogLevel.error,
-                                              `Flow Node execution failed: ${error.message}`);
+    await this._flowNodePersistenceFacade.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
   }
 
-  /**
-   * Suspends the execution of the given FlowNodeInstance.
-   *
-   * @async
-   * @param processToken     The current ProcessToken of the FlowNodeInstance.
-   */
   protected async persistOnSuspend(processToken: Runtime.Types.ProcessToken): Promise<void> {
-
-    await this.flowNodeInstanceService.suspend(this.flowNode.id, this.flowNodeInstanceId, processToken);
-
-    const now: moment.Moment = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceSuspend(processToken.correlationId,
-                                                       processToken.processModelId,
-                                                       this.flowNodeInstanceId,
-                                                       this.flowNode.id,
-                                                       processToken,
-                                                       now);
-
-    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
-                                               processToken.processModelId,
-                                               processToken.processInstanceId,
-                                               this.flowNodeInstanceId,
-                                               this.flowNode.id,
-                                               LogLevel.info,
-                                               'Flow Node execution suspended.');
+    await this._flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
-  /**
-   * Resumes execution of the given suspended FlowNodeInstance.
-   *
-   * @async
-   * @param processToken     The current ProcessToken of the FlowNodeInstance.
-   */
   protected async persistOnResume(processToken: Runtime.Types.ProcessToken): Promise<void> {
-
-    await this.flowNodeInstanceService.resume(this.flowNode.id, this.flowNodeInstanceId, processToken);
-
-    const now: moment.Moment = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceResume(processToken.correlationId,
-                                                      processToken.processModelId,
-                                                      this.flowNodeInstanceId,
-                                                      this.flowNode.id,
-                                                      processToken,
-                                                      now);
-
-    this.loggingApiService.writeLogForFlowNode(processToken.correlationId,
-                                               processToken.processModelId,
-                                               processToken.processInstanceId,
-                                               this.flowNodeInstanceId,
-                                               this.flowNode.id,
-                                               LogLevel.info,
-                                               'Flow Node execution resumed.');
+    await this._flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 }
