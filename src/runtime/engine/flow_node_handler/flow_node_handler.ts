@@ -108,7 +108,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
             await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
 
-          return nextFlowNodeHandler.execute(token, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+          // If we must execute multiple branches, then each branch must get its own ProcessToken.
+          const tokenForNextFlowNode: Runtime.Types.ProcessToken = nextFlowNodes.length > 1
+            ? processTokenFacade.createProcessToken(token.payload)
+            : token;
+
+          tokenForNextFlowNode.flowNodeInstanceId = nextFlowNodeHandler.getInstanceId();
+
+          return nextFlowNodeHandler.execute(tokenForNextFlowNode, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
         });
       }
     } catch (error) {
@@ -168,6 +175,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
             .pop();
 
           const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
+
+          processToken.flowNodeInstanceId = nextFlowNodeHandler.getInstanceId();
 
           return nextFlowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
         });
