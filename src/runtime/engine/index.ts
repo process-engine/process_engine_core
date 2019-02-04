@@ -1,4 +1,5 @@
 export * from './execute_process_service';
+export * from './flow_node_persistence_facade';
 export * from './process_model_facade';
 export * from './process_model_facade_factory';
 export * from './process_token_facade';
