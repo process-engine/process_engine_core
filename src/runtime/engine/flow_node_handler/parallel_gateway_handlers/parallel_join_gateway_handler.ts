@@ -78,12 +78,12 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
       return undefined;
     }
 
-    const finalResult: IProcessTokenResult = this._aggregateBranchTokens();
+    const aggregatedResults: any = this._aggregateBranchTokens();
 
-    token.payload = finalResult;
+    token.payload = aggregatedResults;
 
     await this.persistOnExit(token);
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, finalResult);
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, aggregatedResults);
 
     const nextFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.flowNode);
 
@@ -94,14 +94,11 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     return processTokenFacade.getAllResults().pop();
   }
 
-  private _aggregateBranchTokens(): IProcessTokenResult {
-    const resultToken: IProcessTokenResult = {
-      flowNodeId: this.parallelGateway.id,
-      result: {},
-    };
+  private _aggregateBranchTokens(): any {
+    const resultToken: any = {};
 
     for (const branchResult of this.receivedResults) {
-      resultToken.result[branchResult.flowNodeId] = branchResult.result;
+      resultToken[branchResult.flowNodeId] = branchResult.result;
     }
 
     return resultToken;
