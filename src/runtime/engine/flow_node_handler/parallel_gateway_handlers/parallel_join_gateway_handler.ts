@@ -5,20 +5,44 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   IProcessModelFacade,
   IProcessTokenFacade,
+  IProcessTokenResult,
   Model,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandler} from '../index';
+import {FlowNodeHandlerInterruptible} from '../index';
 
-export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
+export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Model.Gateways.ParallelGateway> {
 
-  // State Flag, which will determine how the GatewayHandler will deal with calls to "executeInternally".
-  private _waitingForIncomingFlows: boolean = false;
+  private expectedNumberOfResults: number = -1;
+  private receivedResults: Array<IProcessTokenResult> = [];
+
+  private onEnterStatePersisted: boolean = false;
 
   constructor(container: IContainer, parallelGatewayModel: Model.Gateways.ParallelGateway) {
     super(container, parallelGatewayModel);
     this.logger = Logger.createLogger(`processengine:parallel_join_gateway:${parallelGatewayModel.id}`);
+  }
+
+  private get parallelGateway(): Model.Gateways.ParallelGateway {
+    return super.flowNode;
+  }
+
+  protected async beforeExecute(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+  ): Promise<void> {
+
+    await super.beforeExecute();
+
+    const expectedResultsAlreadySet: boolean = this.expectedNumberOfResults > -1;
+    if (expectedResultsAlreadySet) {
+      return;
+    }
+
+    const preceedingFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
+    this.expectedNumberOfResults = preceedingFlowNodes.length;
   }
 
   protected async executeInternally(
@@ -28,20 +52,15 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    if (this._waitingForIncomingFlows) {
-      // TODO: If the Handler is already listening for incoming FlowNodeInstances,
-      // add the ID of the previous FlowNodeInstance to the list of received branches.
-      // If enough branches have been received, continue with the Promise-Chain.
-    } else {
-      // TODO: If this is the first time the handler is run, initialize the Promise that waits for
-      // all the branches to arrive.
-      this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
+    // We must only store this state change once to prevent duplicate database entries.
+    if (!this.onEnterStatePersisted) {
       await this.persistOnEnter(token);
-
-      this._waitingForIncomingFlows = true;
-
-      return await this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+      this.onEnterStatePersisted = true;
     }
+
+    this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
+
+    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(
@@ -50,13 +69,41 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
-    // --------------------------------
-    // TODO - WIP
-    // --------------------------------
+
+    const latestResult: IProcessTokenResult = this._getLatestFlowNodeResultFromFacade(processTokenFacade);
+    this.receivedResults.push(latestResult);
+
+    const notAllBranchesHaveFinished: boolean = this.receivedResults.length < this.expectedNumberOfResults;
+    if (notAllBranchesHaveFinished) {
+      return undefined;
+    }
+
+    const finalResult: IProcessTokenResult = this._aggregateBranchTokens();
+
+    token.payload = finalResult;
 
     await this.persistOnExit(token);
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, token.payload);
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, finalResult);
 
-    return processModelFacade.getNextFlowNodesFor(this.flowNode);
+    const nextFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.flowNode);
+
+    return nextFlowNodes;
+  }
+
+  private _getLatestFlowNodeResultFromFacade(processTokenFacade: IProcessTokenFacade): IProcessTokenResult {
+    return processTokenFacade.getAllResults().pop();
+  }
+
+  private _aggregateBranchTokens(): IProcessTokenResult {
+    const resultToken: IProcessTokenResult = {
+      flowNodeId: this.parallelGateway.id,
+      result: {},
+    };
+
+    for (const branchResult of this.receivedResults) {
+      resultToken.result[branchResult.flowNodeId] = branchResult.result;
+    }
+
+    return resultToken;
   }
 }

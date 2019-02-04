@@ -3,6 +3,8 @@ import {EventReceivedCallback, Subscription} from '@essential-projects/event_agg
 import {
   eventAggregatorSettings,
   IInterruptible,
+  IProcessModelFacade,
+  IProcessTokenFacade,
   Model,
   onInterruptionCallback,
   Runtime,
@@ -36,11 +38,19 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     this._onInterruptedCallback = value;
   }
 
-  public async beforeExecute(token: Runtime.Types.ProcessToken): Promise<void> {
+  protected async beforeExecute(
+    token?: Runtime.Types.ProcessToken,
+    processTokenFacade?: IProcessTokenFacade,
+    processModelFacade?: IProcessModelFacade,
+  ): Promise<void> {
     this._terminationSubscription = this._subscribeToProcessTermination(token);
   }
 
-  public async afterExecute(): Promise<void> {
+  protected async afterExecute(
+    token?: Runtime.Types.ProcessToken,
+    processTokenFacade?: IProcessTokenFacade,
+    processModelFacade?: IProcessModelFacade,
+  ): Promise<void> {
     this.eventAggregator.unsubscribe(this._terminationSubscription);
   }
 

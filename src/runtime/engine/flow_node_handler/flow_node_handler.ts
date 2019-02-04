@@ -95,9 +95,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       token.flowNodeInstanceId = this.flowNodeInstanceId;
       let nextFlowNodes: Array<Model.Base.FlowNode>;
 
-      await this.beforeExecute(token);
+      await this.beforeExecute(token, processTokenFacade, processModelFacade);
       nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
-      await this.afterExecute(token);
+      await this.afterExecute(token, processTokenFacade, processModelFacade);
 
       // EndEvents will return "undefined" as the next FlowNode.
       // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
@@ -139,9 +139,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
       const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
-      await this.beforeExecute(tokenForHandlerHooks);
+      await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade);
       nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity, flowNodeInstances);
-      await this.afterExecute(tokenForHandlerHooks);
+      await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade);
 
       // EndEvents will return "undefined" as the next FlowNode.
       // So if no FlowNode is returned, we have arrived at the end of the ProcessInstance.
@@ -191,9 +191,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * For example, creating subscriptions for specific events.
    *
    * @async
-   * @param token The current ProcessToken.
+   * @param token              The current ProcessToken.
+   * @param processTokenFacade The ProcessTokenFacade of the currently
+   *                           running process.
+   * @param processModelFacade The ProcessModelFacade of the currently
+   *                           running process.
    */
-  protected async beforeExecute(token?: Runtime.Types.ProcessToken): Promise<void> {
+  protected async beforeExecute(
+    token?: Runtime.Types.ProcessToken,
+    processTokenFacade?: IProcessTokenFacade,
+    processModelFacade?: IProcessModelFacade,
+  ): Promise<void> {
     return Promise.resolve();
   }
 
@@ -224,9 +232,17 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * For example, cleaning up EventAggregator Subscriptions.
    *
    * @async
-   * @param token The current ProcessToken.
+   * @param token              The current ProcessToken.
+   * @param processTokenFacade The ProcessTokenFacade of the currently
+   *                           running process.
+   * @param processModelFacade The ProcessModelFacade of the currently
+   *                           running process.
    */
-  protected async afterExecute(token?: Runtime.Types.ProcessToken): Promise<void> {
+  protected async afterExecute(
+    token?: Runtime.Types.ProcessToken,
+    processTokenFacade?: IProcessTokenFacade,
+    processModelFacade?: IProcessModelFacade,
+  ): Promise<void> {
     return Promise.resolve();
   }
 
