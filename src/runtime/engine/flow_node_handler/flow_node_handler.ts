@@ -106,7 +106,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
         await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
+            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade, token);
 
           // If we must execute multiple branches, then each branch must get its own ProcessToken.
           const tokenForNextFlowNode: Runtime.Types.ProcessToken = nextFlowNodes.length > 1
@@ -155,28 +155,30 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
       if (processIsNotYetFinished) {
 
+        // No instance for the next FlowNode was found.
+        // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
+        const currentResult: IProcessTokenResult = processTokenFacade
+          .getAllResults()
+          .pop();
+
         await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-
-          const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade);
-
-          const nextFlowNodeHasInstance: boolean =
-            flowNodeInstances.some((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);
-
-          // An instance for the next FlowNode has already been created. Continue resuming
-          if (nextFlowNodeHasInstance) {
-            return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-          }
-
-          // No instance for the next FlowNode was found.
-          // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
-          const currentResult: IProcessTokenResult = processTokenFacade
-            .getAllResults()
-            .pop();
 
           const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
 
-          processToken.flowNodeInstanceId = nextFlowNodeHandler.getInstanceId();
+          const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade, processToken);
+
+          const nextFlowNodeInstance: Runtime.Types.FlowNodeInstance =
+            flowNodeInstances.find((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);
+
+          processToken.flowNodeInstanceId = nextFlowNodeInstance
+            ? nextFlowNodeInstance.id
+            : nextFlowNodeHandler.getInstanceId();
+
+          // An instance for the next FlowNode has already been created. Continue resuming
+          if (nextFlowNodeInstance) {
+            return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+          }
 
           return nextFlowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
         });
