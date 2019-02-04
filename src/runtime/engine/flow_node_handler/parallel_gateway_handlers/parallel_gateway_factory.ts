@@ -19,7 +19,6 @@ export class ParallelGatewayFactory implements IFlowNodeHandlerDedicatedFactory<
     this._container = container;
   }
 
-  // TODO: The factory should accept a ProcessToken, so it can store unique FlowNodeInstances at the container.
   public async create(
     flowNode: Model.Gateways.ParallelGateway,
     processModelFacade: IProcessModelFacade,
