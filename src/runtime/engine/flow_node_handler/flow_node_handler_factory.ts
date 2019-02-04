@@ -5,6 +5,7 @@ import {
   IFlowNodeHandlerFactory,
   IProcessModelFacade,
   Model,
+  Runtime,
 } from '@process-engine/process_engine_contracts';
 
 import {IContainer} from 'addict-ioc';
@@ -41,9 +42,10 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   public async create<TFlowNode extends Model.Base.FlowNode>(
     flowNode: TFlowNode,
     processModelFacade: IProcessModelFacade,
+    processToken: Runtime.Types.ProcessToken,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
 
-    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._createHandler<TFlowNode>(flowNode);
+    const flowNodeHandler: IFlowNodeHandler<TFlowNode> = await this._createHandler<TFlowNode>(flowNode, processModelFacade, processToken);
 
     const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(flowNode);
 
@@ -59,19 +61,23 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
   }
 
   // tslint:disable-next-line:cyclomatic-complexity
-  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(flowNode: TFlowNode): Promise<IFlowNodeHandler<TFlowNode>> {
+  private async _createHandler<TFlowNode extends Model.Base.FlowNode>(
+    flowNode: TFlowNode,
+    processModelFacade: IProcessModelFacade,
+    processToken: Runtime.Types.ProcessToken,
+  ): Promise<IFlowNodeHandler<TFlowNode>> {
     switch (flowNode.bpmnType) {
       case BpmnType.intermediateCatchEvent:
-        return this._intermediateCatchEventHandlerFactory.create(flowNode);
+        return this._intermediateCatchEventHandlerFactory.create(flowNode, processModelFacade, processToken);
 
       case BpmnType.intermediateThrowEvent:
-        return this._intermediateThrowEventHandlerFactory.create(flowNode);
+        return this._intermediateThrowEventHandlerFactory.create(flowNode, processModelFacade, processToken);
 
       case BpmnType.parallelGateway:
-        return this._parallelGatewayHandlerFactory.create(flowNode);
+        return this._parallelGatewayHandlerFactory.create(flowNode, processModelFacade, processToken);
 
       case BpmnType.serviceTask:
-        return this._serviceTaskHandlerFactory.create(flowNode);
+        return this._serviceTaskHandlerFactory.create(flowNode, processModelFacade, processToken);
 
       case BpmnType.startEvent:
         return this._resolveHandlerInstance<TFlowNode>('StartEventHandler', flowNode);
