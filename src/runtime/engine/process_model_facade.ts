@@ -104,6 +104,40 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return boundaryEvents as Array<Model.Events.BoundaryEvent>;
   }
 
+  public getPreviousFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
+
+    // First find the SequenceFlows that contain the FlowNodes next targets
+    const sequenceFlows: Array<Model.Types.SequenceFlow> =
+      this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+        return sequenceFlow.targetRef === flowNode.id;
+      });
+
+    const flowhasNoSource: boolean = !sequenceFlows || sequenceFlows.length === 0;
+    if (flowhasNoSource) {
+      return undefined;
+    }
+
+    // Then find the source FlowNodes for each SequenceFlow
+    const previousFlowNodes: Array<Model.Base.FlowNode> =
+      sequenceFlows.map((currentSequenceFlow: Model.Types.SequenceFlow) => {
+
+        const sourceNode: Model.Base.FlowNode =
+          this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === currentSequenceFlow.sourceRef);
+
+        // If the sourceNode happens to be a BoundaryEvent, return the Node that the BoundaryEvent is attached to.
+        const sourceNodeIsBoundaryEvent: boolean = sourceNode.bpmnType === BpmnType.boundaryEvent;
+        if (sourceNodeIsBoundaryEvent) {
+          return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
+            return currentFlowNode.id === (sourceNode as Model.Events.BoundaryEvent).attachedToRef;
+          });
+        }
+
+        return sourceNode;
+      });
+
+    return previousFlowNodes;
+  }
+
   public getNextFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
