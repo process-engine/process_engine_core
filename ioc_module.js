@@ -36,6 +36,7 @@ const {
 const {
   CorrelationService,
   FlowNodeInstanceService,
+  FlowNodePersistenceFacade,
   DeleteProcessModelService,
   ProcessModelService,
   TimerFacade,
@@ -93,6 +94,10 @@ function registerServices(container) {
   container
     .register('DeleteProcessModelService', DeleteProcessModelService)
     .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService');
+
+  container
+    .register('FlowNodePersistenceFacade', FlowNodePersistenceFacade)
+    .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
 
   container
     .register('FlowNodeInstanceService', FlowNodeInstanceService)
