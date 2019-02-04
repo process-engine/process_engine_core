@@ -78,23 +78,23 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
       return undefined;
     }
 
-    const aggregatedResults: any = this._aggregateBranchTokens();
+    const aggregatedResults: any = this._aggregateResults();
 
     token.payload = aggregatedResults;
 
     await this.persistOnExit(token);
     processTokenFacade.addResultForFlowNode(this.flowNode.id, aggregatedResults);
 
-    const nextFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.flowNode);
+    this._removeInstanceFromIocContainer(token);
 
-    return nextFlowNodes;
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
   private _getLatestFlowNodeResultFromFacade(processTokenFacade: IProcessTokenFacade): IProcessTokenResult {
     return processTokenFacade.getAllResults().pop();
   }
 
-  private _aggregateBranchTokens(): any {
+  private _aggregateResults(): any {
     const resultToken: any = {};
 
     for (const branchResult of this.receivedResults) {
@@ -102,5 +102,13 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     }
 
     return resultToken;
+  }
+
+  private _removeInstanceFromIocContainer(processToken: Runtime.Types.ProcessToken): void {
+
+    const joinGatewayRegistration: string =
+      `ParallelJoinGatewayHandlerInstance-${processToken.correlationId}-${processToken.processInstanceId}-${this.parallelGateway.id}`;
+
+    this._container.unregister(joinGatewayRegistration);
   }
 }
