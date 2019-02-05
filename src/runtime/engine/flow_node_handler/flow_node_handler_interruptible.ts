@@ -19,6 +19,7 @@ import {
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
+import {ErrorBoundaryEventHandler} from './boundary_event_handlers/index';
 import {FlowNodeHandler} from './flow_node_handler';
 
 export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.FlowNode>
@@ -74,6 +75,61 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   protected async afterExecute(): Promise<void> {
     this.eventAggregator.unsubscribe(this._terminationSubscription);
     await this._detachBoundaryEvents();
+  }
+
+  public async execute(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    previousFlowNodeInstanceId?: string,
+  ): Promise<void> {
+
+    try {
+      return super.execute(token, processTokenFacade, processModelFacade, identity);
+    } catch (error) {
+      const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+
+      const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
+      if (noErrorBoundaryEventsAvailable) {
+        throw error;
+      }
+
+      token.payload = error;
+
+      await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
+        const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
+        await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+      });
+    }
+  }
+
+  public async resume(
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+
+    try {
+      return super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+    } catch (error) {
+      const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+
+      const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
+      if (noErrorBoundaryEventsAvailable) {
+        throw error;
+      }
+
+      const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken();
+      token.payload = error;
+      token.flowNodeInstanceId = this.flowNodeInstanceId;
+
+      await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
+        const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
+        await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+      });
+    }
   }
 
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
@@ -144,6 +200,23 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   }
 
   /**
+   * Finds and returns all ErrorBoundaryEvents that are configured to
+   * handle the given error.
+   *
+   * @returns The retrieved ErrorBoundaryEventHandlers.
+   */
+  private _findErrorBoundaryEventHandlersForError(error: Error): Array<ErrorBoundaryEventHandler> {
+    const errorBoundaryEventHandlers: Array<ErrorBoundaryEventHandler> = this
+      ._attachedBoundaryEventHandlers
+      .filter((handler: IBoundaryEventHandler) => handler instanceof ErrorBoundaryEventHandler) as Array<ErrorBoundaryEventHandler>;
+
+    const handlersForError: Array<ErrorBoundaryEventHandler> =
+      errorBoundaryEventHandlers.filter((handler: ErrorBoundaryEventHandler) => handler.canHandleError(error));
+
+    return handlersForError;
+  }
+
+  /**
    * Creates a handler for the given BoundaryEventModel and places it in this
    * handlers internal storage.
    *
@@ -211,9 +284,37 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       await this._detachBoundaryEvents();
     }
 
-    const handlerForNextFlowNode: IFlowNodeHandler<typeof eventData.nextFlowNode> =
-      await this.flowNodeHandlerFactory.create<typeof eventData.nextFlowNode>(eventData.nextFlowNode, currentProcessToken);
+    await this._continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
+      eventData.nextFlowNode,
+      currentProcessToken,
+      processTokenFacade,
+      processModelFacade,
+      identity,
+    );
+   }
 
-    handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+   /**
+    * Starts a new execution flow that begins at the given BoundaryEvent.
+    *
+    * @async
+    * @param nextFlowNode        The first FlowNode to run in this flow.
+    * @param currentProcessToken The current Processtoken.
+    * @param processTokenFacade  The Facade for managing the ProcessInstance's
+    *                            ProcessTokens.
+    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
+    * @param identity            The ProcessInstance owner.
+    */
+   private async _continueAfterBoundaryEvent<TNextFlowNode extends Model.Base.FlowNode>(
+    nextFlowNode: TNextFlowNode,
+    currentProcessToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+
+    const handlerForNextFlowNode: IFlowNodeHandler<TNextFlowNode> =
+      await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
+
+    return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
    }
 }
