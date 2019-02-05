@@ -1,151 +1,56 @@
-import {IContainer} from 'addict-ioc';
-
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
+  OnBoundaryEventTriggeredCallback,
+  OnBoundaryEventTriggeredData,
   Runtime,
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
+import {BoundaryEventHandler} from './boundary_event_handler';
 
-export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
+export class SignalBoundaryEventHandler extends BoundaryEventHandler {
 
-  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
+  private readonly _eventAggregator: IEventAggregator;
 
-  private signalReceived: boolean = false;
-  private handlerHasFinished: boolean = false;
-
-  private handlerPromise: Promise<Array<Model.Base.FlowNode>>;
   private subscription: Subscription;
 
-  constructor(
-    container: IContainer,
-    decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-    signalBoundaryEventModel: Model.Events.BoundaryEvent,
-  ) {
-    super(container, signalBoundaryEventModel);
-    this._decoratedHandler = decoratedHandler;
+  constructor(eventAggregator: IEventAggregator, processModelFacade: IProcessModelFacade, boundaryEventModel: Model.Events.BoundaryEvent) {
+    super(processModelFacade, boundaryEventModel);
+    this._eventAggregator = eventAggregator;
   }
 
-  private get signalBoundaryEvent(): Model.Events.BoundaryEvent {
-    return super.flowNode;
-  }
-
-  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
-
-    if (this.subscription) {
-      this.eventAggregator.unsubscribe(this.subscription);
-    }
-    this.handlerPromise.cancel();
-
-    return this._decoratedHandler.interrupt(token, terminate);
-  }
-
-  // TODO: Add support for non-interrupting signal events.
-  protected async executeInternally(
+  public async waitForTriggeringEvent(
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function): Promise<void> => {
-
-      this._subscribeToSignalEvent(resolve, token, processTokenFacade, processModelFacade);
-
-      await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
-
-      this.handlerHasFinished = true;
-
-      if (this.signalReceived) {
-        return;
-      }
-
-      this.eventAggregator.unsubscribe(this.subscription);
-
-      // if the decorated handler finished execution before the signal was received,
-      // continue the regular execution with the next FlowNode and dispose the signal subscription
-      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
-
-      return resolve(nextFlowNodeAfterDecoratedHandler);
-    });
-
-    return this.handlerPromise;
-  }
-
-  protected async resumeInternally(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function): Promise<void> => {
-
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
-
-      this._subscribeToSignalEvent(resolve, onEnterToken, processTokenFacade, processModelFacade);
-
-      await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-
-      this.handlerHasFinished = true;
-
-      if (this.signalReceived) {
-        return;
-      }
-
-      this.eventAggregator.unsubscribe(this.subscription);
-
-      // if the decorated handler finished execution before the signal was received,
-      // continue the regular execution with the next FlowNode and dispose the signal subscription
-      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
-
-      return resolve(nextFlowNodeAfterDecoratedHandler);
-    });
-
-    return this.handlerPromise;
-  }
-
-  private _subscribeToSignalEvent(resolveFunc: Function,
-                                  token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): void {
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+  ): Promise<void> {
 
     const signalBoundaryEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
-      .replace(eventAggregatorSettings.messageParams.signalReference, this.signalBoundaryEvent.signalEventDefinition.name);
+      .replace(eventAggregatorSettings.messageParams.signalReference, this.boundaryEventModel.signalEventDefinition.name);
 
-    const signalReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
-      if (this.handlerHasFinished) {
-        return;
-      }
-      this.signalReceived = true;
-      token.payload = signal.currentToken;
+    const messageReceivedCallback: any = async(signal: SignalEventReachedMessage): Promise<void> => {
 
-      await this._decoratedHandler.interrupt(token);
+      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode();
 
-      // if the signal was received before the decorated handler finished execution,
-      // the signalBoundaryEvent will be used to determine the next FlowNode to execute
-      const decoratedFlowNodeId: string = this._decoratedHandler.getFlowNode().id;
-      processTokenFacade.addResultForFlowNode(decoratedFlowNodeId, token.payload);
-      processTokenFacade.addResultForFlowNode(this.signalBoundaryEvent.id, token.payload);
+      const eventData: OnBoundaryEventTriggeredData = {
+        nextFlowNode: nextFlowNode,
+        interruptHandler: this.boundaryEventModel.cancelActivity,
+        eventPayload: signal.currentToken,
+      };
 
-      const nextNodeAfterBoundaryEvent: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.signalBoundaryEvent);
-
-      return resolveFunc(nextNodeAfterBoundaryEvent);
+      return onTriggeredCallback(eventData);
     };
 
-    this.subscription = this.eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback);
+    this.subscription = this._eventAggregator.subscribeOnce(signalBoundaryEventName, messageReceivedCallback);
   }
 
-  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Array<Model.Base.FlowNode> {
-    const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
-
-    return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
+  public async cancel(): Promise<void> {
+    this._eventAggregator.unsubscribe(this.subscription);
   }
 }
