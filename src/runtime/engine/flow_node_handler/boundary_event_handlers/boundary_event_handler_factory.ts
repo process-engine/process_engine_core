@@ -1,7 +1,7 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {
+  IBoundaryEventHandler,
   IBoundaryEventHandlerFactory,
-  IFlowNodeHandler,
   IProcessModelFacade,
   Model,
 } from '@process-engine/process_engine_contracts';
@@ -26,7 +26,7 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
   public async create(
     boundaryEventNode: Model.Events.BoundaryEvent,
     processModelFacade: IProcessModelFacade,
-  ): Promise<IFlowNodeHandler<Model.Events.BoundaryEvent>> {
+  ): Promise<IBoundaryEventHandler> {
 
     const boundaryEventType: BoundaryEventType = this._getEventDefinitionType(boundaryEventNode);
 
@@ -48,7 +48,7 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
     handlerRegistrationKey: string,
     flowNode: Model.Events.BoundaryEvent,
     processModelFacade: IProcessModelFacade,
-  ): Promise<IFlowNodeHandler<Model.Events.BoundaryEvent>> {
+  ): Promise<IBoundaryEventHandler> {
 
     const handlerIsNotRegistered: boolean = !this._container.isRegistered(handlerRegistrationKey);
     if (handlerIsNotRegistered) {
@@ -57,7 +57,7 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
 
     const argumentsToPass: Array<any> = [processModelFacade, flowNode];
 
-    return this._container.resolveAsync<IFlowNodeHandler<Model.Events.BoundaryEvent>>(handlerRegistrationKey, argumentsToPass);
+    return this._container.resolveAsync<IBoundaryEventHandler>(handlerRegistrationKey, argumentsToPass);
   }
 
   private _getEventDefinitionType(boundaryEventNode: Model.Events.BoundaryEvent): BoundaryEventType {
