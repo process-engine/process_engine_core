@@ -1,4 +1,4 @@
-import * as uuid from 'uuid';
+import * as uuid from 'node-uuid';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
