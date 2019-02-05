@@ -1,7 +1,10 @@
+import {IContainer} from 'addict-ioc';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {
   eventAggregatorSettings,
+  IBoundaryEventHandlerFactory,
   IInterruptible,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -17,15 +20,24 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   extends FlowNodeHandler<TFlowNode>
   implements IInterruptible {
 
-  private _terminationSubscription: Subscription;
+  private _boundaryEventHandlerFactory: IBoundaryEventHandlerFactory;
 
+  private _terminationSubscription: Subscription;
+  private _onInterruptedCallback: onInterruptionCallback;
+
+  constructor(container: IContainer, flowNode: TFlowNode) {
+    super(container, flowNode);
     // tslint:disable-next-line:no-empty
-  private _onInterruptedCallback: onInterruptionCallback = (): void => { };
+    this._onInterruptedCallback = (): void => {};
+  }
 
   /**
    * Gets the callback that gets called when an interrupt-command was received.
    * This can be used by the derived handlers to perform handler-specific actions
    * necessary for stopping its work cleanly.
+   *
+   * Interruptions are currently done, when a TerminateEndEvent was reached, or
+   * an interrupting BoundaryEvent was triggered.
    */
   protected get onInterruptedCallback(): onInterruptionCallback {
     return this._onInterruptedCallback;
@@ -38,12 +50,18 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     this._onInterruptedCallback = value;
   }
 
+  public async initialize(): Promise<void> {
+    await super.initialize();
+    this._boundaryEventHandlerFactory = await this._container.resolveAsync<IBoundaryEventHandlerFactory>('BoundaryEventHandlerFactory');
+  }
+
   protected async beforeExecute(
     token?: Runtime.Types.ProcessToken,
     processTokenFacade?: IProcessTokenFacade,
     processModelFacade?: IProcessModelFacade,
   ): Promise<void> {
     this._terminationSubscription = this._subscribeToProcessTermination(token);
+    await this._attachBoundaryEvents();
   }
 
   protected async afterExecute(
@@ -52,6 +70,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     processModelFacade?: IProcessModelFacade,
   ): Promise<void> {
     this.eventAggregator.unsubscribe(this._terminationSubscription);
+    await this._detachBoundaryEvents();
   }
 
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
@@ -79,5 +98,13 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  private async _attachBoundaryEvents(): Promise<void> {
+    return Promise.resolve(); // TODO
+  }
+
+  private async _detachBoundaryEvents(): Promise<void> {
+    return Promise.resolve(); // TODO
   }
 }
