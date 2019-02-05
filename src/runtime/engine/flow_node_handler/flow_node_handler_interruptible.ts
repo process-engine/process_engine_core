@@ -86,7 +86,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   ): Promise<void> {
 
     try {
-      return super.execute(token, processTokenFacade, processModelFacade, identity);
+      await super.execute(token, processTokenFacade, processModelFacade, identity);
     } catch (error) {
       const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
 
@@ -112,7 +112,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   ): Promise<void> {
 
     try {
-      return super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+      await super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
     } catch (error) {
       const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
 
@@ -184,9 +184,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     }
 
     // Createa a handler for each attached BoundaryEvent and store it in the internal collection.
-    await Promise.map(boundaryEventModels, async(model: Model.Events.BoundaryEvent): Promise<void> => {
+    for (const model of boundaryEventModels) {
       await this._createBoundaryEventHandler(model, currentProcessToken, processTokenFacade, processModelFacade, identity);
-    });
+    }
   }
 
   /**
