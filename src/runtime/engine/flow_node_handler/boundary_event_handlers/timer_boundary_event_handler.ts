@@ -1,4 +1,3 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
@@ -8,148 +7,57 @@ import {
   IProcessTokenFacade,
   ITimerFacade,
   Model,
+  OnBoundaryEventTriggeredCallback,
+  OnBoundaryEventTriggeredData,
   Runtime,
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
+import {BoundaryEventHandler} from './boundary_event_handler';
 
-export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
+export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
-  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
-  private _timerFacade: ITimerFacade;
+  private readonly _timerFacade: ITimerFacade;
 
-  private timerHasElapsed: boolean = false;
-  private hasHandlerFinished: boolean = false;
-
-  private handlerPromise: Promise<Array<Model.Base.FlowNode>>;
   private timerSubscription: Subscription;
 
-  constructor(
-    container: IContainer,
-    timerFacade: ITimerFacade,
-    decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-    timerBoundaryEventModel: Model.Events.BoundaryEvent,
-  ) {
-    super(container, timerBoundaryEventModel);
-    this._decoratedHandler = decoratedHandler;
+  private readonly logger: Logger;
+
+  constructor(timerFacade: ITimerFacade, processModelFacade: IProcessModelFacade, boundaryEventModel: Model.Events.BoundaryEvent) {
+    super(processModelFacade, boundaryEventModel);
     this._timerFacade = timerFacade;
-    this.logger = Logger.createLogger(`processengine:runtime:timer_boundary_event:${timerBoundaryEventModel.id}`);
+    this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
   }
 
-  private get timerBoundaryEvent(): Model.Events.BoundaryEvent {
-    return super.flowNode;
-  }
-
-  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
-
-    if (this.timerSubscription) {
-      this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-    }
-    this.handlerPromise.cancel();
-
-    return this._decoratedHandler.interrupt(token, terminate);
-  }
-
-  protected async executeInternally(
+  public async waitForTriggeringEvent(
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+  ): Promise<void> {
 
-    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    this.logger.verbose(`Initializing TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId}`);
 
-      this._executeTimer(resolve, token, processTokenFacade, processModelFacade);
-
-      await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
-
-      this.hasHandlerFinished = true;
-
-      if (this.timerHasElapsed) {
-        return;
-      }
-
-      this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-
-      // if the decorated handler finished execution before the timer elapsed,
-      // continue the regular execution with the next FlowNode and dispose the timer
-      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
-
-      return resolve(nextFlowNodeAfterDecoratedHandler);
-    });
-
-    return this.handlerPromise;
-  }
-
-  protected async resumeInternally(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    this.handlerPromise = new Promise<Array<Model.Base.FlowNode>> (async(resolve: Function, reject: Function): Promise<void> => {
-
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-      this._executeTimer(resolve, onEnterToken, processTokenFacade, processModelFacade);
-
-      await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-
-      this.hasHandlerFinished = true;
-
-      if (this.timerHasElapsed) {
-        return;
-      }
-
-      this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-
-      // if the decorated handler finished resumption before the timer elapsed,
-      // continue the regular execution with the next FlowNode and dispose the timer
-      const nextFlowNodeAfterDecoratedHandler: Array<Model.Base.FlowNode> = this._getFlowNodeAfterDecoratedHandler(processModelFacade);
-
-      return resolve(nextFlowNodeAfterDecoratedHandler);
-    });
-
-    return this.handlerPromise;
-  }
-
-  private async _executeTimer(resolveFunc: Function,
-                              token: Runtime.Types.ProcessToken,
-                              processTokenFacade: IProcessTokenFacade,
-                              processModelFacade: IProcessModelFacade): Promise<void> {
-
-    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerBoundaryEvent.timerEventDefinition);
-    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerBoundaryEvent.timerEventDefinition);
+    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.boundaryEventModel.timerEventDefinition);
+    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.boundaryEventModel.timerEventDefinition);
     const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
     const timerElapsed: any = async(): Promise<void> => {
 
-      // No matter what timer type is used, a TimerBoundaryEvent can only ever run once,
-      // given that the decorated handler itself can only run once.
-      if (this.timerSubscription) {
-        this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-      }
+      this.logger.verbose(`TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId} was triggered.`);
 
-      if (this.hasHandlerFinished) {
-        return;
-      }
-      this.timerHasElapsed = true;
+      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode();
 
-      await this._decoratedHandler.interrupt(token);
+      const eventData: OnBoundaryEventTriggeredData = {
+        nextFlowNode: nextFlowNode,
+        interruptHandler: this.boundaryEventModel.cancelActivity,
+        eventPayload: {},
+      };
 
-      // if the timer elapsed before the decorated handler finished execution,
-      // the TimerBoundaryEvent will be used to determine the next FlowNode to execute
-      const decoratedFlowNodeId: string = this._decoratedHandler.getFlowNode().id;
-      processTokenFacade.addResultForFlowNode(decoratedFlowNodeId, token.payload);
-      processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
-
-      const nextNodeAfterBoundaryEvent: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.timerBoundaryEvent);
-      resolveFunc(nextNodeAfterBoundaryEvent);
+      onTriggeredCallback(eventData);
     };
 
-    this.timerSubscription = this._timerFacade.initializeTimer(this.timerBoundaryEvent, timerType, timerValue, timerElapsed);
+    this.timerSubscription = this._timerFacade.initializeTimer(this.boundaryEventModel, timerType, timerValue, timerElapsed);
   }
 
   private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
@@ -169,14 +77,13 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       return evaluateFunction.call(tokenData, tokenData);
 
     } catch (err) {
+      this.logger.error('The expression provided with the TimerBoundaryEvent is invalid!');
       this.logger.error(err);
       throw err;
     }
   }
 
-  private _getFlowNodeAfterDecoratedHandler(processModelFacade: IProcessModelFacade): Array<Model.Base.FlowNode> {
-    const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
-
-    return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
+  public async cancel(): Promise<void> {
+    this._timerFacade.cancelTimerSubscription(this.timerSubscription);
   }
 }
