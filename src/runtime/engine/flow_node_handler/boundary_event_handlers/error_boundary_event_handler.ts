@@ -21,7 +21,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
     const errorDefinition: Model.EventDefinitions.ErrorEventDefinition = this._boundaryEventModel.errorEventDefinition;
 
-    const modelHasNoErrorDefinition: boolean = !errorDefinition || !errorDefinition.name;
+    const modelHasNoErrorDefinition: boolean = !errorDefinition || !errorDefinition.name || errorDefinition.name === '';
     if (modelHasNoErrorDefinition) {
       return true;
     }
@@ -29,12 +29,12 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     // The Code property is optional and must only be evaluated, if the definition contains it.
     // Also, modelled error codes need not necessarily be numbers, which prevents a cast to an Essential-Project Error.
     // Therefore, using "any" is acceptable here.
-    const errorCodesMatch: boolean = !errorDefinition.code || errorDefinition.code === (error as any).code;
+    const errorCodesMatch: boolean = (!errorDefinition.code || errorDefinition.code === '') || errorDefinition.code === (error as any).code;
     const errorMessageMatchesName: boolean = errorDefinition.name === error.message;
 
     const isMatch: boolean = errorCodesMatch && errorMessageMatchesName;
 
-    return modelHasNoErrorDefinition || isMatch;
+    return isMatch;
   }
 
   public async waitForTriggeringEvent(
