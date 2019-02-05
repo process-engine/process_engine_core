@@ -111,7 +111,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
         await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade, token);
+            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
 
           // If we must execute multiple branches, then each branch must get its own ProcessToken.
           const tokenForNextFlowNode: Runtime.Types.ProcessToken = nextFlowNodes.length > 1
@@ -171,7 +171,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
           const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
 
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processModelFacade, processToken);
+            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processToken);
 
           const nextFlowNodeInstance: Runtime.Types.FlowNodeInstance =
             flowNodeInstances.find((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);

@@ -21,7 +21,6 @@ export class ParallelGatewayFactory implements IFlowNodeHandlerDedicatedFactory<
 
   public async create(
     flowNode: Model.Gateways.ParallelGateway,
-    processModelFacade: IProcessModelFacade,
     processToken: Runtime.Types.ProcessToken,
   ): Promise<IFlowNodeHandler<Model.Gateways.ParallelGateway>> {
 

@@ -203,7 +203,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   ): Promise<any> {
 
     const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-      await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
+      await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
     return new Promise<any>((resolve: EventReceivedCallback, reject: Function): void => {
       this._subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);
@@ -222,7 +222,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   ): Promise<any> {
 
     const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-      await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
+      await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
     return new Promise<any>((resolve: EventReceivedCallback, reject: Function): void => {
       this._subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);

@@ -242,7 +242,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       await this._saveCorrelation(identity, processInstanceConfig);
 
       const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-        await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
+        await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
       this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 

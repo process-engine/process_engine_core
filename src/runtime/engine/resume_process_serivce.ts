@@ -199,7 +199,7 @@ export class ResumeProcessService implements IResumeProcessService {
   ): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-      await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent, processInstanceConfig.processModelFacade);
+      await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
     await flowNodeHandler.resume(
       flowNodeInstances,
