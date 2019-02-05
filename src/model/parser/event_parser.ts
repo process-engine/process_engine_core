@@ -241,14 +241,9 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
     return getErrorById(errorId);
   }
 
-  // TODO: Find out if we can set the structureRef of the Error Object to undefined here.
-  const anonymousStructureRef: Model.TypeReferences.StructureReference = {
-    structureId: '',
-  };
-
   return {
     id: '',
-    structureRef: anonymousStructureRef,
+    structureRef: undefined,
     code: '',
     name: '',
   };
