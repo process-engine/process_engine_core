@@ -59,7 +59,7 @@ function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Arr
   for (const rawError of rawErrors) {
     const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
 
-    newError.errorCode = rawError.errorCode;
+    newError.code = rawError.errorCode;
     newError.name = rawError.name;
     newError.id = rawError.id;
 

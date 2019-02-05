@@ -249,7 +249,7 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
   return {
     id: '',
     structureRef: anonymousStructureRef,
-    errorCode: '',
+    code: '',
     name: '',
   };
 }

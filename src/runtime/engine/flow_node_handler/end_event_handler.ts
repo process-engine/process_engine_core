@@ -179,10 +179,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   private _createErrorForEndEvent(): any {
 
     // Create customized error object, based on the error definition.
-    const errorEventDefinition: Model.Types.Error = this.endEvent.errorEventDefinition;
-    const errorObject: {errorCode: string, name: string} = {
-      errorCode: errorEventDefinition.errorCode,
-      name: errorEventDefinition.name,
+    const errorObject: {code: string, name: string} = {
+      code: this.endEvent.errorEventDefinition.code,
+      name: this.endEvent.errorEventDefinition.name,
     };
 
     // Return the created Error object. Don't publish a success message here.
