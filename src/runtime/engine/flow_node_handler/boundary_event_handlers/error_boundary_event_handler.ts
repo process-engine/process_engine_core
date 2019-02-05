@@ -10,10 +10,9 @@ import {BoundaryEventHandler} from './boundary_event_handler';
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
   public async waitForTriggeringEvent(
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    identity: IIdentity,
-    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
   ): Promise<void> {
 
     // ErrorBoundaryEvents are a special case,

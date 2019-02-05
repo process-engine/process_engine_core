@@ -25,10 +25,9 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
   }
 
   public async waitForTriggeringEvent(
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    identity: IIdentity,
-    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
   ): Promise<void> {
 
     const signalBoundaryEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
