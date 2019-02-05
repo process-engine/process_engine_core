@@ -46,6 +46,7 @@ const {ExecuteProcessService} = require('./dist/commonjs/index');
 const {ResumeProcessService} = require('./dist/commonjs/index');
 
 const {
+  BoundaryEventHandlerFactory,
   FlowNodeHandlerFactory,
   IntermediateCatchEventFactory,
   IntermediateThrowEventFactory,
@@ -58,7 +59,8 @@ const {
 function registerInContainer(container) {
   registerServices(container);
   registerFactories(container);
-  registerHandlers(container);
+  registerFlowNodeHandlers(container);
+  registerBoundaryEventHandlers(container);
 }
 
 function registerServices(container) {
@@ -143,6 +145,11 @@ function registerFactories(container) {
     .singleton();
 
   container
+    .register('BoundaryEventHandlerFactory', BoundaryEventHandlerFactory)
+    .dependencies('container')
+    .singleton();
+
+  container
     .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
     .dependencies(
       'container',
@@ -154,7 +161,7 @@ function registerFactories(container) {
     .singleton();
 }
 
-function registerHandlers(container) {
+function registerFlowNodeHandlers(container) {
 
   container
     .register('CallActivityHandler', CallActivityHandler)
@@ -167,10 +174,6 @@ function registerHandlers(container) {
 
   container
     .register('EndEventHandler', EndEventHandler)
-    .dependencies('container');
-
-  container
-    .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
     .dependencies('container');
 
   container
@@ -206,10 +209,6 @@ function registerHandlers(container) {
     .dependencies('container', 'TimerFacade');
 
   container
-    .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
-    .dependencies('container');
-
-  container
     .register('ParallelJoinGatewayHandler', ParallelJoinGatewayHandler)
     .dependencies('container');
 
@@ -242,10 +241,6 @@ function registerHandlers(container) {
     .dependencies('container');
 
   container
-    .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
-    .dependencies('container');
-
-  container
     .register('StartEventHandler', StartEventHandler)
     .dependencies('container', 'TimerFacade');
 
@@ -254,12 +249,27 @@ function registerHandlers(container) {
     .dependencies('container');
 
   container
-    .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('container', 'TimerFacade');
-
-  container
     .register('UserTaskHandler', UserTaskHandler)
     .dependencies('container');
+}
+
+function registerBoundaryEventHandlers(container) {
+
+  container
+    .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+
+  container
+    .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
+    .dependencies('EventAggregator');
+
+  container
+    .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
+    .dependencies('EventAggregator');
+
+  container
+    .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
+    .dependencies('TimerFacade');
+
 }
 
 module.exports.registerInContainer = registerInContainer;
