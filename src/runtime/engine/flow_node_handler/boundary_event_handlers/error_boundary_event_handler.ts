@@ -1,66 +1,29 @@
-import {IContainer} from 'addict-ioc';
-
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
+  OnBoundaryEventTriggeredCallback,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
-export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
+import {BoundaryEventHandler} from './boundary_event_handler';
+export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
-  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
-
-  constructor(
-    container: IContainer,
-    decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-    errorBoundaryEventModel: Model.Events.BoundaryEvent,
-  ) {
-    super(container, errorBoundaryEventModel);
-    this._decoratedHandler = decoratedHandler;
-  }
-
-  // Since ErrorBoundaryEvents can be part of a BoundaryEventChain, they must also implement this method,
-  // so they can tell their decorated handler to abort.
-  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
-    return this._decoratedHandler.interrupt(token, terminate);
-  }
-
-  protected async executeInternally(
+  public async waitForTriggeringEvent(
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
-    try {
-      await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+  ): Promise<void> {
 
-      const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
-
-      return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
-    } catch (err) {
-      return processModelFacade.getNextFlowNodesFor(this.flowNode);
-    }
-  }
-
-  protected async resumeInternally(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    try {
-      await this._decoratedHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-
-      const decoratedHandlerFlowNode: Model.Base.FlowNode = this._decoratedHandler.getFlowNode();
-
-      return processModelFacade.getNextFlowNodesFor(decoratedHandlerFlowNode);
-    } catch (err) {
-      return processModelFacade.getNextFlowNodesFor(this.flowNode);
-    }
+    // ErrorBoundaryEvents are a special case,
+    // in that they do not wait for any event to happen,
+    // but will only change the ProcessInstance's path,
+    // if an error was intercepted during the decorated handlers execution.
+    const errorMessage: string =
+      'ErrorBoundaryEvents cannot be awaited! Use "getNextFlowNode" on this BoundaryEvent, when the decorated handler encounters an error!';
+    throw new InternalServerError(errorMessage);
   }
 }
