@@ -4,7 +4,6 @@ import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {
   IFlowNodeHandler,
   IFlowNodeHandlerDedicatedFactory,
-  IProcessModelFacade,
   Model,
   Runtime,
 } from '@process-engine/process_engine_contracts';
