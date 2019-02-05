@@ -280,7 +280,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     }
 
     if (eventData.interruptHandler) {
-      this.interrupt(currentProcessToken);
+      await this.interrupt(currentProcessToken);
       await this._detachBoundaryEvents();
     }
 
