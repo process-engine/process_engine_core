@@ -40,7 +40,6 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   public abstract async waitForTriggeringEvent(
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
   ): Promise<void>;

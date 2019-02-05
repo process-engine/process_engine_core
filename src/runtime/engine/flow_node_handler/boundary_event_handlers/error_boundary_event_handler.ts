@@ -1,7 +1,6 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
-  IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
   Runtime,
@@ -13,7 +12,6 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
   public async waitForTriggeringEvent(
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
   ): Promise<void> {
