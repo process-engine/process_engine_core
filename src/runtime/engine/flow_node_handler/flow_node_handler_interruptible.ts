@@ -68,7 +68,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<void> {
-    this._terminationSubscription = this._subscribeToProcessTermination(token);
     await this._attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity);
   }
 
@@ -85,23 +84,31 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     previousFlowNodeInstanceId?: string,
   ): Promise<void> {
 
-    try {
-      await super.execute(token, processTokenFacade, processModelFacade, identity);
-    } catch (error) {
-      const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+    return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
+      try {
+        this._terminationSubscription = this._subscribeToProcessTermination(token, reject);
 
-      const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
-      if (noErrorBoundaryEventsAvailable) {
-        throw error;
+        await super.execute(token, processTokenFacade, processModelFacade, identity);
+
+        return resolve();
+      } catch (error) {
+        const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+
+        const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
+        if (noErrorBoundaryEventsAvailable) {
+          return reject(error);
+        }
+
+        token.payload = error;
+
+        await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
+          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
+          await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+        });
+
+        return resolve();
       }
-
-      token.payload = error;
-
-      await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
-        const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
-        await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
-      });
-    }
+    });
   }
 
   public async resume(
@@ -136,24 +143,28 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     await this.onInterruptedCallback(token);
 
     if (terminate) {
-      await this.persistOnTerminate(token);
-      throw new InternalServerError(`Process was terminated!`);
+      return this.persistOnTerminate(token);
     }
 
     return this.persistOnExit(token);
   }
 
-  private _subscribeToProcessTermination(token: Runtime.Types.ProcessToken): Subscription {
+  private _subscribeToProcessTermination(token: Runtime.Types.ProcessToken, rejectionFunction: Function): Subscription {
 
     const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
 
-      this.logger.error(`Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`);
+      const processTerminatedError: string = `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`;
+      this.logger.error(processTerminatedError);
 
       token.payload = message.currentToken;
       await this.interrupt(token, true);
+
+      const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
+
+      return rejectionFunction(terminationError);
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
