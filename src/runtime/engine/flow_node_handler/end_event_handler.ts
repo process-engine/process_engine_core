@@ -47,40 +47,42 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
-    const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;
-    const flowNodeIsMessageEndEvent: boolean = this.endEvent.messageEventDefinition !== undefined;
-    const flowNodeIsSignalEndEvent: boolean = this.endEvent.signalEventDefinition !== undefined;
+    return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+      const flowNodeIsTerminateEndEvent: boolean = this.endEvent.terminateEventDefinition !== undefined;
+      const flowNodeIsErrorEndEvent: boolean = this.endEvent.errorEventDefinition !== undefined;
+      const flowNodeIsMessageEndEvent: boolean = this.endEvent.messageEventDefinition !== undefined;
+      const flowNodeIsSignalEndEvent: boolean = this.endEvent.signalEventDefinition !== undefined;
 
-    let errorObj: any;
+      let errorObj: Runtime.Types.BpmnError;
 
-    // Event persisting
-    if (flowNodeIsTerminateEndEvent) {
-      await this.persistOnTerminate(token);
-    } else {
-      await this.persistOnExit(token);
-    }
+      // Event persisting
+      if (flowNodeIsTerminateEndEvent) {
+        await this.persistOnTerminate(token);
+      } else {
+        await this.persistOnExit(token);
+      }
 
-    // Event notifications
-    if (flowNodeIsTerminateEndEvent) {
-      this._notifyAboutTermination(identity, token);
-    } else if (flowNodeIsErrorEndEvent) {
-      errorObj = this._createErrorForEndEvent();
-    } else if (flowNodeIsMessageEndEvent) {
-      this._sendMessage(identity, token);
-    } else if (flowNodeIsSignalEndEvent) {
-      this._sendSignal(identity, token);
-    } else {
-      this._notifyAboutRegularEnd(identity, token);
-    }
+      // Event notifications
+      if (flowNodeIsTerminateEndEvent) {
+        this._notifyAboutTermination(identity, token);
+      } else if (flowNodeIsErrorEndEvent) {
+        errorObj = this._createErrorForEndEvent();
+      } else if (flowNodeIsMessageEndEvent) {
+        this._sendMessage(identity, token);
+      } else if (flowNodeIsSignalEndEvent) {
+        this._sendSignal(identity, token);
+      } else {
+        this._notifyAboutRegularEnd(identity, token);
+      }
 
-    // Finalization
-    if (flowNodeIsErrorEndEvent) {
-      // ErrorEndEvents need to cause Promise rejection with the matching error object.
-      return Promise.reject(errorObj);
-    }
+      // Finalization
+      if (flowNodeIsErrorEndEvent) {
+        return reject(errorObj);
+      }
 
-    return undefined;
+      // EndEvents have no follow-up FlowNodes, so we must return nothing here.
+      return resolve(undefined);
+    });
   }
 
   /**
@@ -176,16 +178,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param identity The identity that owns the EndEvent instance.
    * @param token    The current ProcessToken.
    */
-  private _createErrorForEndEvent(): any {
-
-    // Create customized error object, based on the error definition.
-    const errorObject: {code: string, name: string} = {
-      code: this.endEvent.errorEventDefinition.code,
-      name: this.endEvent.errorEventDefinition.name,
-    };
-
-    // Return the created Error object. Don't publish a success message here.
-    return errorObject;
+  private _createErrorForEndEvent(): Runtime.Types.BpmnError {
+    return new Runtime.Types.BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
   }
 
   /**
