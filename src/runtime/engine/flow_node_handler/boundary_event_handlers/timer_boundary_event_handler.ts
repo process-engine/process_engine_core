@@ -78,6 +78,7 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       }
 
       this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+
       await this.persistOnExit(token);
 
       // if the decorated handler finished execution before the timer elapsed,
