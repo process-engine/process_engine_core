@@ -44,8 +44,7 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       // Must use return await here to prevent unhandled rejections.
       return await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
     } catch (err) {
-
-      await this.persistOnExit(token);
+      await this.persistOnError(token, err);
 
       return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
     }
@@ -56,14 +55,18 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
                                    processModelFacade: IProcessModelFacade,
                                    identity: IIdentity,
                                   ): Promise<NextFlowNodeInfo> {
+
+    const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+
+    await this.persistOnEnter(onEnterToken);
+
     try {
+      await this.persistOnExit(onEnterToken);
+
       // Must use return await here to prevent unhandled rejections.
       return await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
     } catch (err) {
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
-
-      await this.persistOnEnter(onEnterToken);
-      await this.persistOnExit(onEnterToken);
+      await this.persistOnError(onEnterToken, err);
 
       return this.getNextFlowNodeInfo(onEnterToken, processTokenFacade, processModelFacade);
     }
