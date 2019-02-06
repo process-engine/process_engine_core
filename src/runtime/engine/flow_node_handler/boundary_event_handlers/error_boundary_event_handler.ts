@@ -37,8 +37,8 @@ export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
                                     identity: IIdentity): Promise<NextFlowNodeInfo> {
 
     await this.persistOnEnter(token);
-    try {
 
+    try {
       await this.persistOnExit(token);
 
       // Must use return await here to prevent unhandled rejections.
