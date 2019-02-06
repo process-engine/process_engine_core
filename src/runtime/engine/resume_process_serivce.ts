@@ -159,7 +159,7 @@ export class ResumeProcessService implements IResumeProcessService {
                                              flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                             ): Promise<IProcessInstanceConfig> {
 
-    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(processInstanceId);
+    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
 
     const processModelCorrelation: Runtime.Types.CorrelationProcessModel = correlation.processModels[0];
 
