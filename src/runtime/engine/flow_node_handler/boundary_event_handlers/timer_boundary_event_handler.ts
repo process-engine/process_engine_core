@@ -112,7 +112,6 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       }
 
       this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-      await this.persistOnExit(onEnterToken);
 
       // if the decorated handler finished resumption before the timer elapsed,
       // continue the regular execution with the next FlowNode and dispose the timer
@@ -145,6 +144,13 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
 
       this.timerHasElapsed = true;
 
+      const previousFlowNodeInstanceId: string = token.flowNodeInstanceId;
+      token.flowNodeInstanceId = this.flowNodeInstanceId;
+
+      await this.persistOnExit(token);
+
+      token.flowNodeInstanceId = previousFlowNodeInstanceId;
+
       await this._decoratedHandler.interrupt(token);
 
       // if the timer elapsed before the decorated handler finished execution,
@@ -152,8 +158,6 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       const decoratedFlowNodeId: string = this._decoratedHandler.getFlowNode().id;
       processTokenFacade.addResultForFlowNode(decoratedFlowNodeId, token.payload);
       processTokenFacade.addResultForFlowNode(this.timerBoundaryEvent.id, token.payload);
-
-      await this.persistOnExit(token);
 
       const nextNodeAfterBoundaryEvent: Model.Base.FlowNode = processModelFacade.getNextFlowNodeFor(this.timerBoundaryEvent);
       resolveFunc(new NextFlowNodeInfo(nextNodeAfterBoundaryEvent, token, processTokenFacade));

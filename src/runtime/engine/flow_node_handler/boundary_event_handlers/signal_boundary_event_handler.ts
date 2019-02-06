@@ -111,8 +111,6 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       this._eventAggregator.unsubscribe(this.subscription);
 
-      await this.persistOnExit(onEnterToken);
-
       // if the decorated handler finished execution before the signal was received,
       // continue the regular execution with the next FlowNode and dispose the signal subscription
       return resolve(nextFlowNodeInfo);
@@ -138,7 +136,12 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
 
       await this._decoratedHandler.interrupt(token);
 
+      const previousFlowNodeInstanceId: string = token.flowNodeInstanceId;
+      token.flowNodeInstanceId = this.flowNodeInstanceId;
+
       await this.persistOnExit(token);
+
+      token.flowNodeInstanceId = previousFlowNodeInstanceId;
 
       // if the signal was received before the decorated handler finished execution,
       // the signalBoundaryEvent will be used to determine the next FlowNode to execute

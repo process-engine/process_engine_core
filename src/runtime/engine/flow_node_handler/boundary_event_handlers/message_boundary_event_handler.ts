@@ -111,7 +111,6 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       }
 
       this._eventAggregator.unsubscribe(this.subscription);
-      await this.persistOnExit(onEnterToken);
 
       // if the decorated handler finished execution before the message was received,
       // continue the regular execution with the next FlowNode and dispose the message subscription
@@ -133,7 +132,12 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
 
       this.messageReceived = true;
 
+      const previousFlowNodeInstanceId: string = token.flowNodeInstanceId;
+      token.flowNodeInstanceId = this.flowNodeInstanceId;
+
       await this.persistOnExit(token);
+
+      token.flowNodeInstanceId = previousFlowNodeInstanceId;
 
       if (this.handlerHasFinished) {
         return;
