@@ -1,5 +1,6 @@
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
+import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 import {
   ICorrelationRepository,
   ICorrelationService,
@@ -17,18 +18,24 @@ type GroupedCorrelations = {
   [correlationId: string]: Array<Runtime.Types.CorrelationFromRepository>,
 };
 
+const canReadProcessModelClaim: string = 'can_read_process_model';
+const canDeleteProcessModel: string = 'can_delete_process_model';
+
 export class CorrelationService implements ICorrelationService {
 
   private readonly _correlationRepository: ICorrelationRepository;
   private readonly _flowNodeInstanceRepository: IFlowNodeInstanceRepository;
+  private readonly _iamService: IIAMService;
   private readonly _processDefinitionRepository: IProcessDefinitionRepository;
 
   constructor(correlationRepository: ICorrelationRepository,
               flowNodeInstanceRepository: IFlowNodeInstanceRepository,
+              iamService: IIAMService,
               processDefinitionRepository: IProcessDefinitionRepository) {
 
     this._correlationRepository = correlationRepository;
     this._flowNodeInstanceRepository = flowNodeInstanceRepository;
+    this._iamService = iamService;
     this._processDefinitionRepository = processDefinitionRepository;
   }
 
@@ -43,54 +50,82 @@ export class CorrelationService implements ICorrelationService {
       .createEntry(identity, correlationId, processInstanceId, processModelId, processModelHash, parentProcessInstanceId);
   }
 
-  public async getActive(): Promise<Array<Runtime.Types.Correlation>> {
+  public async getActive(identity: IIdentity): Promise<Array<Runtime.Types.Correlation>> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
-    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(activeFlowNodeInstances);
+    const filteredActiveFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+      this._filterActiveFlowNodeInstancesByIdentity(identity, activeFlowNodeInstances);
+
+    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._getActiveCorrelationsFromFlowNodeList(filteredActiveFlowNodeInstances);
 
     return activeCorrelations;
   }
 
-  public async getAll(): Promise<Array<Runtime.Types.Correlation>> {
+  public async getAll(identity: IIdentity): Promise<Array<Runtime.Types.Correlation>> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> = await this._correlationRepository.getAll();
 
-    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(correlationsFromRepo);
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
+    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(filteredCorrelationsFromRepo);
 
     return correlations;
   }
 
-  public async getByProcessModelId(processModelId: string): Promise<Array<Runtime.Types.Correlation>> {
+  public async getByProcessModelId(identity: IIdentity, processModelId: string): Promise<Array<Runtime.Types.Correlation>> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getByProcessModelId(processModelId);
 
-    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(correlationsFromRepo);
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
+    const correlations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(filteredCorrelationsFromRepo);
 
     return correlations;
   }
 
-  public async getByCorrelationId(correlationId: string): Promise<Runtime.Types.Correlation> {
+  public async getByCorrelationId(identity: IIdentity, correlationId: string): Promise<Runtime.Types.Correlation> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     // NOTE:
     // These will already be ordered by their createdAt value, with the oldest one at the top.
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getByCorrelationId(correlationId);
 
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
     // All correlations will have the same ID here, so we can just use the top entry as a base.
+    const noFilteredCorrelationsFromRepo: boolean = filteredCorrelationsFromRepo.length === 0;
+    if (noFilteredCorrelationsFromRepo) {
+      throw new NotFoundError('No such correlations for the user.');
+    }
+
     const correlation: Runtime.Types.Correlation =
-      await this._mapCorrelation(correlationsFromRepo[0].id, activeFlowNodeInstances, correlationsFromRepo);
+      await this._mapCorrelation(filteredCorrelationsFromRepo[0].id, activeFlowNodeInstances, filteredCorrelationsFromRepo);
 
     return correlation;
   }
 
-  public async getByProcessInstanceId(processInstanceId: string): Promise<Runtime.Types.Correlation> {
+  public async getByProcessInstanceId(identity: IIdentity, processInstanceId: string): Promise<Runtime.Types.Correlation> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     const correlationFromRepo: Runtime.Types.CorrelationFromRepository =
       await this._correlationRepository.getByProcessInstanceId(processInstanceId);
+
+    const correlationBelongsToDifferentUser: boolean = identity.userId !== correlationFromRepo.identity.userId;
+
+    if (correlationBelongsToDifferentUser) {
+      throw new ForbiddenError('Access denied.');
+    }
 
     const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> = await this._getActiveFlowNodeInstances();
 
@@ -100,12 +135,17 @@ export class CorrelationService implements ICorrelationService {
     return correlation;
   }
 
-  public async getSubprocessesForProcessInstance(processInstanceId: string): Promise<Runtime.Types.Correlation> {
+  public async getSubprocessesForProcessInstance(identity: IIdentity, processInstanceId: string): Promise<Runtime.Types.Correlation> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
 
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getSubprocessesForProcessInstance(processInstanceId);
 
-    if (correlationsFromRepo.length === 0) {
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
+      this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
+    const noFilteredCorrelations: boolean = filteredCorrelationsFromRepo.length === 0;
+    if (noFilteredCorrelations) {
       return undefined;
     }
 
@@ -117,8 +157,30 @@ export class CorrelationService implements ICorrelationService {
     return correlation;
   }
 
-  public async deleteCorrelationByProcessModelId(processModelId: string): Promise<void> {
+  public async deleteCorrelationByProcessModelId(identity: IIdentity, processModelId: string): Promise<void> {
+    await this._iamService.ensureHasClaim(identity, canDeleteProcessModel);
+
     this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
+  }
+
+  private _filterActiveFlowNodeInstancesByIdentity(
+    identity: IIdentity,
+    activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+  ): Array<Runtime.Types.FlowNodeInstance> {
+
+    return activeFlowNodeInstances.filter((activeFlowNodeInstance: Runtime.Types.FlowNodeInstance) => {
+      return identity.userId === activeFlowNodeInstance.owner.userId;
+    });
+  }
+
+  private _filterCorrelationsFromRepoByIdentity(
+    identity: IIdentity,
+    correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>,
+  ): Array<Runtime.Types.CorrelationFromRepository> {
+
+    return correlationsFromRepo.filter((correlationFromRepo: Runtime.Types.CorrelationFromRepository) => {
+      return identity.userId === correlationFromRepo.identity.userId;
+    });
   }
 
   /**

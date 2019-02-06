@@ -133,7 +133,7 @@ export class ResumeProcessService implements IResumeProcessService {
     }
 
     const processInstanceConfig: IProcessInstanceConfig =
-      await this._createProcessInstanceConfig(identity, processModelId, processInstanceId, flowNodeInstancesForProcessInstance);
+      await this._createProcessInstanceConfig(identity, processInstanceId, flowNodeInstancesForProcessInstance);
 
     try {
       // Resume the ProcessInstance from the StartEvent it was originally started with.
@@ -154,12 +154,11 @@ export class ResumeProcessService implements IResumeProcessService {
   }
 
   private async _createProcessInstanceConfig(identity: IIdentity,
-                                             processModelId: string,
                                              processInstanceId: string,
                                              flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
                                             ): Promise<IProcessInstanceConfig> {
 
-    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(processInstanceId);
+    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
 
     const processModelCorrelation: Runtime.Types.CorrelationProcessModel = correlation.processModels[0];
 
