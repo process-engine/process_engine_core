@@ -62,15 +62,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     this._boundaryEventHandlerFactory = await this._container.resolveAsync<IBoundaryEventHandlerFactory>('BoundaryEventHandlerFactory');
   }
 
-  protected async beforeExecute(
-    token: Runtime.Types.ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-  ): Promise<void> {
-    await this._attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity);
-  }
-
   protected async afterExecute(): Promise<void> {
     this.eventAggregator.unsubscribe(this._terminationSubscription);
     await this._detachBoundaryEvents();
@@ -87,8 +78,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
       try {
         this._terminationSubscription = this._subscribeToProcessTermination(token, reject);
+        await this._attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
 
-        await super.execute(token, processTokenFacade, processModelFacade, identity);
+        await super.execute(token, processTokenFacade, processModelFacade, identity, previousFlowNodeInstanceId);
 
         return resolve();
       } catch (error) {
@@ -118,25 +110,38 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     identity: IIdentity,
   ): Promise<void> {
 
-    try {
-      await super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-    } catch (error) {
-      const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+    return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
+      try {
+        const flowNodeInstance: Runtime.Types.FlowNodeInstance =
+          flowNodeInstances.find((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === this.flowNode.id);
+        const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
-      const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
-      if (noErrorBoundaryEventsAvailable) {
-        throw error;
+        this._terminationSubscription = this._subscribeToProcessTermination(tokenForHandlerHooks, reject);
+        await this._attachBoundaryEvents(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, resolve);
+
+        await super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+
+        return resolve();
+      } catch (error) {
+        const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+
+        const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
+        if (noErrorBoundaryEventsAvailable) {
+          return reject(error);
+        }
+
+        const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken();
+        token.payload = error;
+        token.flowNodeInstanceId = this.flowNodeInstanceId;
+
+        await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
+          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
+          await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+        });
+
+        return resolve();
       }
-
-      const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken();
-      token.payload = error;
-      token.flowNodeInstanceId = this.flowNodeInstanceId;
-
-      await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
-        const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
-        await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
-      });
-    }
+    });
   }
 
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
@@ -179,12 +184,16 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    *                            ProcessTokens.
    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
    * @param identity            The ProcessInstance owner.
+   * @param handlerResolve      The function that will cleanup the main handler
+   *                            Promise, if an interrupting BoundaryEvent was
+   *                            triggered.
    */
   private async _attachBoundaryEvents(
     currentProcessToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    handlerResolve: Function,
   ): Promise<void> {
 
     const boundaryEventModels: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(this.flowNode);
@@ -196,7 +205,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
     // Createa a handler for each attached BoundaryEvent and store it in the internal collection.
     for (const model of boundaryEventModels) {
-      await this._createBoundaryEventHandler(model, currentProcessToken, processTokenFacade, processModelFacade, identity);
+      await this._createBoundaryEventHandler(model, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
     }
   }
 
@@ -238,6 +247,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    *                            ProcessTokens.
    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
    * @param identity            The ProcessInstance owner.
+   * @param handlerResolve      The function that will cleanup the main handler
+   *                            Promise, if an interrupting BoundaryEvent was
+   *                            triggered.
    */
   private async _createBoundaryEventHandler(
     boundaryEventModel: Model.Events.BoundaryEvent,
@@ -245,12 +257,13 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    handlerResolve: Function,
   ): Promise<void> {
     const boundaryEventHandler: IBoundaryEventHandler =
       await this._boundaryEventHandlerFactory.create(boundaryEventModel, processModelFacade);
 
     const onBoundaryEventTriggeredCallback: OnBoundaryEventTriggeredCallback = async(eventData: OnBoundaryEventTriggeredData): Promise<void> => {
-      return this._handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity);
+      return this._handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
     };
 
     const isNonErrorBoundaryEvent: boolean = !boundaryEventModel.errorEventDefinition;
@@ -277,6 +290,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    *                            ProcessTokens.
    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
    * @param identity            The ProcessInstance owner.
+   * @param handlerResolve      The function that will cleanup the main handler
+   *                            Promise, if an interrupting BoundaryEvent was
+   *                            triggered.
    */
   private async _handleBoundaryEvent(
     eventData: OnBoundaryEventTriggeredData,
@@ -284,6 +300,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
+    handlerResolve: Function,
   ): Promise<void> {
 
     if (eventData.eventPayload) {
@@ -293,6 +310,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     if (eventData.interruptHandler) {
       await this.interrupt(currentProcessToken);
       await this._detachBoundaryEvents();
+      handlerResolve(undefined);
     }
 
     await this._continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(

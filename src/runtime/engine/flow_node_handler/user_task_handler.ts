@@ -72,7 +72,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-    ): Promise<Array<Model.Base.FlowNode>> {
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
@@ -91,11 +91,12 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       const userTaskResult: any = await executionPromise;
       token.payload = userTaskResult;
+
       await this.persistOnResume(token);
 
       processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
-
       await this.persistOnExit(token);
+
       this._sendUserTaskFinishedNotification(identity, token);
 
       const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
