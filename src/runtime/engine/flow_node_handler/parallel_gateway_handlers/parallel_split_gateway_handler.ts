@@ -42,6 +42,8 @@ export class ParallelSplitGatewayHandler extends FlowNodeHandler<Model.Gateways.
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
+    await this.persistOnExit(token);
+
     return processModelFacade.getNextFlowNodesFor(this.parallelGateway);
   }
 
