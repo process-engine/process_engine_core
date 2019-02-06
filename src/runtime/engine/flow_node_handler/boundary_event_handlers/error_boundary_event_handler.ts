@@ -26,15 +26,13 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
       return true;
     }
 
+    const errorNamesMatch: boolean = errorDefinition.name === error.name;
     // The Code property is optional and must only be evaluated, if the definition contains it.
-    // Also, modelled error codes need not necessarily be numbers, which prevents a cast to an Essential-Project Error.
-    // Therefore, using "any" is acceptable here.
-    const errorCodesMatch: boolean = (!errorDefinition.code || errorDefinition.code === '') || errorDefinition.code === (error as any).code;
-    const errorMessageMatchesName: boolean = errorDefinition.name === error.message;
+    const errorCodesMatch: boolean =
+      (!errorDefinition.code || errorDefinition.code === '') ||
+      errorDefinition.code === (error as Runtime.Types.BpmnError).code;
 
-    const isMatch: boolean = errorCodesMatch && errorMessageMatchesName;
-
-    return isMatch;
+    return errorNamesMatch && errorCodesMatch;
   }
 
   public async waitForTriggeringEvent(
