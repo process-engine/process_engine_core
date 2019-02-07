@@ -326,6 +326,10 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string, 
 
     case TimerDefinitionType.cycle: {
 
+      /**
+       * We don't want to reject ProcessModels whose contain a Cyclic TimerStartEvent
+       * alongside a normal StartEvent for compatibility reasons.
+       */
       if (ignoreCyclic) {
         const logger: Logger = Logger.createLogger('processengine:runtime:model:parser:event_parser');
         logger.warn('Cyclic Timer Events are currently not supported.');
