@@ -113,14 +113,19 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
             await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
 
-          // If we must execute multiple branches, then each branch must get its own ProcessToken.
+          // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
           const tokenForNextFlowNode: Runtime.Types.ProcessToken = nextFlowNodes.length > 1
             ? processTokenFacade.createProcessToken(token.payload)
             : token;
 
+          const processTokenFacadeForFlowNode: IProcessTokenFacade = nextFlowNodes.length > 1
+            ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
+            : processTokenFacade;
+
           tokenForNextFlowNode.flowNodeInstanceId = nextFlowNodeHandler.getInstanceId();
 
-          return nextFlowNodeHandler.execute(tokenForNextFlowNode, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+          return nextFlowNodeHandler
+            .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
         });
       }
     } catch (error) {
@@ -180,12 +185,22 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
             ? nextFlowNodeInstance.id
             : nextFlowNodeHandler.getInstanceId();
 
+          // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
+          const tokenForNextFlowNode: Runtime.Types.ProcessToken = nextFlowNodes.length > 1
+            ? processTokenFacade.createProcessToken(processToken.payload)
+            : processToken;
+
+          const processTokenFacadeForFlowNode: IProcessTokenFacade = nextFlowNodes.length > 1
+            ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
+            : processTokenFacade;
+
           // An instance for the next FlowNode has already been created. Continue resuming
           if (nextFlowNodeInstance) {
-            return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+            return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacadeForFlowNode, processModelFacade, identity);
           }
 
-          return nextFlowNodeHandler.execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+          return nextFlowNodeHandler
+            .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
         });
       }
     } catch (error) {
