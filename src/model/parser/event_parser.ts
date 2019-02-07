@@ -83,7 +83,7 @@ function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
   endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
   endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-  assignEventDefinitions(endEvent, endEventRaw, false);
+  assignEventDefinitions(endEvent, endEventRaw);
 
   return endEvent;
 }
@@ -108,7 +108,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     event.attachedToRef = boundaryEventRaw.attachedToRef;
     event.cancelActivity = boundaryEventRaw.cancelActivity || true;
 
-    assignEventDefinitions(event, boundaryEventRaw, false);
+    assignEventDefinitions(event, boundaryEventRaw);
 
     events.push(event);
   }
@@ -173,12 +173,12 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
   return events;
 }
 
-function assignEventDefinitions(event: any, eventRaw: any, ignoreCyclicTimer: boolean): void {
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition', ignoreCyclicTimer);
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.LinkEventDefinition, 'linkEventDefinition', ignoreCyclicTimer);
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition', ignoreCyclicTimer);
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition', ignoreCyclicTimer);
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition', ignoreCyclicTimer);
+function assignEventDefinitions(event: any, eventRaw: any, ignoreCyclicTimer?: boolean): void {
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.LinkEventDefinition, 'linkEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition', ignoreCyclicTimer);
 }
 
@@ -186,7 +186,7 @@ function assignEventDefinition(
   event: any, eventRaw: any,
   eventRawTagName: BpmnTags.FlowElementProperty,
   targetPropertyName: string,
-  ignoreCyclicTimer: boolean,
+  ignoreCyclicTimer?: boolean,
 ): void {
 
   const eventDefinitonValue: any = eventRaw[eventRawTagName];
