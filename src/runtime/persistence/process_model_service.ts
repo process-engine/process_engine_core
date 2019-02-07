@@ -100,6 +100,26 @@ export class ProcessModelService implements IProcessModelService {
     return filteredProcessModel;
   }
 
+  public async getByHash(identity: IIdentity, processModelId: string, hash: string): Promise<Model.Types.Process> {
+
+    await this._iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
+
+    const definitionRaw: Runtime.Types.ProcessDefinitionFromRepository = await this._processDefinitionRepository.getByHash(hash);
+
+    const parsedDefinition: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(definitionRaw.xml);
+    const processModel: Model.Types.Process = parsedDefinition.processes.find((entry: Model.Types.Process) => {
+      return entry.id === processModelId;
+    });
+
+    const filteredProcessModel: Model.Types.Process = await this._filterInaccessibleProcessModelElements(identity, processModel);
+
+    if (!filteredProcessModel) {
+      throw new ForbiddenError('Access denied.');
+    }
+
+    return filteredProcessModel;
+  }
+
   public async getProcessDefinitionAsXmlByName(identity: IIdentity, name: string): Promise<Runtime.Types.ProcessDefinitionFromRepository> {
 
     await this._iamService.ensureHasClaim(identity, this._canReadProcessModelClaim);
