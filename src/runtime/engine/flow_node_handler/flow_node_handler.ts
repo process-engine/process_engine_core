@@ -1,3 +1,4 @@
+// tslint:disable:max-file-line-count
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
