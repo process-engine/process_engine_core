@@ -130,29 +130,27 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     return [];
   }
 
-  const timerEventCanBePassed: boolean = ((): boolean => {
-    const moreThanOneEventsFound: boolean = eventsRaw.length > 1;
-    const parsingStartEvents: boolean = eventType === BpmnTags.EventElement.StartEvent;
+  const checkIfCyclicTimersAreSafe: Function = (): boolean => {
+    const cyclicTimerCheckRequired: boolean =
+      eventsRaw.length > 1 &&
+      eventType === BpmnTags.EventElement.StartEvent;
 
-    const checkForTimerStartNeeded: boolean = moreThanOneEventsFound && parsingStartEvents;
-    if (checkForTimerStartNeeded) {
-      // Returns "true", if at least one StartEvent has a TimerDefinition attached to it.
+    if (cyclicTimerCheckRequired) {
       const hasTimerStartEvents: boolean = eventsRaw.some((eventRaw: any) => {
         return eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
       });
 
-      // Returns "true", if there is at least one StartEvent without a TimerDefinition.
       const hasNonTimerStartEvents: boolean = eventsRaw.some((eventRaw: any) => {
         return eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] === undefined;
       });
 
-      const cyclicTimersAreSafe: boolean = hasTimerStartEvents && hasNonTimerStartEvents;
-
-      return cyclicTimersAreSafe;
+      return hasTimerStartEvents && hasNonTimerStartEvents;
     }
 
     return false;
-  })();
+  };
+
+  const cyclicTimersAreSafe: boolean = checkIfCyclicTimersAreSafe();
 
   for (const eventRaw of eventsRaw) {
     const event: TEvent = createObjectWithCommonProperties<TEvent>(eventRaw, type);
@@ -160,7 +158,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-    assignEventDefinitions(event, eventRaw, timerEventCanBePassed);
+    assignEventDefinitions(event, eventRaw, cyclicTimersAreSafe);
 
     events.push(event);
   }
