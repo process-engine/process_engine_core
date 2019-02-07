@@ -159,8 +159,6 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     return false;
   })();
 
-  debugger;
-
   for (const eventRaw of eventsRaw) {
     const event: TEvent = createObjectWithCommonProperties<TEvent>(eventRaw, type);
     event.name = eventRaw.name;
