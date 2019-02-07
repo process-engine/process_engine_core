@@ -43,10 +43,9 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   ): Promise<Array<Model.Base.FlowNode>> {
 
     const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
-
-      let result: any = {};
-
       try {
+        let result: any = {};
+
         const executionPromise: Promise<any> = this._executeScriptTask(processTokenFacade, identity);
 
         this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
@@ -57,19 +56,19 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
           return resolve();
         };
         result = await executionPromise;
+
+        processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
+        token.payload = result;
+        await this.persistOnExit(token);
+
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.scriptTask);
+
+        return resolve(nextFlowNodeInfo);
       } catch (error) {
         await this.persistOnError(token, error);
 
         return reject(error);
       }
-
-      processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
-      token.payload = result;
-      await this.persistOnExit(token);
-
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.scriptTask);
-
-      return resolve(nextFlowNodeInfo);
     });
 
     return handlerPromise;
@@ -78,19 +77,19 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
 
     return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
-
-      const script: string = this.scriptTask.script;
-
-      if (!script) {
-        return undefined;
-      }
-
-      const tokenData: any = processTokenFacade.getOldTokenFormat();
-      let result: any;
-
-      const scriptFunction: Function = new Function('token', 'identity', script);
       try {
-        result = await scriptFunction.call(this, tokenData, identity);
+
+        const script: string = this.scriptTask.script;
+
+        if (!script) {
+          return undefined;
+        }
+
+        const scriptFunction: Function = new Function('token', 'identity', script);
+
+        const tokenData: any = processTokenFacade.getOldTokenFormat();
+
+        let result: any = await scriptFunction.call(this, tokenData, identity);
         result = result === undefined
           ? null
           : result;
@@ -101,7 +100,6 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
         return reject(error);
       }
-
     });
   }
 }
