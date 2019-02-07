@@ -25,23 +25,30 @@ describe('Process Model Facade', () => {
         'EndEvent_05uuvaq',
       ]);
 
-      await fixture.assertFlowNodes([
-        'StartEvent_1',
-        'VorgangErfassen',
-        'Task_01xg9lr',
-        'Task_00dom74',
-        'notizSchreiben',
-        'Task_1tk0lhq',
-        'Task_1yzqmfq',
-        'EndEvent_05uuvaq',
-      ]);
-
       const vorgangAnlegen: Model.Activities.ServiceTask = fixture.getFlowNodeById<Model.Activities.ServiceTask>('Task_01xg9lr');
       const invocation: Model.Activities.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.MethodInvocation;
 
       should(invocation.module).be.eql('HttpService');
       should(invocation.method).be.eql('post');
       should(invocation.params).be.eql('[\'http://localhost:5000/api/vorgaenge/anlegen\', token.history.VorgangErfassen]');
+    });
+  });
+
+  describe('Parse process_engine_io_release.bpmn Diagram', () => {
+
+    it('Should parse expected process', async() => {
+
+      const fixture: ProcessModelFacadeTestFixture = new ProcessModelFacadeTestFixture();
+      await fixture.initialize('./test/bpmns/process_engine_io_release.bpmn');
+
+      await fixture.assertFlowNodes([
+        'ausserordentlicher_start',
+        'ExclusiveGateway_1gvf165',
+        'ExclusiveGateway_1avo21q',
+        'Task_1tfjjzx',
+        'ExclusiveGateway_1rtxky2',
+        'EndEvent_0eie6q6',
+      ]);
     });
   });
 });

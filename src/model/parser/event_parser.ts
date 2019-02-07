@@ -13,6 +13,8 @@ import {NotFoundError, UnprocessableEntityError} from '@essential-projects/error
 
 import * as moment from 'moment';
 
+import {Logger} from 'loggerhythm';
+
 enum TimerBpmnType {
   Duration = 'bpmn:timeDuration',
   Cycle = 'bpmn:timeCycle',
@@ -128,13 +130,35 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     return [];
   }
 
+  const checkIfCyclicTimersAreSafe: Function = (): boolean => {
+    const cyclicTimerCheckRequired: boolean =
+      eventsRaw.length > 1 &&
+      eventType === BpmnTags.EventElement.StartEvent;
+
+    if (cyclicTimerCheckRequired) {
+      const hasTimerStartEvents: boolean = eventsRaw.some((eventRaw: any) => {
+        return eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
+      });
+
+      const hasNonTimerStartEvents: boolean = eventsRaw.some((eventRaw: any) => {
+        return eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] === undefined;
+      });
+
+      return hasTimerStartEvents && hasNonTimerStartEvents;
+    }
+
+    return false;
+  };
+
+  const cyclicTimersAreSafe: boolean = checkIfCyclicTimersAreSafe();
+
   for (const eventRaw of eventsRaw) {
     const event: TEvent = createObjectWithCommonProperties<TEvent>(eventRaw, type);
     event.name = eventRaw.name;
     event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-    assignEventDefinitions(event, eventRaw);
+    assignEventDefinitions(event, eventRaw, cyclicTimersAreSafe);
 
     events.push(event);
   }
@@ -142,16 +166,21 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
   return events;
 }
 
-function assignEventDefinitions(event: any, eventRaw: any): void {
+function assignEventDefinitions(event: any, eventRaw: any, ignoreCyclicTimer?: boolean): void {
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.LinkEventDefinition, 'linkEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
   assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
+  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition', ignoreCyclicTimer);
 }
 
-function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnTags.FlowElementProperty, targetPropertyName: string): void {
+function assignEventDefinition(
+  event: any, eventRaw: any,
+  eventRawTagName: BpmnTags.FlowElementProperty,
+  targetPropertyName: string,
+  ignoreCyclicTimer?: boolean,
+): void {
 
   const eventDefinitonValue: any = eventRaw[eventRawTagName];
 
@@ -176,7 +205,7 @@ function assignEventDefinition(event: any, eventRaw: any, eventRawTagName: BpmnT
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
       break;
     case 'timerEventDefinition':
-      validateTimer(eventDefinitonValue);
+      validateTimer(eventDefinitonValue, ignoreCyclicTimer);
       event[targetPropertyName] = eventDefinitonValue;
       break;
     default:
@@ -245,13 +274,13 @@ function getErrorById(errorId: string): Model.Types.Error {
   return matchingError;
 }
 
-function validateTimer(rawTimerDefinition: any): void {
+function validateTimer(rawTimerDefinition: any, ignoreCyclic: boolean): void {
   const timerDefinitionType: TimerDefinitionType = parseTimerDefinitionType(rawTimerDefinition);
   const timerDefinitionValue: string = parseTimerDefinitionValue(rawTimerDefinition);
-  validateTimerValue(timerDefinitionType, timerDefinitionValue);
+  validateTimerValue(timerDefinitionType, timerDefinitionValue, ignoreCyclic);
 }
 
-function validateTimerValue(timerType: TimerDefinitionType, timerValue: string): void {
+function validateTimerValue(timerType: TimerDefinitionType, timerValue: string, ignoreCyclic: boolean): void {
   switch (timerType) {
     case TimerDefinitionType.date: {
       const dateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
@@ -289,6 +318,18 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string):
     }
 
     case TimerDefinitionType.cycle: {
+
+      /**
+       * Cyclic timers are safe, as long as there is at least one other StartEvent present.
+       */
+      if (ignoreCyclic) {
+        const logger: Logger = Logger.createLogger('processengine:runtime:model:parser:event_parser');
+        logger.warn('Cyclic Timer Events are currently not supported.');
+        logger.warn('The defined Timer Start Event will currently never be executed!');
+
+        return;
+      }
+
       throw new UnprocessableEntityError('Cyclic timer definitions are currently unsupported!');
     }
 
