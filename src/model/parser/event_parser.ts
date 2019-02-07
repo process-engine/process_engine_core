@@ -130,30 +130,25 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     return [];
   }
 
-  const checkIfTimerStartEventCanPassed: () => boolean = (): boolean => {
-    let containsTimerStartEvent: boolean = false;
-    let containsOtherStartEvent: boolean = false;
-
-    for (const eventRaw of eventsRaw) {
-      containsTimerStartEvent = !containsTimerStartEvent
-      ? eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined
-      : true;
-
-      containsOtherStartEvent = !containsOtherStartEvent
-      ? !containsTimerStartEvent
-      : true;
-
-      if (containsTimerStartEvent && containsOtherStartEvent) {
-        break;
-      }
-    }
-
-    return containsTimerStartEvent && containsOtherStartEvent;
-  };
-
   const timerEventCanBePassed: boolean = ((): boolean => {
-    if (eventsRaw.length > 1) {
-      return checkIfTimerStartEventCanPassed();
+    const moreThanOneEventsFound: boolean = eventsRaw.length > 1;
+    const parsingStartEvents: boolean = eventType === BpmnTags.EventElement.StartEvent;
+
+    const checkForTimerStartNeeded: boolean = moreThanOneEventsFound && parsingStartEvents;
+    if (checkForTimerStartNeeded) {
+      // Returns "true", if at least one StartEvent has a TimerDefinition attached to it.
+      const hasTimerStartEvents: boolean = eventsRaw.some((eventRaw: any) => {
+        return eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
+      });
+
+      // Returns "true", if there is at least one StartEvent without a TimerDefinition.
+      const hasNonTimerStartEvents: boolean = eventsRaw.some((eventRaw: any) => {
+        return eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] === undefined;
+      });
+
+      const cyclicTimersAreSafe: boolean = hasTimerStartEvents && hasNonTimerStartEvents;
+
+      return cyclicTimersAreSafe;
     }
 
     return false;
@@ -327,8 +322,7 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string, 
     case TimerDefinitionType.cycle: {
 
       /**
-       * We don't want to reject ProcessModels whose contain a Cyclic TimerStartEvent
-       * alongside a normal StartEvent for compatibility reasons.
+       * Cyclic timers are safe, as long as there is at least one other StartEvent present.
        */
       if (ignoreCyclic) {
         const logger: Logger = Logger.createLogger('processengine:runtime:model:parser:event_parser');
