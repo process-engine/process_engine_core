@@ -55,8 +55,8 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
 
     // We must only store this state change once to prevent duplicate database entries.
     if (!this.onEnterStatePersisted) {
-      await this.persistOnEnter(token);
       this.onEnterStatePersisted = true;
+      await this.persistOnEnter(token);
     }
 
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
