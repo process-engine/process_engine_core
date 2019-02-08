@@ -67,10 +67,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this._flowNodeInstanceService;
   }
 
-  protected get flowNodePersistenceFacade(): IFlowNodePersistenceFacade {
-    return this._flowNodePersistenceFacade;
-  }
-
   protected get loggingApiService(): ILoggingApi {
     return this._loggingApiService;
   }

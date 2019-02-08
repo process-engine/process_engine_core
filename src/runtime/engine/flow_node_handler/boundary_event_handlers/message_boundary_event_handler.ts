@@ -1,7 +1,7 @@
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
-import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -19,8 +19,13 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
   private subscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator, processModelFacade: IProcessModelFacade, boundaryEventModel: Model.Events.BoundaryEvent) {
-    super(processModelFacade, boundaryEventModel);
+  constructor(
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    eventAggregator: IEventAggregator,
+    processModelFacade: IProcessModelFacade,
+    boundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(flowNodePersistenceFacade, processModelFacade, boundaryEventModel);
     this._eventAggregator = eventAggregator;
   }
 
@@ -28,10 +33,15 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
+    attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
+    this._attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+
+    await this.persistOnEnter(token);
+
     const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
-      .replace(eventAggregatorSettings.messageParams.messageReference, this.boundaryEventModel.messageEventDefinition.name);
+      .replace(eventAggregatorSettings.messageParams.messageReference, this.boundaryEvent.messageEventDefinition.name);
 
     const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 
@@ -39,7 +49,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
       const eventData: OnBoundaryEventTriggeredData = {
         nextFlowNode: nextFlowNode,
-        interruptHandler: this.boundaryEventModel.cancelActivity,
+        interruptHandler: this.boundaryEvent.cancelActivity,
         eventPayload: message.currentToken,
       };
 
@@ -49,7 +59,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     this.subscription = this._eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback);
   }
 
-  public async cancel(): Promise<void> {
+  public async cancel(token: Runtime.Types.ProcessToken): Promise<void> {
+    await super.cancel(token);
     this._eventAggregator.unsubscribe(this.subscription);
   }
 }

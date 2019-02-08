@@ -1,8 +1,8 @@
 import {Logger} from 'loggerhythm';
 
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
-import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
@@ -23,8 +23,13 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
   private readonly logger: Logger;
 
-  constructor(timerFacade: ITimerFacade, processModelFacade: IProcessModelFacade, boundaryEventModel: Model.Events.BoundaryEvent) {
-    super(processModelFacade, boundaryEventModel);
+  constructor(
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    timerFacade: ITimerFacade,
+    processModelFacade: IProcessModelFacade,
+    boundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(flowNodePersistenceFacade, processModelFacade, boundaryEventModel);
     this._timerFacade = timerFacade;
     this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
   }
@@ -33,12 +38,16 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
+    attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
     this.logger.verbose(`Initializing TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId}`);
+    this._attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
-    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.boundaryEventModel.timerEventDefinition);
-    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.boundaryEventModel.timerEventDefinition);
+    await this.persistOnEnter(token);
+
+    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.boundaryEvent.timerEventDefinition);
+    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.boundaryEvent.timerEventDefinition);
     const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
     const timerElapsed: any = async(): Promise<void> => {
@@ -49,14 +58,14 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
       const eventData: OnBoundaryEventTriggeredData = {
         nextFlowNode: nextFlowNode,
-        interruptHandler: this.boundaryEventModel.cancelActivity,
+        interruptHandler: this.boundaryEvent.cancelActivity,
         eventPayload: {},
       };
 
       onTriggeredCallback(eventData);
     };
 
-    this.timerSubscription = this._timerFacade.initializeTimer(this.boundaryEventModel, timerType, timerValue, timerElapsed);
+    this.timerSubscription = this._timerFacade.initializeTimer(this.boundaryEvent, timerType, timerValue, timerElapsed);
   }
 
   private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
@@ -82,7 +91,8 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     }
   }
 
-  public async cancel(): Promise<void> {
+  public async cancel(token: Runtime.Types.ProcessToken): Promise<void> {
+    await super.cancel(token);
     this._timerFacade.cancelTimerSubscription(this.timerSubscription);
   }
 }

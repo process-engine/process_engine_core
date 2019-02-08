@@ -62,9 +62,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     this._boundaryEventHandlerFactory = await this._container.resolveAsync<IBoundaryEventHandlerFactory>('BoundaryEventHandlerFactory');
   }
 
-  protected async afterExecute(): Promise<void> {
+  protected async afterExecute(token: Runtime.Types.ProcessToken): Promise<void> {
     this.eventAggregator.unsubscribe(this._terminationSubscription);
-    await this._detachBoundaryEvents();
+    await this._detachBoundaryEvents(token);
   }
 
   public async execute(
@@ -212,9 +212,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   /**
    * Cancels and clears all BoundaryEvents attached to this handler.
    */
-  private async _detachBoundaryEvents(): Promise<void> {
+  private async _detachBoundaryEvents(token: Runtime.Types.ProcessToken): Promise<void> {
     for (const boundaryEventHandler of this._attachedBoundaryEventHandlers) {
-      await boundaryEventHandler.cancel();
+      await boundaryEventHandler.cancel(token);
     }
     this._attachedBoundaryEventHandlers = [];
   }
@@ -266,10 +266,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       return this._handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
     };
 
-    const isNonErrorBoundaryEvent: boolean = !boundaryEventModel.errorEventDefinition;
-    if (isNonErrorBoundaryEvent) {
-      await boundaryEventHandler.waitForTriggeringEvent(onBoundaryEventTriggeredCallback, currentProcessToken, processTokenFacade);
-    }
+    await boundaryEventHandler
+      .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, currentProcessToken, processTokenFacade, this.flowNodeInstanceId);
 
     this._attachedBoundaryEventHandlers.push(boundaryEventHandler);
   }
@@ -309,7 +307,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
     if (eventData.interruptHandler) {
       await this.interrupt(currentProcessToken);
-      await this._detachBoundaryEvents();
+      await this._detachBoundaryEvents(currentProcessToken);
       handlerResolve(undefined);
     }
 
