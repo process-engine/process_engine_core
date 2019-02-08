@@ -72,10 +72,10 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       this.hasHandlerFinished = true;
 
       if (this.timerHasElapsed) {
-        await this.persistOnExit(token);
-
         return;
       }
+
+      await this.persistOnExit(token);
 
       this._timerFacade.cancelTimerSubscription(this.timerSubscription);
 
@@ -106,10 +106,10 @@ export class TimerBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mode
       this.hasHandlerFinished = true;
 
       if (this.timerHasElapsed) {
-        await this.persistOnExit(onEnterToken);
-
         return;
       }
+
+      await this.persistOnExit(onEnterToken);
 
       this._timerFacade.cancelTimerSubscription(this.timerSubscription);
 

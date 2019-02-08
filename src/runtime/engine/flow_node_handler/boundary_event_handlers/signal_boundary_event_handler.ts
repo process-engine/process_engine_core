@@ -69,10 +69,10 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       this.handlerHasFinished = true;
 
       if (this.signalReceived) {
-        await this.persistOnExit(token);
-
         return;
       }
+
+      await this.persistOnExit(token);
 
       this._eventAggregator.unsubscribe(this.subscription);
 
@@ -104,10 +104,10 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       this.handlerHasFinished = true;
 
       if (this.signalReceived) {
-        await this.persistOnExit(onEnterToken);
-
         return;
       }
+
+      await this.persistOnExit(onEnterToken);
 
       this._eventAggregator.unsubscribe(this.subscription);
 

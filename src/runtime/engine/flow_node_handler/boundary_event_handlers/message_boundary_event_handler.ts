@@ -70,10 +70,10 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       this.handlerHasFinished = true;
 
       if (this.messageReceived) {
-        await this.persistOnExit(token);
-
         return;
       }
+
+      await this.persistOnExit(token);
 
       this._eventAggregator.unsubscribe(this.subscription);
 
@@ -105,10 +105,10 @@ export class MessageBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mo
       this.handlerHasFinished = true;
 
       if (this.messageReceived) {
-        await this.persistOnExit(onEnterToken);
-
         return;
       }
+
+      await this.persistOnExit(onEnterToken);
 
       this._eventAggregator.unsubscribe(this.subscription);
 
