@@ -256,19 +256,20 @@ function registerFlowNodeHandlers(container) {
 function registerBoundaryEventHandlers(container) {
 
   container
-    .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler);
+    .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
+    .dependencies('FlowNodePersistenceFacade');
 
   container
     .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
-    .dependencies('EventAggregator');
+    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
 
   container
     .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
-    .dependencies('EventAggregator');
+    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('TimerFacade');
+    .dependencies('FlowNodePersistenceFacade', 'TimerFacade');
 
 }
 
