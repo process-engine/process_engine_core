@@ -4,7 +4,6 @@ import {ForbiddenError, NotFoundError} from '@essential-projects/errors_ts';
 import {
   ICorrelationRepository,
   ICorrelationService,
-  IFlowNodeInstanceRepository,
   IProcessDefinitionRepository,
   Runtime,
 } from '@process-engine/process_engine_contracts';
@@ -93,6 +92,9 @@ export class CorrelationService implements ICorrelationService {
     const correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository> =
       await this._correlationRepository.getByCorrelationId(correlationId);
 
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>
+      = this._filterCorrelationsFromRepoByIdentity(identity, correlationsFromRepo);
+
     // All correlations will have the same ID here, so we can just use the top entry as a base.
     const noFilteredCorrelationsFromRepo: boolean = filteredCorrelationsFromRepo.length === 0;
     if (noFilteredCorrelationsFromRepo) {
@@ -143,12 +145,24 @@ export class CorrelationService implements ICorrelationService {
     this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
   }
 
-  public async finishCorrelation(correlationId: string): Promise<void> {
+  public async finishCorrelation(identity: IIdentity, correlationId: string): Promise<void> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
     this._correlationRepository.finishCorrelation(correlationId);
   }
 
-  public async finishWithError(correlationId: string, error: Error): Promise<void> {
+  public async finishWithError(identity: IIdentity, correlationId: string, error: Error): Promise<void> {
+    await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
     this._correlationRepository.finishWithError(correlationId, error);
+  }
+
+  private _filterCorrelationsFromRepoByIdentity(
+    identity: IIdentity,
+    correlationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>,
+  ): Array<Runtime.Types.CorrelationFromRepository> {
+
+    return correlationsFromRepo.filter((correlationFromRepo: Runtime.Types.CorrelationFromRepository) => {
+      return identity.userId === correlationFromRepo.identity.userId;
+    });
   }
 
   /**
