@@ -185,7 +185,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
 
         return enumValue;
       };
-      formField.enumValues = rawValues.map(valueMapper);
+      formField.enumValues = rawValues ? rawValues.map(valueMapper) : [];
     }
 
     return formField;
