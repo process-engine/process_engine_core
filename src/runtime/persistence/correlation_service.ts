@@ -52,9 +52,13 @@ export class CorrelationService implements ICorrelationService {
     const activeCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>
       = await this._correlationRepository.getCorrelationsByState(Runtime.Types.CorrelationState.running);
 
-    const activeCorrelations: Array<Runtime.Types.Correlation> = await this._mapCorrelationList(activeCorrelationsFromRepo);
+    const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>
+      = await this._filterCorrelationsFromRepoByIdentity(identity, activeCorrelationsFromRepo);
 
-    return activeCorrelations;
+    const activeCorrelationsForIdentity: Array<Runtime.Types.Correlation>
+      = await this._mapCorrelationList(filteredCorrelationsFromRepo);
+
+    return activeCorrelationsForIdentity;
   }
 
   public async getAll(identity: IIdentity): Promise<Array<Runtime.Types.Correlation>> {
