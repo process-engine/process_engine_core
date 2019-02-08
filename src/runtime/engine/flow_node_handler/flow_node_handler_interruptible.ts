@@ -256,7 +256,13 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       await this._boundaryEventHandlerFactory.create(boundaryEventModel, processModelFacade);
 
     const onBoundaryEventTriggeredCallback: OnBoundaryEventTriggeredCallback = async(eventData: OnBoundaryEventTriggeredData): Promise<void> => {
-      return this._handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
+      // To prevent the Promise-chain from being broken too soon, we must first await the execution of the BoundaryEvent's execution path.
+      // Interruption will already have happended, when this path is finished, so there is no danger of running this handler twice.
+      await this._handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity);
+
+      if (eventData.interruptHandler) {
+        handlerResolve(undefined);
+      }
     };
 
     await boundaryEventHandler
@@ -281,9 +287,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    *                            ProcessTokens.
    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
    * @param identity            The ProcessInstance owner.
-   * @param handlerResolve      The function that will cleanup the main handler
-   *                            Promise, if an interrupting BoundaryEvent was
-   *                            triggered.
    */
   private async _handleBoundaryEvent(
     eventData: OnBoundaryEventTriggeredData,
@@ -291,7 +294,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-    handlerResolve: Function,
   ): Promise<void> {
 
     if (eventData.eventPayload) {
@@ -300,7 +302,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
     if (eventData.interruptHandler) {
       await this.interrupt(currentProcessToken);
-      handlerResolve(undefined);
     }
 
     await this._continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
