@@ -236,26 +236,21 @@ export class CorrelationService implements ICorrelationService {
     correlation.createdAt = correlationsFromRepo[0].createdAt;
 
     if (correlationsFromRepo) {
-
-      let correlationsContainRunningCorrelation: boolean = false;
-      let correlationsContainCorrelationWithError: boolean = false;
-
       correlation.processModels = await Promise.mapSeries(correlationsFromRepo, async(entry: Runtime.Types.CorrelationFromRepository) => {
-
         /**
-         * If this is already set to true, we don't need to check this again for
-         * any of the other Correlation entries.
+         * If a CorrelationEntry had a running state, we dont want to older
+         * entries to override this (instead an Entry is marked with an Error state).
          */
-        correlationsContainRunningCorrelation =
-          !correlationsContainRunningCorrelation
-          && entry.state === Runtime.Types.CorrelationState.running;
+        correlation.state = correlation.state !== Runtime.Types.CorrelationState.running
+                            ? entry.state
+                            : Runtime.Types.CorrelationState.running;
 
         const correlationEntryHasErrorAttached: boolean =
           entry.error !== null
           && entry.error !== undefined;
 
         if (correlationEntryHasErrorAttached) {
-          correlationsContainCorrelationWithError = true;
+          correlation.state = Runtime.Types.CorrelationState.error;
           correlation.error = entry.error;
         }
 
@@ -278,21 +273,6 @@ export class CorrelationService implements ICorrelationService {
 
         return processModel;
       });
-
-    /**
-     * If a correlation entry with the given CorrelationID has a running
-     * state, we want the whole Correlation to be marked as running.
-     *
-     * If not, we check if the Correlation Entries contains a Correlation with
-     * an error state. If also not, we set the state to finished.
-     */
-      if (correlationsContainRunningCorrelation) {
-        correlation.state = Runtime.Types.CorrelationState.running;
-      } else {
-        correlation.state = correlationsContainCorrelationWithError
-                              ? Runtime.Types.CorrelationState.error
-                              : Runtime.Types.CorrelationState.finished;
-      }
     }
 
     return correlation;
