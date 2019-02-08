@@ -22,6 +22,12 @@ import {
 import {ErrorBoundaryEventHandler} from './boundary_event_handlers/index';
 import {FlowNodeHandler} from './flow_node_handler';
 
+interface FlowNodeModelInstanceAssociation {
+  boundaryEventModel: Model.Events.BoundaryEvent;
+  nextFlowNode: Model.Base.FlowNode;
+  nextFlowNodeInstance: Runtime.Types.FlowNodeInstance;
+}
+
 export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.FlowNode>
   extends FlowNodeHandler<TFlowNode>
   implements IInterruptible {
@@ -116,14 +122,17 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       try {
         const flowNodeInstance: Runtime.Types.FlowNodeInstance =
           flowNodeInstances.find((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === this.flowNode.id);
-        const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
 
-        this._terminationSubscription = this._subscribeToProcessTermination(tokenForHandlerHooks, reject);
-        await this._attachBoundaryEvents(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, resolve);
+        const flowNodeInstancesAfterBoundaryEvents: Array<FlowNodeModelInstanceAssociation> =
+          this._getFlowNodeInstancesAfterBoundaryEvents(flowNodeInstances, processModelFacade);
 
-        await super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
-
-        return resolve();
+          // No BoundaryEvent was triggered during the last execution. We can just resume the handler ordinarily.
+        if (flowNodeInstancesAfterBoundaryEvents.length === 0) {
+          await this._resumeOrdinarily(flowNodeInstance, flowNodeInstances, processTokenFacade, processModelFacade, identity, resolve, reject);
+        } else {
+          await this
+            ._resumeWithBoundaryEvents(flowNodeInstancesAfterBoundaryEvents, flowNodeInstances, processTokenFacade, processModelFacade, identity);
+        }
       } catch (error) {
         const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
 
@@ -176,6 +185,107 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  private async _resumeOrdinarily(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    resolve: Function,
+    reject: Function,
+  ): Promise<void> {
+
+    const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+
+    this._terminationSubscription = this._subscribeToProcessTermination(tokenForHandlerHooks, reject);
+    await this._attachBoundaryEvents(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, resolve);
+
+    await super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+
+    return resolve();
+  }
+
+  private async _resumeWithBoundaryEvents(
+    flowNodeInstancesAfterBoundaryEvents: Array<FlowNodeModelInstanceAssociation>,
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+    // Resume all Paths that follow the BoundaryEvents
+    const handlersToResume: Array<IFlowNodeHandler<Model.Base.FlowNode>> =
+      await Promise.map(flowNodeInstancesAfterBoundaryEvents, async(entry: FlowNodeModelInstanceAssociation) => {
+        return this.flowNodeHandlerFactory.create(entry.nextFlowNode);
+      });
+
+    const handlerResumptionPromises: Array<Promise<void>> = handlersToResume.map((handler: IFlowNodeHandler<Model.Base.FlowNode>) => {
+      return handler.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity);
+    });
+
+    // Check if one of the BoundaryEvents was interrupting. If so, the handler must not be resumed.
+    const noInterruptingBoundaryEventsTriggered: boolean =
+      !flowNodeInstancesAfterBoundaryEvents.some((entry: FlowNodeModelInstanceAssociation) => entry.boundaryEventModel.cancelActivity === true);
+    if (noInterruptingBoundaryEventsTriggered) {
+      handlerResumptionPromises.push(super.resume(flowNodeInstances, processTokenFacade, processModelFacade, identity));
+    }
+
+    await Promise.all(handlerResumptionPromises);
+  }
+
+  /**
+   * Required for resuming BoundaryEvent paths.
+   * Checks if any of the given FlowNodeInstances are from a FlowNode that
+   * followed one of the BoundaryEvents attached to this handler.
+   *
+   * This must be done for all resumptions, to account for non-interrupting BoundaryEvents.
+   *
+   * @param flowNodeInstances The list of FlowNodeInstances to check.
+   */
+  private _getFlowNodeInstancesAfterBoundaryEvents(
+    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    processModelFacade: IProcessModelFacade,
+  ): Array<FlowNodeModelInstanceAssociation> {
+
+    const boundaryEvents: Array<Model.Events.BoundaryEvent> = processModelFacade.getBoundaryEventsFor(this.flowNode);
+    if (boundaryEvents.length === 0) {
+      return [];
+    }
+
+    // First get all FlowNodeInstances for the BoundaryEvents attached to this handler.
+    const boundaryEventInstances: Array<Runtime.Types.FlowNodeInstance> =
+      flowNodeInstances.filter((fni: Runtime.Types.FlowNodeInstance) => {
+        return boundaryEvents.some((boundaryEvent: Model.Events.BoundaryEvent) => {
+          return boundaryEvent.id === fni.flowNodeId;
+        });
+      });
+
+    // Then get all FlowNodeInstances that followed one of the BoundaryEventInstances.
+    const flowNodeInstancesAfterBoundaryEvents: Array<Runtime.Types.FlowNodeInstance> =
+      flowNodeInstances.filter((fni: Runtime.Types.FlowNodeInstance) => {
+        return boundaryEventInstances.some((boundaryInstance: Runtime.Types.FlowNodeInstance) => {
+          return fni.previousFlowNodeInstanceId === boundaryInstance.id;
+        });
+      });
+
+    const flowNodeModelInstanceAssociations: Array<FlowNodeModelInstanceAssociation> =
+      flowNodeInstancesAfterBoundaryEvents.map((fni: Runtime.Types.FlowNodeInstance) => {
+        return <FlowNodeModelInstanceAssociation> {
+          boundaryEventModel: getBoundaryEventPreceedingFlowNodeInstance(fni),
+          nextFlowNodeInstance: fni,
+          nextFlowNode: processModelFacade.getFlowNodeById(fni.flowNodeId),
+        };
+      });
+
+    const getBoundaryEventPreceedingFlowNodeInstance: Function = (flowNodeInstance: Runtime.Types.FlowNodeInstance): Model.Events.BoundaryEvent => {
+      const matchingBoundaryEventInstance: Runtime.Types.FlowNodeInstance =
+        flowNodeInstances.find((entry: Runtime.Types.FlowNodeInstance) => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
+
+      return boundaryEvents.find((entry: Model.Events.BoundaryEvent) => entry.id === matchingBoundaryEventInstance.flowNodeId);
+    };
+
+    return flowNodeModelInstanceAssociations;
   }
 
   /**
@@ -261,7 +371,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       await this._handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity);
 
       if (eventData.interruptHandler) {
-        handlerResolve(undefined);
+        return handlerResolve(undefined);
       }
     };
 
