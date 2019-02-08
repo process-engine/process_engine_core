@@ -93,6 +93,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
         token.payload = error;
 
+        await this.afterExecute(token);
+
         await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
           const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
           await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
@@ -146,6 +148,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
   public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
     await this.onInterruptedCallback(token);
+    await this.afterExecute(token);
 
     if (terminate) {
       return this.persistOnTerminate(token);
@@ -207,16 +210,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     for (const model of boundaryEventModels) {
       await this._createBoundaryEventHandler(model, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
     }
-  }
-
-  /**
-   * Cancels and clears all BoundaryEvents attached to this handler.
-   */
-  private async _detachBoundaryEvents(token: Runtime.Types.ProcessToken): Promise<void> {
-    for (const boundaryEventHandler of this._attachedBoundaryEventHandlers) {
-      await boundaryEventHandler.cancel(token);
-    }
-    this._attachedBoundaryEventHandlers = [];
   }
 
   /**
@@ -307,7 +300,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
     if (eventData.interruptHandler) {
       await this.interrupt(currentProcessToken);
-      await this._detachBoundaryEvents(currentProcessToken);
       handlerResolve(undefined);
     }
 
@@ -343,5 +335,15 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
 
     return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+   }
+
+   /**
+    * Cancels and clears all BoundaryEvents attached to this handler.
+    */
+   private async _detachBoundaryEvents(token: Runtime.Types.ProcessToken): Promise<void> {
+     for (const boundaryEventHandler of this._attachedBoundaryEventHandlers) {
+       await boundaryEventHandler.cancel(token);
+     }
+     this._attachedBoundaryEventHandlers = [];
    }
 }
