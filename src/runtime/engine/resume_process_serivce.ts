@@ -135,12 +135,12 @@ export class ResumeProcessService implements IResumeProcessService {
       // continue to run normally; i.e. all following FlowNodes will be 'executed' and no longer 'resumed'.
       this._logProcessResumed(processInstanceConfig.correlationId, processModelId, processInstanceId);
       const result: any = await this._resumeProcessInstance(identity, processInstanceConfig, flowNodeInstancesForProcessInstance);
-      this._correlationService.finishCorrelation(processInstanceConfig.correlationId);
+      this._correlationService.finishCorrelation(identity, processInstanceConfig.correlationId);
       this._logProcessFinished(processInstanceConfig.correlationId, processModelId, processInstanceId);
 
       return result;
     } catch (error) {
-      this._correlationService.finishWithError(processInstanceConfig.correlationId, error);
+      this._correlationService.finishWithError(identity, processInstanceConfig.correlationId, error);
       this._logProcessError(processInstanceConfig.correlationId, processModelId, processInstanceId, error);
       throw error;
     }
