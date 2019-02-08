@@ -131,6 +131,7 @@ export class SignalBoundaryEventHandler extends FlowNodeHandlerInterruptible<Mod
       if (this.handlerHasFinished) {
         return;
       }
+
       this.signalReceived = true;
       token.payload = signal.currentToken;
 
