@@ -352,8 +352,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     identity: IIdentity,
     handlerResolve: Function,
   ): Promise<void> {
-    const boundaryEventHandler: IBoundaryEventHandler =
-      await this.flowNodeHandlerFactory.create<Model.Events.BoundaryEvent>(boundaryEventModel);
+    const boundaryEventHandler: IBoundaryEventHandler = await this.flowNodeHandlerFactory.createForBoundaryEvent(boundaryEventModel);
 
     const onBoundaryEventTriggeredCallback: OnBoundaryEventTriggeredCallback = async(eventData: OnBoundaryEventTriggeredData): Promise<void> => {
       // To prevent the Promise-chain from being broken too soon, we must first await the execution of the BoundaryEvent's execution path.

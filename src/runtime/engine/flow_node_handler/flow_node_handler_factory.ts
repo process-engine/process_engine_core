@@ -1,6 +1,8 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {
   BpmnType,
+  IBoundaryEventHandler,
+  IBoundaryEventHandlerFactory,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   Model,
@@ -12,7 +14,7 @@ import {IContainer} from 'addict-ioc';
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   private _container: IContainer;
-  private _boundaryEventHandlerFactory: IFlowNodeHandlerFactory;
+  private _boundaryEventHandlerFactory: IBoundaryEventHandlerFactory;
   private _intermediateCatchEventHandlerFactory: IFlowNodeHandlerFactory;
   private _intermediateThrowEventHandlerFactory: IFlowNodeHandlerFactory;
   private _parallelGatewayHandlerFactory: IFlowNodeHandlerFactory;
@@ -20,7 +22,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   constructor(
     container: IContainer,
-    boundaryEventHandlerFactory: IFlowNodeHandlerFactory,
+    boundaryEventHandlerFactory: IBoundaryEventHandlerFactory,
     intermediateCatchEventHandlerFactory: IFlowNodeHandlerFactory,
     intermediateThrowEventHandlerFactory: IFlowNodeHandlerFactory,
     parallelGatewayHandlerFactory: IFlowNodeHandlerFactory,
@@ -41,8 +43,6 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   // tslint:disable-next-line:cyclomatic-complexity
     switch (flowNode.bpmnType) {
-      case BpmnType.boundaryEvent:
-        return this._boundaryEventHandlerFactory.create(flowNode, processToken);
 
       case BpmnType.intermediateCatchEvent:
         return this._intermediateCatchEventHandlerFactory.create(flowNode, processToken);
@@ -86,9 +86,16 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
       case BpmnType.manualTask:
         return this._resolveHandlerInstance<TFlowNode>('ManualTaskHandler', flowNode);
 
+      case BpmnType.boundaryEvent:
+        throw new InternalServerError('Must use "createForBoundaryEvent" to create BoundaryEventHandler instances!');
+
       default:
-        throw Error(`BPMN type "${flowNode.bpmnType}" is not supported!`);
+        throw new InternalServerError(`BPMN type "${flowNode.bpmnType}" is not supported!`);
     }
+  }
+
+  public async createForBoundaryEvent(flowNode: Model.Events.BoundaryEvent): Promise<IBoundaryEventHandler> {
+    return this._boundaryEventHandlerFactory.create(flowNode);
   }
 
   private async _resolveHandlerInstance<TFlowNode extends Model.Base.FlowNode>(
