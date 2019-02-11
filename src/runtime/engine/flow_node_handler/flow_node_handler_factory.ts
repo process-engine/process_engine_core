@@ -12,6 +12,7 @@ import {IContainer} from 'addict-ioc';
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   private _container: IContainer;
+  private _boundaryEventHandlerFactory: IFlowNodeHandlerFactory;
   private _intermediateCatchEventHandlerFactory: IFlowNodeHandlerFactory;
   private _intermediateThrowEventHandlerFactory: IFlowNodeHandlerFactory;
   private _parallelGatewayHandlerFactory: IFlowNodeHandlerFactory;
@@ -19,12 +20,14 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   constructor(
     container: IContainer,
+    boundaryEventHandlerFactory: IFlowNodeHandlerFactory,
     intermediateCatchEventHandlerFactory: IFlowNodeHandlerFactory,
     intermediateThrowEventHandlerFactory: IFlowNodeHandlerFactory,
     parallelGatewayHandlerFactory: IFlowNodeHandlerFactory,
     serviceTaskHandlerFactory: IFlowNodeHandlerFactory,
   ) {
     this._container = container;
+    this._boundaryEventHandlerFactory = boundaryEventHandlerFactory;
     this._intermediateCatchEventHandlerFactory = intermediateCatchEventHandlerFactory;
     this._intermediateThrowEventHandlerFactory = intermediateThrowEventHandlerFactory;
     this._parallelGatewayHandlerFactory = parallelGatewayHandlerFactory;
@@ -38,6 +41,9 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   // tslint:disable-next-line:cyclomatic-complexity
     switch (flowNode.bpmnType) {
+      case BpmnType.boundaryEvent:
+        return this._boundaryEventHandlerFactory.create(flowNode, processToken);
+
       case BpmnType.intermediateCatchEvent:
         return this._intermediateCatchEventHandlerFactory.create(flowNode, processToken);
 

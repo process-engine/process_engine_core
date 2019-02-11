@@ -33,6 +33,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
@@ -59,8 +60,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     this.subscription = this._eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback);
   }
 
-  public async cancel(token: Runtime.Types.ProcessToken): Promise<void> {
-    await super.cancel(token);
+  public async cancel(token: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+    await super.cancel(token, processModelFacade);
     this._eventAggregator.unsubscribe(this.subscription);
   }
 }

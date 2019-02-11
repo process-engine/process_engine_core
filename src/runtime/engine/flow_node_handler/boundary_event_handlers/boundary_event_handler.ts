@@ -58,10 +58,11 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void>;
 
-  public async cancel(processToken: Runtime.Types.ProcessToken): Promise<void> {
+  public async cancel(processToken: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
     await this.persistOnExit(processToken);
   }
 

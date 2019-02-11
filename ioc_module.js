@@ -153,6 +153,7 @@ function registerFactories(container) {
     .register('FlowNodeHandlerFactory', FlowNodeHandlerFactory)
     .dependencies(
       'container',
+      'BoundaryEventHandlerFactory',
       'IntermediateCatchEventFactory',
       'IntermediateThrowEventFactory',
       'ParallelGatewayFactory',

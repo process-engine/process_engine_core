@@ -1,5 +1,5 @@
-import {InternalServerError} from '@essential-projects/errors_ts';
 import {
+  IProcessModelFacade,
   IProcessTokenFacade,
   Model,
   OnBoundaryEventTriggeredCallback,
@@ -43,6 +43,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 

@@ -38,6 +38,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
@@ -91,8 +92,8 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     }
   }
 
-  public async cancel(token: Runtime.Types.ProcessToken): Promise<void> {
-    await super.cancel(token);
+  public async cancel(token: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+    await super.cancel(token, processModelFacade);
     this._timerFacade.cancelTimerSubscription(this.timerSubscription);
   }
 }

@@ -4,7 +4,6 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
   IBoundaryEventHandler,
-  IBoundaryEventHandlerFactory,
   IFlowNodeHandler,
   IInterruptible,
   IProcessModelFacade,
@@ -31,7 +30,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   implements IInterruptible {
 
   private _attachedBoundaryEventHandlers: Array<IBoundaryEventHandler> = [];
-  private _boundaryEventHandlerFactory: IBoundaryEventHandlerFactory;
 
   private _terminationSubscription: Subscription;
   // tslint:disable-next-line:no-empty
@@ -56,13 +54,13 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     this._onInterruptedCallback = value;
   }
 
-  public async initialize(): Promise<void> {
-    this._boundaryEventHandlerFactory = await this._container.resolveAsync<IBoundaryEventHandlerFactory>('BoundaryEventHandlerFactory');
-  }
-
-  protected async afterExecute(token: Runtime.Types.ProcessToken): Promise<void> {
+  protected async afterExecute(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade?: IProcessTokenFacade,
+    processModelFacade?: IProcessModelFacade,
+    ): Promise<void> {
     this.eventAggregator.unsubscribe(this._terminationSubscription);
-    await this._detachBoundaryEvents(token);
+    await this._detachBoundaryEvents(token, processModelFacade);
   }
 
   public async execute(
@@ -355,7 +353,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     handlerResolve: Function,
   ): Promise<void> {
     const boundaryEventHandler: IBoundaryEventHandler =
-      await this._boundaryEventHandlerFactory.create(boundaryEventModel, processModelFacade);
+      await this.flowNodeHandlerFactory.create<Model.Events.BoundaryEvent>(boundaryEventModel);
 
     const onBoundaryEventTriggeredCallback: OnBoundaryEventTriggeredCallback = async(eventData: OnBoundaryEventTriggeredData): Promise<void> => {
       // To prevent the Promise-chain from being broken too soon, we must first await the execution of the BoundaryEvent's execution path.
@@ -368,7 +366,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     };
 
     await boundaryEventHandler
-      .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, currentProcessToken, processTokenFacade, this.flowNodeInstanceId);
+      .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, currentProcessToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
 
     this._attachedBoundaryEventHandlers.push(boundaryEventHandler);
   }
@@ -443,9 +441,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    /**
     * Cancels and clears all BoundaryEvents attached to this handler.
     */
-   private async _detachBoundaryEvents(token: Runtime.Types.ProcessToken): Promise<void> {
+   private async _detachBoundaryEvents(token: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
      for (const boundaryEventHandler of this._attachedBoundaryEventHandlers) {
-       await boundaryEventHandler.cancel(token);
+       await boundaryEventHandler.cancel(token, processModelFacade);
      }
      this._attachedBoundaryEventHandlers = [];
    }

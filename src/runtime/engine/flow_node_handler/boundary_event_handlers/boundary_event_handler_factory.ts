@@ -2,7 +2,6 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {
   IBoundaryEventHandler,
   IBoundaryEventHandlerFactory,
-  IProcessModelFacade,
   Model,
 } from '@process-engine/process_engine_contracts';
 
@@ -25,20 +24,19 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
 
   public async create(
     boundaryEventNode: Model.Events.BoundaryEvent,
-    processModelFacade: IProcessModelFacade,
   ): Promise<IBoundaryEventHandler> {
 
     const boundaryEventType: BoundaryEventType = this._getEventDefinitionType(boundaryEventNode);
 
     switch (boundaryEventType) {
       case BoundaryEventType.Error:
-        return this._resolveHandlerInstance('ErrorBoundaryEventHandler', boundaryEventNode, processModelFacade);
+        return this._resolveHandlerInstance('ErrorBoundaryEventHandler', boundaryEventNode);
       case BoundaryEventType.Message:
-        return this._resolveHandlerInstance('MessageBoundaryEventHandler', boundaryEventNode, processModelFacade);
+        return this._resolveHandlerInstance('MessageBoundaryEventHandler', boundaryEventNode);
       case BoundaryEventType.Signal:
-        return this._resolveHandlerInstance('SignalBoundaryEventHandler', boundaryEventNode, processModelFacade);
+        return this._resolveHandlerInstance('SignalBoundaryEventHandler', boundaryEventNode);
       case BoundaryEventType.Timer:
-        return this._resolveHandlerInstance('TimerBoundaryEventHandler', boundaryEventNode, processModelFacade);
+        return this._resolveHandlerInstance('TimerBoundaryEventHandler', boundaryEventNode);
       default:
         throw Error(`Invalid definition on BoundaryEvent ${boundaryEventNode.id} detected!`);
     }
@@ -47,7 +45,6 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
   private async _resolveHandlerInstance(
     handlerRegistrationKey: string,
     flowNode: Model.Events.BoundaryEvent,
-    processModelFacade: IProcessModelFacade,
   ): Promise<IBoundaryEventHandler> {
 
     const handlerIsNotRegistered: boolean = !this._container.isRegistered(handlerRegistrationKey);
@@ -55,9 +52,7 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
       throw new InternalServerError(`No BoundaryEventHandler named "${handlerRegistrationKey}" is registered at the ioc container!`);
     }
 
-    const argumentsToPass: Array<any> = [processModelFacade, flowNode];
-
-    return this._container.resolveAsync<IBoundaryEventHandler>(handlerRegistrationKey, argumentsToPass);
+    return this._container.resolveAsync<IBoundaryEventHandler>(handlerRegistrationKey, [flowNode]);
   }
 
   private _getEventDefinitionType(boundaryEventNode: Model.Events.BoundaryEvent): BoundaryEventType {
