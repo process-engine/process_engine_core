@@ -1,4 +1,3 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
@@ -7,6 +6,8 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ExternalTask, ExternalTaskState, IExternalTaskRepository} from '@process-engine/external_task_api_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -21,8 +22,14 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
   private externalTaskSubscription: Subscription;
 
-  constructor(container: IContainer, externalTaskRepository: IExternalTaskRepository, serviceTaskModel: Model.Activities.ServiceTask) {
-    super(container, serviceTaskModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    externalTaskRepository: IExternalTaskRepository,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    serviceTaskModel: Model.Activities.ServiceTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, serviceTaskModel);
 
     this._externalTaskRepository = externalTaskRepository;
     this.logger = Logger.createLogger(`processengine:external_service_task:${serviceTaskModel.id}`);

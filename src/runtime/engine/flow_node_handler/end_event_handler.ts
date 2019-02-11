@@ -1,10 +1,12 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   EndEventReachedMessage,
   eventAggregatorSettings,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -18,8 +20,13 @@ import {FlowNodeHandler} from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
-  constructor(container: IContainer, endEventModel: Model.Events.EndEvent) {
-    super(container, endEventModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    endEventModel: Model.Events.EndEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, endEventModel);
     this.logger = new Logger(`processengine:end_event_handler:${endEventModel.id}`);
   }
 

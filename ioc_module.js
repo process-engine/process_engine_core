@@ -167,90 +167,92 @@ function registerFlowNodeHandlers(container) {
     .register('CallActivityHandler', CallActivityHandler)
     .dependencies(
       'ConsumerApiService',
-      'container',
       'CorrelationService',
+      'EventAggregator',
+      'FlowNodeHandlerFactory',
+      'FlowNodePersistenceFacade',
       'ResumeProcessService',
     );
 
   container
     .register('EndEventHandler', EndEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateLinkCatchEventHandler', IntermediateLinkCatchEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateLinkThrowEventHandler', IntermediateLinkThrowEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateMessageCatchEventHandler', IntermediateMessageCatchEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateSignalCatchEventHandler', IntermediateSignalCatchEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateSignalThrowEventHandler', IntermediateSignalThrowEventHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)
-    .dependencies('container', 'TimerFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'TimerFacade');
 
   container
     .register('ParallelJoinGatewayHandler', ParallelJoinGatewayHandler)
-    .dependencies('container');
+    .dependencies('container', 'EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ParallelSplitGatewayHandler', ParallelSplitGatewayHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ManualTaskHandler', ManualTaskHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ReceiveTaskHandler', ReceiveTaskHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ScriptTaskHandler', ScriptTaskHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('SendTaskHandler', SendTaskHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ExternalServiceTaskHandler', ExternalServiceTaskHandler)
-    .dependencies('container', 'ExternalTaskRepository');
+    .dependencies('EventAggregator', 'ExternalTaskRepository', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('InternalServiceTaskHandler', InternalServiceTaskHandler)
-    .dependencies('container');
+    .dependencies('container','EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('StartEventHandler', StartEventHandler)
-    .dependencies('container', 'TimerFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'TimerFacade');
 
   container
     .register('SubProcessHandler', SubProcessHandler)
-    .dependencies('container', 'FlowNodeInstanceService');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodeInstanceService', 'FlowNodePersistenceFacade');
 
   container
     .register('UserTaskHandler', UserTaskHandler)
-    .dependencies('container');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 }
 
 function registerBoundaryEventHandlers(container) {

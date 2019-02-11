@@ -1,4 +1,3 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
@@ -8,7 +7,6 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  IFlowNodeInstanceService,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -25,14 +23,19 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected logger: Logger;
 
-  protected readonly _container: IContainer;
-
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
-  constructor(container: IContainer, flowNode: TFlowNode) {
-    this._container = container;
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    flowNode: TFlowNode,
+  ) {
+    this._eventAggregator = eventAggregator;
+    this._flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this._flowNodePersistenceFacade = flowNodePersistenceFacade;
     this._flowNode = flowNode;
     this._flowNodeInstanceId = uuid.v4();
   }
@@ -55,12 +58,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected get previousFlowNodeInstanceId(): string {
     return this._previousFlowNodeInstanceId;
-  }
-
-  public async initialize(): Promise<void> {
-    this._eventAggregator = await this._container.resolveAsync<IEventAggregator>('EventAggregator');
-    this._flowNodeHandlerFactory = await this._container.resolveAsync<IFlowNodeHandlerFactory>('FlowNodeHandlerFactory');
-    this._flowNodePersistenceFacade = await this._container.resolveAsync<IFlowNodePersistenceFacade>('FlowNodePersistenceFacade');
   }
 
   public async execute(

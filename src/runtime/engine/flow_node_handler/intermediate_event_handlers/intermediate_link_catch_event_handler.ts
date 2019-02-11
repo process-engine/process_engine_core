@@ -1,8 +1,10 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -13,8 +15,13 @@ import {FlowNodeHandler} from '../index';
 
 export class IntermediateLinkCatchEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
-  constructor(container: IContainer, linkCatchEventModel: Model.Events.IntermediateCatchEvent) {
-    super(container, linkCatchEventModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    linkCatchEventModel: Model.Events.IntermediateCatchEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, linkCatchEventModel);
     this.logger = Logger.createLogger(`processengine:link_catch_event_handler:${linkCatchEventModel.id}`);
   }
 

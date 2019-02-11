@@ -1,10 +1,11 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   eventAggregatorSettings,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -18,8 +19,13 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
 
   private subscription: Subscription;
 
-  constructor(container: IContainer, messageCatchEventModel: Model.Events.IntermediateCatchEvent) {
-    super(container, messageCatchEventModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    messageCatchEventModel: Model.Events.IntermediateCatchEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, messageCatchEventModel);
     this.logger = Logger.createLogger(`processengine:message_catch_event_handler:${messageCatchEventModel.id}`);
   }
 

@@ -1,11 +1,12 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
   eventAggregatorSettings,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
@@ -23,8 +24,14 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
   private _timerFacade: ITimerFacade;
 
-  constructor(container: IContainer, timerFacade: ITimerFacade, startEventModel: Model.Events.StartEvent) {
-    super(container, startEventModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    timerFacade: ITimerFacade,
+    startEventModel: Model.Events.StartEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, startEventModel);
     this._timerFacade = timerFacade;
     this.logger = new Logger(`processengine:start_event_handler:${startEventModel.id}`);
   }

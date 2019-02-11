@@ -1,5 +1,3 @@
-import {IContainer} from 'addict-ioc';
-
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -36,13 +34,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   private _boundaryEventHandlerFactory: IBoundaryEventHandlerFactory;
 
   private _terminationSubscription: Subscription;
-  private _onInterruptedCallback: onInterruptionCallback;
-
-  constructor(container: IContainer, flowNode: TFlowNode) {
-    super(container, flowNode);
-    // tslint:disable-next-line:no-empty
-    this._onInterruptedCallback = (): void => {};
-  }
+  // tslint:disable-next-line:no-empty
+  private _onInterruptedCallback: onInterruptionCallback = (): void => {};
 
   /**
    * Gets the callback that gets called when an interrupt-command was received.
@@ -64,7 +57,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   }
 
   public async initialize(): Promise<void> {
-    await super.initialize();
     this._boundaryEventHandlerFactory = await this._container.resolveAsync<IBoundaryEventHandlerFactory>('BoundaryEventHandlerFactory');
   }
 

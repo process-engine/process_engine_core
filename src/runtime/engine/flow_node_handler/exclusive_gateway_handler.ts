@@ -1,9 +1,11 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -14,8 +16,13 @@ import {FlowNodeHandler} from './index';
 
 export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.ExclusiveGateway> {
 
-  constructor(container: IContainer, exclusiveGatewayModel: Model.Gateways.ExclusiveGateway) {
-    super(container, exclusiveGatewayModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    exclusiveGatewayModel: Model.Gateways.ExclusiveGateway,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, exclusiveGatewayModel);
     this.logger = new Logger(`processengine:exclusive_gateway_handler:${exclusiveGatewayModel.id}`);
   }
 

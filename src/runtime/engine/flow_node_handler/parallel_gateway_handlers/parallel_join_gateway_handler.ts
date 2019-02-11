@@ -1,8 +1,11 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   IProcessTokenResult,
@@ -14,13 +17,22 @@ import {FlowNodeHandlerInterruptible} from '../index';
 
 export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Model.Gateways.ParallelGateway> {
 
+  private readonly _container: IContainer;
+
   private expectedNumberOfResults: number = -1;
   private receivedResults: Array<IProcessTokenResult> = [];
 
   private onEnterStatePersisted: boolean = false;
 
-  constructor(container: IContainer, parallelGatewayModel: Model.Gateways.ParallelGateway) {
-    super(container, parallelGatewayModel);
+  constructor(
+    container: IContainer,
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    parallelGatewayModel: Model.Gateways.ParallelGateway,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, parallelGatewayModel);
+    this._container = container;
     this.logger = Logger.createLogger(`processengine:parallel_join_gateway:${parallelGatewayModel.id}`);
   }
 

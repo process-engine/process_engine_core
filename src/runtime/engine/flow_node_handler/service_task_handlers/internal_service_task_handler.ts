@@ -2,8 +2,11 @@ import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -14,8 +17,17 @@ import {FlowNodeHandlerInterruptible} from '../index';
 
 export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
 
-  constructor(container: IContainer, serviceTaskModel: Model.Activities.ServiceTask) {
-    super(container, serviceTaskModel);
+  private _container: IContainer;
+
+  constructor(
+    container: IContainer,
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    serviceTaskModel: Model.Activities.ServiceTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, serviceTaskModel);
+    this._container = container;
     this.logger = Logger.createLogger(`processengine:internal_service_task:${serviceTaskModel.id}`);
   }
 

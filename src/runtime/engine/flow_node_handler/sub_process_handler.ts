@@ -1,15 +1,16 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
-import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
   EndEventReachedMessage,
   eventAggregatorSettings,
   IFlowNodeHandler,
+  IFlowNodeHandlerFactory,
   IFlowNodeInstanceService,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -34,8 +35,14 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private awaitSubProcessPromise: Promise<any>;
   private subProcessFinishedSubscription: Subscription;
 
-  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, subProcessModel: Model.Activities.SubProcess) {
-    super(container, subProcessModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodeInstanceService: IFlowNodeInstanceService,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    subProcessModel: Model.Activities.SubProcess,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, subProcessModel);
     this._flowNodeInstanceService = flowNodeInstanceService;
     this.logger = Logger.createLogger(`processengine:sub_process_handler:${subProcessModel.id}`);
   }

@@ -1,9 +1,10 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
@@ -19,8 +20,13 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
   private _timerFacade: ITimerFacade;
   private timerSubscription: Subscription;
 
-  constructor(container: IContainer, timerFacade: ITimerFacade, timerCatchEventModel: Model.Events.IntermediateCatchEvent) {
-    super(container, timerCatchEventModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    timerFacade: ITimerFacade, timerCatchEventModel: Model.Events.IntermediateCatchEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, timerCatchEventModel);
     this._timerFacade = timerFacade;
     this.logger = Logger.createLogger(`processengine:timer_catch_event_handler:${timerCatchEventModel.id}`);
   }

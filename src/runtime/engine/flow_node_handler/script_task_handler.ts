@@ -1,8 +1,10 @@
-import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -13,8 +15,13 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ScriptTask> {
 
-  constructor(container: IContainer, scriptTaskModel: Model.Activities.ScriptTask) {
-    super(container, scriptTaskModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    scriptTaskModel: Model.Activities.ScriptTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, scriptTaskModel);
     this.logger = new Logger(`processengine:script_task_handler:${scriptTaskModel.id}`);
   }
 
