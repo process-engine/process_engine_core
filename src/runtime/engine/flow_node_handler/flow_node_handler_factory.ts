@@ -1,3 +1,5 @@
+import {IContainer} from 'addict-ioc';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {
   BpmnType,
@@ -8,8 +10,6 @@ import {
   Model,
   Runtime,
 } from '@process-engine/process_engine_contracts';
-
-import {IContainer} from 'addict-ioc';
 
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
@@ -46,49 +46,34 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
       case BpmnType.intermediateCatchEvent:
         return this._intermediateCatchEventHandlerFactory.create(flowNode, processToken);
-
       case BpmnType.intermediateThrowEvent:
         return this._intermediateThrowEventHandlerFactory.create(flowNode, processToken);
-
       case BpmnType.parallelGateway:
         return this._parallelGatewayHandlerFactory.create(flowNode, processToken);
-
       case BpmnType.serviceTask:
         return this._serviceTaskHandlerFactory.create(flowNode, processToken);
-
       case BpmnType.startEvent:
         return this._resolveHandlerInstance<TFlowNode>('StartEventHandler', flowNode);
-
       case BpmnType.callActivity:
         return this._resolveHandlerInstance<TFlowNode>('CallActivityHandler', flowNode);
-
       case BpmnType.exclusiveGateway:
         return this._resolveHandlerInstance<TFlowNode>('ExclusiveGatewayHandler', flowNode);
-
       case BpmnType.scriptTask:
         return this._resolveHandlerInstance<TFlowNode>('ScriptTaskHandler', flowNode);
-
       case BpmnType.endEvent:
         return this._resolveHandlerInstance<TFlowNode>('EndEventHandler', flowNode);
-
       case BpmnType.subProcess:
         return this._resolveHandlerInstance<TFlowNode>('SubProcessHandler', flowNode);
-
       case BpmnType.userTask:
         return this._resolveHandlerInstance<TFlowNode>('UserTaskHandler', flowNode);
-
       case BpmnType.sendTask:
         return this._resolveHandlerInstance<TFlowNode>('SendTaskHandler', flowNode);
-
       case BpmnType.receiveTask:
         return this._resolveHandlerInstance<TFlowNode>('ReceiveTaskHandler', flowNode);
-
       case BpmnType.manualTask:
         return this._resolveHandlerInstance<TFlowNode>('ManualTaskHandler', flowNode);
-
       case BpmnType.boundaryEvent:
         throw new InternalServerError('Must use "createForBoundaryEvent" to create BoundaryEventHandler instances!');
-
       default:
         throw new InternalServerError(`BPMN type "${flowNode.bpmnType}" is not supported!`);
     }
