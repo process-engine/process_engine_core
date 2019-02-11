@@ -246,7 +246,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('SubProcessHandler', SubProcessHandler)
-    .dependencies('container');
+    .dependencies('container', 'FlowNodeInstanceService');
 
   container
     .register('UserTaskHandler', UserTaskHandler)

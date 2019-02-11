@@ -9,6 +9,7 @@ import {
   EndEventReachedMessage,
   eventAggregatorSettings,
   IFlowNodeHandler,
+  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
@@ -28,11 +29,14 @@ interface IProcessInstanceConfig {
 
 export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activities.SubProcess> {
 
+  private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
+
   private awaitSubProcessPromise: Promise<any>;
   private subProcessFinishedSubscription: Subscription;
 
-  constructor(container: IContainer, subProcessModel: Model.Activities.SubProcess) {
+  constructor(container: IContainer, flowNodeInstanceService: IFlowNodeInstanceService, subProcessModel: Model.Activities.SubProcess) {
     super(container, subProcessModel);
+    this._flowNodeInstanceService = flowNodeInstanceService;
     this.logger = Logger.createLogger(`processengine:sub_process_handler:${subProcessModel.id}`);
   }
 
@@ -62,7 +66,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   ): Promise<Array<Model.Base.FlowNode>> {
 
     const flowNodeInstancesForSubProcess: Array<Runtime.Types.FlowNodeInstance> =
-      await this.flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
+      await this._flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
 
     const flowNodeInstancesForSubprocessInstance: Array<Runtime.Types.FlowNodeInstance> =
       flowNodeInstancesForSubProcess.filter((instance: Runtime.Types.FlowNodeInstance) => {

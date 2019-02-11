@@ -1,4 +1,3 @@
-// tslint:disable:max-file-line-count
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
@@ -6,8 +5,6 @@ import * as uuid from 'node-uuid';
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
@@ -32,10 +29,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   private _eventAggregator: IEventAggregator;
   private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
-  private _flowNodeInstanceService: IFlowNodeInstanceService;
   private _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
-  private _loggingApiService: ILoggingApi;
-  private _metricsApiService: IMetricsApi;
 
   constructor(container: IContainer, flowNode: TFlowNode) {
     this._container = container;
@@ -43,45 +37,30 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     this._flowNodeInstanceId = uuid.v4();
   }
 
-  protected get flowNodeInstanceId(): string {
-    return this._flowNodeInstanceId;
+  protected get eventAggregator(): IEventAggregator {
+    return this._eventAggregator;
   }
 
   protected get flowNode(): TFlowNode {
     return this._flowNode;
   }
 
-  protected get previousFlowNodeInstanceId(): string {
-    return this._previousFlowNodeInstanceId;
-  }
-
-  protected get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
   protected get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
     return this._flowNodeHandlerFactory;
   }
 
-  protected get flowNodeInstanceService(): IFlowNodeInstanceService {
-    return this._flowNodeInstanceService;
+  protected get flowNodeInstanceId(): string {
+    return this._flowNodeInstanceId;
   }
 
-  protected get loggingApiService(): ILoggingApi {
-    return this._loggingApiService;
-  }
-
-  protected get metricsApiService(): IMetricsApi {
-    return this._metricsApiService;
+  protected get previousFlowNodeInstanceId(): string {
+    return this._previousFlowNodeInstanceId;
   }
 
   public async initialize(): Promise<void> {
     this._eventAggregator = await this._container.resolveAsync<IEventAggregator>('EventAggregator');
     this._flowNodeHandlerFactory = await this._container.resolveAsync<IFlowNodeHandlerFactory>('FlowNodeHandlerFactory');
-    this._flowNodeInstanceService = await this._container.resolveAsync<IFlowNodeInstanceService>('FlowNodeInstanceService');
     this._flowNodePersistenceFacade = await this._container.resolveAsync<IFlowNodePersistenceFacade>('FlowNodePersistenceFacade');
-    this._loggingApiService = await this._container.resolveAsync<ILoggingApi>('LoggingApiService');
-    this._metricsApiService = await this._container.resolveAsync<IMetricsApi>('MetricsApiService');
   }
 
   public async execute(
