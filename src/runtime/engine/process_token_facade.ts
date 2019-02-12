@@ -1,11 +1,11 @@
 import {IFlowNodeInstanceResult, IProcessTokenFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
-  private processTokenResults: Array<IFlowNodeInstanceResult> = [];
-  private _processInstanceId: string;
-  private _processModelId: string;
   private _correlationId: string;
   private _identity: any;
+  private _processInstanceId: string;
+  private _processModelId: string;
+  private _processTokenResults: Array<IFlowNodeInstanceResult> = [];
 
   constructor(processInstanceId: string, processModelId: string, correlationId: string, identity: any) {
     this._processInstanceId = processInstanceId;
@@ -31,7 +31,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
   }
 
   public getAllResults(): Array<IFlowNodeInstanceResult> {
-    return this.processTokenResults;
+    return this._processTokenResults;
   }
 
   public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
@@ -46,17 +46,21 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return token;
   }
 
+  public containsResultForFlowNodeInstance(flowNodeInstanceId: string): boolean {
+    return this._processTokenResults.some((result: IFlowNodeInstanceResult) => result.flowNodeInstanceId === flowNodeInstanceId);
+  }
+
   public addResultForFlowNode(flowNodeId: string, flowNodeInstanceId: string, result: any): void {
     const processTokenResult: IFlowNodeInstanceResult = {
       flowNodeId: flowNodeId,
       flowNodeInstanceId: flowNodeInstanceId,
       result: result,
     };
-    this.processTokenResults.push(processTokenResult);
+    this._processTokenResults.push(processTokenResult);
   }
 
   public importResults(processTokenResults: Array<IFlowNodeInstanceResult>): void {
-    Array.prototype.push.apply(this.processTokenResults, processTokenResults);
+    Array.prototype.push.apply(this._processTokenResults, processTokenResults);
   }
 
   public getProcessTokenFacadeForParallelBranch(): IProcessTokenFacade {
@@ -70,7 +74,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
 
   public mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): void {
     const allResultsToMerge: Array<IFlowNodeInstanceResult> = processTokenToMerge.getAllResults();
-    Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
+    Array.prototype.push.apply(this._processTokenResults, allResultsToMerge);
   }
 
   public getOldTokenFormat(): any {
