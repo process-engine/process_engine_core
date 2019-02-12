@@ -5,10 +5,10 @@ import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   IFlowNodeHandlerFactory,
+  IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  IProcessTokenResult,
   Model,
   Runtime,
 } from '@process-engine/process_engine_contracts';
@@ -20,7 +20,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
   private readonly _container: IContainer;
 
   private expectedNumberOfResults: number = -1;
-  private receivedResults: Array<IProcessTokenResult> = [];
+  private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
   private onEnterStatePersisted: boolean = false;
 
@@ -83,7 +83,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const latestResult: IProcessTokenResult = this._getLatestFlowNodeResultFromFacade(processTokenFacade);
+    const latestResult: IFlowNodeInstanceResult = this._getLatestFlowNodeResultFromFacade(processTokenFacade);
     this.receivedResults.push(latestResult);
 
     const notAllBranchesHaveFinished: boolean = this.receivedResults.length < this.expectedNumberOfResults;
@@ -103,7 +103,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  private _getLatestFlowNodeResultFromFacade(processTokenFacade: IProcessTokenFacade): IProcessTokenResult {
+  private _getLatestFlowNodeResultFromFacade(processTokenFacade: IProcessTokenFacade): IFlowNodeInstanceResult {
     return processTokenFacade.getAllResults().pop();
   }
 

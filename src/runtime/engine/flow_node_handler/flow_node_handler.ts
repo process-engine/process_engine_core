@@ -7,10 +7,10 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
+  IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  IProcessTokenResult,
   Model,
   Runtime,
 } from '@process-engine/process_engine_contracts';
@@ -102,10 +102,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         });
       }
     } catch (error) {
-      const allResults: Array<IProcessTokenResult> = processTokenFacade.getAllResults();
+      const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
       // This check is necessary to prevent duplicate entries,
       // in case the Promise-Chain was broken further down the road.
-      const noResultStoredYet: boolean = !allResults.some((entry: IProcessTokenResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+      const noResultStoredYet: boolean = !allResults.some((entry: IFlowNodeInstanceResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
       if (noResultStoredYet) {
         processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
       }
@@ -146,7 +146,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
         // No instance for the next FlowNode was found.
         // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
-        const currentResult: IProcessTokenResult = processTokenFacade
+        const currentResult: IFlowNodeInstanceResult = processTokenFacade
           .getAllResults()
           .pop();
 
@@ -183,10 +183,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         });
       }
     } catch (error) {
-      const allResults: Array<IProcessTokenResult> = processTokenFacade.getAllResults();
+      const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
       // This check is necessary to prevent duplicate entries,
       // in case the Promise-Chain was broken further down the road.
-      const noResultStoredYet: boolean = !allResults.some((entry: IProcessTokenResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+      const noResultStoredYet: boolean = !allResults.some((entry: IFlowNodeInstanceResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
       if (noResultStoredYet) {
         processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
       }

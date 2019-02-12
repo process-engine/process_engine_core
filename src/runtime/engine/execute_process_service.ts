@@ -14,10 +14,10 @@ import {
   IExecuteProcessService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
+  IFlowNodeInstanceResult,
   IProcessModelFacade,
   IProcessModelService,
   IProcessTokenFacade,
-  IProcessTokenResult,
   Model,
   ProcessEndedMessage,
   ProcessStartedMessage,
@@ -254,8 +254,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
         identity,
       );
 
-      const allResults: Array<IProcessTokenResult> = await processInstanceConfig.processTokenFacade.getAllResults();
-      const resultToken: IProcessTokenResult = allResults.pop();
+      const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
+      const resultToken: IFlowNodeInstanceResult = allResults.pop();
 
       this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
       this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
@@ -354,7 +354,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private _sendProcessInstanceFinishedNotification(
     identity: IIdentity,
     processInstanceConfig: IProcessInstanceConfig,
-    resultToken: IProcessTokenResult,
+    resultToken: IFlowNodeInstanceResult,
   ): void {
 
     // Send notification about the finished ProcessInstance.

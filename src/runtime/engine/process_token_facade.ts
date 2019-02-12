@@ -1,7 +1,7 @@
-import {IProcessTokenFacade, IProcessTokenResult, Model, Runtime} from '@process-engine/process_engine_contracts';
+import {IFlowNodeInstanceResult, IProcessTokenFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
-  private processTokenResults: Array<IProcessTokenResult> = [];
+  private processTokenResults: Array<IFlowNodeInstanceResult> = [];
   private _processInstanceId: string;
   private _processModelId: string;
   private _correlationId: string;
@@ -30,7 +30,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return this._identity;
   }
 
-  public getAllResults(): Array<IProcessTokenResult> {
+  public getAllResults(): Array<IFlowNodeInstanceResult> {
     return this.processTokenResults;
   }
 
@@ -47,7 +47,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
   }
 
   public addResultForFlowNode(flowNodeId: string, flowNodeInstanceId: string, result: any): void {
-    const processTokenResult: IProcessTokenResult = {
+    const processTokenResult: IFlowNodeInstanceResult = {
       flowNodeId: flowNodeId,
       flowNodeInstanceId: flowNodeInstanceId,
       result: result,
@@ -55,27 +55,27 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     this.processTokenResults.push(processTokenResult);
   }
 
-  public importResults(processTokenResults: Array<IProcessTokenResult>): void {
+  public importResults(processTokenResults: Array<IFlowNodeInstanceResult>): void {
     Array.prototype.push.apply(this.processTokenResults, processTokenResults);
   }
 
   public getProcessTokenFacadeForParallelBranch(): IProcessTokenFacade {
 
     const processTokenFacade: any = new ProcessTokenFacade(this.processInstanceId, this.processModelId, this.correlationId, this.identity);
-    const allResults: Array<IProcessTokenResult> = this.getAllResults();
+    const allResults: Array<IFlowNodeInstanceResult> = this.getAllResults();
     processTokenFacade.importResults(allResults);
 
     return processTokenFacade;
   }
 
   public mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): void {
-    const allResultsToMerge: Array<IProcessTokenResult> = processTokenToMerge.getAllResults();
+    const allResultsToMerge: Array<IFlowNodeInstanceResult> = processTokenToMerge.getAllResults();
     Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
   }
 
   public getOldTokenFormat(): any {
 
-    const tokenResults: Array<IProcessTokenResult> = this.getAllResults();
+    const tokenResults: Array<IFlowNodeInstanceResult> = this.getAllResults();
 
     if (tokenResults.length === 0) {
       return {
@@ -84,7 +84,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
       };
     }
 
-    const copiedResults: Array<IProcessTokenResult> = [];
+    const copiedResults: Array<IFlowNodeInstanceResult> = [];
     Array.prototype.push.apply(copiedResults, tokenResults);
     const currentResult: any = copiedResults.pop();
 
@@ -111,8 +111,8 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     if (mapper !== undefined) {
       const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
 
-      const allResults: Array<IProcessTokenResult> = this.getAllResults();
-      const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
+      const allResults: Array<IFlowNodeInstanceResult> = this.getAllResults();
+      const currentResult: IFlowNodeInstanceResult = allResults[allResults.length - 1];
 
       currentResult.result = newCurrent;
     }
@@ -127,8 +127,8 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     if (mapper !== undefined) {
       const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
 
-      const allResults: Array<IProcessTokenResult> = this.getAllResults();
-      const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
+      const allResults: Array<IFlowNodeInstanceResult> = this.getAllResults();
+      const currentResult: IFlowNodeInstanceResult = allResults[allResults.length - 1];
 
       currentResult.result = newCurrent;
     }
