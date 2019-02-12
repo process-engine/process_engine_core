@@ -48,6 +48,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
       const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode(processModelFacade);
 
       const eventData: OnBoundaryEventTriggeredData = {
+        boundaryInstanceId: this.flowNodeInstanceId,
         nextFlowNode: nextFlowNode,
         interruptHandler: this.boundaryEvent.cancelActivity,
         eventPayload: signal.currentToken,

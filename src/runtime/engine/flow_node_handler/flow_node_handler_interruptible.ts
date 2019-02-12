@@ -91,9 +91,10 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
         await this.afterExecute(token);
 
-        await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
-          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode(processModelFacade);
-          await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+        await Promise.map(errorBoundaryEvents, async(errorHandler: ErrorBoundaryEventHandler) => {
+          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = errorHandler.getNextFlowNode(processModelFacade);
+          const errorHandlerId: string = errorHandler.getInstanceId();
+          await this._continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
         });
 
         return resolve();
@@ -135,9 +136,10 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
         token.payload = error;
         token.flowNodeInstanceId = this.flowNodeInstanceId;
 
-        await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
-          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode(processModelFacade);
-          await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+        await Promise.map(errorBoundaryEvents, async(errorHandler: ErrorBoundaryEventHandler) => {
+          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = errorHandler.getNextFlowNode(processModelFacade);
+          const errorHandlerId: string = errorHandler.getInstanceId();
+          await this._continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
         });
 
         return resolve();
@@ -404,6 +406,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     }
 
     await this._continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
+      eventData.boundaryInstanceId,
       eventData.nextFlowNode,
       currentProcessToken,
       processTokenFacade,
@@ -412,18 +415,20 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     );
    }
 
-   /**
-    * Starts a new execution flow that begins at the given BoundaryEvent.
-    *
-    * @async
-    * @param nextFlowNode        The first FlowNode to run in this flow.
-    * @param currentProcessToken The current Processtoken.
-    * @param processTokenFacade  The Facade for managing the ProcessInstance's
-    *                            ProcessTokens.
-    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
-    * @param identity            The ProcessInstance owner.
-    */
-   private async _continueAfterBoundaryEvent<TNextFlowNode extends Model.Base.FlowNode>(
+  /**
+   * Starts a new execution flow that begins at the given BoundaryEvent instance.
+   *
+   * @async
+   * @param boundaryInstanceId  The instance Id of the triggered BoundaryEvent.
+   * @param nextFlowNode        The first FlowNode to run in this flow.
+   * @param currentProcessToken The current Processtoken.
+   * @param processTokenFacade  The Facade for managing the ProcessInstance's
+   *                            ProcessTokens.
+   * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
+   * @param identity            The ProcessInstance owner.
+   */
+  private async _continueAfterBoundaryEvent<TNextFlowNode extends Model.Base.FlowNode>(
+    boundaryInstanceId: string,
     nextFlowNode: TNextFlowNode,
     currentProcessToken: Runtime.Types.ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -434,8 +439,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     const handlerForNextFlowNode: IFlowNodeHandler<TNextFlowNode> =
       await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
 
-    return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
-   }
+    return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, boundaryInstanceId);
+  }
 
    /**
     * Cancels and clears all BoundaryEvents attached to this handler.
