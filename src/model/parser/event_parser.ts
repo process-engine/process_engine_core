@@ -106,7 +106,10 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     event.name = boundaryEventRaw.name;
     event.attachedToRef = boundaryEventRaw.attachedToRef;
-    event.cancelActivity = boundaryEventRaw.cancelActivity || true;
+
+    const cancelActivity: boolean = boundaryEventRaw.cancelActivity === 'true' ||
+                                    boundaryEventRaw.cancelActivity === true;
+    event.cancelActivity = cancelActivity;
 
     assignEventDefinitions(event, boundaryEventRaw);
 
