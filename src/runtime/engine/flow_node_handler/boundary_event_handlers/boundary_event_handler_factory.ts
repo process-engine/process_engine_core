@@ -22,10 +22,7 @@ export class BoundaryEventHandlerFactory implements IBoundaryEventHandlerFactory
     this._container = container;
   }
 
-  public async create(
-    boundaryEventNode: Model.Events.BoundaryEvent,
-  ): Promise<IBoundaryEventHandler> {
-
+  public async create(boundaryEventNode: Model.Events.BoundaryEvent): Promise<IBoundaryEventHandler> {
     const boundaryEventType: BoundaryEventType = this._getEventDefinitionType(boundaryEventNode);
 
     switch (boundaryEventType) {

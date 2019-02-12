@@ -22,10 +22,9 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     eventAggregator: IEventAggregator,
-    processModelFacade: IProcessModelFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    super(flowNodePersistenceFacade, processModelFacade, boundaryEventModel);
+    super(flowNodePersistenceFacade, boundaryEventModel);
     this._eventAggregator = eventAggregator;
   }
 
@@ -46,7 +45,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
     const messageReceivedCallback: any = async(message: MessageEventReachedMessage): Promise<void> => {
 
-      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode();
+      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode(processModelFacade);
 
       const eventData: OnBoundaryEventTriggeredData = {
         nextFlowNode: nextFlowNode,

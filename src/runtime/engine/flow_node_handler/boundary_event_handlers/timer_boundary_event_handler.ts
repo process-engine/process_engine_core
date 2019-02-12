@@ -26,10 +26,9 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     timerFacade: ITimerFacade,
-    processModelFacade: IProcessModelFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    super(flowNodePersistenceFacade, processModelFacade, boundaryEventModel);
+    super(flowNodePersistenceFacade, boundaryEventModel);
     this._timerFacade = timerFacade;
     this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
   }
@@ -55,7 +54,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
       this.logger.verbose(`TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId} was triggered.`);
 
-      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode();
+      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode(processModelFacade);
 
       const eventData: OnBoundaryEventTriggeredData = {
         nextFlowNode: nextFlowNode,

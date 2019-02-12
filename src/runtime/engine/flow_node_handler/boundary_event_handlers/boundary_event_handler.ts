@@ -17,7 +17,6 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   private readonly _boundaryEventModel: Model.Events.BoundaryEvent;
   private readonly _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
-  private readonly _processModelFacade: IProcessModelFacade;
 
   private readonly _boundaryEventInstanceId: string;
 
@@ -25,11 +24,9 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
-    processModelFacade: IProcessModelFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
     this._flowNodePersistenceFacade = flowNodePersistenceFacade;
-    this._processModelFacade = processModelFacade;
     this._boundaryEventModel = boundaryEventModel;
     this._boundaryEventInstanceId = uuid.v4();
   }
@@ -44,10 +41,6 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   protected get flowNodeInstanceId(): string {
     return this._boundaryEventInstanceId;
-  }
-
-  protected get processModelFacade(): IProcessModelFacade {
-    return this._processModelFacade;
   }
 
   public getInstanceId(): string {
@@ -66,9 +59,9 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     await this.persistOnExit(processToken);
   }
 
-  public getNextFlowNode(): Model.Base.FlowNode {
+  public getNextFlowNode(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
     // By convention, BoundaryEvents must only lead to one FlowNode.
-    return this._processModelFacade.getNextFlowNodesFor(this._boundaryEventModel).pop();
+    return processModelFacade.getNextFlowNodesFor(this._boundaryEventModel).pop();
   }
 
   protected async persistOnEnter(processToken: Runtime.Types.ProcessToken): Promise<void> {

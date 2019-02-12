@@ -92,7 +92,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
         await this.afterExecute(token);
 
         await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
-          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
+          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode(processModelFacade);
           await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
         });
 
@@ -136,7 +136,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
         token.flowNodeInstanceId = this.flowNodeInstanceId;
 
         await Promise.map(errorBoundaryEvents, async(boundaryEventHandler: ErrorBoundaryEventHandler) => {
-          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode();
+          const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = boundaryEventHandler.getNextFlowNode(processModelFacade);
           await this._continueAfterBoundaryEvent(flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
         });
 
