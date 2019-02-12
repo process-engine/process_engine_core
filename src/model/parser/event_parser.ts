@@ -107,7 +107,10 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     event.name = boundaryEventRaw.name;
     event.attachedToRef = boundaryEventRaw.attachedToRef;
 
-    const cancelActivity: boolean = boundaryEventRaw.cancelActivity === 'true' ||
+    // NOTE: Interrupting BoundaryEvents will sometimes not have this property!
+    // However, non-interrupting BoundaryEvents always have it.
+    const cancelActivity: boolean = boundaryEventRaw.cancelActivity === undefined ||
+                                    boundaryEventRaw.cancelActivity === 'true' ||
                                     boundaryEventRaw.cancelActivity === true;
     event.cancelActivity = cancelActivity;
 
