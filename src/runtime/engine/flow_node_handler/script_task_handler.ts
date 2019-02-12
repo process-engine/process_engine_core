@@ -1,15 +1,13 @@
 import {Logger} from 'loggerhythm';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -17,11 +15,13 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ScriptTask> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              scriptTaskModel: Model.Activities.ScriptTask) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, scriptTaskModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    scriptTaskModel: Model.Activities.ScriptTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, scriptTaskModel);
     this.logger = new Logger(`processengine:script_task_handler:${scriptTaskModel.id}`);
   }
 
@@ -29,11 +29,12 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity,
-                                   ): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ScriptTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -41,40 +42,40 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
-
-      let result: any = {};
-
       try {
+        let result: any = {};
+
         const executionPromise: Promise<any> = this._executeScriptTask(processTokenFacade, identity);
 
         this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
-          processTokenFacade.addResultForFlowNode(this.scriptTask.id, interruptionToken.payload);
+          processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, interruptionToken.payload);
           executionPromise.cancel();
           handlerPromise.cancel();
 
           return resolve();
         };
         result = await executionPromise;
+
+        processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, result);
+        token.payload = result;
+        await this.persistOnExit(token);
+
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.scriptTask);
+
+        return resolve(nextFlowNodeInfo);
       } catch (error) {
         await this.persistOnError(token, error);
 
         return reject(error);
       }
-
-      processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
-      token.payload = result;
-      await this.persistOnExit(token);
-
-      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
-
-      return resolve(nextFlowNodeInfo);
     });
 
     return handlerPromise;
@@ -83,19 +84,19 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
 
     return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
-
-      const script: string = this.scriptTask.script;
-
-      if (!script) {
-        return undefined;
-      }
-
-      const tokenData: any = processTokenFacade.getOldTokenFormat();
-      let result: any;
-
-      const scriptFunction: Function = new Function('token', 'identity', script);
       try {
-        result = await scriptFunction.call(this, tokenData, identity);
+
+        const script: string = this.scriptTask.script;
+
+        if (!script) {
+          return undefined;
+        }
+
+        const scriptFunction: Function = new Function('token', 'identity', script);
+
+        const tokenData: any = processTokenFacade.getOldTokenFormat();
+
+        let result: any = await scriptFunction.call(this, tokenData, identity);
         result = result === undefined
           ? null
           : result;
@@ -106,7 +107,6 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
         return reject(error);
       }
-
     });
   }
 }

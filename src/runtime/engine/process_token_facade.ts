@@ -1,11 +1,11 @@
-import {IProcessTokenFacade, IProcessTokenResult, Model, Runtime} from '@process-engine/process_engine_contracts';
+import {IFlowNodeInstanceResult, IProcessTokenFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
-  private processTokenResults: Array<IProcessTokenResult> = [];
-  private _processInstanceId: string;
-  private _processModelId: string;
   private _correlationId: string;
   private _identity: any;
+  private _processInstanceId: string;
+  private _processModelId: string;
+  private _processTokenResults: Array<IFlowNodeInstanceResult> = [];
 
   constructor(processInstanceId: string, processModelId: string, correlationId: string, identity: any) {
     this._processInstanceId = processInstanceId;
@@ -30,8 +30,8 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return this._identity;
   }
 
-  public getAllResults(): Array<IProcessTokenResult> {
-    return this.processTokenResults;
+  public getAllResults(): Array<IFlowNodeInstanceResult> {
+    return this._processTokenResults;
   }
 
   public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
@@ -46,35 +46,40 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return token;
   }
 
-  public addResultForFlowNode(flowNodeId: string, result: any): void {
-    const processTokenResult: IProcessTokenResult = {
-      flowNodeId: flowNodeId,
-      result: result,
-    };
-    this.processTokenResults.push(processTokenResult);
+  public containsResultForFlowNodeInstance(flowNodeInstanceId: string): boolean {
+    return this._processTokenResults.some((result: IFlowNodeInstanceResult) => result.flowNodeInstanceId === flowNodeInstanceId);
   }
 
-  public importResults(processTokenResults: Array<IProcessTokenResult>): void {
-    Array.prototype.push.apply(this.processTokenResults, processTokenResults);
+  public addResultForFlowNode(flowNodeId: string, flowNodeInstanceId: string, result: any): void {
+    const processTokenResult: IFlowNodeInstanceResult = {
+      flowNodeId: flowNodeId,
+      flowNodeInstanceId: flowNodeInstanceId,
+      result: result,
+    };
+    this._processTokenResults.push(processTokenResult);
+  }
+
+  public importResults(processTokenResults: Array<IFlowNodeInstanceResult>): void {
+    Array.prototype.push.apply(this._processTokenResults, processTokenResults);
   }
 
   public getProcessTokenFacadeForParallelBranch(): IProcessTokenFacade {
 
     const processTokenFacade: any = new ProcessTokenFacade(this.processInstanceId, this.processModelId, this.correlationId, this.identity);
-    const allResults: Array<IProcessTokenResult> = this.getAllResults();
+    const allResults: Array<IFlowNodeInstanceResult> = this.getAllResults();
     processTokenFacade.importResults(allResults);
 
     return processTokenFacade;
   }
 
   public mergeTokenHistory(processTokenToMerge: IProcessTokenFacade): void {
-    const allResultsToMerge: Array<IProcessTokenResult> = processTokenToMerge.getAllResults();
-    Array.prototype.push.apply(this.processTokenResults, allResultsToMerge);
+    const allResultsToMerge: Array<IFlowNodeInstanceResult> = processTokenToMerge.getAllResults();
+    Array.prototype.push.apply(this._processTokenResults, allResultsToMerge);
   }
 
   public getOldTokenFormat(): any {
 
-    const tokenResults: Array<IProcessTokenResult> = this.getAllResults();
+    const tokenResults: Array<IFlowNodeInstanceResult> = this.getAllResults();
 
     if (tokenResults.length === 0) {
       return {
@@ -83,7 +88,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
       };
     }
 
-    const copiedResults: Array<IProcessTokenResult> = [];
+    const copiedResults: Array<IFlowNodeInstanceResult> = [];
     Array.prototype.push.apply(copiedResults, tokenResults);
     const currentResult: any = copiedResults.pop();
 
@@ -99,55 +104,5 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     tokenData.history[currentResult.flowNodeId] = currentResult.result;
 
     return tokenData;
-  }
-
-  public evaluateMapperForSequenceFlow(sequenceFlow: Model.Types.SequenceFlow): void {
-
-    const tokenData: any = this.getOldTokenFormat();
-
-    const mapper: string = this._getMapper(sequenceFlow);
-
-    if (mapper !== undefined) {
-      const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
-
-      const allResults: Array<IProcessTokenResult> = this.getAllResults();
-      const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
-
-      currentResult.result = newCurrent;
-    }
-  }
-
-  public evaluateMapperForFlowNode(flowNode: Model.Base.FlowNode): void {
-
-    const tokenData: any = this.getOldTokenFormat();
-
-    const mapper: string = this._getMapper(flowNode);
-
-    if (mapper !== undefined) {
-      const newCurrent: any = (new Function('token', `return ${mapper}`)).call(tokenData, tokenData);
-
-      const allResults: Array<IProcessTokenResult> = this.getAllResults();
-      const currentResult: IProcessTokenResult = allResults[allResults.length - 1];
-
-      currentResult.result = newCurrent;
-    }
-  }
-
-  private _getMapper(sequenceFlowOrFlowNode: Model.Types.SequenceFlow | Model.Base.FlowNode): string {
-    if (!sequenceFlowOrFlowNode.extensionElements
-      || !sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties
-      || !Array.isArray(sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties)) {
-      return;
-    }
-
-    const mapperExtensionProperty: any = sequenceFlowOrFlowNode.extensionElements.camundaExtensionProperties.find((extensionProperty: any) => {
-      return extensionProperty.name === 'mapper';
-    });
-
-    if (!mapperExtensionProperty) {
-      return undefined;
-    }
-
-    return mapperExtensionProperty.value;
   }
 }

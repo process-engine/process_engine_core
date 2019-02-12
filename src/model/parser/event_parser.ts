@@ -106,7 +106,13 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     event.name = boundaryEventRaw.name;
     event.attachedToRef = boundaryEventRaw.attachedToRef;
-    event.cancelActivity = boundaryEventRaw.cancelActivity || true;
+
+    // NOTE: Interrupting BoundaryEvents will sometimes not have this property!
+    // However, non-interrupting BoundaryEvents always have it.
+    const cancelActivity: boolean = boundaryEventRaw.cancelActivity === undefined ||
+                                    boundaryEventRaw.cancelActivity === 'true' ||
+                                    boundaryEventRaw.cancelActivity === true;
+    event.cancelActivity = cancelActivity;
 
     assignEventDefinitions(event, boundaryEventRaw);
 
@@ -241,15 +247,10 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
     return getErrorById(errorId);
   }
 
-  // TODO: Find out if we can set the structureRef of the Error Object to undefined here.
-  const anonymousStructureRef: Model.TypeReferences.StructureReference = {
-    structureId: '',
-  };
-
   return {
     id: '',
-    structureRef: anonymousStructureRef,
-    errorCode: '',
+    structureRef: undefined,
+    code: '',
     name: '',
   };
 }
@@ -361,20 +362,20 @@ function parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
 
 function parseTimerDefinitionValue(eventDefinition: any): string {
 
-    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
-    if (timerIsDuration) {
-      return eventDefinition[TimerBpmnType.Duration]._;
-    }
-
-    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
-    if (timerIsCyclic) {
-      return eventDefinition[TimerBpmnType.Cycle]._;
-    }
-
-    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
-    if (timerIsDate) {
-      return eventDefinition[TimerBpmnType.Date]._;
-    }
-
-    return undefined;
+  const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+  if (timerIsDuration) {
+    return eventDefinition[TimerBpmnType.Duration]._;
   }
+
+  const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+  if (timerIsCyclic) {
+    return eventDefinition[TimerBpmnType.Cycle]._;
+  }
+
+  const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+  if (timerIsDate) {
+    return eventDefinition[TimerBpmnType.Date]._;
+  }
+
+  return undefined;
+}

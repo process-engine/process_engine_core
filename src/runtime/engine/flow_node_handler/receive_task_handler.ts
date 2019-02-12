@@ -2,16 +2,14 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -19,16 +17,15 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ReceiveTask> {
 
-  private _eventAggregator: IEventAggregator;
   private messageSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingService: ILoggingApi,
-              metricsService: IMetricsApi,
-              receiveTaskModel: Model.Activities.ReceiveTask) {
-    super(flowNodeInstanceService, loggingService, metricsService, receiveTaskModel);
-    this._eventAggregator = eventAggregator;
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    receiveTaskModel: Model.Activities.ReceiveTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, receiveTaskModel);
     this.logger = new Logger(`processengine:receive_task_handler:${receiveTaskModel.id}`);
   }
 
@@ -36,10 +33,12 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ReceiveTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -48,28 +47,32 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                       ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const executionPromise: Promise<MessageEventReachedMessage> = this._waitForMessage();
 
       this.onInterruptedCallback = (): void => {
         if (this.messageSubscription) {
-          this._eventAggregator.unsubscribe(this.messageSubscription);
+          this.eventAggregator.unsubscribe(this.messageSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -79,13 +82,15 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
 
       const receivedMessage: MessageEventReachedMessage = await executionPromise;
 
+      token.payload = receivedMessage.currentToken;
+
       await this.persistOnResume(token);
       this._sendReplyToSender(identity, token);
 
-      processTokenFacade.addResultForFlowNode(this.receiveTask.id, receivedMessage.currentToken);
+      processTokenFacade.addResultForFlowNode(this.receiveTask.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(receivedMessage.currentToken);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.receiveTask);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -109,7 +114,7 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
         .replace(eventAggregatorSettings.messageParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
       this.messageSubscription =
-        this._eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+        this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
           resolve(message);
         });
     });
@@ -142,6 +147,6 @@ export class ReceiveTaskHandler extends FlowNodeHandlerInterruptible<Model.Activ
       identity,
       token.payload);
 
-    this._eventAggregator.publish(messageEventName, messageToSend);
+    this.eventAggregator.publish(messageEventName, messageToSend);
   }
 }
