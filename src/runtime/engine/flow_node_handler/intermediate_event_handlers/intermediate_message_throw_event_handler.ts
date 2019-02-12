@@ -2,17 +2,14 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -20,15 +17,13 @@ import {FlowNodeHandler} from '../index';
 
 export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
-  private _eventAggregator: IEventAggregator;
-
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingService: ILoggingApi,
-              metricsService: IMetricsApi,
-              messageThrowEventModel: Model.Events.IntermediateThrowEvent) {
-    super(flowNodeInstanceService, loggingService, metricsService, messageThrowEventModel);
-    this._eventAggregator = eventAggregator;
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    messageThrowEventModel: Model.Events.IntermediateThrowEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, messageThrowEventModel);
     this.logger = Logger.createLogger(`processengine:message_throw_event_handler:${messageThrowEventModel.id}`);
   }
 
@@ -36,10 +31,12 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing MessageThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -47,10 +44,12 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
@@ -67,11 +66,13 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                token.payload);
 
     this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
-    this._eventAggregator.publish(messageEventName, message);
+    this.eventAggregator.publish(messageEventName, message);
     this.logger.verbose(`Done.`);
+
+    processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, this.flowNodeInstanceId, {});
 
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return processModelFacade.getNextFlowNodesFor(this.messageThrowEvent);
   }
 }

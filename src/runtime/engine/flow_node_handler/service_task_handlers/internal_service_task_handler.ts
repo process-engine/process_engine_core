@@ -2,16 +2,14 @@ import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -21,14 +19,14 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
   private _container: IContainer;
 
-  constructor(container: IContainer,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              serviceTaskModel: Model.Activities.ServiceTask) {
-
-    super(flowNodeInstanceService, loggingApiService, metricsService, serviceTaskModel);
-
+  constructor(
+    container: IContainer,
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    serviceTaskModel: Model.Activities.ServiceTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, serviceTaskModel);
     this._container = container;
     this.logger = Logger.createLogger(`processengine:internal_service_task:${serviceTaskModel.id}`);
   }
@@ -37,11 +35,12 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity,
-                                   ): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing internal ServiceTask instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -49,22 +48,23 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
     if (serviceTaskHasNoInvocation) {
       this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
 
-      processTokenFacade.addResultForFlowNode(this.serviceTask.id, {});
+      processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, {});
       token.payload = {};
 
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
 
       return nextFlowNodeInfo;
     }
@@ -84,12 +84,12 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         this.logger.verbose('Executing internal ServiceTask');
         const result: any = await executionPromise;
 
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
 
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {

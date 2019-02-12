@@ -3,18 +3,16 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
   FinishManualTaskMessage,
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   ManualTaskFinishedMessage,
   ManualTaskReachedMessage,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -22,17 +20,15 @@ import {FlowNodeHandlerInterruptible} from './index';
 
 export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ManualTask> {
 
-  private _eventAggregator: IEventAggregator;
-
   private manualTaskSubscription: Subscription;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              manualTaskModel: Model.Activities.ManualTask) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, manualTaskModel);
-    this._eventAggregator = eventAggregator;
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    manualTaskModel: Model.Activities.ManualTask,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, manualTaskModel);
     this.logger = new Logger(`processengine:manual_task_handler:${manualTaskModel.id}`);
   }
 
@@ -40,10 +36,12 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing ManualTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -52,40 +50,44 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterEnter(onEnterToken: Runtime.Types.ProcessToken,
-                                      processTokenFacade: IProcessTokenFacade,
-                                      processModelFacade: IProcessModelFacade,
-                                      identity: IIdentity,
-                                     ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterEnter(
+    onEnterToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     await this.persistOnSuspend(onEnterToken);
 
     return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                       ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<NextFlowNodeInfo> = new Promise<NextFlowNodeInfo>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       const executionPromise: Promise<any> = this._waitForManualTaskResult(identity, token);
 
       this.onInterruptedCallback = (): void => {
         if (this.manualTaskSubscription) {
-          this._eventAggregator.unsubscribe(this.manualTaskSubscription);
+          this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         }
         executionPromise.cancel();
         handlerPromise.cancel();
@@ -98,12 +100,12 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
       await this.persistOnResume(token);
 
-      processTokenFacade.addResultForFlowNode(this.manualTask.id, manualTaskResult);
+      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
       await this.persistOnExit(token);
 
       this._sendManualTaskFinishedNotification(identity, token);
 
-      const nextFlowNodeInfo: NextFlowNodeInfo = this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.manualTask);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -128,7 +130,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       const finishManualTaskEvent: string = this._getFinishManualTaskEventName(token.correlationId, token.processInstanceId);
 
       this.manualTaskSubscription =
-        this._eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
+        this.eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
           // An empty object is used, because ManualTasks do not yield results.
           const manualTaskResult: any = {};
 
@@ -156,7 +158,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
                                                                        identity,
                                                                        token.payload);
 
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
   }
 
   /**
@@ -182,10 +184,10 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     // FlowNode-specific notification
     const manualTaskFinishedEvent: string = this._getManualTaskFinishedEventName(token.correlationId, token.processInstanceId);
-    this._eventAggregator.publish(manualTaskFinishedEvent, message);
+    this.eventAggregator.publish(manualTaskFinishedEvent, message);
 
     // Global notification
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskFinished, message);
   }
 
   private _getFinishManualTaskEventName(correlationId: string, processInstanceId: string): string {

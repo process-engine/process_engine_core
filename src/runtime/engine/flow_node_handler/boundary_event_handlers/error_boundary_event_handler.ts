@@ -1,61 +1,54 @@
-import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
+  OnBoundaryEventTriggeredCallback,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
-export class ErrorBoundaryEventHandler extends FlowNodeHandlerInterruptible<Model.Events.BoundaryEvent> {
+import {BoundaryEventHandler} from './boundary_event_handler';
+export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
-  private _decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>;
+  /**
+   * Checks if the name of the given error is equal to the one attached
+   * to the BoundaryEvent model.
+   *
+   * If no error is attached to the model, then this handler can also handle
+   * the error.
+   *
+   * @param   error The error to compare against the errorEventDefinition of
+   *                the model.
+   * @returns       True, if the BoundaryEvent can handle the given error.
+   *                Otherwise false.
+   */
+  public canHandleError(error: Error): boolean {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              decoratedHandler: FlowNodeHandlerInterruptible<Model.Base.FlowNode>,
-              errorBoundaryEventModel: Model.Events.BoundaryEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, errorBoundaryEventModel);
-    this._decoratedHandler = decoratedHandler;
-  }
+    const errorDefinition: Model.EventDefinitions.ErrorEventDefinition = this.boundaryEvent.errorEventDefinition;
 
-  // Since ErrorBoundaryEvents can be part of a BoundaryEventChain, they must also implement this method,
-  // so they can tell their decorated handler to abort.
-  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
-    return this._decoratedHandler.interrupt(token, terminate);
-  }
-
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
-    try {
-      // Must use return await here to prevent unhandled rejections.
-      return await this._decoratedHandler.execute(token, processTokenFacade, processModelFacade, identity, this.previousFlowNodeInstanceId);
-    } catch (err) {
-      return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    const modelHasNoErrorDefinition: boolean = !errorDefinition || !errorDefinition.name || errorDefinition.name === '';
+    if (modelHasNoErrorDefinition) {
+      return true;
     }
+
+    const errorNamesMatch: boolean = errorDefinition.name === error.name;
+    // The error code is optional and must only be evaluated, if the definition contains it.
+    const errorCodesMatch: boolean =
+      (!errorDefinition.code || errorDefinition.code === '') ||
+      errorDefinition.code === (error as Runtime.Types.BpmnError).code;
+
+    return errorNamesMatch && errorCodesMatch;
   }
 
-  protected async resumeInternally(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   processModelFacade: IProcessModelFacade,
-                                   identity: IIdentity,
-                                  ): Promise<NextFlowNodeInfo> {
+  public async waitForTriggeringEvent(
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    attachedFlowNodeInstanceId: string,
+  ): Promise<void> {
 
-    try {
-      // Must use return await here to prevent unhandled rejections.
-      return await this._decoratedHandler.resume(flowNodeInstance, processTokenFacade, processModelFacade, identity);
-    } catch (err) {
-      const onEnterToken: Runtime.Types.ProcessToken = flowNodeInstance.getTokenByType(Runtime.Types.ProcessTokenType.onEnter);
+    await this.persistOnEnter(token);
 
-      return this.getNextFlowNodeInfo(onEnterToken, processTokenFacade, processModelFacade);
-    }
+    this._attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
   }
 }

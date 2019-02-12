@@ -3,17 +3,15 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   eventAggregatorSettings,
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
   MessageEventReachedMessage,
   Model,
-  NextFlowNodeInfo,
   ProcessStartedMessage,
   Runtime,
   SignalEventReachedMessage,
@@ -24,17 +22,16 @@ import {FlowNodeHandler} from './index';
 
 export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> {
 
-  private _eventAggregator: IEventAggregator;
   private _timerFacade: ITimerFacade;
 
-  constructor(eventAggregator: IEventAggregator,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              timerFacade: ITimerFacade,
-              startEventModel: Model.Events.StartEvent) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, startEventModel);
-    this._eventAggregator = eventAggregator;
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    timerFacade: ITimerFacade,
+    startEventModel: Model.Events.StartEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, startEventModel);
     this._timerFacade = timerFacade;
     this.logger = new Logger(`processengine:start_event_handler:${startEventModel.id}`);
   }
@@ -43,10 +40,12 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing StartEvent instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -54,11 +53,12 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                      ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
     const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
@@ -85,16 +85,16 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       await this.persistOnResume(onSuspendToken);
     }
 
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+    return processModelFacade.getNextFlowNodesFor(this.startEvent);
   }
 
   protected async _executeHandler(token: Runtime.Types.ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity): Promise<NextFlowNodeInfo> {
+                                  identity: IIdentity): Promise<Array<Model.Base.FlowNode>> {
 
     this._sendProcessStartedMessage(identity, token, this.startEvent.id);
 
@@ -122,10 +122,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       await this.persistOnResume(token);
     }
 
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, token.payload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return processModelFacade.getNextFlowNodesFor(this.startEvent);
   }
 
   /**
@@ -144,7 +144,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       identity,
       token.payload);
 
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
 
     const processStartedBaseName: string = eventAggregatorSettings.messagePaths.processInstanceStarted;
     const processModelIdParam: string = eventAggregatorSettings.messageParams.processModelId;
@@ -152,7 +152,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       processStartedBaseName
         .replace(processModelIdParam, token.processModelId);
 
-    this._eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
+    this.eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
   }
 
   private async _suspendAndWaitForMessage(currentToken: Runtime.Types.ProcessToken): Promise<any> {
@@ -190,7 +190,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageDefinitionName);
 
-    this._eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
+    this.eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
       const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
       const tokenToReturn: any = messageHasPayload
         ? messageEventPayload.currentToken
@@ -214,7 +214,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
       .replace(eventAggregatorSettings.messageParams.signalReference, signalDefinitionName);
 
-    this._eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
+    this.eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
       const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
       const tokenToReturn: any = signalHasPayload
         ? signalEventPayload.currentToken
@@ -244,7 +244,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
       const cancelSubscription: boolean = timerSubscription && timerType !== TimerDefinitionType.cycle;
       if (cancelSubscription) {
-        this._eventAggregator.unsubscribe(timerSubscription);
+        this.eventAggregator.unsubscribe(timerSubscription);
       }
 
       resolveFunc(currentToken.payload);

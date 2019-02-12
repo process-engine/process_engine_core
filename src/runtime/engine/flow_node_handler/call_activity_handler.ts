@@ -1,19 +1,17 @@
 import {Logger} from 'loggerhythm';
 
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {DataModels as ConsumerApiTypes, IConsumerApi} from '@process-engine/consumer_api_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   ICorrelationService,
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -25,14 +23,16 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
   private _correlationService: ICorrelationService;
   private _resumeProcessService: IResumeProcessService;
 
-  constructor(consumerApiService: IConsumerApi,
-              correlationService: ICorrelationService,
-              flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingApiService: ILoggingApi,
-              metricsService: IMetricsApi,
-              resumeProcessService: IResumeProcessService,
-              callActivityModel: Model.Activities.CallActivity) {
-    super(flowNodeInstanceService, loggingApiService, metricsService, callActivityModel);
+  constructor(
+    consumerApiService: IConsumerApi,
+    correlationService: ICorrelationService,
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    resumeProcessService: IResumeProcessService,
+    callActivityModel: Model.Activities.CallActivity,
+    ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, callActivityModel);
     this._consumerApiService = consumerApiService;
     this._correlationService = correlationService;
     this._resumeProcessService = resumeProcessService;
@@ -48,10 +48,12 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     return Promise.resolve();
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing CallActivity instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
@@ -59,12 +61,13 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(flowNodeInstance: Runtime.Types.FlowNodeInstance,
-                                        onSuspendToken: Runtime.Types.ProcessToken,
-                                        processTokenFacade: IProcessTokenFacade,
-                                        processModelFacade: IProcessModelFacade,
-                                        identity: IIdentity,
-                                      ): Promise<NextFlowNodeInfo> {
+  protected async _continueAfterSuspend(
+    flowNodeInstance: Runtime.Types.FlowNodeInstance,
+    onSuspendToken: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     // First we need to find out if the Subprocess was already started.
     const correlation: Runtime.Types.Correlation
@@ -97,17 +100,18 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     onSuspendToken.payload = callActivityResult;
     await this.persistOnResume(onSuspendToken);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, callActivityResult);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
     await this.persistOnExit(onSuspendToken);
 
-    return this.getNextFlowNodeInfo(onSuspendToken, processTokenFacade, processModelFacade);
+    return processModelFacade.getNextFlowNodesFor(this.callActivity);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade,
-                                  identity: IIdentity,
-                                 ): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
@@ -119,10 +123,10 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     token.payload = processStartResponse.tokenPayload;
 
     await this.persistOnResume(token);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, processStartResponse.tokenPayload);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, processStartResponse.tokenPayload);
     await this.persistOnExit(token);
 
-    return this.getNextFlowNodeInfo(token, processTokenFacade, processModelFacade);
+    return processModelFacade.getNextFlowNodesFor(this.callActivity);
   }
 
   /**
@@ -158,11 +162,12 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
    * @param processTokenFacade The Facade for accessing the current process' tokens.
    * @param token              The current ProcessToken.
    */
-  private async _executeSubprocess(identity: IIdentity,
-                                   startEventId: string,
-                                   processTokenFacade: IProcessTokenFacade,
-                                   token: Runtime.Types.ProcessToken ,
-                                  ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
+  private async _executeSubprocess(
+    identity: IIdentity,
+    startEventId: string,
+    processTokenFacade: IProcessTokenFacade,
+    token: Runtime.Types.ProcessToken,
+  ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
 
     const tokenData: any = processTokenFacade.getOldTokenFormat();
 

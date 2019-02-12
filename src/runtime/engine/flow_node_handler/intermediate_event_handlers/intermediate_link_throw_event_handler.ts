@@ -1,16 +1,14 @@
 import {Logger} from 'loggerhythm';
 
 import {BadRequestError, NotFoundError} from '@essential-projects/errors_ts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {ILoggingApi} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  IFlowNodeInstanceService,
+  IFlowNodeHandlerFactory,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   Model,
-  NextFlowNodeInfo,
   Runtime,
 } from '@process-engine/process_engine_contracts';
 
@@ -18,11 +16,13 @@ import {FlowNodeHandler} from '../index';
 
 export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateCatchEvent> {
 
-  constructor(flowNodeInstanceService: IFlowNodeInstanceService,
-              loggingService: ILoggingApi,
-              metricsService: IMetricsApi,
-              linkThrowEventModel: Model.Events.IntermediateCatchEvent) {
-    super(flowNodeInstanceService, loggingService, metricsService, linkThrowEventModel);
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodeHandlerFactory: IFlowNodeHandlerFactory,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    linkThrowEventModel: Model.Events.IntermediateCatchEvent,
+  ) {
+    super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, linkThrowEventModel);
     this.logger = Logger.createLogger(`processengine:link_throw_event_handler:${linkThrowEventModel.id}`);
   }
 
@@ -30,10 +30,12 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     return super.flowNode;
   }
 
-  protected async executeInternally(token: Runtime.Types.ProcessToken,
-                                    processTokenFacade: IProcessTokenFacade,
-                                    processModelFacade: IProcessModelFacade,
-                                    identity: IIdentity): Promise<NextFlowNodeInfo> {
+  protected async executeInternally(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
 
     this.logger.verbose(`Executing LinkThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
@@ -41,9 +43,11 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     return await this._executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
-                                  processTokenFacade: IProcessTokenFacade,
-                                  processModelFacade: IProcessModelFacade): Promise<NextFlowNodeInfo> {
+  protected async _executeHandler(
+    token: Runtime.Types.ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+  ): Promise<Array<Model.Base.FlowNode>> {
     const matchingCatchEvents: Array<Model.Events.IntermediateCatchEvent> =
       processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
 
@@ -52,10 +56,10 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     // LinkEvents basically work like SequenceFlows, in that they do nothing but direct
     // the ProcessInstance to another FlowNode.
     // So we can just return the retrieved CatchEvent as a next FlowNode and exit.
-    processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, token.payload);
+    processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, this.flowNodeInstanceId, {});
     await this.persistOnExit(token);
 
-    return new NextFlowNodeInfo(matchingCatchEvent, token, processTokenFacade);
+    return [matchingCatchEvent];
   }
 
   private async _getMatchingCatchEvent(

@@ -43,10 +43,13 @@ describe('Process Model Facade', () => {
 
       await fixture.assertFlowNodes([
         'ausserordentlicher_start',
-        'ExclusiveGateway_1gvf165',
-        'ExclusiveGateway_1avo21q',
+        'ExclusiveSplitGateway_1',
+        'ExclusiveJoinGateway_1',
+        'ParallelSplitGateway_1',
         'Task_1tfjjzx',
-        'ExclusiveGateway_1rtxky2',
+        'Task_0a4b1bm',
+        'Task_0bbikg1',
+        'ParallelJoinGateway_1',
         'EndEvent_0eie6q6',
       ]);
     });
