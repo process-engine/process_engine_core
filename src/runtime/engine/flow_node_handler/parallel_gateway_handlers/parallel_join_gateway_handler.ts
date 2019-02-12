@@ -95,8 +95,8 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
 
     token.payload = aggregatedResults;
 
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, aggregatedResults);
     await this.persistOnExit(token);
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, aggregatedResults);
 
     this._removeInstanceFromIocContainer(token);
 

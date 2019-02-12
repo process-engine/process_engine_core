@@ -100,7 +100,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
       await this.persistOnResume(token);
 
-      processTokenFacade.addResultForFlowNode(this.manualTask.id, manualTaskResult);
+      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
       await this.persistOnExit(token);
 
       this._sendManualTaskFinishedNotification(identity, token);

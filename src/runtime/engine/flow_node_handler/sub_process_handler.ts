@@ -88,7 +88,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     onSuspendToken.payload = subProcessResult;
     await this.persistOnResume(onSuspendToken);
 
-    processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
+    processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
     await this.persistOnExit(onSuspendToken);
 
     return processModelFacade.getNextFlowNodesFor(this.subProcess);
@@ -119,7 +119,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
           token.payload = subProcessResult;
           await this.persistOnResume(token);
 
-          processTokenFacade.addResultForFlowNode(this.subProcess.id, subProcessResult);
+          processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
           await this.persistOnExit(token);
 
           const nextFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.subProcess);
@@ -211,10 +211,10 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
       new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
 
     subProcessTokenFacade.importResults(currentResults);
-    subProcessTokenFacade.addResultForFlowNode(subProcessStartEvent.id, currentProcessToken.payload);
 
     const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
     subProcessToken.caller = currentProcessToken.processInstanceId;
+    subProcessToken.payload = currentProcessToken.payload;
 
     const processInstanceConfig: IProcessInstanceConfig = {
       processInstanceId: subProcessInstanceId,

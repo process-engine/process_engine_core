@@ -102,7 +102,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         });
       }
     } catch (error) {
-      processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
+      const allResults: Array<IProcessTokenResult> = processTokenFacade.getAllResults();
+      // This check is necessary to prevent duplicate entries,
+      // in case the Promise-Chain was broken further down the road.
+      const noResultStoredYet: boolean = !allResults.some((entry: IProcessTokenResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+      if (noResultStoredYet) {
+        processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
+      }
       throw error;
     }
   }
@@ -177,7 +183,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         });
       }
     } catch (error) {
-      processTokenFacade.addResultForFlowNode(this.flowNode.id, error);
+      const allResults: Array<IProcessTokenResult> = processTokenFacade.getAllResults();
+      // This check is necessary to prevent duplicate entries,
+      // in case the Promise-Chain was broken further down the road.
+      const noResultStoredYet: boolean = !allResults.some((entry: IProcessTokenResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+      if (noResultStoredYet) {
+        processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
+      }
       throw error;
     }
   }
@@ -373,7 +385,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, onSuspendToken.payload);
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, onSuspendToken.payload);
     await this.persistOnResume(onSuspendToken);
     await this.persistOnExit(onSuspendToken);
 
@@ -399,7 +411,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, resumeToken.payload);
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, resumeToken.payload);
     await this.persistOnExit(resumeToken);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
@@ -427,7 +439,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, onExitToken.payload);
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, onExitToken.payload);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }

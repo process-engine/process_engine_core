@@ -56,7 +56,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
     // LinkEvents basically work like SequenceFlows, in that they do nothing but direct
     // the ProcessInstance to another FlowNode.
     // So we can just return the retrieved CatchEvent as a next FlowNode and exit.
-    processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, token.payload);
+    processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, this.flowNodeInstanceId, {});
     await this.persistOnExit(token);
 
     return [matchingCatchEvent];

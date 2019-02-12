@@ -59,7 +59,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     if (serviceTaskHasNoInvocation) {
       this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
 
-      processTokenFacade.addResultForFlowNode(this.serviceTask.id, {});
+      processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, {});
       token.payload = {};
 
       await this.persistOnExit(token);
@@ -84,7 +84,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         this.logger.verbose('Executing internal ServiceTask');
         const result: any = await executionPromise;
 
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
 
         await this.persistOnExit(token);

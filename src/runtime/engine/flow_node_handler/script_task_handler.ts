@@ -56,7 +56,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
         const executionPromise: Promise<any> = this._executeScriptTask(processTokenFacade, identity);
 
         this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
-          processTokenFacade.addResultForFlowNode(this.scriptTask.id, interruptionToken.payload);
+          processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, interruptionToken.payload);
           executionPromise.cancel();
           handlerPromise.cancel();
 
@@ -64,7 +64,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
         };
         result = await executionPromise;
 
-        processTokenFacade.addResultForFlowNode(this.scriptTask.id, result);
+        processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
         await this.persistOnExit(token);
 

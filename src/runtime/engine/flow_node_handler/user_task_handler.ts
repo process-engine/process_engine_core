@@ -100,7 +100,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       await this.persistOnResume(token);
 
-      processTokenFacade.addResultForFlowNode(this.userTask.id, userTaskResult);
+      processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
       await this.persistOnExit(token);
 
       this._sendUserTaskFinishedNotification(identity, token);

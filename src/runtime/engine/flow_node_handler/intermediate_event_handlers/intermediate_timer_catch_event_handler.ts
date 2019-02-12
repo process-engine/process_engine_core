@@ -83,7 +83,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
 
       this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
-        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, interruptionToken);
+        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
         if (this.timerSubscription) {
           this._timerFacade.cancelTimerSubscription(this.timerSubscription);
@@ -97,7 +97,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
 
       await timerPromise;
 
-      processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, token.payload);
+      processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, token.payload);
 
       await this.persistOnResume(token);
       await this.persistOnExit(token);

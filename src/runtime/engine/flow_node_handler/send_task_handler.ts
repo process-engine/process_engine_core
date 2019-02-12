@@ -79,6 +79,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       const onResponseReceivedCallback: Function = async(): Promise<void> => {
 
+        processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
@@ -136,7 +137,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
                                      this.sendTask.id,
                                      this.flowNodeInstanceId,
                                      identity,
-                                     token);
+                                     token.payload);
 
     this.eventAggregator.publish(messageEventName, messageToSend);
   }

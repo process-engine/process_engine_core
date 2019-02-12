@@ -85,7 +85,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       await this.persistOnResume(onSuspendToken);
     }
 
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, onSuspendToken.payload);
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
 
     return processModelFacade.getNextFlowNodesFor(this.startEvent);
@@ -122,7 +122,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
       await this.persistOnResume(token);
     }
 
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, token.payload);
+    processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, token.payload);
     await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.startEvent);

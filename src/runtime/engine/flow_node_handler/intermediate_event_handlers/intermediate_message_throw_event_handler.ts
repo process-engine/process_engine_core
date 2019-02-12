@@ -69,6 +69,8 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     this.eventAggregator.publish(messageEventName, message);
     this.logger.verbose(`Done.`);
 
+    processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, this.flowNodeInstanceId, {});
+
     await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.messageThrowEvent);

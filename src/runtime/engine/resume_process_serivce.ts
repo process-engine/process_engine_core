@@ -176,7 +176,7 @@ export class ResumeProcessService implements IResumeProcessService {
       new ProcessTokenFacade(processInstanceId, processModel.id, startEventInstance.correlationId, identity);
 
     const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialToken.payload);
-    processTokenFacade.addResultForFlowNode(startEvent.id, initialToken.payload);
+    processToken.payload = initialToken.payload;
 
     const processInstanceConfig: IProcessInstanceConfig = {
       correlationId: startEventInstance.correlationId,

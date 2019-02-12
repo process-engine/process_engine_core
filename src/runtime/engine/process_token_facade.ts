@@ -46,9 +46,10 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return token;
   }
 
-  public addResultForFlowNode(flowNodeId: string, result: any): void {
+  public addResultForFlowNode(flowNodeId: string, flowNodeInstanceId: string, result: any): void {
     const processTokenResult: IProcessTokenResult = {
       flowNodeId: flowNodeId,
+      flowNodeInstanceId: flowNodeInstanceId,
       result: result,
     };
     this.processTokenResults.push(processTokenResult);

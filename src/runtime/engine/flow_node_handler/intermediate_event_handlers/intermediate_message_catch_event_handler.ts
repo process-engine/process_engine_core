@@ -80,7 +80,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
 
       this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
-        processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, interruptionToken);
+        processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
         if (this.subscription) {
           this.eventAggregator.unsubscribe(this.subscription);
@@ -97,7 +97,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
       token.payload = receivedMessage.currentToken;
       await this.persistOnResume(token);
 
-      processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, receivedMessage.currentToken);
+      processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
       const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);

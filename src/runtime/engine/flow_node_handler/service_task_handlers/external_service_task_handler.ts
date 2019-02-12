@@ -74,7 +74,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         const result: any = await externalTaskExecutorPromise;
 
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         onSuspendToken.payload = result;
         await this.persistOnExit(onSuspendToken);
 
@@ -97,7 +97,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         onSuspendToken.payload = result;
 
         await this.persistOnResume(onSuspendToken);
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, onSuspendToken.payload);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, onSuspendToken.payload);
         await this.persistOnExit(onSuspendToken);
 
         const nextFlowNode: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
@@ -159,7 +159,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         };
         const result: any = await externalTaskExecutorPromise;
 
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, result);
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
 
         await this.persistOnExit(token);
