@@ -146,9 +146,11 @@ export class AutoStartService implements IAutoStartService {
   }
 
   /**
-   * Filters a given list of ProcessModels by a given event definition and event name.
+   * Filters a given list of ProcessModels by a given event definition and
+   * event name.
    *
-   * Only ProcessModels that have at least one matching StartEvent are returned.
+   * Only ProcessModels that are executable and have at least one matching
+   * StartEvent are returned.
    *
    * @param   processModels               The ProcessModels to filter.
    * @param   expectedEventDefinitionName The name of the EventDefinition to
@@ -164,12 +166,15 @@ export class AutoStartService implements IAutoStartService {
 
     const matches: Array<Model.Types.Process> = processModels.filter((processModel: Model.Types.Process) => {
 
-      return processModel.flowNodes.some((flowNode: Model.Base.FlowNode) => {
+      const hasMatchingStartEvents: boolean =
+        processModel.flowNodes.some((flowNode: Model.Base.FlowNode) => {
 
-        return flowNode.bpmnType === BpmnType.startEvent &&
-          flowNode[expectedEventDefinitionName] !== undefined &&
-          flowNode[expectedEventDefinitionName].name === eventName;
-      });
+          return flowNode.bpmnType === BpmnType.startEvent &&
+            flowNode[expectedEventDefinitionName] !== undefined &&
+            flowNode[expectedEventDefinitionName].name === eventName;
+        });
+
+      return processModel.isExecutable && hasMatchingStartEvents;
     });
 
     return matches.map((match: Model.Types.Process) => match.id);
