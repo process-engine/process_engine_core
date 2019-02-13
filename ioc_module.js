@@ -250,7 +250,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('StartEventHandler', StartEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'TimerFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('SubProcessHandler', SubProcessHandler)
