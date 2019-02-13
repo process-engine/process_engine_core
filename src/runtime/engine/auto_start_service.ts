@@ -19,7 +19,7 @@ export class AutoStartService implements IAutoStartService {
   private readonly _identityService: IIdentityService;
   private readonly _processModelService: IProcessModelService;
 
-  private _eventSubscriptions: Array<Subscription>;
+  private _eventSubscriptions: Array<Subscription> = [];
   private _internalIdentity: IIdentity;
 
   constructor(
