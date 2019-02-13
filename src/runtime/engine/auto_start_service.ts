@@ -6,6 +6,8 @@ import {
   IAutoStartService,
   IExecuteProcessService,
   IProcessModelService,
+  MessageEventReachedMessage,
+  SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 
 export class AutoStartService implements IAutoStartService {
@@ -68,11 +70,11 @@ export class AutoStartService implements IAutoStartService {
     this._eventSubscriptions = [];
   }
 
-  private _onMessageReceived(eventData: any): Promise<void> {
+  private _onMessageReceived(eventData: MessageEventReachedMessage): Promise<void> {
 
   }
 
-  private _onSignalReceived(eventData: any): Promise<void> {
+  private _onSignalReceived(eventData: SignalEventReachedMessage): Promise<void> {
 
   }
 }
