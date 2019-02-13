@@ -35,12 +35,12 @@ export class AutoStartService implements IAutoStartService {
   }
 
   public async initialize(): Promise<void> {
-    // TODO: As soon as it is available, this should be replaced
-    // with a token that was actually created by an external authority.
-    //
     // This identity is only used to ensure that the Service can retrieve full ProcessModels.
-    // the identity send with an event may not be sufficient to do that, because of possible
-    // access restriction to lanes.
+    // The identity send with an event may not be sufficient to do that,
+    // because of possible access restriction to lanes.
+    //
+    // Note that the users identity is still used to determine which ProcessModels are to be triggerd
+    // when an event is received.
     const dummyToken: string = 'ZHVtbXlfdG9rZW4=';
     this._internalIdentity = await this._identityService.getIdentity(dummyToken);
   }
