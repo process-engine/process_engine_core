@@ -15,7 +15,7 @@ export class AutoStartService implements IAutoStartService {
   private readonly _identityService: IIdentityService;
   private readonly _processModelService: IProcessModelService;
 
-  private readonly _eventSubscriptions: Array<Subscription>;
+  private _eventSubscriptions: Array<Subscription>;
 
   private _internalIdentity: IIdentity;
 
@@ -39,10 +39,40 @@ export class AutoStartService implements IAutoStartService {
   }
 
   public async start(): Promise<void> {
+    this._startListeningForEvents();
+
     return Promise.resolve();
   }
 
   public async stop(): Promise<void> {
+    this._stopListeningForEvents();
+
     return Promise.resolve();
+  }
+
+  private _startListeningForEvents(): void {
+
+    const subscriptionForSignals: Subscription =
+      this._eventAggregator.subscribe(eventAggregatorSettings.messagePaths.signalTriggered, this._onSignalReceived);
+
+    const subscriptionForMessages: Subscription =
+      this._eventAggregator.subscribe(eventAggregatorSettings.messagePaths.messageTriggered, this._onMessageReceived);
+
+    this._eventSubscriptions = [subscriptionForSignals, subscriptionForMessages];
+  }
+
+  private _stopListeningForEvents(): void {
+    for (const subscription of this._eventSubscriptions) {
+      this._eventAggregator.unsubscribe(subscription);
+    }
+    this._eventSubscriptions = [];
+  }
+
+  private _onMessageReceived(eventData: any): Promise<void> {
+
+  }
+
+  private _onSignalReceived(eventData: any): Promise<void> {
+
   }
 }
