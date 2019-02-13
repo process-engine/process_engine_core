@@ -62,6 +62,14 @@ export class AutoStartService implements IAutoStartService {
     this._eventSubscriptions.push(subscription);
   }
 
+  /**
+   * Callback function for handling Messages.
+   * Finds and starts all ProcessModels that contain StartEvents with a
+   * matching MessageDefinition.
+   *
+   * @async
+   * @param eventData The payload received with the MessageEvent.
+   */
   private async _onMessageReceived(eventData: MessageEventReachedMessage): Promise<void> {
     // This list contains all ProcessModels that the User that triggered the Event has access to.
     const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelService.getProcessModels(eventData.processInstanceOwner);
@@ -80,6 +88,14 @@ export class AutoStartService implements IAutoStartService {
     );
   }
 
+  /**
+   * Callback function for handling Signals.
+   * Finds and starts all ProcessModels that contain StartEvents with a
+   * matching SignalDefinition.
+   *
+   * @async
+   * @param eventData The payload received with the SignalEvent.
+   */
   private async _onSignalReceived(eventData: SignalEventReachedMessage): Promise<void> {
     // This list contains all ProcessModels that the User that triggered the Event has access to.
     const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelService.getProcessModels(eventData.processInstanceOwner);
@@ -98,6 +114,17 @@ export class AutoStartService implements IAutoStartService {
     );
   }
 
+  /**
+   * Filters a given list of ProcessModels by a given event definition and event name.
+   *
+   * Only ProcessModels that have at least one matching StartEvent are returned.
+   *
+   * @param   processModels               The ProcessModels to filter.
+   * @param   expectedEventDefinitionName The name of the EventDefinition to
+   *                                      look for.
+   * @param   eventName                   The event name to look for.
+   * @returns                             The filtered ProcessModels.
+   */
   private _getProcessModelsWithMatchingStartEvents(
     processModels: Array<Model.Types.Process>,
     expectedEventDefinitionName: string,
@@ -115,6 +142,24 @@ export class AutoStartService implements IAutoStartService {
     });
   }
 
+  /**
+   * Takes a list of ProcessModels and starts new ProcessInstances for each of them,
+   * using the given identity, correlationid and payload as parameters.
+   *
+   * Note that the execution of the ProcessInstances is NOT awaited.
+   *
+   * @async
+   * @param processModels               The ProcessModels to start.
+   * @param identityToUse               The Identity with which to start the
+   *                                    new instances.
+   * @param eventDefinitionPropertyName The name of the property containing the
+   *                                    matching event definition.
+   * @param eventName                   The name of the event that matching
+   *                                    StartEvents must have.
+   * @param correlationId               The ID of the correlation in which to
+   *                                    run the new instances.
+   * @param payload                     The payload to use as initial token value.
+   */
   private async _startProcessInstances(
     processModels: Array<Model.Types.Process>,
     identityToUse: IIdentity,
