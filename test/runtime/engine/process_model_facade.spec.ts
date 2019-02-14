@@ -28,7 +28,7 @@ describe('Process Model Facade', () => {
       const vorgangAnlegen: Model.Activities.ServiceTask = fixture.getFlowNodeById<Model.Activities.ServiceTask>('Task_01xg9lr');
       const invocation: Model.Activities.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.MethodInvocation;
 
-      should(invocation.module).be.eql('HttpService');
+      should(invocation.module).be.eql('HttpClient');
       should(invocation.method).be.eql('post');
       should(invocation.params).be.eql('[\'http://localhost:5000/api/vorgaenge/anlegen\', token.history.VorgangErfassen]');
     });

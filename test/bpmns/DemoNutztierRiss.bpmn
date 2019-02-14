@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
-    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
-    xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
-    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
     xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definition_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.0">
     <bpmn:collaboration id="Collaboration_1cidyxu" name="">
         <bpmn:participant id="Participant_0px403d" name="Wolfbüro" processRef="DemoNutztierRiss">
@@ -116,7 +116,7 @@
             <bpmn:extensionElements>
                 <camunda:executionListener class="" event="" />
                 <camunda:properties>
-                    <camunda:property name="module" value="HttpService" />
+                    <camunda:property name="module" value="HttpClient" />
                     <camunda:property name="method" value="post" />
                     <camunda:property name="params" value="[&#39;http://localhost:5000/api/vorgaenge/anlegen&#39;, token.history.VorgangErfassen]" />
                 </camunda:properties>
@@ -131,7 +131,7 @@
                 <camunda:properties />
                 <camunda:properties />
                 <camunda:properties>
-                    <camunda:property name="module" value="HttpService" />
+                    <camunda:property name="module" value="HttpClient" />
                     <camunda:property name="method" value="put" />
                     <camunda:property name="params" value="[&#39;http://localhost:5000/api/vorgaenge/freigeben&#39;, { &#39;nummer&#39;: token.history.VorgangErfassen.nummer }]" />
                 </camunda:properties>
@@ -152,7 +152,7 @@
             <bpmn:extensionElements>
                 <camunda:executionListener class="" event="" />
                 <camunda:properties>
-                    <camunda:property name="module" value="HttpService" />
+                    <camunda:property name="module" value="HttpClient" />
                     <camunda:property name="method" value="put" />
                     <camunda:property name="params" value="[&#39;http://localhost:5000/api/vorgaenge/addnotiz&#39;, { &#39;nummer&#39;: token.history.VorgangErfassen.nummer, &#39;notiz&#39;: token.current.notiz }]" />
                 </camunda:properties>
