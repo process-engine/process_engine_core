@@ -259,10 +259,12 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
       this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
+
+      await this._correlationService.finishCorrelation(identity, processInstanceConfig.correlationId);
     } catch (error) {
       this
         ._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
-      this._correlationService.finishWithError(identity, processInstanceConfig.correlationId, error);
+      await this._correlationService.finishWithError(identity, processInstanceConfig.correlationId, error);
       throw error;
     }
   }
