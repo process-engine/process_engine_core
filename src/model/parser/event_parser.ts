@@ -283,7 +283,7 @@ function validateTimer(rawTimerDefinition: any, ignoreCyclic: boolean): void {
 
 function validateTimerValue(timerType: TimerDefinitionType, timerValue: string, ignoreCyclic: boolean): void {
   switch (timerType) {
-    case TimerDefinitionType.date: {
+    case TimerDefinitionType.date:
       const dateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
       if (dateIsInvalid) {
         const errorMessage: string = `The given date definition ${timerValue} is not in ISO8601 format`;
@@ -291,9 +291,7 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string, 
       }
 
       break;
-    }
-
-    case TimerDefinitionType.duration: {
+    case TimerDefinitionType.duration:
       /**
        * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
        * we can't really use momentjs to validate durations against the
@@ -316,27 +314,17 @@ function validateTimerValue(timerType: TimerDefinitionType, timerValue: string, 
       }
 
       break;
-    }
-
-    case TimerDefinitionType.cycle: {
-
+    case TimerDefinitionType.cycle:
       /**
        * Cyclic timers are safe, as long as there is at least one other StartEvent present.
        */
       if (ignoreCyclic) {
-        const logger: Logger = Logger.createLogger('processengine:runtime:model:parser:event_parser');
-        logger.warn('Cyclic Timer Events are currently not supported.');
-        logger.warn('The defined Timer Start Event will currently never be executed!');
-
         return;
       }
 
       throw new UnprocessableEntityError('Cyclic timer definitions are currently unsupported!');
-    }
-
-    default: {
+    default:
       throw new UnprocessableEntityError('Unknown Timer definition type');
-    }
   }
 }
 
