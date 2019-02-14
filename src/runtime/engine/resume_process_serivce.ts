@@ -135,10 +135,12 @@ export class ResumeProcessService implements IResumeProcessService {
       // continue to run normally; i.e. all following FlowNodes will be 'executed' and no longer 'resumed'.
       this._logProcessResumed(processInstanceConfig.correlationId, processModelId, processInstanceId);
       const result: any = await this._resumeProcessInstance(identity, processInstanceConfig, flowNodeInstancesForProcessInstance);
+      this._correlationService.finishCorrelation(identity, processInstanceConfig.correlationId);
       this._logProcessFinished(processInstanceConfig.correlationId, processModelId, processInstanceId);
 
       return result;
     } catch (error) {
+      this._correlationService.finishWithError(identity, processInstanceConfig.correlationId, error);
       this._logProcessError(processInstanceConfig.correlationId, processModelId, processInstanceId, error);
       throw error;
     }
@@ -152,7 +154,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
     const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
 
-    const processModelCorrelation: Runtime.Types.CorrelationProcessModel = correlation.processModels[0];
+    const processModelCorrelation: Runtime.Types.CorrelationProcessInstance = correlation.processModels[0];
 
     const processModelDefinitions: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
     const processModel: Model.Types.Process = processModelDefinitions.processes[0];

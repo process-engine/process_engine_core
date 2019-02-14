@@ -91,7 +91,7 @@ function registerServices(container) {
 
   container
     .register('CorrelationService', CorrelationService)
-    .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'IamService', 'ProcessDefinitionRepository');
+    .dependencies('CorrelationRepository', 'IamService', 'ProcessDefinitionRepository');
 
   container
     .register('DeleteProcessModelService', DeleteProcessModelService)
