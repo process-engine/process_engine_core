@@ -73,7 +73,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       if (flowNodeIsTerminateEndEvent) {
         this._notifyAboutTermination(identity, token);
       } else if (flowNodeIsErrorEndEvent) {
-        errorObj = this._createErrorForEndEvent();
+        errorObj = this._createBpmnError();
       } else if (flowNodeIsMessageEndEvent) {
         this._sendMessage(identity, token);
       } else if (flowNodeIsSignalEndEvent) {
@@ -93,6 +93,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   }
 
   /**
+   * When an ErrorEndEvent is used, this will reate an error object with which
+   * to end the process.
+   * The process will not be finished regularly in this case.
+   *
+   * @param identity The identity that owns the EndEvent instance.
+   * @param token    The current ProcessToken.
+   */
+  private _createBpmnError(): Runtime.Types.BpmnError {
+    return new Runtime.Types.BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
+  }
+
+  /**
    * When a MessageEndEvent is used, an event with the corresponding message is
    * published to the EventAggregator.
    * Afterwards, the process finishes regularly.
@@ -102,7 +114,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    */
   private _sendMessage(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
-    // Send message to processes that may be waiting for it.
     const messageName: string = this.endEvent.messageEventDefinition.name;
 
     const eventName: string = eventAggregatorSettings.messagePaths.messageEventReached
@@ -116,7 +127,10 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                this.flowNodeInstanceId,
                                                                                identity,
                                                                                token.payload);
+    // Message-specific notification
     this.eventAggregator.publish(eventName, message);
+    // General message notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.messageTriggered, message);
 
     this._notifyAboutRegularEnd(identity, token);
   }
@@ -131,7 +145,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    */
   private _sendSignal(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
 
-    // Send message to processes that may be waiting for it.
     const signalName: string = this.endEvent.signalEventDefinition.name;
 
     const eventName: string = eventAggregatorSettings.messagePaths.signalEventReached
@@ -145,7 +158,10 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                              this.flowNodeInstanceId,
                                                                              identity,
                                                                              token.payload);
+    // Signal-specific notification
     this.eventAggregator.publish(eventName, message);
+    // General signal notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.signalTriggered, message);
 
     this._notifyAboutRegularEnd(identity, token);
   }
@@ -171,22 +187,10 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                          this.flowNodeInstanceId,
                                                                                          identity,
                                                                                          token.payload);
+    // ProcessInstance specific notification
     this.eventAggregator.publish(eventName, message);
-
-    // Send global message about a reached TerminateEndEvent
+    // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
-  }
-
-  /**
-   * When an ErrorEndEvent is used, this will reate an error object with which
-   * to end the process.
-   * The process will not be finished regularly in this case.
-   *
-   * @param identity The identity that owns the EndEvent instance.
-   * @param token    The current ProcessToken.
-   */
-  private _createErrorForEndEvent(): Runtime.Types.BpmnError {
-    return new Runtime.Types.BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
   }
 
   /**
@@ -209,9 +213,9 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                        this.flowNodeInstanceId,
                                                                        identity,
                                                                        token.payload);
+    // ProcessInstance specific notification
     this.eventAggregator.publish(processEndMessageName, message);
-
-    // Send global message about a reached EndEvent
+    // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
 }
