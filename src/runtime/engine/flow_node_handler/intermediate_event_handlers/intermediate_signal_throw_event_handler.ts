@@ -66,7 +66,10 @@ export class IntermediateSignalThrowEventHandler extends FlowNodeHandler<Model.E
                                                                              token.payload);
 
     this.logger.verbose(`SignalThrowEvent instance ${this.flowNodeInstanceId} now sending signal ${signalName}...`);
+    // Signal-specific notification
     this.eventAggregator.publish(signalEventName, message);
+    // General notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.signalTriggered, message);
     this.logger.verbose(`Done.`);
 
     processTokenFacade.addResultForFlowNode(this.signalThrowEvent.id, this.flowNodeInstanceId, {});

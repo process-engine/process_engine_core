@@ -34,16 +34,16 @@ const {
 } = require('./dist/commonjs/index');
 
 const {
+  AutoStartService,
   CorrelationService,
+  DeleteProcessModelService,
+  ExecuteProcessService,
   FlowNodeInstanceService,
   FlowNodePersistenceFacade,
-  DeleteProcessModelService,
   ProcessModelService,
+  ResumeProcessService,
   TimerFacade,
 } = require('./dist/commonjs/index');
-
-const {ExecuteProcessService} = require('./dist/commonjs/index');
-const {ResumeProcessService} = require('./dist/commonjs/index');
 
 const {
   BoundaryEventHandlerFactory,
@@ -66,6 +66,11 @@ function registerInContainer(container) {
 function registerServices(container) {
 
   container.register('BpmnModelParser', BpmnModelParser);
+
+  container
+    .register('AutoStartService', AutoStartService)
+    .dependencies('EventAggregator','ExecuteProcessService', 'IdentityService', 'ProcessModelService')
+    .singleton();
 
   container
     .register('ExecuteProcessService', ExecuteProcessService)
@@ -91,7 +96,7 @@ function registerServices(container) {
 
   container
     .register('CorrelationService', CorrelationService)
-    .dependencies('CorrelationRepository', 'FlowNodeInstanceRepository', 'IamService', 'ProcessDefinitionRepository');
+    .dependencies('CorrelationRepository', 'IamService', 'ProcessDefinitionRepository');
 
   container
     .register('DeleteProcessModelService', DeleteProcessModelService)

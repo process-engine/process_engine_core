@@ -10,11 +10,9 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
-  MessageEventReachedMessage,
   Model,
   ProcessStartedMessage,
   Runtime,
-  SignalEventReachedMessage,
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
@@ -60,30 +58,14 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
-    const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
-    const flowNodeIsTimerStartEvent: boolean = this.startEvent.timerEventDefinition !== undefined;
+    // Only TimerStartEvents are suspendable, so no check is required here.
+    const newTokenPayload: any =
+      await new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+        this._waitForTimerToElapse(onSuspendToken, resolve);
+      });
 
-    const isSpecializedStartEvent: boolean = flowNodeIsMessageStartEvent || flowNodeIsSignalStartEvent || flowNodeIsTimerStartEvent;
-
-    // If the StartEvent is not a regular StartEvent,
-    // wait for the defined condition to be fulfilled.
-    if (isSpecializedStartEvent) {
-
-      let newTokenPayload: any =
-        await new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
-          if (flowNodeIsMessageStartEvent) {
-            newTokenPayload = this._waitForMessage(onSuspendToken, resolve);
-          } else if (flowNodeIsSignalStartEvent) {
-            newTokenPayload = this._waitForSignal(onSuspendToken, resolve);
-          } else if (flowNodeIsTimerStartEvent) {
-            newTokenPayload = this._waitForTimerToElapse(onSuspendToken, resolve);
-          }
-        });
-
-      onSuspendToken.payload = newTokenPayload;
-      await this.persistOnResume(onSuspendToken);
-    }
+    onSuspendToken.payload = newTokenPayload;
+    await this.persistOnResume(onSuspendToken);
 
     processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
     await this.persistOnExit(onSuspendToken);
@@ -98,26 +80,11 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     this._sendProcessStartedMessage(identity, token, this.startEvent.id);
 
-    const flowNodeIsMessageStartEvent: boolean = this.startEvent.messageEventDefinition !== undefined;
-    const flowNodeIsSignalStartEvent: boolean = this.startEvent.signalEventDefinition !== undefined;
     const flowNodeIsTimerStartEvent: boolean = this.startEvent.timerEventDefinition !== undefined;
 
-    const isSpecializedStartEvent: boolean = flowNodeIsMessageStartEvent || flowNodeIsSignalStartEvent || flowNodeIsTimerStartEvent;
-
-    // If the StartEvent is not a regular StartEvent,
-    // wait for the defined condition to be fulfilled.
-    if (isSpecializedStartEvent) {
-
-      let newTokenPayload: any = token.payload;
-
-      if (flowNodeIsMessageStartEvent) {
-        newTokenPayload = await this._suspendAndWaitForMessage(token);
-      } else if (flowNodeIsSignalStartEvent) {
-        newTokenPayload = await this._suspendAndWaitForSignal(token);
-      } else if (flowNodeIsTimerStartEvent) {
-        newTokenPayload = await this._suspendAndWaitForTimerToElapse(token);
-      }
-
+    // TimerStartEvents cannot be auto-started yet and must be handled manually here.
+    if (flowNodeIsTimerStartEvent) {
+      const newTokenPayload: any = await this._suspendAndWaitForTimerToElapse(token);
       token.payload = newTokenPayload;
       await this.persistOnResume(token);
     }
@@ -155,72 +122,10 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     this.eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
   }
 
-  private async _suspendAndWaitForMessage(currentToken: Runtime.Types.ProcessToken): Promise<any> {
-    return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
-      this._waitForMessage(currentToken, resolve);
-      await this.persistOnSuspend(currentToken);
-    });
-  }
-
-  private async _suspendAndWaitForSignal(currentToken: Runtime.Types.ProcessToken): Promise<any> {
-    return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
-      this._waitForSignal(currentToken, resolve);
-      await this.persistOnSuspend(currentToken);
-    });
-  }
-
   private async _suspendAndWaitForTimerToElapse(currentToken: Runtime.Types.ProcessToken): Promise<any> {
     return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
       this._waitForTimerToElapse(currentToken, resolve);
       await this.persistOnSuspend(currentToken);
-    });
-  }
-
-  /**
-   * Creates a subscription on the EventAggregator and waits to receive the
-   * message described in the StartEvents event definition.
-   *
-   * @param currentToken The current ProcessToken.
-   * @param resolveFunc  The function to call after the message was received.
-   */
-  private _waitForMessage(currentToken: Runtime.Types.ProcessToken, resolveFunc: Function): void {
-
-    const messageDefinitionName: string = this.startEvent.messageEventDefinition.name;
-
-    const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
-      .replace(eventAggregatorSettings.messageParams.messageReference, messageDefinitionName);
-
-    this.eventAggregator.subscribeOnce(messageEventName, (messageEventPayload: MessageEventReachedMessage) => {
-      const messageHasPayload: boolean = this._checkIfEventPayloadHasToken(messageEventPayload);
-      const tokenToReturn: any = messageHasPayload
-        ? messageEventPayload.currentToken
-        : currentToken.payload;
-
-      resolveFunc(tokenToReturn);
-    });
-  }
-
-  /**
-   * Creates a subscription on the EventAggregator and waits to receive the
-   * signal described in the StartEvents event definition.
-   *
-   * @param currentToken The current ProcessToken.
-   * @param resolveFunc  The function to call after the signal was received.
-   */
-  private _waitForSignal(currentToken: Runtime.Types.ProcessToken, resolveFunc: Function): void {
-
-    const signalDefinitionName: string = this.startEvent.signalEventDefinition.name;
-
-    const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
-      .replace(eventAggregatorSettings.messageParams.signalReference, signalDefinitionName);
-
-    this.eventAggregator.subscribeOnce(signalEventName, (signalEventPayload: SignalEventReachedMessage) => {
-      const signalHasPayload: boolean = this._checkIfEventPayloadHasToken(signalEventPayload);
-      const tokenToReturn: any = signalHasPayload
-        ? signalEventPayload.currentToken
-        : currentToken.payload;
-
-      resolveFunc(tokenToReturn);
     });
   }
 
@@ -251,40 +156,5 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     };
 
     timerSubscription = this._timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
-  }
-
-  /**
-   * Checks if the given message has a valid payload.
-   * This function serves to prevent initial tokens to be accidentally wiped
-   * by an empty message.
-   *
-   * @param   message The message for which to check the payload.
-   * @returns         'true', if a valid payload was send with the message,
-   *                  'false' otherwise.
-   */
-  private _checkIfEventPayloadHasToken(message: SignalEventReachedMessage | MessageEventReachedMessage): boolean {
-
-    const messageHasNoPayload: boolean = !message || !message.currentToken;
-    if (messageHasNoPayload) {
-      return false;
-    }
-
-    const payloadIsEmptyArray: boolean = Array.isArray(message.currentToken) && message.currentToken.length === 0;
-    if (payloadIsEmptyArray) {
-      return false;
-    }
-
-    const payloadIsEmptyObject: boolean = typeof message.currentToken === 'object' &&
-                                          Object.keys(message.currentToken).length === 0;
-    if (payloadIsEmptyObject) {
-      return false;
-    }
-
-    const payloadIsEmptyString: boolean = typeof message.currentToken === 'string' && message.currentToken.length === 0;
-    if (payloadIsEmptyString) {
-      return false;
-    }
-
-    return true;
   }
 }

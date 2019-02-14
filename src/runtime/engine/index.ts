@@ -1,3 +1,4 @@
+export * from './auto_start_service';
 export * from './execute_process_service';
 export * from './flow_node_persistence_facade';
 export * from './process_model_facade';

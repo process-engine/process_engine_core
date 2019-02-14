@@ -66,7 +66,10 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
                                                                                token.payload);
 
     this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
+    // Message-specific notification
     this.eventAggregator.publish(messageEventName, message);
+    // General notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.messageTriggered, message);
     this.logger.verbose(`Done.`);
 
     processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, this.flowNodeInstanceId, {});
