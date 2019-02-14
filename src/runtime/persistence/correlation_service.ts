@@ -53,7 +53,7 @@ export class CorrelationService implements ICorrelationService {
       = await this._correlationRepository.getCorrelationsByState(Runtime.Types.CorrelationState.running);
 
     const filteredCorrelationsFromRepo: Array<Runtime.Types.CorrelationFromRepository>
-      = await this._filterCorrelationsFromRepoByIdentity(identity, activeCorrelationsFromRepo);
+      = this._filterCorrelationsFromRepoByIdentity(identity, activeCorrelationsFromRepo);
 
     const activeCorrelationsForIdentity: Array<Runtime.Types.Correlation>
       = await this._mapCorrelationList(filteredCorrelationsFromRepo);
@@ -145,18 +145,17 @@ export class CorrelationService implements ICorrelationService {
 
   public async deleteCorrelationByProcessModelId(identity: IIdentity, processModelId: string): Promise<void> {
     await this._iamService.ensureHasClaim(identity, canDeleteProcessModel);
-
-    this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
+    await this._correlationRepository.deleteCorrelationByProcessModelId(processModelId);
   }
 
   public async finishCorrelation(identity: IIdentity, correlationId: string): Promise<void> {
     await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
-    this._correlationRepository.finishCorrelation(correlationId);
+    await this._correlationRepository.finishCorrelation(correlationId);
   }
 
   public async finishWithError(identity: IIdentity, correlationId: string, error: Error): Promise<void> {
     await this._iamService.ensureHasClaim(identity, canReadProcessModelClaim);
-    this._correlationRepository.finishWithError(correlationId, error);
+    await this._correlationRepository.finishWithError(correlationId, error);
   }
 
   private _filterCorrelationsFromRepoByIdentity(
