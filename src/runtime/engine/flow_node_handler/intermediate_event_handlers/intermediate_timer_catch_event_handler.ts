@@ -78,32 +78,36 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const timerPromise: Promise<void> = this._executeTimer(processTokenFacade);
+      try {
+        const timerPromise: Promise<void> = this._executeTimer(processTokenFacade);
 
-      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
+        this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
-        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
+          processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
-        if (this.timerSubscription) {
-          this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-        }
+          if (this.timerSubscription) {
+            this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+          }
 
-        timerPromise.cancel();
-        handlerPromise.cancel();
+          timerPromise.cancel();
+          handlerPromise.cancel();
 
-        return;
-      };
+          return;
+        };
 
-      await timerPromise;
+        await timerPromise;
 
-      processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, token.payload);
+        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, token.payload);
 
-      await this.persistOnResume(token);
-      await this.persistOnExit(token);
+        await this.persistOnResume(token);
+        await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);
 
-      return resolve(nextFlowNodeInfo);
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        return reject(error);
+      }
     });
 
     return handlerPromise;
@@ -112,16 +116,19 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
   private _executeTimer(processTokenFacade: IProcessTokenFacade): Promise<void> {
 
     return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
+      try {
+        const timerElapsed: any = (): void => {
+          // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
+          this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+          resolve();
+        };
 
-      const timerElapsed: any = (): void => {
-        // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
-        this._timerFacade.cancelTimerSubscription(this.timerSubscription);
-        resolve();
-      };
-
-      this.timerSubscription = this
-        ._timerFacade
-        .initializeTimerFromDefinition(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed);
+        this.timerSubscription = this
+          ._timerFacade
+          .initializeTimerFromDefinition(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed);
+      } catch (error) {
+        return reject(error);
+      }
     });
   }
 }
