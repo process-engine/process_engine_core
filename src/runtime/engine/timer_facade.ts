@@ -1,15 +1,19 @@
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
-import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
-import {ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
-
+import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
+
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
+import {IProcessTokenFacade, ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 
 enum TimerBpmnType {
   Duration = 'bpmn:timeDuration',
   Cycle = 'bpmn:timeCycle',
   Date = 'bpmn:timeDate',
 }
+
+const logger: Logger = Logger.createLogger('processengine:runtime:timer_facade');
 
 export class TimerFacade implements ITimerFacade {
 
@@ -29,10 +33,28 @@ export class TimerFacade implements ITimerFacade {
     return this._timerService;
   }
 
-  public initializeTimer(flowNode: Model.Base.FlowNode,
-                         timerType: TimerDefinitionType,
-                         timerValue: string,
-                         timerCallback: Function): Subscription {
+  public initializeTimerFromDefinition(
+    flowNode: Model.Base.FlowNode,
+    timerDefinition: Model.EventDefinitions.TimerEventDefinition,
+    processTokenFacade: IProcessTokenFacade,
+    callback: Function,
+  ): Subscription {
+
+    const timerType: TimerDefinitionType = this.parseTimerDefinitionType(timerDefinition);
+    const timerValueFromDefinition: string = this.parseTimerDefinitionValue(timerDefinition);
+    const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
+
+    return this.initializeTimer(flowNode, timerType, timerValue, callback);
+  }
+
+  public initializeTimer(
+    flowNode: Model.Base.FlowNode,
+    timerType: TimerDefinitionType,
+    timerValue: string,
+    timerCallback: Function,
+  ): Subscription {
+
+    this._validateTimer(timerType, timerValue);
 
     const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
 
@@ -138,5 +160,72 @@ export class TimerFacade implements ITimerFacade {
     this.timerService.once(date, callbackEventName);
 
     return subscription;
+  }
+
+  private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
+    const tokenVariableName: string = 'token';
+    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
+
+    if (isConstantTimerExpression) {
+      return timerExpression;
+    }
+
+    const tokenData: any = processTokenFacade.getOldTokenFormat();
+
+    try {
+      const functionString: string = `return ${timerExpression}`;
+      const evaluateFunction: Function = new Function(tokenVariableName, functionString);
+
+      return evaluateFunction.call(tokenData, tokenData);
+    } catch (err) {
+      logger.error(err);
+      throw err;
+    }
+  }
+
+  private _validateTimer(timerType: TimerDefinitionType, timerValue: string): void {
+
+    switch (timerType) {
+      case TimerDefinitionType.date:
+        const dateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
+        if (dateIsInvalid) {
+          const invalidDateMessage: string = `The given date definition ${timerValue} is not in ISO8601 format`;
+          logger.error(invalidDateMessage);
+          throw new UnprocessableEntityError(invalidDateMessage);
+        }
+
+        break;
+      case TimerDefinitionType.duration:
+        /**
+         * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
+         * we can't really use momentjs to validate durations against the
+         * ISO8601 duration syntax.
+         *
+         * There is an isValid() method on moment.Duration objects but its
+         * useless since it always returns true.
+         */
+
+        /**
+         * Taken from: https://stackoverflow.com/a/32045167
+         */
+         /*tslint:disable-next-line:max-line-length*/
+        const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
+        const durationIsInvalid: boolean = !durationRegex.test(timerValue);
+
+        if (durationIsInvalid) {
+          const invalidDurationMessage: string = `The given duration definition ${timerValue} is not in ISO8601 format`;
+          logger.error(invalidDurationMessage);
+          throw new UnprocessableEntityError(invalidDurationMessage);
+        }
+
+        break;
+      case TimerDefinitionType.cycle:
+        logger.error('Attempted to parse a cyclic timer! this is currently not supported!');
+        throw new UnprocessableEntityError('Cyclic timer definitions are currently not supported!');
+      default:
+        const invalidTimerTypeMessage: string = `Unknown Timer definition type '${timerType}'`;
+        logger.error(invalidTimerTypeMessage);
+        throw new UnprocessableEntityError(invalidTimerTypeMessage);
+    }
   }
 }
