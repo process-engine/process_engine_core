@@ -1,4 +1,4 @@
-import {IFlowNodeInstanceResult, IProcessTokenFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
+import {IFlowNodeInstanceResult, IProcessTokenFacade, Runtime} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
   private _correlationId: string;

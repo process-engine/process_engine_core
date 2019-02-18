@@ -5,24 +5,24 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {ICorrelationService} from '@process-engine/correlation.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
   eventAggregatorSettings,
-  ICorrelationService,
   IExecuteProcessService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IProcessModelFacade,
-  IProcessModelService,
   IProcessTokenFacade,
   Model,
   ProcessEndedMessage,
   ProcessStartedMessage,
   Runtime,
 } from '@process-engine/process_engine_contracts';
+import {IProcessModelUseCases, ProcessDefinitionFromRepository} from '@process-engine/process_model.contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
@@ -51,7 +51,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private readonly _correlationService: ICorrelationService;
   private readonly _loggingApiService: ILoggingApi;
   private readonly _metricsApiService: IMetricsApi;
-  private readonly _processModelService: IProcessModelService;
+  private readonly _processModelUseCases: IProcessModelUseCases;
 
   constructor(
     correlationService: ICorrelationService,
@@ -59,14 +59,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     loggingApiService: ILoggingApi,
     metricsApiService: IMetricsApi,
-    processModelService: IProcessModelService,
+    processModelUseCases: IProcessModelUseCases,
   ) {
     this._correlationService = correlationService;
     this._eventAggregator = eventAggregator;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._loggingApiService = loggingApiService;
     this._metricsApiService = metricsApiService;
-    this._processModelService = processModelService;
+    this._processModelUseCases = processModelUseCases;
   }
 
   public async start(
@@ -278,8 +278,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
    */
   private async _saveCorrelation(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
-    const processDefinition: Runtime.Types.ProcessDefinitionFromRepository =
-      await this._processModelService.getProcessDefinitionAsXmlByName(identity, processInstanceConfig.processModelId);
+    const processDefinition: ProcessDefinitionFromRepository =
+      await this._processModelUseCases.getProcessDefinitionAsXmlByName(identity, processInstanceConfig.processModelId);
 
     await this._correlationService.createEntry(identity,
                                                processInstanceConfig.correlationId,

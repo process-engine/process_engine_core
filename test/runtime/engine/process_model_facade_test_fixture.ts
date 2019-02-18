@@ -4,7 +4,7 @@ import * as should from 'should';
 import {Definitions, Model} from '@process-engine/process_engine_contracts';
 
 import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
-import {ProcessModelFacade} from '../../../src/runtime/engine';
+import {ProcessModelFacade} from '../../../src/runtime';
 
 export class ProcessModelFacadeTestFixture {
 

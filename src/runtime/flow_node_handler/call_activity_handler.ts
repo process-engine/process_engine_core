@@ -4,8 +4,8 @@ import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {DataModels as ConsumerApiTypes, IConsumerApi} from '@process-engine/consumer_api_contracts';
+import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
 import {
-  ICorrelationService,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -70,14 +70,14 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
   ): Promise<Array<Model.Base.FlowNode>> {
 
     // First we need to find out if the Subprocess was already started.
-    const correlation: Runtime.Types.Correlation
+    const correlation: Correlation
       = await this._correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
     const noSubProcessesFound: boolean = correlation === undefined;
 
-    const matchingSubProcess: Runtime.Types.CorrelationProcessInstance = noSubProcessesFound
+    const matchingSubProcess: CorrelationProcessInstance = noSubProcessesFound
       ? undefined
-      : correlation.processModels.find((entry: Runtime.Types.CorrelationProcessInstance): boolean => {
+      : correlation.processModels.find((entry: CorrelationProcessInstance): boolean => {
           return entry.processModelId === this.callActivity.calledReference;
         });
 

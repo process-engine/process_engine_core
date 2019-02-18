@@ -4,12 +4,12 @@ import * as uuid from 'node-uuid';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {IFlowNodeInstanceService} from '@process-engine/flow_node_instance.contracts';
 import {
   EndEventReachedMessage,
   eventAggregatorSettings,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  IFlowNodeInstanceService,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,

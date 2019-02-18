@@ -3,15 +3,15 @@ import * as moment from 'moment';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
+import {IFlowNodeInstanceService} from '@process-engine/flow_node_instance.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   BpmnType,
   Definitions,
-  ICorrelationService,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  IFlowNodeInstanceService,
   IModelParser,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -69,7 +69,6 @@ export class ResumeProcessService implements IResumeProcessService {
     loggingApiService: ILoggingApi,
     metricsApiService: IMetricsApi,
   ) {
-
     this._bpmnModelParser = bpmnModelParser;
     this._correlationService = correlationService;
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
@@ -152,9 +151,9 @@ export class ResumeProcessService implements IResumeProcessService {
     flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
   ): Promise<IProcessInstanceConfig> {
 
-    const correlation: Runtime.Types.Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
+    const correlation: Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
 
-    const processModelCorrelation: Runtime.Types.CorrelationProcessInstance = correlation.processModels[0];
+    const processModelCorrelation: CorrelationProcessInstance = correlation.processModels[0];
 
     const processModelDefinitions: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
     const processModel: Model.Types.Process = processModelDefinitions.processes[0];

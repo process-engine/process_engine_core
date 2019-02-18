@@ -8,11 +8,11 @@ import {
   eventAggregatorSettings,
   IAutoStartService,
   IExecuteProcessService,
-  IProcessModelService,
   MessageEventReachedMessage,
   Model,
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
+import {IProcessModelUseCases} from '@process-engine/process_model.contracts';
 
 const logger: Logger = Logger.createLogger('processengine:runtime:auto_start_service');
 
@@ -21,7 +21,7 @@ export class AutoStartService implements IAutoStartService {
   private readonly _eventAggregator: IEventAggregator;
   private readonly _executeProcessService: IExecuteProcessService;
   private readonly _identityService: IIdentityService;
-  private readonly _processModelService: IProcessModelService;
+  private readonly _processModelUseCases: IProcessModelUseCases;
 
   private _eventSubscriptions: Array<Subscription> = [];
   private _internalIdentity: IIdentity;
@@ -30,12 +30,12 @@ export class AutoStartService implements IAutoStartService {
     eventAggregator: IEventAggregator,
     executeProcessService: IExecuteProcessService,
     identityService: IIdentityService,
-    processModelService: IProcessModelService,
+    processModelService: IProcessModelUseCases,
   ) {
     this._eventAggregator = eventAggregator;
     this._executeProcessService = executeProcessService;
     this._identityService = identityService;
-    this._processModelService = processModelService;
+    this._processModelUseCases = processModelService;
   }
 
   public async initialize(): Promise<void> {
@@ -89,7 +89,7 @@ export class AutoStartService implements IAutoStartService {
     }
 
     // This list contains all ProcessModels that the User that triggered the Event has access to.
-    const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelService.getProcessModels(eventData.processInstanceOwner);
+    const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelUseCases.getProcessModels(eventData.processInstanceOwner);
 
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
 
@@ -126,7 +126,7 @@ export class AutoStartService implements IAutoStartService {
       return;
     }
     // This list contains all ProcessModels that the User that triggered the Event has access to.
-    const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelService.getProcessModels(eventData.processInstanceOwner);
+    const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelUseCases.getProcessModels(eventData.processInstanceOwner);
 
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
 
@@ -228,7 +228,7 @@ export class AutoStartService implements IAutoStartService {
     for (const processModelId of processModelIds) {
       // We must ensure that the full ProcessModel will be used to start the instance.
       // So we use the internal identity to request the ProcessModel again.
-      const fullProcessModel: Model.Types.Process = await this._processModelService.getProcessModelById(this._internalIdentity, processModelId);
+      const fullProcessModel: Model.Types.Process = await this._processModelUseCases.getProcessModelById(this._internalIdentity, processModelId);
       const startEventIdToUse: string = findMatchingStartEventId(fullProcessModel);
 
       // We must not await the process instance's end here, or the processes would not run in parallel to each other.

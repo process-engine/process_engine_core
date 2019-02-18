@@ -1,8 +1,9 @@
 import * as moment from 'moment';
 
+import {IFlowNodeInstanceService} from '@process-engine/flow_node_instance.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
-import {IFlowNodeInstanceService, IFlowNodePersistenceFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
+import {IFlowNodePersistenceFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
 
 export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
