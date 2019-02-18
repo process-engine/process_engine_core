@@ -10,7 +10,6 @@ import {
   ITimerFacade,
   Model,
   Runtime,
-  TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandlerInterruptible} from '../index';
@@ -79,7 +78,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const timerPromise: Promise<void> = this._executeTimer(token, processTokenFacade, processModelFacade);
+      const timerPromise: Promise<void> = this._executeTimer(processTokenFacade);
 
       this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
 
@@ -110,16 +109,9 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     return handlerPromise;
   }
 
-  private _executeTimer(
-    token: Runtime.Types.ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-  ): Promise<void> {
+  private _executeTimer(processTokenFacade: IProcessTokenFacade): Promise<void> {
 
     return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
-      const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.timerCatchEvent.timerEventDefinition);
-      const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.timerCatchEvent.timerEventDefinition);
-      const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
       const timerElapsed: any = (): void => {
         // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
@@ -127,30 +119,9 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
         resolve();
       };
 
-      this.timerSubscription = this._timerFacade.initializeTimer(this.timerCatchEvent, timerType, timerValue, timerElapsed);
+      this.timerSubscription = this
+        ._timerFacade
+        .initializeTimerFromDefinition(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed);
     });
-  }
-
-  private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
-    const tokenVariableName: string = 'token';
-    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
-
-    if (isConstantTimerExpression) {
-      return timerExpression;
-    }
-
-    const tokenData: any = processTokenFacade.getOldTokenFormat();
-
-    try {
-      const functionString: string = `return ${timerExpression}`;
-      const evaluateFunction: Function = new Function(tokenVariableName, functionString);
-
-      return evaluateFunction.call(tokenData, tokenData);
-
-    } catch (err) {
-      this.logger.error(err);
-
-      throw err;
-    }
   }
 }

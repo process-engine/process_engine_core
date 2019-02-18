@@ -10,7 +10,6 @@ import {
   OnBoundaryEventTriggeredCallback,
   OnBoundaryEventTriggeredData,
   Runtime,
-  TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
@@ -46,10 +45,6 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
     await this.persistOnEnter(token);
 
-    const timerType: TimerDefinitionType = this._timerFacade.parseTimerDefinitionType(this.boundaryEvent.timerEventDefinition);
-    const timerValueFromDefinition: string = this._timerFacade.parseTimerDefinitionValue(this.boundaryEvent.timerEventDefinition);
-    const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
-
     const timerElapsed: any = async(): Promise<void> => {
 
       this.logger.verbose(`TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId} was triggered.`);
@@ -66,30 +61,9 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
       onTriggeredCallback(eventData);
     };
 
-    this.timerSubscription = this._timerFacade.initializeTimer(this.boundaryEvent, timerType, timerValue, timerElapsed);
-  }
-
-  private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
-    const tokenVariableName: string = 'token';
-    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
-
-    if (isConstantTimerExpression) {
-      return timerExpression;
-    }
-
-    const tokenData: any = processTokenFacade.getOldTokenFormat();
-
-    try {
-      const functionString: string = `return ${timerExpression}`;
-      const evaluateFunction: Function = new Function(tokenVariableName, functionString);
-
-      return evaluateFunction.call(tokenData, tokenData);
-
-    } catch (err) {
-      this.logger.error('The expression provided with the TimerBoundaryEvent is invalid!');
-      this.logger.error(err);
-      throw err;
-    }
+    this.timerSubscription = this
+      ._timerFacade
+      .initializeTimerFromDefinition(this.boundaryEvent, this.boundaryEvent.timerEventDefinition, processTokenFacade, timerElapsed);
   }
 
   public async cancel(token: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
