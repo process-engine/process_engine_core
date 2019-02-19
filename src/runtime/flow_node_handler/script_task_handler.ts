@@ -2,14 +2,15 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from './index';
 
@@ -30,7 +31,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -43,7 +44,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -55,7 +56,7 @@ export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
         const executionPromise: Promise<any> = this._executeScriptTask(processTokenFacade, identity);
 
-        this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
+        this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
           processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, interruptionToken.payload);
           executionPromise.cancel();
           handlerPromise.cancel();

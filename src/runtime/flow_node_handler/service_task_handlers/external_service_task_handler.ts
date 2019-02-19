@@ -5,14 +5,14 @@ import {IEventAggregator, Subscription} from '@essential-projects/event_aggregat
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ExternalTask, ExternalTaskState, IExternalTaskRepository} from '@process-engine/external_task_api_contracts';
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from '../index';
 
@@ -40,7 +40,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -53,8 +53,8 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -137,7 +137,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -188,7 +188,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    * @returns                    The ServiceTask's result.
    */
   private async _executeExternalServiceTask(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     identity: IIdentity,
   ): Promise<any> {
@@ -255,7 +255,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    * @returns                  The retrieved ExternalTask, or undefined, if no
    *                           such ExternalTask exists.
    */
-  private async _getExternalTaskForFlowNodeInstance(flowNodeInstance: Runtime.Types.FlowNodeInstance): Promise<ExternalTask<any>> {
+  private async _getExternalTaskForFlowNodeInstance(flowNodeInstance: FlowNodeInstance): Promise<ExternalTask<any>> {
 
     try {
       const matchingExternalTask: ExternalTask<any> =
@@ -280,7 +280,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    * @param   identity     The requesting users identity.
    * @returns              The retrieved payload for the ExternalTask.
    */
-  private _getServiceTaskPayload(token: Runtime.Types.ProcessToken, tokenHistory: any, identity: IIdentity): any {
+  private _getServiceTaskPayload(token: ProcessToken, tokenHistory: any, identity: IIdentity): any {
 
     try {
       const serviceTaskHasAttachedPayload: boolean = this.serviceTask.payload !== undefined;
@@ -308,7 +308,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    * @param token              The current ProcessToken.
    * @param exernalTaskPayload The ExternalTask's payload.
    */
-  private async _createExternalTask(token: Runtime.Types.ProcessToken, exernalTaskPayload: any): Promise<void> {
+  private async _createExternalTask(token: ProcessToken, exernalTaskPayload: any): Promise<void> {
 
     this.logger.verbose('Persist ServiceTask as ExternalTask.');
     await this._externalTaskRepository.create(this.serviceTask.topic,

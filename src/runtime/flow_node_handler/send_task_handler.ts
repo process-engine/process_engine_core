@@ -2,6 +2,8 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   IFlowNodeHandlerFactory,
@@ -9,9 +11,8 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from './index';
 
@@ -34,7 +35,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -48,8 +49,8 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -59,7 +60,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -120,7 +121,7 @@ export class SendTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * @param identity The identity that owns the SendTask instance.
    * @param token    The current process token.
    */
-  private _sendMessage(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendMessage(identity: IIdentity, token: ProcessToken): void {
 
     const messageName: string = this.sendTask.messageEventDefinition.name;
 

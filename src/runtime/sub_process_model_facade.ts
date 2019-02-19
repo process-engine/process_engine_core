@@ -1,5 +1,6 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {BpmnType, Model} from '@process-engine/process_engine_contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
+
 import {ProcessModelFacade} from './process_model_facade';
 
 export class SubProcessModelFacade extends ProcessModelFacade {

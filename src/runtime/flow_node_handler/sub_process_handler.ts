@@ -4,7 +4,7 @@ import * as uuid from 'node-uuid';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {IFlowNodeInstanceService} from '@process-engine/flow_node_instance.contracts';
+import {FlowNodeInstance, IFlowNodeInstanceService, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   EndEventReachedMessage,
   eventAggregatorSettings,
@@ -13,9 +13,8 @@ import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {ProcessTokenFacade} from '../process_token_facade';
 import {FlowNodeHandlerInterruptible} from './index';
@@ -24,7 +23,7 @@ interface IProcessInstanceConfig {
   processInstanceId: string;
   processModelFacade: IProcessModelFacade;
   startEvent: Model.Events.StartEvent;
-  processToken: Runtime.Types.ProcessToken;
+  processToken: ProcessToken;
   processTokenFacade: IProcessTokenFacade;
 }
 
@@ -52,7 +51,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -65,18 +64,18 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const flowNodeInstancesForSubProcess: Array<Runtime.Types.FlowNodeInstance> =
+    const flowNodeInstancesForSubProcess: Array<FlowNodeInstance> =
       await this._flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
 
-    const flowNodeInstancesForSubprocessInstance: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstancesForSubProcess.filter((instance: Runtime.Types.FlowNodeInstance) => {
+    const flowNodeInstancesForSubprocessInstance: Array<FlowNodeInstance> =
+      flowNodeInstancesForSubProcess.filter((instance: FlowNodeInstance) => {
         return instance.parentProcessInstanceId = flowNodeInstance.processInstanceId;
       });
 
@@ -95,7 +94,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -134,7 +133,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   private async _executeSubprocess(
-    currentProcessToken: Runtime.Types.ProcessToken,
+    currentProcessToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -155,8 +154,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   private async _resumeSubProcess(
-    flowNodeInstancesForSubprocess: Array<Runtime.Types.FlowNodeInstance>,
-    currentProcessToken: Runtime.Types.ProcessToken,
+    flowNodeInstancesForSubprocess: Array<FlowNodeInstance>,
+    currentProcessToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -167,8 +166,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     const processInstanceConfig: IProcessInstanceConfig =
       this._createProcessInstanceConfig(processModelFacade, processTokenFacade, currentProcessToken, identity, subProcessInstanceId);
 
-    const flowNodeInstanceForStartEvent: Runtime.Types.FlowNodeInstance =
-      flowNodeInstancesForSubprocess.find((entry: Runtime.Types.FlowNodeInstance): boolean => {
+    const flowNodeInstanceForStartEvent: FlowNodeInstance =
+      flowNodeInstancesForSubprocess.find((entry: FlowNodeInstance): boolean => {
         return entry.flowNodeId === processInstanceConfig.startEvent.id;
       });
 
@@ -193,7 +192,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private _createProcessInstanceConfig(
     processModelFacade: IProcessModelFacade,
     processTokenFacade: IProcessTokenFacade,
-    currentProcessToken: Runtime.Types.ProcessToken,
+    currentProcessToken: ProcessToken,
     identity: IIdentity,
     processInstanceId?: string,
   ): IProcessInstanceConfig {
@@ -212,7 +211,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     subProcessTokenFacade.importResults(currentResults);
 
-    const subProcessToken: Runtime.Types.ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
+    const subProcessToken: ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
     subProcessToken.caller = currentProcessToken.processInstanceId;
     subProcessToken.payload = currentProcessToken.payload;
 
@@ -257,7 +256,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
   private async _waitForSubProcessResumption(
     processInstanceConfig: IProcessInstanceConfig,
     identity: IIdentity,
-    flowNodeInstance: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstance: Array<FlowNodeInstance>,
   ): Promise<any> {
 
     return new Promise<any>(async(resolve: EventReceivedCallback, reject: Function): Promise<void> => {
@@ -280,7 +279,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     });
   }
 
-  private _subscribeToSubProcessEndEvent(token: Runtime.Types.ProcessToken, callback: EventReceivedCallback): any {
+  private _subscribeToSubProcessEndEvent(token: ProcessToken, callback: EventReceivedCallback): any {
 
     const subProcessFinishedEvent: string = eventAggregatorSettings.messagePaths.endEventReached
       .replace(eventAggregatorSettings.messageParams.correlationId, token.correlationId)

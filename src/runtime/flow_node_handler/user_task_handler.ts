@@ -3,6 +3,7 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   FinishUserTaskMessage,
@@ -10,11 +11,10 @@ import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
   UserTaskFinishedMessage,
   UserTaskReachedMessage,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from './index';
 
@@ -37,7 +37,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -51,7 +51,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async _continueAfterEnter(
-    onEnterToken: Runtime.Types.ProcessToken,
+    onEnterToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -63,8 +63,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -74,7 +74,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -124,7 +124,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    *                 creating the EventSubscription.
    * @returns        The recevied UserTask result.
    */
-  private _waitForUserTaskResult(identity: IIdentity, token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForUserTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
 
     return new Promise<any>(async(resolve: Function): Promise<void> => {
 
@@ -150,7 +150,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * @param identity The identity that owns the UserTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendUserTaskReachedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendUserTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message: UserTaskReachedMessage = new UserTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
@@ -174,7 +174,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
    * @param identity The identity that owns the UserTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendUserTaskFinishedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendUserTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message: UserTaskFinishedMessage = new UserTaskFinishedMessage(token.payload,
                                                                          token.correlationId,

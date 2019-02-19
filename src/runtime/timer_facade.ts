@@ -5,7 +5,8 @@ import * as uuid from 'node-uuid';
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
-import {IProcessTokenFacade, ITimerFacade, Model, TimerDefinitionType} from '@process-engine/process_engine_contracts';
+import {IProcessTokenFacade, ITimerFacade, TimerDefinitionType} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 enum TimerBpmnType {
   Duration = 'bpmn:timeDuration',

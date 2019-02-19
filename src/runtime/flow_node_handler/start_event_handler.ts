@@ -3,6 +3,7 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   IFlowNodeHandlerFactory,
@@ -10,11 +11,10 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   ITimerFacade,
-  Model,
   ProcessStartedMessage,
-  Runtime,
   TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from './index';
 
@@ -39,7 +39,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -52,8 +52,8 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
@@ -73,7 +73,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     return processModelFacade.getNextFlowNodesFor(this.startEvent);
   }
 
-  protected async _executeHandler(token: Runtime.Types.ProcessToken,
+  protected async _executeHandler(token: ProcessToken,
                                   processTokenFacade: IProcessTokenFacade,
                                   processModelFacade: IProcessModelFacade,
                                   identity: IIdentity): Promise<Array<Model.Base.FlowNode>> {
@@ -102,7 +102,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * @param token        Current token object, which contains all necessary Process Metadata.
    * @param startEventId Id of the used StartEvent.
    */
-  private _sendProcessStartedMessage(identity: IIdentity, token: Runtime.Types.ProcessToken, startEventId: string): void {
+  private _sendProcessStartedMessage(identity: IIdentity, token: ProcessToken, startEventId: string): void {
     const processStartedMessage: ProcessStartedMessage = new ProcessStartedMessage(token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -122,7 +122,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
     this.eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
   }
 
-  private async _suspendAndWaitForTimerToElapse(currentToken: Runtime.Types.ProcessToken): Promise<any> {
+  private async _suspendAndWaitForTimerToElapse(currentToken: ProcessToken): Promise<any> {
     return new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
       this._waitForTimerToElapse(currentToken, resolve);
       await this.persistOnSuspend(currentToken);
@@ -136,7 +136,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    * @param currentToken The current ProcessToken.
    * @param resolveFunc  The function to call after the timer has elapsed.
    */
-  private _waitForTimerToElapse(currentToken: Runtime.Types.ProcessToken, resolveFunc: Function): void {
+  private _waitForTimerToElapse(currentToken: ProcessToken, resolveFunc: Function): void {
 
     const timerDefinition: Model.EventDefinitions.TimerEventDefinition = this.startEvent.timerEventDefinition;
 

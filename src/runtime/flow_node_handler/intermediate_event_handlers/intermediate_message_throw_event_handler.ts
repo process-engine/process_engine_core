@@ -2,6 +2,8 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   IFlowNodeHandlerFactory,
@@ -9,9 +11,8 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../index';
 
@@ -32,7 +33,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -45,7 +46,7 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,

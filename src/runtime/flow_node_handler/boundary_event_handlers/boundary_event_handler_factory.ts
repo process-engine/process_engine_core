@@ -1,9 +1,7 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {
-  IBoundaryEventHandler,
-  IBoundaryEventHandlerFactory,
-  Model,
-} from '@process-engine/process_engine_contracts';
+
+import {IBoundaryEventHandler, IBoundaryEventHandlerFactory} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {IContainer} from 'addict-ioc';
 

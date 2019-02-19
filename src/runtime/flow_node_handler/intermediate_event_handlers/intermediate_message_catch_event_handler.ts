@@ -2,6 +2,8 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   IFlowNodeHandlerFactory,
@@ -9,9 +11,8 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from '../index';
 
@@ -34,7 +35,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -48,7 +49,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
   }
 
   protected async _continueAfterEnter(
-    onEnterToken: Runtime.Types.ProcessToken,
+    onEnterToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
@@ -59,8 +60,8 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
@@ -69,7 +70,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
@@ -78,7 +79,7 @@ export class IntermediateMessageCatchEventHandler extends FlowNodeHandlerInterru
 
       const messageSubscriptionPromise: Promise<MessageEventReachedMessage> = this._waitForMessage();
 
-      this.onInterruptedCallback = (interruptionToken: Runtime.Types.ProcessToken): void => {
+      this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
         processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 

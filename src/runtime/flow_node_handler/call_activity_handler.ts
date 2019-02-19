@@ -5,15 +5,15 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {DataModels as ConsumerApiTypes, IConsumerApi} from '@process-engine/consumer_api_contracts';
 import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from './index';
 
@@ -44,12 +44,12 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
   }
 
   // TODO: We can't interrupt a Subprocess yet, so this will remain inactive.
-  public interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+  public interrupt(token: ProcessToken, terminate?: boolean): Promise<void> {
     return Promise.resolve();
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -62,8 +62,8 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -107,7 +107,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -166,7 +166,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     identity: IIdentity,
     startEventId: string,
     processTokenFacade: IProcessTokenFacade,
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
   ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
 
     const tokenData: any = processTokenFacade.getOldTokenFormat();

@@ -3,6 +3,7 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   FinishManualTaskMessage,
@@ -12,9 +13,8 @@ import {
   IProcessTokenFacade,
   ManualTaskFinishedMessage,
   ManualTaskReachedMessage,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from './index';
 
@@ -37,7 +37,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -51,7 +51,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async _continueAfterEnter(
-    onEnterToken: Runtime.Types.ProcessToken,
+    onEnterToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -63,8 +63,8 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async _continueAfterSuspend(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    onSuspendToken: Runtime.Types.ProcessToken,
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -74,7 +74,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -123,7 +123,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
    *                 creating the EventSubscription.
    * @returns        The recevied ManualTask result.
    */
-  private _waitForManualTaskResult(identity: IIdentity, token: Runtime.Types.ProcessToken): Promise<any> {
+  private _waitForManualTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
 
     return new Promise<any>(async(resolve: Function): Promise<void> => {
 
@@ -148,7 +148,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
    * @param identity The identity that owns the ManualTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendManualTaskReachedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendManualTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message: ManualTaskReachedMessage = new ManualTaskReachedMessage(token.correlationId,
                                                                        token.processModelId,
@@ -172,7 +172,7 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
    * @param identity The identity that owns the ManualTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendManualTaskFinishedNotification(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendManualTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message: ManualTaskFinishedMessage = new ManualTaskFinishedMessage(token.correlationId,
                                                                          token.processModelId,

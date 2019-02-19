@@ -4,14 +4,15 @@ import {Logger} from 'loggerhythm';
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from '../index';
 
@@ -36,7 +37,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -49,7 +50,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -115,7 +116,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    * @param   identity           The identity that started the ProcessInstance.
    * @returns                    The ServiceTask's result.
    */
-  private _executeInternalServiceTask(token: Runtime.Types.ProcessToken,
+  private _executeInternalServiceTask(token: ProcessToken,
                                       processTokenFacade: IProcessTokenFacade,
                                       identity: IIdentity,
                                      ): Promise<any> {

@@ -1,15 +1,16 @@
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
   OnBoundaryEventTriggeredCallback,
   OnBoundaryEventTriggeredData,
-  Runtime,
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
 
@@ -30,7 +31,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
 
   public async waitForTriggeringEvent(
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
@@ -60,7 +61,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     this.subscription = this._eventAggregator.subscribeOnce(signalBoundaryEventName, messageReceivedCallback);
   }
 
-  public async cancel(token: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+  public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
     await super.cancel(token, processModelFacade);
     this._eventAggregator.unsubscribe(this.subscription);
   }

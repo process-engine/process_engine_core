@@ -1,9 +1,10 @@
 import * as moment from 'moment';
 
-import {IFlowNodeInstanceService} from '@process-engine/flow_node_instance.contracts';
+import {IFlowNodeInstanceService, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
-import {IFlowNodePersistenceFacade, Model, Runtime} from '@process-engine/process_engine_contracts';
+import {IFlowNodePersistenceFacade} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
@@ -24,7 +25,7 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
   public async persistOnEnter(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
     previousFlowNodeInstanceId?: string,
   ): Promise<void> {
 
@@ -51,7 +52,7 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
   public async persistOnExit(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
   ): Promise<void> {
 
     await this._flowNodeInstanceService.persistOnExit(flowNode, flowNodeInstanceId, processToken);
@@ -77,7 +78,7 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
   public async persistOnTerminate(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
   ): Promise<void> {
 
     await this._flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, processToken);
@@ -103,7 +104,7 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
   public async persistOnError(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
     error: Error,
   ): Promise<void> {
 
@@ -131,7 +132,7 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
   public async persistOnSuspend(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
   ): Promise<void> {
 
     await this._flowNodeInstanceService.suspend(flowNode.id, flowNodeInstanceId, processToken);
@@ -157,7 +158,7 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
   public async persistOnResume(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
   ): Promise<void> {
 
     await this._flowNodeInstanceService.resume(flowNode.id, flowNodeInstanceId, processToken);

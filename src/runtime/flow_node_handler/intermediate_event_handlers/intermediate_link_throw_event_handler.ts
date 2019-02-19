@@ -3,14 +3,15 @@ import {Logger} from 'loggerhythm';
 import {BadRequestError, NotFoundError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../index';
 
@@ -31,7 +32,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -44,7 +45,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
@@ -63,7 +64,7 @@ export class IntermediateLinkThrowEventHandler extends FlowNodeHandler<Model.Eve
   }
 
   private async _getMatchingCatchEvent(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     events: Array<Model.Events.IntermediateCatchEvent>,
   ): Promise<Model.Events.IntermediateCatchEvent> {
 

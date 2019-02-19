@@ -1,15 +1,15 @@
 import {IContainer} from 'addict-ioc';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  BpmnType,
   IBoundaryEventHandler,
   IBoundaryEventHandlerFactory,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
@@ -38,7 +38,7 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 
   public async create<TFlowNode extends Model.Base.FlowNode>(
     flowNode: TFlowNode,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
   ): Promise<IFlowNodeHandler<TFlowNode>> {
 
   // tslint:disable-next-line:cyclomatic-complexity

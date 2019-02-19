@@ -4,21 +4,24 @@ import * as moment from 'moment';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
-import {IFlowNodeInstanceService} from '@process-engine/flow_node_instance.contracts';
+import {
+  FlowNodeInstance,
+  FlowNodeInstanceState,
+  IFlowNodeInstanceService,
+  ProcessToken,
+  ProcessTokenType,
+} from '@process-engine/flow_node_instance.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  BpmnType,
-  Definitions,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IModelParser,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {BpmnType, Definitions, Model} from '@process-engine/process_model.contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
@@ -37,8 +40,8 @@ interface IProcessInstanceConfig {
   processInstanceId: string;
   processModelFacade: IProcessModelFacade;
   startEvent: Model.Events.StartEvent;
-  startEventInstance: Runtime.Types.FlowNodeInstance;
-  processToken: Runtime.Types.ProcessToken;
+  startEventInstance: FlowNodeInstance;
+  processToken: ProcessToken;
   processTokenFacade: IProcessTokenFacade;
 }
 
@@ -82,7 +85,7 @@ export class ResumeProcessService implements IResumeProcessService {
     logger.info('Resuming ProcessInstances that were not yet finished.');
 
     // First get all active FlowNodeInstances from every ProcessInstance.
-    const activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance> =
+    const activeFlowNodeInstances: Array<FlowNodeInstance> =
       await this._flowNodeInstanceService.queryActive();
 
     // Now get the unique ProcessInstanceIds and ProcessModelIds from the list.
@@ -104,16 +107,16 @@ export class ResumeProcessService implements IResumeProcessService {
 
     logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
-    const flowNodeInstancesForProcessInstance: Array<Runtime.Types.FlowNodeInstance> =
+    const flowNodeInstancesForProcessInstance: Array<FlowNodeInstance> =
       await this._flowNodeInstanceService.queryByProcessInstance(processInstanceId);
 
     // ----
     // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
     // There is no point in trying to resume anything that's already finished.
     const processHasActiveFlowNodeInstances: boolean =
-      flowNodeInstancesForProcessInstance.some((entry: Runtime.Types.FlowNodeInstance): boolean => {
-        return entry.state === Runtime.Types.FlowNodeInstanceState.running ||
-               entry.state === Runtime.Types.FlowNodeInstanceState.suspended;
+      flowNodeInstancesForProcessInstance.some((entry: FlowNodeInstance): boolean => {
+        return entry.state === FlowNodeInstanceState.running ||
+               entry.state === FlowNodeInstanceState.suspended;
       });
 
     if (!processHasActiveFlowNodeInstances) {
@@ -148,7 +151,7 @@ export class ResumeProcessService implements IResumeProcessService {
   private async _createProcessInstanceConfig(
     identity: IIdentity,
     processInstanceId: string,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstances: Array<FlowNodeInstance>,
   ): Promise<IProcessInstanceConfig> {
 
     const correlation: Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
@@ -160,23 +163,23 @@ export class ResumeProcessService implements IResumeProcessService {
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     // Find the StartEvent the ProcessInstance was started with.
-    const startEventInstance: Runtime.Types.FlowNodeInstance =
-      flowNodeInstances.find((instance: Runtime.Types.FlowNodeInstance): boolean => {
+    const startEventInstance: FlowNodeInstance =
+      flowNodeInstances.find((instance: FlowNodeInstance): boolean => {
         return instance.flowNodeType === BpmnType.startEvent;
       });
 
     const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventInstance.flowNodeId);
 
     // The initial ProcessToken will always be the payload that the StartEvent first received.
-    const initialToken: Runtime.Types.ProcessToken =
-      startEventInstance.tokens.find((token: Runtime.Types.ProcessToken): boolean => {
-        return token.type === Runtime.Types.ProcessTokenType.onEnter;
+    const initialToken: ProcessToken =
+      startEventInstance.tokens.find((token: ProcessToken): boolean => {
+        return token.type === ProcessTokenType.onEnter;
       });
 
     const processTokenFacade: IProcessTokenFacade =
       new ProcessTokenFacade(processInstanceId, processModel.id, startEventInstance.correlationId, identity);
 
-    const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(initialToken.payload);
+    const processToken: ProcessToken = processTokenFacade.createProcessToken(initialToken.payload);
     processToken.payload = initialToken.payload;
 
     const processInstanceConfig: IProcessInstanceConfig = {
@@ -196,7 +199,7 @@ export class ResumeProcessService implements IResumeProcessService {
   private async _resumeProcessInstance(
     identity: IIdentity,
     processInstanceConfig: IProcessInstanceConfig,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstances: Array<FlowNodeInstance>,
   ): Promise<void> {
 
     const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
@@ -225,7 +228,7 @@ export class ResumeProcessService implements IResumeProcessService {
    * @returns                         The list of ProcessInstances.
    */
   private _findProcessInstancesFromFlowNodeList(
-    activeFlowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    activeFlowNodeInstances: Array<FlowNodeInstance>,
   ): Array<IProcessInstanceModelAssociation> {
 
     const activeProcessInstances: Array<IProcessInstanceModelAssociation> = [];

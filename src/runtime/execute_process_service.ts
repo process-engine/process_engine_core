@@ -6,6 +6,7 @@ import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ICorrelationService} from '@process-engine/correlation.contracts';
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
@@ -17,12 +18,10 @@ import {
   IFlowNodeInstanceResult,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
   ProcessEndedMessage,
   ProcessStartedMessage,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
-import {IProcessModelUseCases, ProcessDefinitionFromRepository} from '@process-engine/process_model.contracts';
+import {IProcessModelUseCases, Model, ProcessDefinitionFromRepository} from '@process-engine/process_model.contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
@@ -39,7 +38,7 @@ interface IProcessInstanceConfig {
   parentProcessInstanceId: string;
   processModelFacade: IProcessModelFacade;
   startEvent: Model.Events.StartEvent;
-  processToken: Runtime.Types.ProcessToken;
+  processToken: ProcessToken;
   processTokenFacade: IProcessTokenFacade;
 }
 
@@ -211,7 +210,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processTokenFacade: IProcessTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
 
-    const processToken: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken(payload);
+    const processToken: ProcessToken = processTokenFacade.createProcessToken(payload);
     processToken.caller = caller;
     processToken.payload = payload;
 

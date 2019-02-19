@@ -2,7 +2,10 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  BpmnError,
   EndEventReachedMessage,
   eventAggregatorSettings,
   IFlowNodeHandlerFactory,
@@ -10,11 +13,10 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
-  Model,
-  Runtime,
   SignalEventReachedMessage,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from './index';
 
@@ -35,7 +37,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -48,7 +50,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -60,7 +62,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       const flowNodeIsMessageEndEvent: boolean = this.endEvent.messageEventDefinition !== undefined;
       const flowNodeIsSignalEndEvent: boolean = this.endEvent.signalEventDefinition !== undefined;
 
-      let errorObj: Runtime.Types.BpmnError;
+      let errorObj: BpmnError;
 
       // Event persisting
       if (flowNodeIsTerminateEndEvent) {
@@ -100,8 +102,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param identity The identity that owns the EndEvent instance.
    * @param token    The current ProcessToken.
    */
-  private _createBpmnError(): Runtime.Types.BpmnError {
-    return new Runtime.Types.BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
+  private _createBpmnError(): BpmnError {
+    return new BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
   }
 
   /**
@@ -112,7 +114,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param identity The identity that owns the EndEvent instance.
    * @param token    The current ProcessToken.
    */
-  private _sendMessage(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendMessage(identity: IIdentity, token: ProcessToken): void {
 
     const messageName: string = this.endEvent.messageEventDefinition.name;
 
@@ -143,7 +145,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param identity The identity that owns the EndEvent instance.
    * @param token    The current ProcessToken.
    */
-  private _sendSignal(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _sendSignal(identity: IIdentity, token: ProcessToken): void {
 
     const signalName: string = this.endEvent.signalEventDefinition.name;
 
@@ -173,7 +175,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param identity The identity that owns the EndEvent instance.
    * @param token    The current ProcessToken.
    */
-  private _notifyAboutTermination(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _notifyAboutTermination(identity: IIdentity, token: ProcessToken): void {
 
     // Publish termination message to cancel all FlowNodeInstance executions and
     // finish with an error.
@@ -199,7 +201,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * @param identity The identity that owns the EndEvent instance.
    * @param token    The current ProcessToken.
    */
-  private _notifyAboutRegularEnd(identity: IIdentity, token: Runtime.Types.ProcessToken): void {
+  private _notifyAboutRegularEnd(identity: IIdentity, token: ProcessToken): void {
 
     // Publish regular success messsage.
     const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached

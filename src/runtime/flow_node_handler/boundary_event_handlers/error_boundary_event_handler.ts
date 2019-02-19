@@ -1,10 +1,11 @@
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  BpmnError,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
   OnBoundaryEventTriggeredCallback,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
@@ -34,14 +35,14 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     // The error code is optional and must only be evaluated, if the definition contains it.
     const errorCodesMatch: boolean =
       (!errorDefinition.code || errorDefinition.code === '') ||
-      errorDefinition.code === (error as Runtime.Types.BpmnError).code;
+      errorDefinition.code === (error as BpmnError).code;
 
     return errorNamesMatch && errorCodesMatch;
   }
 
   public async waitForTriggeringEvent(
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,

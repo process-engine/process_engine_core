@@ -1,6 +1,8 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   eventAggregatorSettings,
   IBoundaryEventHandler,
@@ -8,13 +10,12 @@ import {
   IInterruptible,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
   OnBoundaryEventTriggeredCallback,
   OnBoundaryEventTriggeredData,
   onInterruptionCallback,
-  Runtime,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {ErrorBoundaryEventHandler} from './boundary_event_handlers/index';
 import {FlowNodeHandler} from './flow_node_handler';
@@ -22,7 +23,7 @@ import {FlowNodeHandler} from './flow_node_handler';
 interface FlowNodeModelInstanceAssociation {
   boundaryEventModel: Model.Events.BoundaryEvent;
   nextFlowNode: Model.Base.FlowNode;
-  nextFlowNodeInstance: Runtime.Types.FlowNodeInstance;
+  nextFlowNodeInstance: FlowNodeInstance;
 }
 
 export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.FlowNode>
@@ -55,7 +56,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   }
 
   protected async afterExecute(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade?: IProcessTokenFacade,
     processModelFacade?: IProcessModelFacade,
     ): Promise<void> {
@@ -64,7 +65,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   }
 
   public async execute(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -103,7 +104,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   }
 
   public async resume(
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstances: Array<FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -111,8 +112,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
     return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
       try {
-        const flowNodeInstance: Runtime.Types.FlowNodeInstance =
-          flowNodeInstances.find((instance: Runtime.Types.FlowNodeInstance) => instance.flowNodeId === this.flowNode.id);
+        const flowNodeInstance: FlowNodeInstance =
+          flowNodeInstances.find((instance: FlowNodeInstance) => instance.flowNodeId === this.flowNode.id);
 
         const flowNodeInstancesAfterBoundaryEvents: Array<FlowNodeModelInstanceAssociation> =
           this._getFlowNodeInstancesAfterBoundaryEvents(flowNodeInstances, processModelFacade);
@@ -132,7 +133,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
           return reject(error);
         }
 
-        const token: Runtime.Types.ProcessToken = processTokenFacade.createProcessToken();
+        const token: ProcessToken = processTokenFacade.createProcessToken();
         token.payload = error;
         token.flowNodeInstanceId = this.flowNodeInstanceId;
 
@@ -147,7 +148,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     });
   }
 
-  public async interrupt(token: Runtime.Types.ProcessToken, terminate?: boolean): Promise<void> {
+  public async interrupt(token: ProcessToken, terminate?: boolean): Promise<void> {
     await this.onInterruptedCallback(token);
     await this.afterExecute(token);
 
@@ -158,7 +159,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     return this.persistOnExit(token);
   }
 
-  private _subscribeToProcessTermination(token: Runtime.Types.ProcessToken, rejectionFunction: Function): Subscription {
+  private _subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
 
     const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
@@ -180,8 +181,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   }
 
   private async _resumeOrdinarily(
-    flowNodeInstance: Runtime.Types.FlowNodeInstance,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstance: FlowNodeInstance,
+    flowNodeInstances: Array<FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -189,7 +190,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     reject: Function,
   ): Promise<void> {
 
-    const tokenForHandlerHooks: Runtime.Types.ProcessToken = flowNodeInstance.tokens[0];
+    const tokenForHandlerHooks: ProcessToken = flowNodeInstance.tokens[0];
 
     this._terminationSubscription = this._subscribeToProcessTermination(tokenForHandlerHooks, reject);
     await this._attachBoundaryEvents(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, resolve);
@@ -201,7 +202,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
   private async _resumeWithBoundaryEvents(
     flowNodeInstancesAfterBoundaryEvents: Array<FlowNodeModelInstanceAssociation>,
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstances: Array<FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -236,7 +237,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    * @param flowNodeInstances The list of FlowNodeInstances to check.
    */
   private _getFlowNodeInstancesAfterBoundaryEvents(
-    flowNodeInstances: Array<Runtime.Types.FlowNodeInstance>,
+    flowNodeInstances: Array<FlowNodeInstance>,
     processModelFacade: IProcessModelFacade,
   ): Array<FlowNodeModelInstanceAssociation> {
 
@@ -246,23 +247,23 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     }
 
     // First get all FlowNodeInstances for the BoundaryEvents attached to this handler.
-    const boundaryEventInstances: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstances.filter((fni: Runtime.Types.FlowNodeInstance) => {
+    const boundaryEventInstances: Array<FlowNodeInstance> =
+      flowNodeInstances.filter((fni: FlowNodeInstance) => {
         return boundaryEvents.some((boundaryEvent: Model.Events.BoundaryEvent) => {
           return boundaryEvent.id === fni.flowNodeId;
         });
       });
 
     // Then get all FlowNodeInstances that followed one of the BoundaryEventInstances.
-    const flowNodeInstancesAfterBoundaryEvents: Array<Runtime.Types.FlowNodeInstance> =
-      flowNodeInstances.filter((fni: Runtime.Types.FlowNodeInstance) => {
-        return boundaryEventInstances.some((boundaryInstance: Runtime.Types.FlowNodeInstance) => {
+    const flowNodeInstancesAfterBoundaryEvents: Array<FlowNodeInstance> =
+      flowNodeInstances.filter((fni: FlowNodeInstance) => {
+        return boundaryEventInstances.some((boundaryInstance: FlowNodeInstance) => {
           return fni.previousFlowNodeInstanceId === boundaryInstance.id;
         });
       });
 
     const flowNodeModelInstanceAssociations: Array<FlowNodeModelInstanceAssociation> =
-      flowNodeInstancesAfterBoundaryEvents.map((fni: Runtime.Types.FlowNodeInstance) => {
+      flowNodeInstancesAfterBoundaryEvents.map((fni: FlowNodeInstance) => {
         return <FlowNodeModelInstanceAssociation> {
           boundaryEventModel: getBoundaryEventPreceedingFlowNodeInstance(fni),
           nextFlowNodeInstance: fni,
@@ -270,9 +271,9 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
         };
       });
 
-    const getBoundaryEventPreceedingFlowNodeInstance: Function = (flowNodeInstance: Runtime.Types.FlowNodeInstance): Model.Events.BoundaryEvent => {
-      const matchingBoundaryEventInstance: Runtime.Types.FlowNodeInstance =
-        flowNodeInstances.find((entry: Runtime.Types.FlowNodeInstance) => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
+    const getBoundaryEventPreceedingFlowNodeInstance: Function = (flowNodeInstance: FlowNodeInstance): Model.Events.BoundaryEvent => {
+      const matchingBoundaryEventInstance: FlowNodeInstance =
+        flowNodeInstances.find((entry: FlowNodeInstance) => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
 
       return boundaryEvents.find((entry: Model.Events.BoundaryEvent) => entry.id === matchingBoundaryEventInstance.flowNodeId);
     };
@@ -294,7 +295,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    *                            triggered.
    */
   private async _attachBoundaryEvents(
-    currentProcessToken: Runtime.Types.ProcessToken,
+    currentProcessToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -348,7 +349,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    */
   private async _createBoundaryEventHandler(
     boundaryEventModel: Model.Events.BoundaryEvent,
-    currentProcessToken: Runtime.Types.ProcessToken,
+    currentProcessToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -391,7 +392,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    */
   private async _handleBoundaryEvent(
     eventData: OnBoundaryEventTriggeredData,
-    currentProcessToken: Runtime.Types.ProcessToken,
+    currentProcessToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -430,7 +431,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
   private async _continueAfterBoundaryEvent<TNextFlowNode extends Model.Base.FlowNode>(
     boundaryInstanceId: string,
     nextFlowNode: TNextFlowNode,
-    currentProcessToken: Runtime.Types.ProcessToken,
+    currentProcessToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -445,7 +446,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    /**
     * Cancels and clears all BoundaryEvents attached to this handler.
     */
-   private async _detachBoundaryEvents(token: Runtime.Types.ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+   private async _detachBoundaryEvents(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
      for (const boundaryEventHandler of this._attachedBoundaryEventHandlers) {
        await boundaryEventHandler.cancel(token, processModelFacade);
      }

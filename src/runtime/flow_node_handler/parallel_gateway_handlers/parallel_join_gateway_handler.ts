@@ -3,15 +3,16 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  Model,
-  Runtime,
 } from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from '../index';
 
@@ -41,7 +42,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async beforeExecute(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -59,7 +60,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async executeInternally(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -77,7 +78,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
   }
 
   protected async _executeHandler(
-    token: Runtime.Types.ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -117,7 +118,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     return resultToken;
   }
 
-  private _removeInstanceFromIocContainer(processToken: Runtime.Types.ProcessToken): void {
+  private _removeInstanceFromIocContainer(processToken: ProcessToken): void {
 
     const joinGatewayRegistration: string =
       `ParallelJoinGatewayHandlerInstance-${processToken.correlationId}-${processToken.processInstanceId}-${this.parallelGateway.id}`;

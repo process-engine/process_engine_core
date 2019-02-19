@@ -4,15 +4,13 @@ import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {
-  BpmnType,
   eventAggregatorSettings,
   IAutoStartService,
   IExecuteProcessService,
   MessageEventReachedMessage,
-  Model,
   SignalEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
-import {IProcessModelUseCases} from '@process-engine/process_model.contracts';
+import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 const logger: Logger = Logger.createLogger('processengine:runtime:auto_start_service');
 

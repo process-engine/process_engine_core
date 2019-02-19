@@ -1,4 +1,5 @@
-import {IFlowNodeInstanceResult, IProcessTokenFacade, Runtime} from '@process-engine/process_engine_contracts';
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {IFlowNodeInstanceResult, IProcessTokenFacade} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
   private _correlationId: string;
@@ -33,9 +34,8 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
   public getAllResults(): Array<IFlowNodeInstanceResult> {
     return this._processTokenResults;
   }
-
-  public createProcessToken(payload?: any): Runtime.Types.ProcessToken {
-    const token: Runtime.Types.ProcessToken = new Runtime.Types.ProcessToken();
+  public createProcessToken(payload?: any): ProcessToken {
+    const token: ProcessToken = new ProcessToken();
     token.processInstanceId = this.processInstanceId;
     token.processModelId = this.processModelId;
     token.correlationId = this.correlationId;

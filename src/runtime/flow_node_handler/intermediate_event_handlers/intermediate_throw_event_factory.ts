@@ -1,11 +1,9 @@
 import {IContainer} from 'addict-ioc';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-import {
-  IFlowNodeHandler,
-  IFlowNodeHandlerDedicatedFactory,
-  Model,
-} from '@process-engine/process_engine_contracts';
+
+import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
 

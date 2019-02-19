@@ -1,12 +1,10 @@
 import {IContainer} from 'addict-ioc';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-import {
-  IFlowNodeHandler,
-  IFlowNodeHandlerDedicatedFactory,
-  Model,
-  Runtime,
-} from '@process-engine/process_engine_contracts';
+
+import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
 
@@ -20,7 +18,7 @@ export class ParallelGatewayFactory implements IFlowNodeHandlerDedicatedFactory<
 
   public async create(
     flowNode: Model.Gateways.ParallelGateway,
-    processToken: Runtime.Types.ProcessToken,
+    processToken: ProcessToken,
   ): Promise<IFlowNodeHandler<Model.Gateways.ParallelGateway>> {
 
     switch (flowNode.gatewayDirection) {

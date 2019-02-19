@@ -1,5 +1,6 @@
 import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
-import {BpmnType, IProcessModelFacade, Model} from '@process-engine/process_engine_contracts';
+import {IProcessModelFacade} from '@process-engine/process_engine_contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 import {SubProcessModelFacade} from './index';
 
