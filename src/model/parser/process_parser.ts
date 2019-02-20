@@ -3,7 +3,7 @@ import {
   BpmnTags,
   IParsedObjectModel,
   Model,
-} from '@process-engine/process_engine_contracts';
+} from '@process-engine/process_model.contracts';
 
 import {
   createObjectWithCommonProperties,

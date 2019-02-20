@@ -2,7 +2,7 @@ import {
   Definitions,
   IModelParser,
   IParsedObjectModel,
-} from '@process-engine/process_engine_contracts';
+} from '@process-engine/process_model.contracts';
 
 import * as Parser from './parser';
 

@@ -1,7 +1,7 @@
 import * as moment from 'moment';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-import {BpmnTags, Model} from '@process-engine/process_engine_contracts';
+import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 
 import {
   getModelPropertyAsArray,
