@@ -118,6 +118,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
     caller?: string,
   ): Promise<EndEventReachedMessage> {
 
+    await this._validateStartRequest(identity, processModelId, startEventId);
+
     return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller);
   }
 
@@ -130,6 +132,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
+
+    await this._validateStartRequest(identity, processModelId, startEventId, endEventId, true);
 
     return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller, endEventId);
   }
@@ -147,8 +151,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
       try {
-        await this._validateStartRequest(identity, processModelId, startEventId, endEventId, true);
-
         const processInstanceConfig: IProcessInstanceConfig = await
           this._createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
 
