@@ -65,7 +65,7 @@ function registerServices(container) {
 
   container
     .register('AutoStartService', AutoStartService)
-    .dependencies('EventAggregator','ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases')
+    .dependencies('EventAggregator','ExecuteProcessService', 'ProcessModelUseCases')
     .singleton();
 
   container

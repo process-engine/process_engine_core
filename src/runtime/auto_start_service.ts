@@ -1,7 +1,7 @@
 import {Logger} from 'loggerhythm';
 
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
-import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
   eventAggregatorSettings,
@@ -18,33 +18,18 @@ export class AutoStartService implements IAutoStartService {
 
   private readonly _eventAggregator: IEventAggregator;
   private readonly _executeProcessService: IExecuteProcessService;
-  private readonly _identityService: IIdentityService;
   private readonly _processModelUseCases: IProcessModelUseCases;
 
   private _eventSubscriptions: Array<Subscription> = [];
-  private _internalIdentity: IIdentity;
 
   constructor(
     eventAggregator: IEventAggregator,
     executeProcessService: IExecuteProcessService,
-    identityService: IIdentityService,
     processModelService: IProcessModelUseCases,
   ) {
     this._eventAggregator = eventAggregator;
     this._executeProcessService = executeProcessService;
-    this._identityService = identityService;
     this._processModelUseCases = processModelService;
-  }
-
-  public async initialize(): Promise<void> {
-    // This identity is only used to ensure that the Service can retrieve full ProcessModels.
-    // The identity send with an event may not be sufficient to do that,
-    // because of possible access restriction to lanes.
-    //
-    // Note that the users identity is still used to determine which ProcessModels are to be triggerd
-    // when an event is received.
-    const dummyToken: string = 'ZHVtbXlfdG9rZW4=';
-    this._internalIdentity = await this._identityService.getIdentity(dummyToken);
   }
 
   public async start(): Promise<void> {
@@ -92,12 +77,12 @@ export class AutoStartService implements IAutoStartService {
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
 
     const eventDefinitionPropertyName: string = 'messageEventDefinition';
-    const matchingProcessModelIds: Array<string> =
-      this._getProcessModelIdsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.messageReference);
+    const matchingProcessModels: Array<Model.Types.Process> =
+      this._getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.messageReference);
 
-    logger.verbose(`Found ${matchingProcessModelIds.length} ProcessModels with matching MessageStartEvents.`);
+    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching MessageStartEvents.`);
     await this._startProcessInstances(
-      matchingProcessModelIds,
+      matchingProcessModels,
       eventData.processInstanceOwner,
       eventDefinitionPropertyName,
       eventData.messageReference,
@@ -129,12 +114,12 @@ export class AutoStartService implements IAutoStartService {
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
 
     const eventDefinitionPropertyName: string = 'signalEventDefinition';
-    const matchingProcessModelIds: Array<string> =
-      this._getProcessModelIdsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.signalReference);
+    const matchingProcessModels: Array<Model.Types.Process> =
+      this._getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.signalReference);
 
-    logger.verbose(`Found ${matchingProcessModelIds.length} ProcessModels with matching SignalStartEvents.`);
+    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching SignalStartEvents.`);
     await this._startProcessInstances(
-      matchingProcessModelIds,
+      matchingProcessModels,
       eventData.processInstanceOwner,
       eventDefinitionPropertyName,
       eventData.signalReference,
@@ -156,11 +141,11 @@ export class AutoStartService implements IAutoStartService {
    * @param   eventName                   The event name to look for.
    * @returns                             The filtered ProcessModels.
    */
-  private _getProcessModelIdsWithMatchingStartEvents(
+  private _getProcessModelsWithMatchingStartEvents(
     processModels: Array<Model.Types.Process>,
     expectedEventDefinitionName: string,
     eventName: string,
-  ): Array<string> {
+  ): Array<Model.Types.Process> {
 
     const matches: Array<Model.Types.Process> = processModels.filter((processModel: Model.Types.Process) => {
 
@@ -175,7 +160,7 @@ export class AutoStartService implements IAutoStartService {
       return processModel.isExecutable && hasMatchingStartEvents;
     });
 
-    return matches.map((match: Model.Types.Process) => match.id);
+    return matches;
   }
 
   /**
@@ -185,7 +170,7 @@ export class AutoStartService implements IAutoStartService {
    * Note that the execution of the ProcessInstances is NOT awaited.
    *
    * @async
-   * @param processModelIds             The IDs of the ProcessModels to start.
+   * @param processModels               The ProcessModels to start.
    * @param identityToUse               The Identity with which to start the
    *                                    new instances.
    * @param eventDefinitionPropertyName The name of the property containing the
@@ -197,7 +182,7 @@ export class AutoStartService implements IAutoStartService {
    * @param payload                     The payload to use as initial token value.
    */
   private async _startProcessInstances(
-    processModelIds: Array<string>,
+    processModels: Array<Model.Types.Process>,
     identityToUse: IIdentity,
     eventDefinitionPropertyName: string,
     eventName: string,
@@ -205,7 +190,7 @@ export class AutoStartService implements IAutoStartService {
     payload: any,
   ): Promise<void> {
 
-    logger.verbose(`Starting ${processModelIds.length} new ProcessInstances.`);
+    logger.verbose(`Starting ${processModels.length} new ProcessInstances.`);
     /**
      * Takes a Process model and returns the ID of the StartEvent that has a
      * matching event definition attached to it.
@@ -223,14 +208,9 @@ export class AutoStartService implements IAutoStartService {
       return matchingFlowNode.id;
     };
 
-    for (const processModelId of processModelIds) {
-      // We must ensure that the full ProcessModel will be used to start the instance.
-      // So we use the internal identity to request the ProcessModel again.
-      const fullProcessModel: Model.Types.Process = await this._processModelUseCases.getProcessModelById(this._internalIdentity, processModelId);
-      const startEventIdToUse: string = findMatchingStartEventId(fullProcessModel);
-
-      // We must not await the process instance's end here, or the processes would not run in parallel to each other.
-      await this._executeProcessService.start(identityToUse, fullProcessModel, startEventIdToUse, correlationId, payload);
+    for (const processModel of processModels) {
+      const startEventIdToUse: string = findMatchingStartEventId(processModel);
+      await this._executeProcessService.start(identityToUse, processModel.id, startEventIdToUse, correlationId, payload);
     }
   }
 }
