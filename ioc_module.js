@@ -35,12 +35,8 @@ const {
 
 const {
   AutoStartService,
-  CorrelationService,
-  DeleteProcessModelService,
   ExecuteProcessService,
-  FlowNodeInstanceService,
   FlowNodePersistenceFacade,
-  ProcessModelService,
   ResumeProcessService,
   TimerFacade,
 } = require('./dist/commonjs/index');
@@ -69,7 +65,7 @@ function registerServices(container) {
 
   container
     .register('AutoStartService', AutoStartService)
-    .dependencies('EventAggregator','ExecuteProcessService', 'IdentityService', 'ProcessModelService')
+    .dependencies('EventAggregator','ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases')
     .singleton();
 
   container
@@ -80,7 +76,7 @@ function registerServices(container) {
       'FlowNodeHandlerFactory',
       'LoggingApiService',
       'MetricsApiService',
-      'ProcessModelService'
+      'ProcessModelUseCases'
     );
 
   container
@@ -95,24 +91,8 @@ function registerServices(container) {
     );
 
   container
-    .register('CorrelationService', CorrelationService)
-    .dependencies('CorrelationRepository', 'IamService', 'ProcessDefinitionRepository');
-
-  container
-    .register('DeleteProcessModelService', DeleteProcessModelService)
-    .dependencies('CorrelationService', 'ExternalTaskRepository', 'FlowNodeInstanceService', 'IamService', 'ProcessModelService');
-
-  container
     .register('FlowNodePersistenceFacade', FlowNodePersistenceFacade)
     .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
-
-  container
-    .register('FlowNodeInstanceService', FlowNodeInstanceService)
-    .dependencies('FlowNodeInstanceRepository', 'IamService');
-
-  container
-    .register('ProcessModelService', ProcessModelService)
-    .dependencies('BpmnModelParser', 'CorrelationRepository', 'IamService', 'ProcessDefinitionRepository');
 
   container
     .register('TimerFacade', TimerFacade)
