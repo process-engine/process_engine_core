@@ -1,7 +1,7 @@
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {BadRequestError, InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
@@ -53,6 +53,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private readonly _metricsApiService: IMetricsApi;
   private readonly _processModelUseCases: IProcessModelUseCases;
 
+  // This identity is used to enable the `ExecuteProcessService` to always get full ProcessModels.
+  // It needs those in order to be able to correctly a ProcessModel.
   private _internalIdentity: IIdentity;
 
   constructor(
@@ -87,6 +89,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
     caller?: string,
   ): Promise<ProcessStartedMessage> {
 
+    await this._validateStartRequest(identity, processModelId, startEventId);
+
     const processInstanceConfig: IProcessInstanceConfig = await
       this._createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
 
@@ -113,6 +117,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
+
     return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller);
   }
 
@@ -125,6 +130,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
+
     return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller, endEventId);
   }
 
@@ -140,26 +146,28 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const processInstanceConfig: IProcessInstanceConfig = await
-        this._createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
-
-      const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
-        .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
-        .replace(eventAggregatorSettings.messageParams.processModelId, processModelId);
-
-      let eventSubscription: Subscription;
-
-      const messageReceivedCallback: EventReceivedCallback = async(message: EndEventReachedMessage): Promise<void> => {
-        const isAwaitedEndEvent: boolean = !endEventId || message.flowNodeId === endEventId;
-        if (isAwaitedEndEvent) {
-          this._eventAggregator.unsubscribe(eventSubscription);
-          resolve(message);
-        }
-      };
-
-      eventSubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
-
       try {
+        await this._validateStartRequest(identity, processModelId, startEventId, endEventId, true);
+
+        const processInstanceConfig: IProcessInstanceConfig = await
+          this._createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
+
+        const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
+          .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
+          .replace(eventAggregatorSettings.messageParams.processModelId, processModelId);
+
+        let eventSubscription: Subscription;
+
+        const messageReceivedCallback: EventReceivedCallback = async(message: EndEventReachedMessage): Promise<void> => {
+          const isAwaitedEndEvent: boolean = !endEventId || message.flowNodeId === endEventId;
+          if (isAwaitedEndEvent) {
+            this._eventAggregator.unsubscribe(eventSubscription);
+            resolve(message);
+          }
+        };
+
+        eventSubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
+
         await this._executeProcess(identity, processInstanceConfig);
       } catch (error) {
         // Errors thrown by an ErrorEndEvent ("error.errorCode")
@@ -173,6 +181,44 @@ export class ExecuteProcessService implements IExecuteProcessService {
         reject(new InternalServerError(error.message));
       }
     });
+  }
+
+  private async _validateStartRequest(
+    requestingIdentity: IIdentity,
+    processModelId: string,
+    startEventId: string,
+    endEventId?: string,
+    waitForEndEvent: boolean = false,
+  ): Promise<void> {
+
+    const processModel: Model.Types.Process = await this._processModelUseCases.getProcessModelById(requestingIdentity, processModelId);
+
+    if (!processModel.isExecutable) {
+      throw new BadRequestError('The process model is not executable!');
+    }
+
+    const hasMatchingStartEvent: boolean = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
+      return flowNode.id === startEventId;
+    });
+
+    if (!hasMatchingStartEvent) {
+      throw new NotFoundError(`StartEvent with ID '${startEventId}' not found!`);
+    }
+
+    if (waitForEndEvent) {
+
+      if (!endEventId) {
+        throw new BadRequestError(`Must provide an EndEventId, when using callback type 'CallbackOnEndEventReached'!`);
+      }
+
+      const hasMatchingEndEvent: boolean = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
+        return flowNode.id === endEventId;
+      });
+
+      if (!hasMatchingEndEvent) {
+        throw new NotFoundError(`EndEvent with ID '${startEventId}' not found!`);
+      }
+    }
   }
 
   /**
