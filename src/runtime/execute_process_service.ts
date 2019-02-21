@@ -54,7 +54,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private readonly _processModelUseCases: IProcessModelUseCases;
 
   // This identity is used to enable the `ExecuteProcessService` to always get full ProcessModels.
-  // It needs those in order to be able to correctly a ProcessModel.
+  // It needs those in order to be able to correctly start a ProcessModel.
   private _internalIdentity: IIdentity;
 
   constructor(
@@ -199,11 +199,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
       throw new BadRequestError('The process model is not executable!');
     }
 
-    const hasMatchingStartEvent: boolean = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
+    const hasNoMatchingStartEvent: boolean = !processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
       return flowNode.id === startEventId;
     });
 
-    if (!hasMatchingStartEvent) {
+    if (hasNoMatchingStartEvent) {
       throw new NotFoundError(`StartEvent with ID '${startEventId}' not found!`);
     }
 
@@ -213,11 +213,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
         throw new BadRequestError(`Must provide an EndEventId, when using callback type 'CallbackOnEndEventReached'!`);
       }
 
-      const hasMatchingEndEvent: boolean = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
+      const hasNoMatchingEndEvent: boolean = !processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
         return flowNode.id === endEventId;
       });
 
-      if (!hasMatchingEndEvent) {
+      if (hasNoMatchingEndEvent) {
         throw new NotFoundError(`EndEvent with ID '${startEventId}' not found!`);
       }
     }
@@ -228,7 +228,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
    *
    * @async
    * @param identity       The identity of the requesting user.
-   * @param processModelId The ID of the ProcessModel for wich a new
+   * @param processModelId The ID of the ProcessModel for which a new
    *                       ProcessInstance is to be created.
    * @param correlationId  The CorrelationId in which the ProcessInstance
    *                       should run.
@@ -241,8 +241,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
    *                       ProcessInstance.
    * @returns              A set of configurations for the new ProcessInstance.
    *                       Contains a ProcessInstanceId, CorrelationId,
-   *                       a ProcessToken,facades for the ProcessModel and
-   *                       ProcessToken and the StartEvent that has the ID
+   *                       a ProcessToken, facades for the ProcessModel and
+   *                       the ProcessToken and the StartEvent that has the ID
    *                       specified in startEventId.
    */
   private async _createProcessInstanceConfig(
