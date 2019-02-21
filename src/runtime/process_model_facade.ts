@@ -1,4 +1,4 @@
-import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
+import {BadRequestError, InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
 import {IProcessModelFacade} from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
@@ -26,6 +26,17 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
   public getStartEvents(): Array<Model.Events.StartEvent> {
     return this._filterFlowNodesByType<Model.Events.StartEvent>(Model.Events.StartEvent);
+  }
+
+  public getSingleStartEvent(): Model.Events.StartEvent {
+    const startEvents: Array<Model.Events.StartEvent> = this.getStartEvents();
+    const multipleStartEventsDefined: boolean = startEvents.length > 1;
+
+    if (multipleStartEventsDefined) {
+      throw new BadRequestError('The Process contains multiple StartEvents');
+    }
+
+    return startEvents[0];
   }
 
   public getStartEventById(startEventId: string): Model.Events.StartEvent {
