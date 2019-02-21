@@ -249,9 +249,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
     identity: IIdentity,
     processModelId: string,
     correlationId: string,
-    startEventId: string,
     payload: any,
     caller: string,
+    startEventId?: string,
   ): Promise<IProcessInstanceConfig> {
 
     // We use the internal identity here to ensure the ProcessModel will be complete.
@@ -259,7 +259,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
-    const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
+    const startEventIdSpecified: boolean = startEventId !== undefined;
+
+    /**
+     * If the user specified a StartEventId, we want to explicitly look that up.
+     * If not, we assume that the Process only contains one StartEvent.
+     */
+    const startEvent: Model.Events.StartEvent =
+      startEventIdSpecified
+        ? processModelFacade.getStartEventById(startEventId)
+        : processModelFacade.getSingleStartEvent();
 
     const processInstanceId: string = uuid.v4();
 
