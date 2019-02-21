@@ -65,7 +65,7 @@ function registerServices(container) {
 
   container
     .register('AutoStartService', AutoStartService)
-    .dependencies('EventAggregator','ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases')
+    .dependencies('EventAggregator','ExecuteProcessService', 'ProcessModelUseCases')
     .singleton();
 
   container
@@ -74,6 +74,7 @@ function registerServices(container) {
       'CorrelationService',
       'EventAggregator',
       'FlowNodeHandlerFactory',
+      'IdentityService',
       'LoggingApiService',
       'MetricsApiService',
       'ProcessModelUseCases'
@@ -142,7 +143,7 @@ function registerFactories(container) {
       'IntermediateCatchEventFactory',
       'IntermediateThrowEventFactory',
       'ParallelGatewayFactory',
-      'ServiceTaskFactory',
+      'ServiceTaskFactory'
     )
     .singleton();
 }
@@ -157,7 +158,7 @@ function registerFlowNodeHandlers(container) {
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodePersistenceFacade',
-      'ResumeProcessService',
+      'ResumeProcessService'
     );
 
   container
