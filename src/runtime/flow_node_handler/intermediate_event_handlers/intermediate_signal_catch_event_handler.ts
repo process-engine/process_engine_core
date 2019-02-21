@@ -56,23 +56,20 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
 
     const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const signalSubscriptionPromise: Promise<SignalEventReachedMessage> = this._suspendAndWaitForSignal(token);
-
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-        processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
         if (this.subscription) {
           this.eventAggregator.unsubscribe(this.subscription);
         }
 
-        signalSubscriptionPromise.cancel();
+        processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
+
         handlerPromise.cancel();
 
         return;
       };
 
-      const receivedMessage: SignalEventReachedMessage = await signalSubscriptionPromise;
+      const receivedMessage: SignalEventReachedMessage = await this._suspendAndWaitForSignal(token);
 
       token.payload = receivedMessage.currentToken;
       await this.persistOnResume(token);
@@ -97,23 +94,20 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
 
     const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const signalSubscriptionPromise: Promise<SignalEventReachedMessage> = this._waitForSignal();
-
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-        processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
         if (this.subscription) {
           this.eventAggregator.unsubscribe(this.subscription);
         }
 
-        signalSubscriptionPromise.cancel();
+        processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
+
         handlerPromise.cancel();
 
         return;
       };
 
-      const receivedMessage: SignalEventReachedMessage = await signalSubscriptionPromise;
+      const receivedMessage: SignalEventReachedMessage = await this._waitForSignal();
 
       onSuspendToken.payload = receivedMessage.currentToken;
       await this.persistOnResume(onSuspendToken);
@@ -131,13 +125,12 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
 
   private async _suspendAndWaitForSignal(token: ProcessToken): Promise<SignalEventReachedMessage> {
     const waitForSignalPromise: Promise<SignalEventReachedMessage> = this._waitForSignal();
-
     await this.persistOnSuspend(token);
 
     return await waitForSignalPromise;
   }
 
-  private _waitForSignal(): Promise<SignalEventReachedMessage> {
+  private async _waitForSignal(): Promise<SignalEventReachedMessage> {
 
     return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
