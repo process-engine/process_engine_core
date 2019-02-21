@@ -83,8 +83,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   public async start(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
   ): Promise<ProcessStartedMessage> {
@@ -112,37 +112,36 @@ export class ExecuteProcessService implements IExecuteProcessService {
   public async startAndAwaitEndEvent(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
-
     await this._validateStartRequest(identity, processModelId, startEventId);
 
-    return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller);
+    return this._startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, initialPayload, caller);
   }
 
   public async startAndAwaitSpecificEndEvent(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
     endEventId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
 
     await this._validateStartRequest(identity, processModelId, startEventId, endEventId, true);
 
-    return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller, endEventId);
+    return this._startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, initialPayload, caller, endEventId);
   }
 
   private async _startAndAwaitEndEvent(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
     endEventId?: string,
@@ -188,7 +187,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async _validateStartRequest(
     requestingIdentity: IIdentity,
     processModelId: string,
-    startEventId: string,
+    startEventId?: string,
     endEventId?: string,
     waitForEndEvent: boolean = false,
   ): Promise<void> {
@@ -249,9 +248,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
     identity: IIdentity,
     processModelId: string,
     correlationId: string,
+    startEventId: string,
     payload: any,
     caller: string,
-    startEventId?: string,
   ): Promise<IProcessInstanceConfig> {
 
     // We use the internal identity here to ensure the ProcessModel will be complete.
