@@ -187,7 +187,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     try {
       const result: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
-        await this._consumerApiService.startProcessInstance(identity, processModelId, startEventId, payload, startCallbackType);
+        await this._consumerApiService.startProcessInstance(identity, processModelId, payload, startCallbackType, startEventId);
 
       return result;
     } catch (error) {

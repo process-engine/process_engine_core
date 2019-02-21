@@ -24,7 +24,7 @@
     "@essential-projects/errors_ts": "^1.4.0",
     "@essential-projects/timing_contracts": "^4.0.0",
     "@process-engine/external_task_api_contracts": "^1.0.0",
-    "@process-engine/consumer_api_contracts": "^4.1.0",
+    "@process-engine/consumer_api_contracts": "feature~optional_start_event_id",
     "@process-engine/correlation.contracts": "^1.0.0",
     "@process-engine/flow_node_instance.contracts": "^1.0.0",
     "@process-engine/logging_api_contracts": "^1.0.0",
