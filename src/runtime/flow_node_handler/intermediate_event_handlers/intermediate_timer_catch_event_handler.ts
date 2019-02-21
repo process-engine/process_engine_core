@@ -44,30 +44,8 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
 
     this.logger.verbose(`Executing TimerCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
-    await this.persistOnSuspend(token);
 
     return await this._executeHandler(token, processTokenFacade, processModelFacade);
-  }
-
-  protected async _continueAfterEnter(
-    onEnterToken: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    await this.persistOnSuspend(onEnterToken);
-
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade);
-  }
-
-  protected async _continueAfterSuspend(
-    flowNodeInstance: FlowNodeInstance,
-    onSuspendToken: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade);
   }
 
   protected async _executeHandler(
@@ -80,7 +58,7 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       try {
-        const timerPromise: Promise<void> = this._executeTimer(processTokenFacade);
+        const timerPromise: Promise<void> = this._suspendAndExecuteTimer(token, processTokenFacade);
 
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
@@ -112,6 +90,59 @@ export class IntermediateTimerCatchEventHandler extends FlowNodeHandlerInterrupt
     });
 
     return handlerPromise;
+  }
+
+  protected async _continueAfterSuspend(
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+  ): Promise<Array<Model.Base.FlowNode>> {
+
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+
+      try {
+        const timerPromise: Promise<void> = this._executeTimer(processTokenFacade);
+
+        this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
+
+          processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
+
+          if (this.timerSubscription) {
+            this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+          }
+
+          timerPromise.cancel();
+          handlerPromise.cancel();
+
+          return;
+        };
+
+        await timerPromise;
+
+        processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
+
+        await this.persistOnResume(onSuspendToken);
+        await this.persistOnExit(onSuspendToken);
+
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);
+
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        return reject(error);
+      }
+    });
+
+    return handlerPromise;
+  }
+
+  private async _suspendAndExecuteTimer(token: ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<void> {
+    const waitForSignalPromise: Promise<void> = this._executeTimer(processTokenFacade);
+
+    await this.persistOnSuspend(token);
+
+    return await waitForSignalPromise;
   }
 
   private _executeTimer(processTokenFacade: IProcessTokenFacade): Promise<void> {
