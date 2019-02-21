@@ -83,7 +83,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
       if (processIsNotYetFinished) {
 
-        await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
+        const executeNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
             await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
 
@@ -100,7 +100,16 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
           return nextFlowNodeHandler
             .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
-        });
+        };
+
+        // We cannot use `Promise.map` or `Promise.each` here, because the branches would not run truly in parallel to each other.
+        // The only way to guarantee that is to create the promises and then use `Promise.all` to await all of them.
+        const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
+        for (const nextFlowNode of nextFlowNodes) {
+          nextFlowNodeExecutionPromises.push(executeNextFlowNode(nextFlowNode));
+        }
+
+        await Promise.all(nextFlowNodeExecutionPromises);
       }
     } catch (error) {
       const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
@@ -151,8 +160,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
           .getAllResults()
           .pop();
 
-        await Promise.map<Model.Base.FlowNode, void>(nextFlowNodes, async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-
+        const handleNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
           const processToken: ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
 
           const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
@@ -181,7 +189,16 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
           return nextFlowNodeHandler
             .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
-        });
+        };
+
+        // We cannot use `Promise.map` or `Promise.each` here, because the branches would not run truly in parallel to each other.
+        // The only way to guarantee that is to create the promises and then use `Promise.all` to await all of them.
+        const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
+        for (const nextFlowNode of nextFlowNodes) {
+          nextFlowNodeExecutionPromises.push(handleNextFlowNode(nextFlowNode));
+        }
+
+        await Promise.all(nextFlowNodeExecutionPromises);
       }
     } catch (error) {
       const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
@@ -204,8 +221,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * Allows each handler to perform custom preprations prior to being executed.
-   * For example, creating subscriptions for specific events.
+   * Allows each handler to perform custom preprations prior to execution.
    *
    * @async
    * @param token              The current ProcessToken.
@@ -246,8 +262,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   ): Promise<Array<Model.Base.FlowNode>>;
 
   /**
-   * Allows each handler to perform custom cleanup operations.
-   * For example, cleaning up EventAggregator Subscriptions.
+   * Allows each handler to perform custom cleanup operations after execution.
    *
    * @async
    * @param token              The current ProcessToken.
@@ -266,12 +281,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * This is the method where the derived handlers must implement their logic
-   * for resuming a previously interrupted instance.
-   *
-   * The base implementation comes with a logic for resuming after "onEnter",
-   * "onExit" and all error cases.
-   * Handlers that use suspension and resumption must override this function.
+   * Handles the resumption of FlowNodeInstances.
    *
    * @async
    * @param   flowNodeInstance         The current ProcessToken.
@@ -341,11 +351,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onEnter" state.
-   *
-   * Basically, the handler was not yet executed, except for the initial
-   * state change.
+   * Resumes the given FlowNodeInstance from the point its execution was
+   * first started.
    *
    * @async
    * @param   onEnterToken       The token the FlowNodeInstance had when it was
@@ -419,11 +426,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onExit" state.
-   *
-   * Basically, the handler had already finished.
-   * We just need to return the info about the next FlowNode to run.
+   * Resumes the given FlowNodeInstance from the point it has finished execution.
+   * This is used to reconstruct Token Histories.
    *
    * @async
    * @param   resumeToken        The ProcessToken stored after resuming the
