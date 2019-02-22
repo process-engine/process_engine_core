@@ -1,7 +1,7 @@
 import {before, describe, it} from 'mocha';
 import * as should from 'should';
 
-import {Model} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {ProcessModelFacadeTestFixture} from './process_model_facade_test_fixture';
 

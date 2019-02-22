@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as should from 'should';
 
-import {Model} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
 import {ProcessModelFacade} from '../../../src/runtime';
