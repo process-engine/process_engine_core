@@ -40,9 +40,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
         const currentDefinedStartEvents: string = '';
 
         for (const currentStartEvent of startEvents) {
-          const startEventAsString: string =
-            `${currentStartEvent.id.toString()}: ${currentStartEvent.eventType.toString()}\n`;
-
+          const startEventAsString: string = `${currentStartEvent.id.toString()}\n`;
           currentDefinedStartEvents.concat(startEventAsString);
         }
 
