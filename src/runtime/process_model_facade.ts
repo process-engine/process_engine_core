@@ -33,7 +33,27 @@ export class ProcessModelFacade implements IProcessModelFacade {
     const multipleStartEventsDefined: boolean = startEvents.length > 1;
 
     if (multipleStartEventsDefined) {
-      throw new BadRequestError('The Process contains multiple StartEvents');
+      const badRequestError: BadRequestError = new BadRequestError('The Process contains multiple StartEvents, but no StartEventId was given.');
+
+      const generateAdditionalInformations: () => string = (): string => {
+        const headerText: string = 'The StartEvents with the following Ids are defined in the Process:';
+        const currentDefinedStartEvents: string = '';
+
+        for (const currentStartEvent of startEvents) {
+          const startEventAsString: string =
+            `${currentStartEvent.id.toString()}: ${currentStartEvent.eventType.toString()}\n`;
+
+          currentDefinedStartEvents.concat(startEventAsString);
+        }
+
+        const additionalInformations: string = `${headerText}\n${currentDefinedStartEvents}`;
+
+        return additionalInformations;
+      };
+
+      badRequestError.additionalInformation = generateAdditionalInformations();
+
+      throw badRequestError;
     }
 
     return startEvents[0];
