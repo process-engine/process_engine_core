@@ -198,8 +198,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
       throw new BadRequestError('The process model is not executable!');
     }
 
-    const specificStartEventIsDefined: boolean = startEventId !== undefined;
-    if (specificStartEventIsDefined) {
+    const startEventParameterGiven: boolean = startEventId !== undefined;
+    if (startEventParameterGiven) {
       const hasNoMatchingStartEvent: boolean = !processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
         return flowNode.id === startEventId;
       });
