@@ -4,7 +4,7 @@ import {
   getModelPropertyAsArray,
 } from './../type_factory';
 
-export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
+export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
   const laneSetData: any = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
 
@@ -14,7 +14,7 @@ export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
 
   const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
-  const laneSet: Model.Types.LaneSet = new Model.Types.LaneSet();
+  const laneSet: Model.ProcessElements.LaneSet = new Model.ProcessElements.LaneSet();
   laneSet.lanes = [];
 
   if (!lanesRaw) {
@@ -22,7 +22,7 @@ export function parseProcessLaneSet(data: any): Model.Types.LaneSet {
   }
 
   for (const laneRaw of lanesRaw) {
-    const lane: Model.Types.Lane = createObjectWithCommonProperties(laneRaw, Model.Types.Lane);
+    const lane: Model.ProcessElements.Lane = createObjectWithCommonProperties(laneRaw, Model.ProcessElements.Lane);
 
     lane.name = laneRaw.name;
 

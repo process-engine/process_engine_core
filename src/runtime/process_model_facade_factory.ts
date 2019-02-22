@@ -2,7 +2,7 @@ import {IProcessModelFacade, IProcessModelFacadeFactory, Model} from '@process-e
 import {ProcessModelFacade} from './process_model_facade';
 
 export class ProcessModelFacadeFactory implements IProcessModelFacadeFactory {
-  public create(processModel: Model.Types.Process): IProcessModelFacade {
+  public create(processModel: Model.Process): IProcessModelFacade {
     return new ProcessModelFacade(processModel);
   }
 }

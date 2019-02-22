@@ -7,7 +7,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
 
   private _subProcessDefinition: Model.Activities.SubProcess;
 
-  constructor(processDefinition: Model.Types.Process, subProcessDefinition: Model.Activities.SubProcess) {
+  constructor(processDefinition: Model.Process, subProcessDefinition: Model.Activities.SubProcess) {
     super(processDefinition);
     this._subProcessDefinition = subProcessDefinition;
   }
@@ -30,8 +30,8 @@ export class SubProcessModelFacade extends ProcessModelFacade {
   public getPreviousFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
-    const sequenceFlows: Array<Model.Types.SequenceFlow> =
-      this.subProcessDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+    const sequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
+      this.subProcessDefinition.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
         return sequenceFlow.targetRef === flowNode.id;
       });
 
@@ -42,7 +42,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
 
     // Then find the source FlowNodes for each SequenceFlow
     const previousFlowNodes: Array<Model.Base.FlowNode> =
-      sequenceFlows.map((currentSequenceFlow: Model.Types.SequenceFlow) => {
+      sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow) => {
 
         const sourceNode: Model.Base.FlowNode =
           this.subProcessDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === currentSequenceFlow.sourceRef);
@@ -64,8 +64,8 @@ export class SubProcessModelFacade extends ProcessModelFacade {
   public getNextFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
-    const sequenceFlows: Array<Model.Types.SequenceFlow> =
-      this.subProcessDefinition.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+    const sequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
+      this.subProcessDefinition.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
         return sequenceFlow.sourceRef === flowNode.id;
       });
 
@@ -89,7 +89,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
 
     // Then find the target FlowNodes for each SequenceFlow
     const nextFlowNodes: Array<Model.Base.FlowNode> =
-      sequenceFlows.map((sequenceFlow: Model.Types.SequenceFlow) => {
+      sequenceFlows.map((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
         return this.subProcessDefinition.flowNodes.find((node: Model.Base.FlowNode) => node.id === sequenceFlow.targetRef);
       });
 

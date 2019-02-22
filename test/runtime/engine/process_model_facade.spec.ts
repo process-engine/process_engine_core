@@ -26,7 +26,7 @@ describe('Process Model Facade', () => {
       ]);
 
       const vorgangAnlegen: Model.Activities.ServiceTask = fixture.getFlowNodeById<Model.Activities.ServiceTask>('Task_01xg9lr');
-      const invocation: Model.Activities.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.MethodInvocation;
+      const invocation: Model.Activities.Invocations.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.Invocations.MethodInvocation;
 
       should(invocation.module).be.eql('HttpClient');
       should(invocation.method).be.eql('post');

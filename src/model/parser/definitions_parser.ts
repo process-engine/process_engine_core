@@ -1,21 +1,21 @@
 import {
   BpmnTags,
-  Definitions,
   IParsedObjectModel,
+  Model,
 } from '@process-engine/process_model.contracts';
 
 import * as Parser from './index';
 
-export function parseDefinitions(parsedObjectModel: IParsedObjectModel): Definitions {
+export function parseDefinitions(parsedObjectModel: IParsedObjectModel): Model.Definitions {
 
   const definitions: any = parsedObjectModel[BpmnTags.CommonElement.Definitions];
 
   return convertToInternalObjectModel(definitions);
 }
 
-function convertToInternalObjectModel(parsedXml: any): Definitions {
+function convertToInternalObjectModel(parsedXml: any): Model.Definitions {
 
-  const definitions: Definitions = createDefinitionBaseObject(parsedXml);
+  const definitions: Model.Definitions = createDefinitionBaseObject(parsedXml);
 
   definitions.collaboration = Parser.parseCollaboration(parsedXml);
   definitions.processes = Parser.parseProcesses(parsedXml);
@@ -23,9 +23,9 @@ function convertToInternalObjectModel(parsedXml: any): Definitions {
   return definitions;
 }
 
-function createDefinitionBaseObject(parsedXml: any): Definitions {
+function createDefinitionBaseObject(parsedXml: any): Model.Definitions {
 
-  const basicDefinition: Definitions = new Definitions();
+  const basicDefinition: Model.Definitions = new Model.Definitions();
 
   basicDefinition.id = parsedXml.id;
   basicDefinition.xmlns = {

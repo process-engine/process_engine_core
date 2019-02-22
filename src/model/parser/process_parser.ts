@@ -12,21 +12,21 @@ import {
 
 import * as Parser from './index';
 
-export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Process> {
+export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Process> {
 
   const processData: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
 
-  const processes: Array<Model.Types.Process> = [];
+  const processes: Array<Model.Process> = [];
 
   for (const processRaw of processData) {
 
-    const process: Model.Types.Process = createObjectWithCommonProperties(processRaw, Model.Types.Process);
+    const process: Model.Process = createObjectWithCommonProperties(processRaw, Model.Process);
 
     process.name = processRaw.name;
     process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
 
-    const bpmnErrors: Array<Model.Types.Error> = parseErrorsFromProcessModel(parsedObjectModel);
-    const eventDefinitions: Array<Model.EventDefinitions.EventDefinition> = parseEventDefinitionsFromObjectModel(parsedObjectModel);
+    const bpmnErrors: Array<Model.GlobalElements.Error> = parseErrorsFromProcessModel(parsedObjectModel);
+    const eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = parseEventDefinitionsFromObjectModel(parsedObjectModel);
 
     process.laneSet = Parser.parseProcessLaneSet(processRaw);
     process.sequenceFlows = Parser.parseProcessSequenceFlows(processRaw);
@@ -45,9 +45,9 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
  * @returns                 A list of all parsed error definitions.
  *                          Returns an empty list, if no errors are defined.
  */
-function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Array<Model.Types.Error> {
+function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Array<Model.GlobalElements.Error> {
 
-  const errors: Array<Model.Types.Error> = [];
+  const errors: Array<Model.GlobalElements.Error> = [];
   const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
 
   if (collaborationHasNoError) {
@@ -57,7 +57,7 @@ function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Arr
   const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Error);
 
   for (const rawError of rawErrors) {
-    const newError: Model.Types.Error = createObjectWithCommonProperties(rawError, Model.Types.Error);
+    const newError: Model.GlobalElements.Error = createObjectWithCommonProperties(rawError, Model.GlobalElements.Error);
 
     newError.code = rawError.errorCode;
     newError.name = rawError.name;
@@ -69,13 +69,13 @@ function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Arr
   return errors;
 }
 
-function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.EventDefinitions.EventDefinition> {
+function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.Events.Definitions.EventDefinition> {
 
-  const messageDefinitions: Array<Model.EventDefinitions.MessageEventDefinition> =
-  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.EventDefinitions.MessageEventDefinition);
+  const messageDefinitions: Array<Model.Events.Definitions.MessageEventDefinition> =
+  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.Events.Definitions.MessageEventDefinition);
 
-  const signalDefinitions: Array<Model.EventDefinitions.MessageEventDefinition> =
-  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.EventDefinitions.SignalEventDefinition);
+  const signalDefinitions: Array<Model.Events.Definitions.MessageEventDefinition> =
+  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.Events.Definitions.SignalEventDefinition);
 
   return Array.prototype.concat(messageDefinitions, signalDefinitions);
 }

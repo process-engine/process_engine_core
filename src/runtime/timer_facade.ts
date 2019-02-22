@@ -36,7 +36,7 @@ export class TimerFacade implements ITimerFacade {
 
   public initializeTimerFromDefinition(
     flowNode: Model.Base.FlowNode,
-    timerDefinition: Model.EventDefinitions.TimerEventDefinition,
+    timerDefinition: Model.Events.Definitions.TimerEventDefinition,
     processTokenFacade: IProcessTokenFacade,
     callback: Function,
   ): Subscription {

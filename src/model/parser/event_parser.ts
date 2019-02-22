@@ -7,13 +7,13 @@ import {
 
 import {NotFoundError} from '@essential-projects/errors_ts';
 
-let errors: Array<Model.Types.Error> = [];
-let eventDefinitions: Array<Model.EventDefinitions.EventDefinition> = [];
+let errors: Array<Model.GlobalElements.Error> = [];
+let eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = [];
 
 export function parseEventsFromProcessData(
   processData: any,
-  parsedErrors: Array<Model.Types.Error>,
-  parsedEventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+  parsedErrors: Array<Model.GlobalElements.Error>,
+  parsedEventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Events.Event> {
 
   errors = parsedErrors;
@@ -165,7 +165,7 @@ function assignEventDefinition(
     case 'linkEventDefinition':
       // Unlinke messages and signals, links are not declared globally on a process model,
       // but exist only on the event to which they are attached.
-      event[targetPropertyName] = new Model.EventDefinitions.LinkEventDefinition(eventDefinitonValue.name);
+      event[targetPropertyName] = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonValue.name);
       break;
     case 'messageEventDefinition':
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);
@@ -182,10 +182,10 @@ function assignEventDefinition(
   }
 }
 
-function getDefinitionForEvent<TEventDefinition extends Model.EventDefinitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
+function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
 
-  const matchingEventDefintion: Model.EventDefinitions.EventDefinition =
-    eventDefinitions.find((entry: Model.EventDefinitions.EventDefinition): boolean => {
+  const matchingEventDefintion: Model.Events.Definitions.EventDefinition =
+    eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
       return entry.id === eventDefinitionId;
     });
 
@@ -199,7 +199,7 @@ function getDefinitionForEvent<TEventDefinition extends Model.EventDefinitions.E
  * @param   endEventRaw The raw ErrorEndEvent.
  * @returns             The matching error definition.
  */
-function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
+function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
 
   const errorIsNotAnonymous: boolean = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
 
@@ -211,7 +211,6 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
 
   return {
     id: '',
-    structureRef: undefined,
     code: '',
     name: '',
   };
@@ -224,9 +223,9 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.Types.Error {
  * @returns       The retrieved Error.
  * @throws        404, if no matching error was found.
  */
-function getErrorById(errorId: string): Model.Types.Error {
+function getErrorById(errorId: string): Model.GlobalElements.Error {
 
-  const matchingError: Model.Types.Error = errors.find((entry: Model.Types.Error): boolean => {
+  const matchingError: Model.GlobalElements.Error = errors.find((entry: Model.GlobalElements.Error): boolean => {
     return entry.id === errorId;
   });
 

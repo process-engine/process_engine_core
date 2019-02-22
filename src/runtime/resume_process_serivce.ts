@@ -21,7 +21,7 @@ import {
   IProcessTokenFacade,
   IResumeProcessService,
 } from '@process-engine/process_engine_contracts';
-import {BpmnType, Definitions, Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
@@ -158,8 +158,8 @@ export class ResumeProcessService implements IResumeProcessService {
 
     const processModelCorrelation: CorrelationProcessInstance = correlation.processModels[0];
 
-    const processModelDefinitions: Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
-    const processModel: Model.Types.Process = processModelDefinitions.processes[0];
+    const processModelDefinitions: Model.Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
+    const processModel: Model.Process = processModelDefinitions.processes[0];
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
     // Find the StartEvent the ProcessInstance was started with.
