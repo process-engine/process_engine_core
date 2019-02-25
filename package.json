@@ -51,7 +51,7 @@
     "@types/node": "^10.12.2",
     "gulp": "^4.0.0",
     "gulptraum": "^3.0.0",
-    "gulptraum-typescript": "^2.0.0",
+    "gulptraum-typescript": "^3.0.0",
     "ts-node": "^8.0.2",
     "tsconfig": "^7.0.0",
     "tslint": "^5.12.0",
