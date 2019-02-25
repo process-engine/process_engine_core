@@ -1,7 +1,7 @@
 import {
-  Definitions,
   IModelParser,
   IParsedObjectModel,
+  Model,
 } from '@process-engine/process_model.contracts';
 
 import * as Parser from './parser';
@@ -29,10 +29,10 @@ export class BpmnModelParser implements IModelParser {
     });
   }
 
-  public async parseXmlToObjectModel(xml: string): Promise<Definitions> {
+  public async parseXmlToObjectModel(xml: string): Promise<Model.Definitions> {
 
     const parsedObjectModel: IParsedObjectModel = await this._parseObjectModel(xml);
-    const definitions: Definitions = Parser.parseDefinitions(parsedObjectModel);
+    const definitions: Model.Definitions = Parser.parseDefinitions(parsedObjectModel);
 
     return definitions;
   }

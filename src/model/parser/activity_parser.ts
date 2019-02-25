@@ -14,8 +14,8 @@ import {parseProcessSequenceFlows} from './sequence_flow_parser';
 
 export function parseActivitiesFromProcessData(
   processData: any,
-  errors: Array<Model.Types.Error>,
-  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+  errors: Array<Model.GlobalElements.Error>,
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Activities.Activity> {
 
   const manualTasks: Array<Model.Activities.ManualTask> = parseManualTasks(processData);
@@ -50,7 +50,7 @@ function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> 
   return manualTasks;
 }
 
-function parseSendTasks(processData: any, eventDefinitions: Array<Model.EventDefinitions.EventDefinition>): Array<Model.Activities.SendTask> {
+function parseSendTasks(processData: any, eventDefinitions: Array<Model.Events.Definitions.EventDefinition>): Array<Model.Activities.SendTask> {
   const sendTasks: Array<Model.Activities.SendTask> = [];
 
   const sendTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
@@ -71,7 +71,7 @@ function parseSendTasks(processData: any, eventDefinitions: Array<Model.EventDef
       throw new UnprocessableEntityError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
     }
 
-    const sendTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
+    const sendTaskMessageDefinition: Model.Events.Definitions.MessageEventDefinition =
       getDefinitionForEvent(currentRawSendTask.messageRef, eventDefinitions);
 
     sendTask.messageEventDefinition = sendTaskMessageDefinition;
@@ -81,7 +81,7 @@ function parseSendTasks(processData: any, eventDefinitions: Array<Model.EventDef
   return sendTasks;
 }
 
-function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.EventDefinitions.EventDefinition>): Array<Model.Activities.ReceiveTask> {
+function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.Events.Definitions.EventDefinition>): Array<Model.Activities.ReceiveTask> {
   const receiveTasks: Array<Model.Activities.ReceiveTask> = [];
 
   const receiveTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ReceiveTask);
@@ -102,7 +102,7 @@ function parseReceiveTasks(processData: any, eventDefinitions: Array<Model.Event
       throw new UnprocessableEntityError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
     }
 
-    const receiveTaskMessageDefinition: Model.EventDefinitions.MessageEventDefinition =
+    const receiveTaskMessageDefinition: Model.Events.Definitions.MessageEventDefinition =
       getDefinitionForEvent(currentRawReceiveTask.messageRef, eventDefinitions);
 
     receiveTask.messageEventDefinition = receiveTaskMessageDefinition;
@@ -138,7 +138,7 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     userTasks.push(userTask);
   }
 
-  function parseFormFields(userTaskRaw: any): Array<Model.Types.FormField> {
+  function parseFormFields(userTaskRaw: any): Array<Model.Activities.Types.UserTaskFormField> {
 
     const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
     if (!extensionElements) {
@@ -155,19 +155,19 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
       return [];
     }
 
-    const formFields: Array<Model.Types.FormField> = [];
+    const formFields: Array<Model.Activities.Types.UserTaskFormField> = [];
 
     for (const formFieldRaw of formFieldsRaw) {
-      const formField: Model.Types.FormField = parseFormField(formFieldRaw);
+      const formField: Model.Activities.Types.UserTaskFormField = parseFormField(formFieldRaw);
       formFields.push(formField);
     }
 
     return formFields;
   }
 
-  function parseFormField(formFieldRaw: any): Model.Types.FormField {
+  function parseFormField(formFieldRaw: any): Model.Activities.Types.UserTaskFormField {
 
-    const formField: Model.Types.FormField = new Model.Types.FormField();
+    const formField: Model.Activities.Types.UserTaskFormField = new Model.Activities.Types.UserTaskFormField();
 
     formField.id = formFieldRaw.id;
     formField.label = formFieldRaw.label;
@@ -178,8 +178,8 @@ function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
     if (formField.type === 'enum') {
       const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
 
-      const valueMapper: any = (enumValueRaw: any): Model.Types.EnumValue => {
-        const enumValue: Model.Types.EnumValue = new Model.Types.EnumValue();
+      const valueMapper: any = (enumValueRaw: any): Model.Activities.Types.FormFieldEnumValue => {
+        const enumValue: Model.Activities.Types.FormFieldEnumValue = new Model.Activities.Types.FormFieldEnumValue();
         enumValue.id = enumValueRaw.id;
         enumValue.name = enumValueRaw.name;
 
@@ -256,7 +256,7 @@ function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask
         serviceTask.extensionElements.camundaExtensionProperties &&
         serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-        const invocation: Model.Activities.Invocation = getInvocationForServiceTask(serviceTask);
+        const invocation: Model.Activities.Invocations.Invocation = getInvocationForServiceTask(serviceTask);
 
         if (invocation) {
           serviceTask.invocation = invocation;
@@ -309,7 +309,7 @@ function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activiti
   }
 
   const extensionProperties: any = parseExtensionProperties(extensionPropertiesRaw);
-  const preferredControlProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName(name, extensionProperties);
+  const preferredControlProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName(name, extensionProperties);
 
   const preferredControlPropertyIsNotExisting: boolean = preferredControlProperty === undefined;
   if (preferredControlPropertyIsNotExisting) {
@@ -320,7 +320,7 @@ function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activiti
 }
 
 function parseExtensionProperties(extensionPropertiesRaw: any): any {
-  const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = [];
+  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = [];
 
   const extensionPropertiesIsNoArray: boolean = !Array.isArray(extensionPropertiesRaw);
   if (extensionPropertiesIsNoArray) {
@@ -331,7 +331,7 @@ function parseExtensionProperties(extensionPropertiesRaw: any): any {
   }
 
   for (const extensionPropertyRaw of extensionPropertiesRaw) {
-    const extensionProperty: Model.Base.CamundaExtensionProperty = {
+    const extensionProperty: Model.Base.Types.CamundaExtensionProperty = {
       name: extensionPropertyRaw.name,
       value: extensionPropertyRaw.value,
     };
@@ -349,8 +349,8 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
     serviceTask.extensionElements.camundaExtensionProperties &&
     serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-    const extensionProperties: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
-    const payloadProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+    const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
+    const payloadProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
 
     const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
 
@@ -363,20 +363,20 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
   return undefined;
 }
 
-function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocation {
+function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocations.Invocation {
 
-  const extensionParameters: Array<Model.Base.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
+  const extensionParameters: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
 
   return getMethodInvocation(extensionParameters);
 }
 
-function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtensionProperty>): Model.Activities.MethodInvocation {
+function getMethodInvocation(extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>): Model.Activities.Invocations.MethodInvocation {
 
-  const methodInvocation: Model.Activities.MethodInvocation = new Model.Activities.MethodInvocation();
+  const methodInvocation: Model.Activities.Invocations.MethodInvocation = new Model.Activities.Invocations.MethodInvocation();
 
-  const moduleProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('module', extensionProperties);
-  const methodProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
-  const paramsProperty: Model.Base.CamundaExtensionProperty = findExtensionPropertyByName('params', extensionProperties);
+  const moduleProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('module', extensionProperties);
+  const methodProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
+  const paramsProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('params', extensionProperties);
 
   // If no module- or method- property is defined, this is not a valid method invocation. 'params' are optional.
   if (!moduleProperty || !methodProperty) {
@@ -392,10 +392,10 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.CamundaExtens
 
 function findExtensionPropertyByName(
   propertyName: string,
-  extensionProperties: Array<Model.Base.CamundaExtensionProperty>,
-): Model.Base.CamundaExtensionProperty {
+  extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>,
+): Model.Base.Types.CamundaExtensionProperty {
 
-  return extensionProperties.find((property: Model.Base.CamundaExtensionProperty): boolean => {
+  return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
   });
 }
@@ -435,8 +435,8 @@ function parseCallActivities(processData: any): Array<Model.Activities.CallActiv
 
 function parseSubProcesses(
   processData: any,
-  errors: Array<Model.Types.Error>,
-  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+  errors: Array<Model.GlobalElements.Error>,
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Activities.SubProcess> {
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
@@ -492,12 +492,12 @@ function createActivityInstance<TActivity extends Model.Activities.Activity>(dat
   return instance;
 }
 
-function getDefinitionForEvent<TEventDefinition extends Model.EventDefinitions.EventDefinition>(
+function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
   eventDefinitionId: string,
-  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>): TEventDefinition {
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>): TEventDefinition {
 
-  const matchingEventDefintion: Model.EventDefinitions.EventDefinition =
-    eventDefinitions.find((entry: Model.EventDefinitions.EventDefinition): boolean => {
+  const matchingEventDefintion: Model.Events.Definitions.EventDefinition =
+    eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
       return entry.id === eventDefinitionId;
     });
 

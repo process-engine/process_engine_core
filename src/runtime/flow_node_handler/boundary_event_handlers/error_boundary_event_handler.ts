@@ -24,7 +24,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
    */
   public canHandleError(error: Error): boolean {
 
-    const errorDefinition: Model.EventDefinitions.ErrorEventDefinition = this.boundaryEvent.errorEventDefinition;
+    const errorDefinition: Model.Events.Definitions.ErrorEventDefinition = this.boundaryEvent.errorEventDefinition;
 
     const modelHasNoErrorDefinition: boolean = !errorDefinition || !errorDefinition.name || errorDefinition.name === '';
     if (modelHasNoErrorDefinition) {

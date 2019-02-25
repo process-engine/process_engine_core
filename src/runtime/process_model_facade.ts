@@ -6,13 +6,13 @@ import {SubProcessModelFacade} from './index';
 
 export class ProcessModelFacade implements IProcessModelFacade {
 
-  private _processModel: Model.Types.Process;
+  private _processModel: Model.Process;
 
-  constructor(processModel: Model.Types.Process) {
+  constructor(processModel: Model.Process) {
     this._processModel = processModel;
   }
 
-  protected get processModel(): Model.Types.Process {
+  protected get processModel(): Model.Process {
     return this._processModel;
   }
 
@@ -55,15 +55,15 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === flowNodeId);
   }
 
-  public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
-    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => sequenceFlow.targetRef === flowNodeId);
+  public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.ProcessElements.SequenceFlow> {
+    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => sequenceFlow.targetRef === flowNodeId);
   }
 
-  public getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.Types.SequenceFlow> {
-    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => sequenceFlow.sourceRef === flowNodeId);
+  public getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.ProcessElements.SequenceFlow> {
+    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => sequenceFlow.sourceRef === flowNodeId);
   }
 
-  public getSequenceFlowBetween(sourceNode: Model.Base.FlowNode, targetNode: Model.Base.FlowNode): Model.Types.SequenceFlow {
+  public getSequenceFlowBetween(sourceNode: Model.Base.FlowNode, targetNode: Model.Base.FlowNode): Model.ProcessElements.SequenceFlow {
 
     if (!sourceNode || !targetNode) {
       return undefined;
@@ -71,7 +71,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     const sourceNodeBoundaryEvents: Array<Model.Events.BoundaryEvent> = this.getBoundaryEventsFor(sourceNode);
 
-    return this.processModel.sequenceFlows.find((sequenceFlow: Model.Types.SequenceFlow): boolean => {
+    return this.processModel.sequenceFlows.find((sequenceFlow: Model.ProcessElements.SequenceFlow): boolean => {
       const sourceRefMatches: boolean = sequenceFlow.sourceRef === sourceNode.id;
       const targetRefMatches: boolean = sequenceFlow.targetRef === targetNode.id;
 
@@ -108,8 +108,8 @@ export class ProcessModelFacade implements IProcessModelFacade {
   public getPreviousFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
-    const sequenceFlows: Array<Model.Types.SequenceFlow> =
-      this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+    const sequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
+      this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
         return sequenceFlow.targetRef === flowNode.id;
       });
 
@@ -120,7 +120,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     // Then find the source FlowNodes for each SequenceFlow
     const previousFlowNodes: Array<Model.Base.FlowNode> =
-      sequenceFlows.map((currentSequenceFlow: Model.Types.SequenceFlow) => {
+      sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow) => {
 
         const sourceNode: Model.Base.FlowNode =
           this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === currentSequenceFlow.sourceRef);
@@ -142,8 +142,8 @@ export class ProcessModelFacade implements IProcessModelFacade {
   public getNextFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
-    const sequenceFlows: Array<Model.Types.SequenceFlow> =
-      this.processModel.sequenceFlows.filter((sequenceFlow: Model.Types.SequenceFlow) => {
+    const sequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
+      this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
         return sequenceFlow.sourceRef === flowNode.id;
       });
 
@@ -167,7 +167,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     // Then find the target FlowNodes for each SequenceFlow
     const nextFlowNodes: Array<Model.Base.FlowNode> =
-      sequenceFlows.map((currentSequenceFlow: Model.Types.SequenceFlow) => {
+      sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow) => {
         return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === currentSequenceFlow.targetRef);
       });
 

@@ -6,8 +6,8 @@ import * as Parser from './index';
 // - Associations
 export function parseProcessFlowNodes(
   processData: any,
-  errors: Array<Model.Types.Error>,
-  eventDefinitions: Array<Model.EventDefinitions.EventDefinition>,
+  errors: Array<Model.GlobalElements.Error>,
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Base.FlowNode> {
 
   let nodes: Array<Model.Base.FlowNode> = [];

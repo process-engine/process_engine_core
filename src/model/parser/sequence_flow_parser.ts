@@ -4,16 +4,16 @@ import {
   getModelPropertyAsArray,
 } from './../type_factory';
 
-export function parseProcessSequenceFlows(data: any): Array<Model.Types.SequenceFlow> {
+export function parseProcessSequenceFlows(data: any): Array<Model.ProcessElements.SequenceFlow> {
 
   // NOTE: See above, this can be an Object or an Array (Admittedly, the first is somewhat unlikely here, but not impossible).
   const sequenceData: Array<any> = getModelPropertyAsArray(data, BpmnTags.OtherElements.SequenceFlow);
 
-  const sequences: Array<Model.Types.SequenceFlow> = [];
+  const sequences: Array<Model.ProcessElements.SequenceFlow> = [];
 
   for (const sequenceRaw of sequenceData) {
 
-    const sequenceFlow: Model.Types.SequenceFlow = createObjectWithCommonProperties(sequenceRaw, Model.Types.SequenceFlow);
+    const sequenceFlow: Model.ProcessElements.SequenceFlow = createObjectWithCommonProperties(sequenceRaw, Model.ProcessElements.SequenceFlow);
 
     sequenceFlow.name = sequenceRaw.name;
     sequenceFlow.sourceRef = sequenceRaw.sourceRef;

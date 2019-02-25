@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as should from 'should';
 
-import {Definitions, Model} from '@process-engine/process_engine_contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
 import {ProcessModelFacade} from '../../../src/runtime';
@@ -15,8 +15,8 @@ export class ProcessModelFacadeTestFixture {
     parser.initialize();
 
     const bpmnXml: string = fs.readFileSync(bpmnFilename, 'utf8');
-    const definitions: Definitions = await parser.parseXmlToObjectModel(bpmnXml);
-    const process: Model.Types.Process = definitions.processes[0];
+    const definitions: Model.Definitions = await parser.parseXmlToObjectModel(bpmnXml);
+    const process: Model.Process = definitions.processes[0];
 
     this.processModelFacade = new ProcessModelFacade(process);
   }

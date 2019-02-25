@@ -57,11 +57,11 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
       return processModelFacade.getNextFlowNodesFor(this.exclusiveGateway);
     }
 
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
+    const outgoingSequenceFlows: Array<Model.ProcessElements.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
 
     // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
     // If this were not the case, the Gateway would not have been executed at all.
-    const matchingSequenceFlows: Array<Model.Types.SequenceFlow> =
+    const matchingSequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
       await this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade);
 
     const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlows[0].targetRef);
@@ -91,7 +91,7 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, this.flowNodeInstanceId, token.payload);
 
-    const outgoingSequenceFlows: Array<Model.Types.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
+    const outgoingSequenceFlows: Array<Model.ProcessElements.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
 
     const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
     if (isExclusiveJoinGateway) {
@@ -117,11 +117,12 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
   private async determineBranchToTake(
     token: ProcessToken,
-    sequenceFlows: Array<Model.Types.SequenceFlow>,
+    sequenceFlows: Array<Model.ProcessElements.SequenceFlow>,
     processTokenFacade: IProcessTokenFacade,
   ): Promise<string> {
 
-    const truthySequenceFlows: Array<Model.Types.SequenceFlow> = await this._getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
+    const truthySequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
+      await this._getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
 
     const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
@@ -149,11 +150,11 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
   }
 
   private async _getSequenceFlowsWithMatchingCondition(
-    sequenceFlows: Array<Model.Types.SequenceFlow>,
+    sequenceFlows: Array<Model.ProcessElements.SequenceFlow>,
     processTokenFacade: IProcessTokenFacade,
-  ): Promise<Array<Model.Types.SequenceFlow>> {
+  ): Promise<Array<Model.ProcessElements.SequenceFlow>> {
 
-    const truthySequenceFlows: Array<Model.Types.SequenceFlow> = [];
+    const truthySequenceFlows: Array<Model.ProcessElements.SequenceFlow> = [];
 
     for (const sequenceFlow of sequenceFlows) {
 
