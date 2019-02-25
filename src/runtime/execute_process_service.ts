@@ -193,7 +193,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     waitForEndEvent: boolean = false,
   ): Promise<void> {
 
-    const processModel: Model.Types.Process = await this._processModelUseCases.getProcessModelById(requestingIdentity, processModelId);
+    const processModel: Model.Process = await this._processModelUseCases.getProcessModelById(requestingIdentity, processModelId);
 
     if (!processModel.isExecutable) {
       throw new BadRequestError('The process model is not executable!');
@@ -255,7 +255,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   ): Promise<IProcessInstanceConfig> {
 
     // We use the internal identity here to ensure the ProcessModel will be complete.
-    const processModel: Model.Types.Process = await this._processModelUseCases.getProcessModelById(this._internalIdentity, processModelId);
+    const processModel: Model.Process = await this._processModelUseCases.getProcessModelById(this._internalIdentity, processModelId);
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 

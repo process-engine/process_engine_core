@@ -138,7 +138,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
    */
   private _waitForTimerToElapse(currentToken: ProcessToken, resolveFunc: Function): void {
 
-    const timerDefinition: Model.EventDefinitions.TimerEventDefinition = this.startEvent.timerEventDefinition;
+    const timerDefinition: Model.Events.Definitions.TimerEventDefinition = this.startEvent.timerEventDefinition;
 
     let timerSubscription: Subscription;
 

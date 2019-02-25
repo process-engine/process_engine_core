@@ -116,14 +116,15 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
    * @param   identity           The identity that started the ProcessInstance.
    * @returns                    The ServiceTask's result.
    */
-  private _executeInternalServiceTask(token: ProcessToken,
-                                      processTokenFacade: IProcessTokenFacade,
-                                      identity: IIdentity,
-                                     ): Promise<any> {
+  private _executeInternalServiceTask(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    identity: IIdentity,
+  ): Promise<any> {
 
     return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
-      const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.MethodInvocation;
+      const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.Invocations.MethodInvocation;
 
       if (!isMethodInvocation) {
         const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
@@ -134,7 +135,7 @@ export class InternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
       const tokenData: any = processTokenFacade.getOldTokenFormat();
 
-      const invocation: Model.Activities.MethodInvocation = this.serviceTask.invocation as Model.Activities.MethodInvocation;
+      const invocation: Model.Activities.Invocations.MethodInvocation = this.serviceTask.invocation as Model.Activities.Invocations.MethodInvocation;
 
       const serviceInstance: any = await this._container.resolveAsync(invocation.module);
 

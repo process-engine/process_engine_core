@@ -72,12 +72,12 @@ export class AutoStartService implements IAutoStartService {
     }
 
     // This list contains all ProcessModels that the User that triggered the Event has access to.
-    const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelUseCases.getProcessModels(eventData.processInstanceOwner);
+    const userAccessibleProcessModels: Array<Model.Process> = await this._processModelUseCases.getProcessModels(eventData.processInstanceOwner);
 
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
 
     const eventDefinitionPropertyName: string = 'messageEventDefinition';
-    const matchingProcessModels: Array<Model.Types.Process> =
+    const matchingProcessModels: Array<Model.Process> =
       this._getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.messageReference);
 
     logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching MessageStartEvents.`);
@@ -109,12 +109,12 @@ export class AutoStartService implements IAutoStartService {
       return;
     }
     // This list contains all ProcessModels that the User that triggered the Event has access to.
-    const userAccessibleProcessModels: Array<Model.Types.Process> = await this._processModelUseCases.getProcessModels(eventData.processInstanceOwner);
+    const userAccessibleProcessModels: Array<Model.Process> = await this._processModelUseCases.getProcessModels(eventData.processInstanceOwner);
 
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
 
     const eventDefinitionPropertyName: string = 'signalEventDefinition';
-    const matchingProcessModels: Array<Model.Types.Process> =
+    const matchingProcessModels: Array<Model.Process> =
       this._getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.signalReference);
 
     logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching SignalStartEvents.`);
@@ -142,12 +142,12 @@ export class AutoStartService implements IAutoStartService {
    * @returns                             The filtered ProcessModels.
    */
   private _getProcessModelsWithMatchingStartEvents(
-    processModels: Array<Model.Types.Process>,
+    processModels: Array<Model.Process>,
     expectedEventDefinitionName: string,
     eventName: string,
-  ): Array<Model.Types.Process> {
+  ): Array<Model.Process> {
 
-    const matches: Array<Model.Types.Process> = processModels.filter((processModel: Model.Types.Process) => {
+    const matches: Array<Model.Process> = processModels.filter((processModel: Model.Process) => {
 
       const hasMatchingStartEvents: boolean =
         processModel.flowNodes.some((flowNode: Model.Base.FlowNode) => {
@@ -182,7 +182,7 @@ export class AutoStartService implements IAutoStartService {
    * @param payload                     The payload to use as initial token value.
    */
   private async _startProcessInstances(
-    processModels: Array<Model.Types.Process>,
+    processModels: Array<Model.Process>,
     identityToUse: IIdentity,
     eventDefinitionPropertyName: string,
     eventName: string,
@@ -197,7 +197,7 @@ export class AutoStartService implements IAutoStartService {
      *
      * @param processModel The ProcessModel for which to get the StartEventId.
      */
-    const findMatchingStartEventId: Function = (processModel: Model.Types.Process): string => {
+    const findMatchingStartEventId: Function = (processModel: Model.Process): string => {
 
       const matchingFlowNode: Model.Base.FlowNode = processModel.flowNodes.find((flowNode: Model.Base.FlowNode) => {
         return flowNode.bpmnType === BpmnType.startEvent &&
