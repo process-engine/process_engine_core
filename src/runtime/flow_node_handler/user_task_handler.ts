@@ -64,7 +64,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
           this._validateUserTaskFormFieldConfigurations(token, processTokenFacade);
 
           this.onInterruptedCallback = (): void => {
-            if (this.userTaskSubscription) {
+            const subscriptionIsActive: boolean = this.userTaskSubscription !== undefined;
+            if (subscriptionIsActive) {
               this.eventAggregator.unsubscribe(this.userTaskSubscription);
             }
             handlerPromise.cancel();
@@ -107,7 +108,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        if (this.userTaskSubscription) {
+        const subscriptionIsActive: boolean = this.userTaskSubscription !== undefined;
+        if (subscriptionIsActive) {
           this.eventAggregator.unsubscribe(this.userTaskSubscription);
         }
         handlerPromise.cancel();
@@ -203,6 +205,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     } catch (error) {
       const errorMsg: string = `Cannot evaluate expression ${expression}! The ProcessToken is missing some required properties!`;
       this.logger.error(errorMsg);
+
       throw new InternalServerError(errorMsg);
     }
   }

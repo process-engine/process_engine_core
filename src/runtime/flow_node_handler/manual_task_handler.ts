@@ -60,7 +60,8 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        if (this.manualTaskSubscription) {
+        const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
+        if (subscriptionIsActive) {
           this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         }
         handlerPromise.cancel();
@@ -98,7 +99,8 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        if (this.manualTaskSubscription) {
+        const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
+        if (subscriptionIsActive) {
           this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         }
         handlerPromise.cancel();
