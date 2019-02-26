@@ -119,8 +119,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
       this._sendUserTaskReachedNotification(identity, onSuspendToken);
 
-      const userTaskResult: any = await waitForMessagePromise
-      ;
+      const userTaskResult: any = await waitForMessagePromise;
+
       onSuspendToken.payload = userTaskResult;
 
       await this.persistOnResume(onSuspendToken);
