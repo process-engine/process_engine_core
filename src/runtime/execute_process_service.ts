@@ -241,7 +241,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const badRequestError: BadRequestError = new BadRequestError(errorMessage);
 
       const additionalInfos: any = {
-        message: errorMessage,
+        message: 'The ProcessModel contains the following StartEvent',
         startEventIds: startEventIds,
       };
 
