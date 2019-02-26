@@ -115,7 +115,12 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
         return;
       };
 
-      const userTaskResult: any = await this._waitForUserTaskResult(identity, onSuspendToken);
+      const waitForMessagePromise: Promise<any> = this._waitForUserTaskResult(identity, onSuspendToken);
+
+      this._sendUserTaskReachedNotification(identity, onSuspendToken);
+
+      const userTaskResult: any = await waitForMessagePromise
+      ;
       onSuspendToken.payload = userTaskResult;
 
       await this.persistOnResume(onSuspendToken);
@@ -217,6 +222,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     const waitForUserTaskResultPromise: Promise<any> = this._waitForUserTaskResult(identity, token);
     await this.persistOnSuspend(token);
 
+    this._sendUserTaskReachedNotification(identity, token);
+
     return await waitForUserTaskResultPromise;
   }
 
@@ -245,8 +252,6 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
           resolve(userTaskResult);
         });
-
-      this._sendUserTaskReachedNotification(identity, token);
     });
   }
 
