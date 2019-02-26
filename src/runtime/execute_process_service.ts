@@ -227,7 +227,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
     }
   }
 
-  private _validateSingleStartEvent(processModel: Model.Types.Process): void {
+  private _validateSingleStartEvent(processModel: Model.Process): void {
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
     const startEvents: Array<Model.Events.StartEvent> = processModelFacade.getStartEvents();
 
