@@ -107,35 +107,35 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive: boolean = this.userTaskSubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.userTaskSubscription);
-        }
-        handlerPromise.cancel();
+        this.onInterruptedCallback = (): void => {
+          const subscriptionIsActive: boolean = this.userTaskSubscription !== undefined;
+          if (subscriptionIsActive) {
+            this.eventAggregator.unsubscribe(this.userTaskSubscription);
+          }
+          handlerPromise.cancel();
 
-        return;
-      };
+          return;
+        };
 
-      const waitForMessagePromise: Promise<any> = this._waitForUserTaskResult(identity, onSuspendToken);
+        const waitForMessagePromise: Promise<any> = this._waitForUserTaskResult(identity, onSuspendToken);
 
-      this._sendUserTaskReachedNotification(identity, onSuspendToken);
+        this._sendUserTaskReachedNotification(identity, onSuspendToken);
 
-      const userTaskResult: any = await waitForMessagePromise;
+        const userTaskResult: any = await waitForMessagePromise;
 
-      onSuspendToken.payload = userTaskResult;
+        onSuspendToken.payload = userTaskResult;
 
-      await this.persistOnResume(onSuspendToken);
+        await this.persistOnResume(onSuspendToken);
 
-      processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
-      await this.persistOnExit(onSuspendToken);
+        processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
+        await this.persistOnExit(onSuspendToken);
 
-      this._sendUserTaskFinishedNotification(identity, onSuspendToken);
+        this._sendUserTaskFinishedNotification(identity, onSuspendToken);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
 
-      return resolve(nextFlowNodeInfo);
-    });
+        return resolve(nextFlowNodeInfo);
+      });
 
     return handlerPromise;
   }
@@ -178,8 +178,6 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
   private _validateExpression(expression: string, token: any): void {
 
     try {
-      let result: string = expression;
-
       if (!expression) {
         return;
       }
@@ -198,10 +196,7 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
       const functionString: string = `return ${expressionBody}`;
       const scriptFunction: Function = new Function('token', functionString);
 
-      result = scriptFunction.call(token, token);
-      result = result === undefined ? null : result;
-
-      return;
+      scriptFunction.call(token, token);
     } catch (error) {
       const errorMsg: string = `Cannot evaluate expression ${expression}! The ProcessToken is missing some required properties!`;
       this.logger.error(errorMsg);

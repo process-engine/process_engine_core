@@ -59,30 +59,30 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.manualTaskSubscription);
-        }
-        handlerPromise.cancel();
+        this.onInterruptedCallback = (): void => {
+          const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
+          if (subscriptionIsActive) {
+            this.eventAggregator.unsubscribe(this.manualTaskSubscription);
+          }
+          handlerPromise.cancel();
 
-        return;
-      };
+          return;
+        };
 
-      const manualTaskResult: any = await this._suspendAndWaitForManualTaskResult(identity, token);
-      token.payload = manualTaskResult;
+        const manualTaskResult: any = await this._suspendAndWaitForManualTaskResult(identity, token);
+        token.payload = manualTaskResult;
 
-      await this.persistOnResume(token);
+        await this.persistOnResume(token);
 
-      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
-      await this.persistOnExit(token);
+        processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
+        await this.persistOnExit(token);
 
-      this._sendManualTaskFinishedNotification(identity, token);
+        this._sendManualTaskFinishedNotification(identity, token);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.manualTask);
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.manualTask);
 
-      return resolve(nextFlowNodeInfo);
-    });
+        return resolve(nextFlowNodeInfo);
+      });
 
     return handlerPromise;
   }
@@ -98,35 +98,35 @@ export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activi
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.manualTaskSubscription);
-        }
-        handlerPromise.cancel();
+        this.onInterruptedCallback = (): void => {
+          const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
+          if (subscriptionIsActive) {
+            this.eventAggregator.unsubscribe(this.manualTaskSubscription);
+          }
+          handlerPromise.cancel();
 
-        return;
-      };
+          return;
+        };
 
-      const waitForMessagePromise: Promise<any> = await this._waitForManualTaskResult(identity, onSuspendToken);
+        const waitForMessagePromise: Promise<any> = await this._waitForManualTaskResult(identity, onSuspendToken);
 
-      this._sendManualTaskReachedNotification(identity, onSuspendToken);
+        this._sendManualTaskReachedNotification(identity, onSuspendToken);
 
-      const manualTaskResult: any = await waitForMessagePromise;
+        const manualTaskResult: any = await waitForMessagePromise;
 
-      onSuspendToken.payload = manualTaskResult;
+        onSuspendToken.payload = manualTaskResult;
 
-      await this.persistOnResume(onSuspendToken);
+        await this.persistOnResume(onSuspendToken);
 
-      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
-      await this.persistOnExit(onSuspendToken);
+        processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
+        await this.persistOnExit(onSuspendToken);
 
-      this._sendManualTaskFinishedNotification(identity, onSuspendToken);
+        this._sendManualTaskFinishedNotification(identity, onSuspendToken);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.manualTask);
+        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.manualTask);
 
-      return resolve(nextFlowNodeInfo);
-    });
+        return resolve(nextFlowNodeInfo);
+      });
 
     return handlerPromise;
   }
