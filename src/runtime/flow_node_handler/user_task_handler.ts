@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -59,28 +60,36 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      this.onInterruptedCallback = (): void => {
-        if (this.userTaskSubscription) {
-          this.eventAggregator.unsubscribe(this.userTaskSubscription);
+        try {
+          this._validateUserTaskFormFieldConfigurations(token, processTokenFacade);
+
+          this.onInterruptedCallback = (): void => {
+            if (this.userTaskSubscription) {
+              this.eventAggregator.unsubscribe(this.userTaskSubscription);
+            }
+            handlerPromise.cancel();
+
+            return;
+          };
+
+          const userTaskResult: any = await this._suspendAndWaitForUserTaskResult(identity, token);
+          token.payload = userTaskResult;
+
+          await this.persistOnResume(token);
+
+          processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
+          await this.persistOnExit(token);
+
+          this._sendUserTaskFinishedNotification(identity, token);
+
+          const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
+
+          return resolve(nextFlowNodeInfo);
+        } catch (error) {
+          this.logger.error('Failed to execute UserTask!', error);
+
+          return reject(error);
         }
-        handlerPromise.cancel();
-
-        return;
-      };
-
-      const userTaskResult: any = await this._suspendAndWaitForUserTaskResult(identity, token);
-      token.payload = userTaskResult;
-
-      await this.persistOnResume(token);
-
-      processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
-      await this.persistOnExit(token);
-
-      this._sendUserTaskFinishedNotification(identity, token);
-
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
-
-      return resolve(nextFlowNodeInfo);
     });
 
     return handlerPromise;
@@ -122,6 +131,75 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     });
 
     return handlerPromise;
+  }
+
+  private _validateUserTaskFormFieldConfigurations(token: ProcessToken, processTokenFacade: IProcessTokenFacade): void {
+
+    const oldTokenFormat: any = processTokenFacade.getOldTokenFormat();
+
+    for (const formField of this.userTask.formFields) {
+      try {
+        this._validateExpression(formField.label, oldTokenFormat);
+        this._validateExpression(formField.defaultValue, oldTokenFormat);
+        this._validateExpression(formField.preferredControl, oldTokenFormat);
+      } catch (error) {
+        const errorMessage: string = `The configuration for FormField ${formField.id} is invalid!`;
+
+        const invalidFormFieldError: InternalServerError = new InternalServerError(errorMessage);
+
+        const errorDetails: any = {
+          processModelId: token.processModelId,
+          processInstanceId: token.processInstanceId,
+          correlationId: token.correlationId,
+          userTaskId: this.userTask.id,
+          userTaskInstanceId: this.flowNodeInstanceId,
+          invalidFormFieldId: formField.id,
+          currentToken: oldTokenFormat,
+          validationError: error.message,
+        };
+
+        invalidFormFieldError.additionalInformation = errorDetails;
+
+        this.logger.error(errorMessage);
+
+        this.persistOnError(token, invalidFormFieldError);
+        throw invalidFormFieldError;
+      }
+    }
+  }
+
+  private _validateExpression(expression: string, token: any): void {
+
+    try {
+      let result: string = expression;
+
+      if (!expression) {
+        return;
+      }
+
+      const expressionStartsOn: string = '${';
+      const expressionEndsOn: string = '}';
+
+      const isExpression: boolean = expression.charAt(0) === '$';
+      if (isExpression === false) {
+        return;
+      }
+
+      const finalExpressionLength: number = expression.length - expressionStartsOn.length - expressionEndsOn.length;
+      const expressionBody: string = expression.substr(expressionStartsOn.length, finalExpressionLength);
+
+      const functionString: string = `return ${expressionBody}`;
+      const scriptFunction: Function = new Function('token', functionString);
+
+      result = scriptFunction.call(token, token);
+      result = result === undefined ? null : result;
+
+      return;
+    } catch (error) {
+      const errorMsg: string = `Cannot evaluate expression ${expression}! The ProcessToken is missing some required properties!`;
+      this.logger.error(errorMsg);
+      throw new InternalServerError(errorMsg);
+    }
   }
 
   /**
