@@ -45,32 +45,8 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
 
     this.logger.verbose(`Executing UserTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
-    await this.persistOnSuspend(token);
 
     return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
-  }
-
-  protected async _continueAfterEnter(
-    onEnterToken: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    await this.persistOnSuspend(onEnterToken);
-
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
-  }
-
-  protected async _continueAfterSuspend(
-    flowNodeInstance: FlowNodeInstance,
-    onSuspendToken: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
-
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
   protected async _executeHandler(
@@ -83,19 +59,16 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Promise<any> = this._waitForUserTaskResult(identity, token);
-
       this.onInterruptedCallback = (): void => {
         if (this.userTaskSubscription) {
           this.eventAggregator.unsubscribe(this.userTaskSubscription);
         }
-        executionPromise.cancel();
         handlerPromise.cancel();
 
         return;
       };
 
-      const userTaskResult: any = await executionPromise;
+      const userTaskResult: any = await this._suspendAndWaitForUserTaskResult(identity, token);
       token.payload = userTaskResult;
 
       await this.persistOnResume(token);
@@ -113,8 +86,64 @@ export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activiti
     return handlerPromise;
   }
 
+  protected async _continueAfterSuspend(
+    flowNodeInstance: FlowNodeInstance,
+    onSuspendToken: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
+
+    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
+      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+
+      this.onInterruptedCallback = (): void => {
+        if (this.userTaskSubscription) {
+          this.eventAggregator.unsubscribe(this.userTaskSubscription);
+        }
+        handlerPromise.cancel();
+
+        return;
+      };
+
+      const userTaskResult: any = await this._waitForUserTaskResult(identity, onSuspendToken);
+      onSuspendToken.payload = userTaskResult;
+
+      await this.persistOnResume(onSuspendToken);
+
+      processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
+      await this.persistOnExit(onSuspendToken);
+
+      this._sendUserTaskFinishedNotification(identity, onSuspendToken);
+
+      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
+
+      return resolve(nextFlowNodeInfo);
+    });
+
+    return handlerPromise;
+  }
+
   /**
-   * Suspends the current handler and waits for a FinishUserTaskMessage.
+   * Suspends the handler and waits for a FinishUserTaskMessage.
+   * Upon receiving the messsage, the handler will be resumed with the received
+   * result set.
+   *
+   * @async
+   * @param identity The identity that owns the UserTask instance.
+   * @param token    Contains all relevant info the EventAggregator will need for
+   *                 creating the EventSubscription.
+   * @returns        The recevied UserTask result.
+   */
+  private async _suspendAndWaitForUserTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
+    const waitForUserTaskResultPromise: Promise<any> = this._waitForUserTaskResult(identity, token);
+    await this.persistOnSuspend(token);
+
+    return await waitForUserTaskResultPromise;
+  }
+
+  /**
+   * Waits for a FinishUserTaskMessage.
    * Upon receiving the messsage, the handler will be resumed with the received
    * result set.
    *
