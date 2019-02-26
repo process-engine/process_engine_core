@@ -201,7 +201,10 @@ function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions
  */
 function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
 
-  const errorIsNotAnonymous: boolean = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+  const errorIsNotAnonymous: boolean =
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined &&
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== null &&
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
 
   if (errorIsNotAnonymous) {
     const errorId: string = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
