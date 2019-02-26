@@ -207,6 +207,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
       if (hasNoMatchingStartEvent) {
         throw new NotFoundError(`StartEvent with ID '${startEventId}' not found!`);
       }
+    } else {
+      this._validateSingleStartEvent(processModel);
     }
 
     if (waitForEndEvent) {
@@ -222,6 +224,30 @@ export class ExecuteProcessService implements IExecuteProcessService {
       if (hasNoMatchingEndEvent) {
         throw new NotFoundError(`EndEvent with ID '${startEventId}' not found!`);
       }
+    }
+  }
+
+  private _validateSingleStartEvent(processModel: Model.Types.Process): void {
+    const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
+    const startEvents: Array<Model.Events.StartEvent> = processModelFacade.getStartEvents();
+
+    const multipleStartEventsDefined: boolean = startEvents.length > 1;
+    if (multipleStartEventsDefined) {
+      const startEventIds: Array<String> = startEvents.map((currentStartEvent: Model.Events.StartEvent) => {
+        return currentStartEvent.id;
+      });
+
+      const errorMessage: string = 'The Process Model contains multiple StartEvents, but no initial StartEvent was defined.';
+      const badRequestError: BadRequestError = new BadRequestError(errorMessage);
+
+      const additionalInfos: any = {
+        message: errorMessage,
+        startEventIds: startEventIds,
+      };
+
+      badRequestError.additionalInformation = additionalInfos;
+
+      throw badRequestError;
     }
   }
 
