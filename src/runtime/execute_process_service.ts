@@ -83,8 +83,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
   public async start(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
   ): Promise<ProcessStartedMessage> {
@@ -112,37 +112,36 @@ export class ExecuteProcessService implements IExecuteProcessService {
   public async startAndAwaitEndEvent(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
-
     await this._validateStartRequest(identity, processModelId, startEventId);
 
-    return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller);
+    return this._startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, initialPayload, caller);
   }
 
   public async startAndAwaitSpecificEndEvent(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
     endEventId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
   ): Promise<EndEventReachedMessage> {
 
     await this._validateStartRequest(identity, processModelId, startEventId, endEventId, true);
 
-    return this._startAndAwaitEndEvent(identity, processModelId, startEventId, correlationId, initialPayload, caller, endEventId);
+    return this._startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, initialPayload, caller, endEventId);
   }
 
   private async _startAndAwaitEndEvent(
     identity: IIdentity,
     processModelId: string,
-    startEventId: string,
     correlationId: string,
+    startEventId?: string,
     initialPayload?: any,
     caller?: string,
     endEventId?: string,
@@ -188,7 +187,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async _validateStartRequest(
     requestingIdentity: IIdentity,
     processModelId: string,
-    startEventId: string,
+    startEventId?: string,
     endEventId?: string,
     waitForEndEvent: boolean = false,
   ): Promise<void> {
@@ -199,12 +198,17 @@ export class ExecuteProcessService implements IExecuteProcessService {
       throw new BadRequestError('The process model is not executable!');
     }
 
-    const hasNoMatchingStartEvent: boolean = !processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
-      return flowNode.id === startEventId;
-    });
+    const startEventParameterGiven: boolean = startEventId !== undefined;
+    if (startEventParameterGiven) {
+      const hasNoMatchingStartEvent: boolean = !processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
+        return flowNode.id === startEventId;
+      });
 
-    if (hasNoMatchingStartEvent) {
-      throw new NotFoundError(`StartEvent with ID '${startEventId}' not found!`);
+      if (hasNoMatchingStartEvent) {
+        throw new NotFoundError(`StartEvent with ID '${startEventId}' not found!`);
+      }
+    } else {
+      this._validateSingleStartEvent(processModel);
     }
 
     if (waitForEndEvent) {
@@ -220,6 +224,30 @@ export class ExecuteProcessService implements IExecuteProcessService {
       if (hasNoMatchingEndEvent) {
         throw new NotFoundError(`EndEvent with ID '${startEventId}' not found!`);
       }
+    }
+  }
+
+  private _validateSingleStartEvent(processModel: Model.Process): void {
+    const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
+    const startEvents: Array<Model.Events.StartEvent> = processModelFacade.getStartEvents();
+
+    const multipleStartEventsDefined: boolean = startEvents.length > 1;
+    if (multipleStartEventsDefined) {
+      const startEventIds: Array<String> = startEvents.map((currentStartEvent: Model.Events.StartEvent) => {
+        return currentStartEvent.id;
+      });
+
+      const errorMessage: string = 'The Process Model contains multiple StartEvents, but no initial StartEvent was defined.';
+      const badRequestError: BadRequestError = new BadRequestError(errorMessage);
+
+      const additionalInfos: any = {
+        message: 'The ProcessModel contains the following StartEvent',
+        startEventIds: startEventIds,
+      };
+
+      badRequestError.additionalInformation = additionalInfos;
+
+      throw badRequestError;
     }
   }
 
@@ -259,7 +287,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processModelFacade: IProcessModelFacade = new ProcessModelFacade(processModel);
 
-    const startEvent: Model.Events.StartEvent = processModelFacade.getStartEventById(startEventId);
+    const startEventIdSpecified: boolean = startEventId !== undefined;
+
+    /**
+     * If the user specified a StartEventId, we want to explicitly look that up.
+     * If not, we assume that the Process only contains one StartEvent.
+     */
+    const startEvent: Model.Events.StartEvent =
+      startEventIdSpecified
+        ? processModelFacade.getStartEventById(startEventId)
+        : processModelFacade.getSingleStartEvent();
 
     const processInstanceId: string = uuid.v4();
 

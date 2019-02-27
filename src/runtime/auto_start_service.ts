@@ -210,7 +210,7 @@ export class AutoStartService implements IAutoStartService {
 
     for (const processModel of processModels) {
       const startEventIdToUse: string = findMatchingStartEventId(processModel);
-      await this._executeProcessService.start(identityToUse, processModel.id, startEventIdToUse, correlationId, payload);
+      await this._executeProcessService.start(identityToUse, processModel.id, correlationId, startEventIdToUse, payload);
     }
   }
 }
