@@ -1,6 +1,14 @@
 import * as fs from 'fs';
 import * as should from 'should';
 
+import * as Bluebird from 'bluebird';
+
+Bluebird.config({
+  cancellation: true,
+});
+
+global.Promise = Bluebird;
+
 import {Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
