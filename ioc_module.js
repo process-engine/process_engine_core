@@ -4,6 +4,7 @@ const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 
 const {
   CallActivityHandler,
+  EmptyActivityHandler,
   EndEventHandler,
   ErrorBoundaryEventHandler,
   ExclusiveGatewayHandler,
@@ -161,6 +162,10 @@ function registerFlowNodeHandlers(container) {
       'ProcessModelUseCases',
       'ResumeProcessService'
     );
+
+  container
+    .register('EmptyActivityHandler', EmptyActivityHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('EndEventHandler', EndEventHandler)
