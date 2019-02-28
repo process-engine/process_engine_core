@@ -25,7 +25,7 @@
     "@essential-projects/timing_contracts": "^4.0.0",
     "@process-engine/external_task_api_contracts": "^1.0.0",
     "@process-engine/consumer_api_contracts": "^5.0.0",
-    "@process-engine/correlation.contracts": "^1.0.0",
+    "@process-engine/correlation.contracts": "feature~fix_finishing_of_correlations",
     "@process-engine/flow_node_instance.contracts": "^1.0.0",
     "@process-engine/logging_api_contracts": "^1.0.0",
     "@process-engine/metrics_api_contracts": "^1.0.0",
