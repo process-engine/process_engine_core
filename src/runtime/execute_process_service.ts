@@ -356,13 +356,21 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken: IFlowNodeInstanceResult = allResults.pop();
 
+      await this
+        ._correlationService
+        .finishProcessInstanceInCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId);
+
       this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
-      await this._correlationService.finishCorrelation(identity, processInstanceConfig.correlationId);
+
       this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
     } catch (error) {
+      await this
+        ._correlationService
+        .finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, error);
+
       this
         ._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
-      await this._correlationService.finishWithError(identity, processInstanceConfig.correlationId, error);
+
       throw error;
     }
   }
