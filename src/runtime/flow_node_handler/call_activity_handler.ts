@@ -3,38 +3,42 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {DataModels as ConsumerApiTypes, IConsumerApi} from '@process-engine/consumer_api_contracts';
 import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  EndEventReachedMessage,
+  IExecuteProcessService,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
+import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandlerInterruptible} from './index';
 
 export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Activities.CallActivity> {
 
-  private _consumerApiService: IConsumerApi;
   private _correlationService: ICorrelationService;
+  private _executeProcessService: IExecuteProcessService;
+  private _processModelUseCases: IProcessModelUseCases;
   private _resumeProcessService: IResumeProcessService;
 
   constructor(
-    consumerApiService: IConsumerApi,
     correlationService: ICorrelationService,
     eventAggregator: IEventAggregator,
+    executeProcessService: IExecuteProcessService,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    processModelUseCases: IProcessModelUseCases,
     resumeProcessService: IResumeProcessService,
     callActivityModel: Model.Activities.CallActivity,
-    ) {
+  ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, callActivityModel);
-    this._consumerApiService = consumerApiService;
     this._correlationService = correlationService;
+    this._executeProcessService = executeProcessService;
+    this._processModelUseCases = processModelUseCases;
     this._resumeProcessService = resumeProcessService;
     this.logger = new Logger(`processengine:call_activity_handler:${callActivityModel.id}`);
   }
@@ -73,9 +77,9 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     const correlation: Correlation
       = await this._correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
-    const noSubProcessesFound: boolean = correlation === undefined;
+    const noSubprocessesFound: boolean = correlation === undefined;
 
-    const matchingSubProcess: CorrelationProcessInstance = noSubProcessesFound
+    const matchingSubprocess: CorrelationProcessInstance = noSubprocessesFound
       ? undefined
       : correlation.processModels.find((entry: CorrelationProcessInstance): boolean => {
           return entry.processModelId === this.callActivity.calledReference;
@@ -83,19 +87,19 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     let callActivityResult: any;
 
-    const callActivityNotYetExecuted: boolean = matchingSubProcess === undefined;
+    const callActivityNotYetExecuted: boolean = matchingSubprocess === undefined;
     if (callActivityNotYetExecuted) {
       // Subprocess not yet started. We need to run the handler again.
       const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
-      const processStartResponse: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
+      const processStartResponse: EndEventReachedMessage =
         await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
 
-      callActivityResult = processStartResponse.tokenPayload;
+      callActivityResult = processStartResponse.currentToken;
     } else {
       // Subprocess was already started. Resume it and wait for the result:
       callActivityResult =
-        await this._resumeProcessService.resumeProcessInstanceById(identity, matchingSubProcess.processModelId, matchingSubProcess.processInstanceId);
+        await this._resumeProcessService.resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
     }
 
     onSuspendToken.payload = callActivityResult;
@@ -117,13 +121,13 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     await this.persistOnSuspend(token);
 
-    const processStartResponse: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
+    const result: EndEventReachedMessage =
       await this._executeSubprocess(identity, startEventId, processTokenFacade, token);
 
-    token.payload = processStartResponse.tokenPayload;
+    token.payload = result.currentToken;
 
     await this.persistOnResume(token);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, processStartResponse.tokenPayload);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, result.currentToken);
     await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.callActivity);
@@ -139,55 +143,51 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
    */
   private async _getAccessibleCallActivityStartEvent(identity: IIdentity): Promise<string> {
 
-    const processModel: ConsumerApiTypes.ProcessModels.ProcessModel =
-      await this._consumerApiService.getProcessModelById(identity, this.callActivity.calledReference);
+    const processModel: Model.Process =
+      await this._processModelUseCases.getProcessModelById(identity, this.callActivity.calledReference);
 
     /*
-     * Note: If the user cannot access the process model and/or its start events,
-     * the Consumer API will already have thrown an HTTP Unauthorized error,
+     * Since we cannot specify StartEventIds with a CallActivity, we just pick the first available StartEvent we find.
+     *
+     * Note: If the user cannot access the process model and/or its StartEvents,
+     * the ProcessModelService will already have thrown an Unauthorized error,
      * so we do not need to handle those cases here.
      */
-    const startEventId: string = processModel.startEvents[0].id;
+    const startEvent: Model.Base.FlowNode =
+      processModel.flowNodes.find((flowNode: Model.Base.FlowNode) => flowNode.bpmnType === BpmnType.startEvent);
 
-    return startEventId;
+    return startEvent.id;
   }
 
   /**
-   * Uses the ConsumerAPI to execute the ProcessModel defined in the
-   * CallActivity FlowNode.
+   * Executes the Subprocess.
    *
    * @async
-   * @param identity           The users identity.
-   * @param startEventId       The StartEvent by which to start the SubProcess.
-   * @param processTokenFacade The Facade for accessing the current process' tokens.
-   * @param token              The current ProcessToken.
+   * @param   identity           The users identity.
+   * @param   startEventId       The StartEvent by which to start the Subprocess.
+   * @param   processTokenFacade The Facade for accessing the current process' tokens.
+   * @param   token              The current ProcessToken.
+   * @returns                    The CallActivities result.
    */
   private async _executeSubprocess(
     identity: IIdentity,
     startEventId: string,
     processTokenFacade: IProcessTokenFacade,
     token: ProcessToken,
-  ): Promise<ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload> {
+  ): Promise<EndEventReachedMessage> {
 
     const tokenData: any = processTokenFacade.getOldTokenFormat();
 
     const processInstanceId: string = token.processInstanceId;
     const correlationId: string = token.correlationId;
 
-    const startCallbackType: ConsumerApiTypes.ProcessModels.StartCallbackType =
-      ConsumerApiTypes.ProcessModels.StartCallbackType.CallbackOnProcessInstanceFinished;
-
-    const payload: ConsumerApiTypes.ProcessModels.ProcessStartRequestPayload = {
-      correlationId: correlationId,
-      callerId: processInstanceId,
-      inputValues: tokenData.current || {},
-    };
+    const payload: any = tokenData.current || {};
 
     const processModelId: string = this.callActivity.calledReference;
 
     try {
-      const result: ConsumerApiTypes.ProcessModels.ProcessStartResponsePayload =
-        await this._consumerApiService.startProcessInstance(identity, processModelId, payload, startCallbackType, startEventId);
+      const result: EndEventReachedMessage =
+        await this._executeProcessService.startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, processInstanceId);
 
       return result;
     } catch (error) {
