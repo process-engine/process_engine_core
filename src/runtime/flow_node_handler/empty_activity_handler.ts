@@ -18,7 +18,7 @@ import {Model} from '@process-engine/process_model.contracts';
 import {FlowNodeHandlerInterruptible} from './index';
 
 // This type of handler doesn't actually do anything but pass on the token it receives.
-// Think of it as kind of a break point.
+// Think of it as a kind of break point.
 export class EmptyActivityHandler extends FlowNodeHandlerInterruptible<Model.Activities.EmptyActivity> {
 
   private emptyActivitySubscription: Subscription;

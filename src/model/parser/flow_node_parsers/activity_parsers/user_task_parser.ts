@@ -86,7 +86,8 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   function parseDate(value: string): Date {
 
-    if (!value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid()) {
+    const isValidDate: boolean = !value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid();
+    if (isValidDate) {
       return undefined;
     }
 
