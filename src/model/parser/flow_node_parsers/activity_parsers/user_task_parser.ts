@@ -11,7 +11,8 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   const userTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
 
-  if (!userTasksRaw || userTasksRaw.length === 0) {
+  const noUserTasksFound: boolean = !userTasksRaw || userTasksRaw.length === 0;
+  if (noUserTasksFound) {
     return [];
   }
 

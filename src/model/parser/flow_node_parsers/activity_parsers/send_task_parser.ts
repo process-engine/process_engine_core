@@ -14,8 +14,8 @@ export function parseSendTasks(
   const sendTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
 
   const noSendTasksFound: boolean = sendTasksRaw === undefined
-    || sendTasksRaw === null
-    || sendTasksRaw.length === 0;
+                                      || sendTasksRaw === null
+                                      || sendTasksRaw.length === 0;
 
   if (noSendTasksFound) {
     return sendTasks;

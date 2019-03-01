@@ -14,8 +14,8 @@ export function parseReceiveTasks(
   const receiveTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ReceiveTask);
 
   const noReceiveTasksFound: boolean = receiveTasksRaw === undefined
-    || receiveTasksRaw === null
-    || receiveTasksRaw.length === 0;
+                                        || receiveTasksRaw === null
+                                        || receiveTasksRaw.length === 0;
 
   if (noReceiveTasksFound) {
     return receiveTasks;

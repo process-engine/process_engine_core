@@ -9,7 +9,8 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
 
   const serviceTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ServiceTask);
 
-  if (!serviceTasksRaw || serviceTasksRaw.length === 0) {
+  const noServiceTasksFound: boolean = !serviceTasksRaw || serviceTasksRaw.length === 0;
+  if (noServiceTasksFound) {
     return [];
   }
 
@@ -81,8 +82,9 @@ function getMethodInvocation(extensionProperties: Array<Model.Base.Types.Camunda
   const methodProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
   const paramsProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('params', extensionProperties);
 
-  // If no module- or method- property is defined, this is not a valid method invocation. 'params' are optional.
-  if (!moduleProperty || !methodProperty) {
+  // 'params' is optional on MethodInvocations, so we don't need to check them here.
+  const isNotValidMethodInvocation: boolean = !moduleProperty || !methodProperty;
+  if (isNotValidMethodInvocation) {
     return undefined;
   }
 
