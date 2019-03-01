@@ -41,6 +41,8 @@ export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedF
         .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
     }
 
-    throw new UnprocessableEntityError(`The IntermediateCatchEventType used with FlowNode ${flowNode.id} is not supported!`);
+    return this
+      ._container
+      .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateEmptyEventHandler', [flowNode]);
   }
 }

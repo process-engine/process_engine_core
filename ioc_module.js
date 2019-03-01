@@ -25,6 +25,7 @@ const {
 } = require('./dist/commonjs/index');
 
 const {
+  IntermediateEmptyEventHandler,
   IntermediateLinkCatchEventHandler,
   IntermediateLinkThrowEventHandler,
   IntermediateMessageCatchEventHandler,
@@ -173,6 +174,10 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+
+  container
+    .register('IntermediateEmptyEventHandler', IntermediateEmptyEventHandler)
     .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
