@@ -3,7 +3,7 @@ import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-} from '../type_factory';
+} from '../../type_factory';
 
 import {NotFoundError} from '@essential-projects/errors_ts';
 
