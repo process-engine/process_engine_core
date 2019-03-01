@@ -4,6 +4,7 @@ const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 
 const {
   CallActivityHandler,
+  EmptyActivityHandler,
   EndEventHandler,
   ErrorBoundaryEventHandler,
   ExclusiveGatewayHandler,
@@ -24,6 +25,7 @@ const {
 } = require('./dist/commonjs/index');
 
 const {
+  IntermediateEmptyEventHandler,
   IntermediateLinkCatchEventHandler,
   IntermediateLinkThrowEventHandler,
   IntermediateMessageCatchEventHandler,
@@ -163,11 +165,19 @@ function registerFlowNodeHandlers(container) {
     );
 
   container
+    .register('EmptyActivityHandler', EmptyActivityHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+
+  container
     .register('EndEventHandler', EndEventHandler)
     .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
     .register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+
+  container
+    .register('IntermediateEmptyEventHandler', IntermediateEmptyEventHandler)
     .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container

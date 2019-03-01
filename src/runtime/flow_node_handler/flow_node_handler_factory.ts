@@ -56,6 +56,8 @@ export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
         return this._resolveHandlerInstance<TFlowNode>('StartEventHandler', flowNode);
       case BpmnType.callActivity:
         return this._resolveHandlerInstance<TFlowNode>('CallActivityHandler', flowNode);
+      case BpmnType.emptyActivity:
+        return this._resolveHandlerInstance<TFlowNode>('EmptyActivityHandler', flowNode);
       case BpmnType.exclusiveGateway:
         return this._resolveHandlerInstance<TFlowNode>('ExclusiveGatewayHandler', flowNode);
       case BpmnType.scriptTask:

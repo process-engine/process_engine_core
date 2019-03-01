@@ -3,7 +3,7 @@ import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 import {
   getModelPropertyAsArray,
   setCommonObjectPropertiesFromData,
-} from '../type_factory';
+} from '../../type_factory';
 
 export function parseGatewaysFromProcessData(processData: any): Array<Model.Gateways.Gateway> {
 
