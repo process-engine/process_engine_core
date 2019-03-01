@@ -1,10 +1,9 @@
 import {IContainer} from 'addict-ioc';
 
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-
 import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
+import {FlowNodeHandler} from '../flow_node_handler';
 import {FlowNodeHandlerInterruptible} from '../flow_node_handler_interruptible';
 
 export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedFactory<Model.Events.IntermediateCatchEvent> {
@@ -43,6 +42,6 @@ export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedF
 
     return this
       ._container
-      .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateEmptyEventHandler', [flowNode]);
+      .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateEmptyEventHandler', [flowNode]);
   }
 }
