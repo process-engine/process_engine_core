@@ -26,17 +26,6 @@ describe('ProcessModelFacade.getProcessModelHasLanes', () => {
     should(processModelHasLanes).be.true();
   });
 
-  it('should return false for a ProcessModel with no lanes', async() => {
-
-    const processModelFilePath: string = './test/bpmns/generic_sample.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
-
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
-
-    const processModelHasLanes: boolean = processModelFacade.getProcessModelHasLanes();
-    should(processModelHasLanes).be.false();
-  });
-
   it('should return true for a ProcessModel whose FlowNodes are all located in sublanes', async() => {
 
     const processModelFilePath: string = './test/bpmns/sublane_test.bpmn';
@@ -46,5 +35,16 @@ describe('ProcessModelFacade.getProcessModelHasLanes', () => {
 
     const processModelHasLanes: boolean = processModelFacade.getProcessModelHasLanes();
     should(processModelHasLanes).be.true();
+  });
+
+  it('should return false for a ProcessModel with no lanes', async() => {
+
+    const processModelFilePath: string = './test/bpmns/generic_sample.bpmn';
+    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+
+    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+
+    const processModelHasLanes: boolean = processModelFacade.getProcessModelHasLanes();
+    should(processModelHasLanes).be.false();
   });
 });
