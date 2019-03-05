@@ -4,7 +4,7 @@ import * as should from 'should';
 import {Model} from '@process-engine/process_model.contracts';
 
 import {ProcessModelFacade} from '../../src/runtime/process_model_facade';
-import {TestFixtureProvider} from '../fixture_providers/test_fixture_provider';
+import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessModelFacade.getLaneForFlowNode', () => {
 
