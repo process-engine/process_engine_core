@@ -1,6 +1,8 @@
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
+import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
@@ -14,12 +16,16 @@ import {
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
+  EndEventReachedMessage,
+  eventAggregatorSettings,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
+  IFlowNodeInstanceResult,
   IModelParser,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
+  ProcessEndedMessage,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
@@ -59,6 +65,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
   private readonly _bpmnModelParser: IModelParser;
   private readonly _correlationService: ICorrelationService;
+  private readonly _eventAggregator: IEventAggregator;
   private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
   private readonly _loggingApiService: ILoggingApi;
@@ -67,6 +74,7 @@ export class ResumeProcessService implements IResumeProcessService {
   constructor(
     bpmnModelParser: IModelParser,
     correlationService: ICorrelationService,
+    eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodeInstanceService: IFlowNodeInstanceService,
     loggingApiService: ILoggingApi,
@@ -74,6 +82,7 @@ export class ResumeProcessService implements IResumeProcessService {
   ) {
     this._bpmnModelParser = bpmnModelParser;
     this._correlationService = correlationService;
+    this._eventAggregator = eventAggregator,
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
     this._loggingApiService = loggingApiService;
@@ -103,7 +112,7 @@ export class ResumeProcessService implements IResumeProcessService {
     }
   }
 
-  public async resumeProcessInstanceById(identity: IIdentity, processModelId: string, processInstanceId: string): Promise<any> {
+  public async resumeProcessInstanceById(identity: IIdentity, processModelId: string, processInstanceId: string): Promise<EndEventReachedMessage> {
 
     logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
@@ -125,35 +134,37 @@ export class ResumeProcessService implements IResumeProcessService {
       return;
     }
 
-    const processInstanceConfig: IProcessInstanceConfig =
-      await this._createProcessInstanceConfig(identity, processInstanceId, flowNodeInstancesForProcessInstance);
+    return new Promise<EndEventReachedMessage>(async(resolve: Function, reject: Function): Promise<void> => {
 
-    try {
-      // Resume the ProcessInstance from the StartEvent it was originally started with.
-      // The ProcessInstance will retrace all its steps until it ends up at the FlowNode it was interrupted at.
-      // This removes the need for us to reconstruct the ProcessToken manually, or trace any parallel running branches,
-      // because the FlowNodeHandlers will do that for us.
-      // When we reached the interrupted FlowNodeInstance and finished resuming it, the ProcessInstance will
-      // continue to run normally; i.e. all following FlowNodes will be 'executed' and no longer 'resumed'.
-      this._logProcessResumed(processInstanceConfig.correlationId, processModelId, processInstanceId);
-      const result: any = await this._resumeProcessInstance(identity, processInstanceConfig, flowNodeInstancesForProcessInstance);
+      try {
+        const processInstanceConfig: IProcessInstanceConfig =
+          await this._createProcessInstanceConfig(identity, processInstanceId, flowNodeInstancesForProcessInstance);
 
-      this._logProcessFinished(processInstanceConfig.correlationId, processModelId, processInstanceId);
+        const processEndMessageName: string = eventAggregatorSettings.messagePaths.endEventReached
+          .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
+          .replace(eventAggregatorSettings.messageParams.processModelId, processModelId);
 
-      await this
-        ._correlationService
-        .finishProcessInstanceInCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId);
+        let eventSubscription: Subscription;
 
-      return result;
-    } catch (error) {
-      this._logProcessError(processInstanceConfig.correlationId, processModelId, processInstanceId, error);
+        const messageReceivedCallback: EventReceivedCallback = async(message: EndEventReachedMessage): Promise<void> => {
+          this._eventAggregator.unsubscribe(eventSubscription);
+          resolve(message);
+        };
 
-      await this
-        ._correlationService
-        .finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, error);
+        eventSubscription = this._eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
 
-      throw error;
-    }
+        await this._resumeProcessInstance(identity, processInstanceConfig, flowNodeInstancesForProcessInstance);
+      } catch (error) {
+        // Errors from @essential-project and ErrorEndEvents are thrown as they are.
+        // Everything else is thrown as an InternalServerError.
+        const isPresetError: boolean = error.code && error.name;
+        if (isPresetError) {
+          return reject(error);
+        }
+
+        reject(new InternalServerError(error.message));
+      }
+    });
   }
 
   private async _createProcessInstanceConfig(
@@ -210,15 +221,46 @@ export class ResumeProcessService implements IResumeProcessService {
     flowNodeInstances: Array<FlowNodeInstance>,
   ): Promise<void> {
 
-    const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-      await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
+    const {correlationId, processInstanceId, processModelId} = processInstanceConfig;
 
-    await flowNodeHandler.resume(
-      flowNodeInstances,
-      processInstanceConfig.processTokenFacade,
-      processInstanceConfig.processModelFacade,
-      identity,
-    );
+    try {
+      // Resume the ProcessInstance from the StartEvent it was originally started with.
+      // The ProcessInstance will retrace all its steps until it ends up at the FlowNode it was interrupted at.
+      // This removes the need for us to reconstruct the ProcessToken manually, or trace any parallel running branches,
+      // because the FlowNodeHandlers will do that for us.
+      // When we reached the interrupted FlowNodeInstance and finished resuming it, the ProcessInstance will
+      // continue to run normally; i.e. all following FlowNodes will be 'executed' and no longer 'resumed'.
+      this._logProcessResumed(correlationId, processModelId, processInstanceId);
+
+      const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
+        await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
+
+      await flowNodeHandler.resume(
+        flowNodeInstances,
+        processInstanceConfig.processTokenFacade,
+        processInstanceConfig.processModelFacade,
+        identity,
+      );
+
+      const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
+      const resultToken: IFlowNodeInstanceResult = allResults.pop();
+
+      this._logProcessFinished(correlationId, processModelId, processInstanceId);
+
+      await this
+        ._correlationService
+        .finishProcessInstanceInCorrelation(identity, correlationId, processInstanceId);
+
+      this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
+    } catch (error) {
+      this._logProcessError(correlationId, processModelId, processInstanceId, error);
+
+      await this
+        ._correlationService
+        .finishProcessInstanceInCorrelationWithError(identity, correlationId, processInstanceId, error);
+
+      throw error;
+    }
   }
 
   /**
@@ -322,4 +364,27 @@ export class ResumeProcessService implements IResumeProcessService {
                                                     LogLevel.error,
                                                     error.message,
                                                     errorTime.toDate());
-  }}
+  }
+
+  private _sendProcessInstanceFinishedNotification(
+    identity: IIdentity,
+    processInstanceConfig: IProcessInstanceConfig,
+    resultToken: IFlowNodeInstanceResult,
+  ): void {
+
+    // Send notification about the finished ProcessInstance.
+    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceEnded
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+    const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
+      processInstanceConfig.correlationId,
+      processInstanceConfig.processModelId,
+      processInstanceConfig.processInstanceId,
+      resultToken.flowNodeId,
+      resultToken.flowNodeInstanceId,
+      identity,
+      resultToken.result);
+
+    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
+  }
+}
