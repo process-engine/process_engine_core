@@ -1,4 +1,4 @@
-import {BadRequestError, InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
+import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
 import {IProcessModelFacade} from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
@@ -59,6 +59,25 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
   public getFlowNodeById(flowNodeId: string): Model.Base.FlowNode {
     return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === flowNodeId);
+  }
+
+  public getProcessModelHasLanes(): boolean {
+
+    return this.processModel.laneSet !== undefined
+            && this.processModel.laneSet.lanes !== undefined
+            && this.processModel.laneSet.lanes.length > 0;
+  }
+
+  public getLaneForFlowNode(flowNodeId: string): Model.ProcessElements.Lane {
+
+    const processModelHasNoLanes: boolean = !this.getProcessModelHasLanes();
+    if (processModelHasNoLanes) {
+      return undefined;
+    }
+
+    const matchingLane: Model.ProcessElements.Lane = this._findLaneForFlowNodeIdFromLaneSet(flowNodeId, this.processModel.laneSet);
+
+    return matchingLane;
   }
 
   public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.ProcessElements.SequenceFlow> {
@@ -210,5 +229,45 @@ export class ProcessModelFacade implements IProcessModelFacade {
       });
 
     return flowNodes as Array<TFlowNode>;
+  }
+
+  /**
+   * Iterates over the lanes of the given laneSet and determines if one of
+   * the lanes contains a FlowNode with the given ID.
+   *
+   * If the lane has a childLaneSet, the FlowNodeID will be searched within
+   * that childe lane set.
+   *
+   * @param   flowNodeId The FlowNodeId to find.
+   * @param   laneSet    The LaneSet in which to search for the FlowNodeId.
+   * @returns            Either the lane containing the FlowNodeId,
+   *                     or undefined, if not matching lane was found.
+   */
+  private _findLaneForFlowNodeIdFromLaneSet(flowNodeId: string, laneSet: Model.ProcessElements.LaneSet): Model.ProcessElements.Lane {
+
+    for (const lane of laneSet.lanes) {
+
+      let matchingLane: Model.ProcessElements.Lane;
+
+      const laneHasChildLaneSet: boolean = lane.childLaneSet !== undefined
+                                            && lane.childLaneSet.lanes !== undefined
+                                            && lane.childLaneSet.lanes.length > 0;
+
+      if (laneHasChildLaneSet) {
+        matchingLane = this._findLaneForFlowNodeIdFromLaneSet(flowNodeId, laneSet);
+      } else {
+        const laneContainsFlowNode: boolean = lane.flowNodeReferences.some((flowNodeReference: string) => flowNodeReference === flowNodeId);
+        if (laneContainsFlowNode) {
+          matchingLane = lane;
+        }
+      }
+
+      const matchFound: boolean = matchingLane !== undefined;
+      if (matchFound) {
+        return matchingLane;
+      }
+    }
+
+    return undefined;
   }
 }
