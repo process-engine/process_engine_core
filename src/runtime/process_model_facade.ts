@@ -254,7 +254,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
                                             && lane.childLaneSet.lanes.length > 0;
 
       if (laneHasChildLaneSet) {
-        matchingLane = this._findLaneForFlowNodeIdFromLaneSet(flowNodeId, laneSet);
+        matchingLane = this._findLaneForFlowNodeIdFromLaneSet(flowNodeId, lane.childLaneSet);
       } else {
         const laneContainsFlowNode: boolean = lane.flowNodeReferences.some((flowNodeReference: string) => flowNodeReference === flowNodeId);
         if (laneContainsFlowNode) {
