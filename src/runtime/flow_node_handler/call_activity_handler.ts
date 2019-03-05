@@ -85,17 +85,14 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
           return entry.processModelId === this.callActivity.calledReference;
         });
 
-    let callActivityResult: any;
+    let callActivityResult: EndEventReachedMessage;
 
     const callActivityNotYetExecuted: boolean = matchingSubprocess === undefined;
     if (callActivityNotYetExecuted) {
       // Subprocess not yet started. We need to run the handler again.
       const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
-      const processStartResponse: EndEventReachedMessage =
-        await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
-
-      callActivityResult = processStartResponse.currentToken;
+      callActivityResult = await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
     } else {
       // Subprocess was already started. Resume it and wait for the result:
       callActivityResult =
@@ -103,6 +100,11 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     }
 
     onSuspendToken.payload = callActivityResult;
+
+    // Include the name & ID of the EndEvent that finished the CallActivity with the final result token.
+    onSuspendToken.payload.endEventId = callActivityResult.flowNodeId;
+    onSuspendToken.payload.endEventName = callActivityResult.flowNodeName;
+
     await this.persistOnResume(onSuspendToken);
     processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
     await this.persistOnExit(onSuspendToken);
@@ -126,8 +128,12 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     token.payload = result.currentToken;
 
+    // Include the name & ID of the EndEvent that finished the CallActivity with the final result token.
+    token.payload.endEventId = result.flowNodeId;
+    token.payload.endEventName = result.flowNodeName;
+
     await this.persistOnResume(token);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, result.currentToken);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
     await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.callActivity);
