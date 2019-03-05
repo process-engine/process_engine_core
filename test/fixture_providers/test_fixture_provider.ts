@@ -11,8 +11,8 @@ global.Promise = Bluebird;
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
-import {ProcessModelFacade} from '../../../src/runtime';
+import {BpmnModelParser} from '../../src/model/bpmn_model_parser';
+import {ProcessModelFacade} from '../../src/runtime';
 
 export class TestFixtureProvider {
 
