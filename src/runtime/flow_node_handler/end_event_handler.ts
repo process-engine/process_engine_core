@@ -108,7 +108,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
         this.persistOnError(token, error);
 
-        throw error;
+        return reject(error);
       }
     });
   }
