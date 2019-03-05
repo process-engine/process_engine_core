@@ -54,12 +54,11 @@ describe('ProcessModelFacade.getLaneForFlowNode', () => {
     for (const flowNode of parsedProcessModel.flowNodes) {
       const lane: Model.ProcessElements.Lane = processModelFacade.getLaneForFlowNode(flowNode.id);
 
-      // The ProcessModel has no lanes, so the result should always be undefined
       should(lane).be.undefined();
     }
   });
 
-  it('should successfully get the lane for each FlowNode of the sublane_test Diagram, which contains multiple parallel lanes', async() => {
+  it('should successfully get the lane for each FlowNode of the sublane_test Diagram, which contains multiple sublanes', async() => {
 
     const processModelFilePath: string = './test/bpmns/sublane_test.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
