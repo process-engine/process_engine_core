@@ -1,7 +1,7 @@
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
@@ -22,14 +22,18 @@ import {FlowNodeHandler} from './index';
 
 export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
+  private readonly _iamService: IIAMService;
+
   constructor(
     eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    iamService: IIAMService,
     endEventModel: Model.Events.EndEvent,
   ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, endEventModel);
     this.logger = new Logger(`processengine:end_event_handler:${endEventModel.id}`);
+    this._iamService = iamService;
   }
 
   private get endEvent(): Model.Events.EndEvent {
@@ -62,35 +66,50 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
       const flowNodeIsMessageEndEvent: boolean = this.endEvent.messageEventDefinition !== undefined;
       const flowNodeIsSignalEndEvent: boolean = this.endEvent.signalEventDefinition !== undefined;
 
-      let errorObj: BpmnError;
+      try {
+        let errorObj: BpmnError;
 
-      // Event persisting
-      if (flowNodeIsTerminateEndEvent) {
-        await this.persistOnTerminate(token);
-      } else {
-        await this.persistOnExit(token);
+        const claimCheckNeeded: boolean = flowNodeIsMessageEndEvent || flowNodeIsSignalEndEvent;
+        if (claimCheckNeeded) {
+          await this._ensureHasClaim(identity, processModelFacade);
+        }
+
+        // Event persisting
+        if (flowNodeIsTerminateEndEvent) {
+          await this.persistOnTerminate(token);
+        } else {
+          await this.persistOnExit(token);
+        }
+
+        // Event notifications
+        if (flowNodeIsTerminateEndEvent) {
+          this._notifyAboutTermination(identity, token);
+        } else if (flowNodeIsErrorEndEvent) {
+          errorObj = this._createBpmnError();
+        } else if (flowNodeIsMessageEndEvent) {
+          this._sendMessage(identity, token);
+        } else if (flowNodeIsSignalEndEvent) {
+          this._sendSignal(identity, token);
+        } else {
+          this._notifyAboutRegularEnd(identity, token);
+        }
+
+        // Finalization
+        if (flowNodeIsErrorEndEvent) {
+          return reject(errorObj);
+        }
+
+        // EndEvents have no follow-up FlowNodes, so we must return nothing here.
+        return resolve(undefined);
+      } catch (error) {
+        this.logger.error(`Failed to run EndEvent: ${error.message}`);
+
+        token.payload = {};
+
+        this.persistOnError(token, error);
+
+        throw error;
       }
-
-      // Event notifications
-      if (flowNodeIsTerminateEndEvent) {
-        this._notifyAboutTermination(identity, token);
-      } else if (flowNodeIsErrorEndEvent) {
-        errorObj = this._createBpmnError();
-      } else if (flowNodeIsMessageEndEvent) {
-        this._sendMessage(identity, token);
-      } else if (flowNodeIsSignalEndEvent) {
-        this._sendSignal(identity, token);
-      } else {
-        this._notifyAboutRegularEnd(identity, token);
-      }
-
-      // Finalization
-      if (flowNodeIsErrorEndEvent) {
-        return reject(errorObj);
-      }
-
-      // EndEvents have no follow-up FlowNodes, so we must return nothing here.
-      return resolve(undefined);
     });
   }
 
@@ -98,9 +117,6 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
    * When an ErrorEndEvent is used, this will reate an error object with which
    * to end the process.
    * The process will not be finished regularly in this case.
-   *
-   * @param identity The identity that owns the EndEvent instance.
-   * @param token    The current ProcessToken.
    */
   private _createBpmnError(): BpmnError {
     return new BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
@@ -223,5 +239,18 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     this.eventAggregator.publish(processEndMessageName, message);
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
+  }
+
+  private async _ensureHasClaim(identity: IIdentity, processModelFacade: IProcessModelFacade): Promise<void> {
+
+    const processModelHasNoLanes: boolean = !processModelFacade.getProcessModelHasLanes();
+    if (processModelHasNoLanes) {
+      return;
+    }
+
+    const laneForFlowNode: Model.ProcessElements.Lane = processModelFacade.getLaneForFlowNode(this.flowNode.id);
+    const claimName: string = laneForFlowNode.name;
+
+    await this._iamService.ensureHasClaim(identity, claimName);
   }
 }
