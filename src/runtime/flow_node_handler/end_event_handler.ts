@@ -128,7 +128,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                this.endEvent.id,
                                                                                this.flowNodeInstanceId,
                                                                                identity,
-                                                                               token.payload);
+                                                                               token.payload,
+                                                                               this.endEvent.name);
     // Message-specific notification
     this.eventAggregator.publish(eventName, message);
     // General message notification
@@ -159,7 +160,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                              this.endEvent.id,
                                                                              this.flowNodeInstanceId,
                                                                              identity,
-                                                                             token.payload);
+                                                                             token.payload,
+                                                                             this.endEvent.name);
     // Signal-specific notification
     this.eventAggregator.publish(eventName, message);
     // General signal notification
@@ -188,7 +190,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                                          this.endEvent.id,
                                                                                          this.flowNodeInstanceId,
                                                                                          identity,
-                                                                                         token.payload);
+                                                                                         token.payload,
+                                                                                         this.endEvent.name);
     // ProcessInstance specific notification
     this.eventAggregator.publish(eventName, message);
     // Global notification
@@ -214,7 +217,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
                                                                        this.endEvent.id,
                                                                        this.flowNodeInstanceId,
                                                                        identity,
-                                                                       token.payload);
+                                                                       token.payload,
+                                                                       this.endEvent.name);
     // ProcessInstance specific notification
     this.eventAggregator.publish(processEndMessageName, message);
     // Global notification

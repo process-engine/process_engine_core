@@ -85,24 +85,22 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
           return entry.processModelId === this.callActivity.calledReference;
         });
 
-    let callActivityResult: any;
+    let callActivityResult: EndEventReachedMessage;
 
     const callActivityNotYetExecuted: boolean = matchingSubprocess === undefined;
     if (callActivityNotYetExecuted) {
       // Subprocess not yet started. We need to run the handler again.
       const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
-      const processStartResponse: EndEventReachedMessage =
-        await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
-
-      callActivityResult = processStartResponse.currentToken;
+      callActivityResult = await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
     } else {
       // Subprocess was already started. Resume it and wait for the result:
       callActivityResult =
         await this._resumeProcessService.resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
     }
 
-    onSuspendToken.payload = callActivityResult;
+    onSuspendToken.payload = this._createResultTokenPayloadFromCallActivityResult(callActivityResult);
+
     await this.persistOnResume(onSuspendToken);
     processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
     await this.persistOnExit(onSuspendToken);
@@ -121,13 +119,13 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     await this.persistOnSuspend(token);
 
-    const result: EndEventReachedMessage =
+    const callActivityResult: EndEventReachedMessage =
       await this._executeSubprocess(identity, startEventId, processTokenFacade, token);
 
-    token.payload = result.currentToken;
+    token.payload = this._createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
     await this.persistOnResume(token);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, result.currentToken);
+    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
     await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.callActivity);
@@ -197,5 +195,41 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
       throw error;
     }
+  }
+
+  private _createResultTokenPayloadFromCallActivityResult(result: EndEventReachedMessage): any {
+
+    const callActivityToken: any = result.currentToken;
+
+    const tokenPayloadIsFromNestedCallActivity: boolean = callActivityToken.result !== undefined
+                                                    && callActivityToken.endEventName !== undefined
+                                                    && callActivityToken.endEventId !== undefined;
+
+    // If the token ran through a nested CallActivity, its result will already be wrapped in an object.
+    // If that is the case, we need to extract the result and ignore the rest.
+    // Otherwise we would get a result structure like:
+    // {
+    //   result: {
+    //     result: 'Hello',
+    //     endEventId: 'NestedCallActivityEndEventId',
+    //     endEventName: 'NestedCallActivityEndEventName',
+    //   },
+    //   endEventId: 'CallActivityEndEventId',
+    //   endEventName: 'CallActivityEndEventName',
+    // }
+    if (tokenPayloadIsFromNestedCallActivity) {
+      return {
+        result: callActivityToken.result,
+        endEventId: result.flowNodeId,
+        endEventName: result.flowNodeName,
+      };
+    }
+
+    return {
+      result: result.currentToken,
+      endEventId: result.flowNodeId,
+      endEventName: result.flowNodeName,
+    };
+
   }
 }

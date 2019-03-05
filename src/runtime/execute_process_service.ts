@@ -171,8 +171,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
         await this._executeProcess(identity, processInstanceConfig);
       } catch (error) {
-        // Errors thrown by an ErrorEndEvent ("error.errorCode")
-        // and @essential-project errors ("error.code") are thrown as they are.
+        // Errors from @essential-project and ErrorEndEvents are thrown as they are.
         // Everything else is thrown as an InternalServerError.
         const isPresetError: boolean = (error.errorCode || error.code) && error.name;
         if (isPresetError) {
@@ -289,12 +288,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const startEventIdSpecified: boolean = startEventId !== undefined;
 
-    /**
-     * If the user specified a StartEventId, we want to explicitly look that up.
-     * If not, we assume that the Process only contains one StartEvent.
-     */
-    const startEvent: Model.Events.StartEvent =
-      startEventIdSpecified
+    const startEvent: Model.Events.StartEvent = startEventIdSpecified
         ? processModelFacade.getStartEventById(startEventId)
         : processModelFacade.getSingleStartEvent();
 
@@ -475,7 +469,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       processInstanceConfig.processModelId,
       processInstanceConfig.processInstanceId,
       resultToken.flowNodeId,
-      undefined, // TODO: Add FlowNodeInstanceId to final result token.
+      resultToken.flowNodeInstanceId,
       identity,
       resultToken.result);
 
