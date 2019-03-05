@@ -3,8 +3,8 @@ import * as should from 'should';
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {ProcessModelFacade} from '../src/runtime/process_model_facade';
-import {TestFixtureProvider} from './fixture_providers/test_fixture_provider';
+import {ProcessModelFacade} from '../../src/runtime/process_model_facade';
+import {TestFixtureProvider} from '../fixture_providers/test_fixture_provider';
 
 describe('ProcessModelFacade.getLaneForFlowNode', () => {
 
@@ -44,7 +44,7 @@ describe('ProcessModelFacade.getLaneForFlowNode', () => {
     }
   });
 
-  it('hould successfully return undefined for each FlowNode of the generic_sample Diagram, which contains no lanes', async() => {
+  it('should successfully return undefined for each FlowNode of the generic_sample Diagram, which contains no lanes', async() => {
 
     const processModelFilePath: string = './test/bpmns/generic_sample.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -59,7 +59,7 @@ describe('ProcessModelFacade.getLaneForFlowNode', () => {
     }
   });
 
-  it('hould successfully get the lane for each FlowNode of the sublane_test Diagram, which contains multiple parallel lanes', async() => {
+  it('should successfully get the lane for each FlowNode of the sublane_test Diagram, which contains multiple parallel lanes', async() => {
 
     const processModelFilePath: string = './test/bpmns/sublane_test.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
