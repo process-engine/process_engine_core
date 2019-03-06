@@ -171,7 +171,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('EndEventHandler', EndEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'IamService');
 
   container
     .register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
@@ -195,7 +195,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'IamService');
 
   container
     .register('IntermediateSignalCatchEventHandler', IntermediateSignalCatchEventHandler)
@@ -203,7 +203,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('IntermediateSignalThrowEventHandler', IntermediateSignalThrowEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'IamService');
 
   container
     .register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)

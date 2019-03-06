@@ -1,7 +1,7 @@
 import {Logger} from 'loggerhythm';
 
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
@@ -18,14 +18,18 @@ import {FlowNodeHandler} from '../index';
 
 export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.Events.IntermediateThrowEvent> {
 
+  private readonly _iamService: IIAMService;
+
   constructor(
     eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    iamService: IIAMService,
     messageThrowEventModel: Model.Events.IntermediateThrowEvent,
   ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, messageThrowEventModel);
     this.logger = Logger.createLogger(`processengine:message_throw_event_handler:${messageThrowEventModel.id}`);
+    this._iamService = iamService;
   }
 
   private get messageThrowEvent(): Model.Events.IntermediateThrowEvent {
@@ -52,31 +56,56 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
+    try {
+      await this._ensureHasClaim(identity, processModelFacade);
 
-    const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
-      .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
+      const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
-    const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
-                                                                               token.correlationId,
-                                                                               token.processModelId,
-                                                                               token.processInstanceId,
-                                                                               this.messageThrowEvent.id,
-                                                                               this.flowNodeInstanceId,
-                                                                               identity,
-                                                                               token.payload);
+      const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+        .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
-    this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
-    // Message-specific notification
-    this.eventAggregator.publish(messageEventName, message);
-    // General notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.messageTriggered, message);
-    this.logger.verbose(`Done.`);
+      const message: MessageEventReachedMessage = new MessageEventReachedMessage(messageName,
+                                                                                 token.correlationId,
+                                                                                 token.processModelId,
+                                                                                 token.processInstanceId,
+                                                                                 this.messageThrowEvent.id,
+                                                                                 this.flowNodeInstanceId,
+                                                                                 identity,
+                                                                                 token.payload);
 
-    processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, this.flowNodeInstanceId, {});
+      this.logger.verbose(`MessageThrowEvent instance ${this.flowNodeInstanceId} now sending message ${messageName}...`);
+      // Message-specific notification
+      this.eventAggregator.publish(messageEventName, message);
+      // General notification
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.messageTriggered, message);
+      this.logger.verbose(`Done.`);
 
-    await this.persistOnExit(token);
+      processTokenFacade.addResultForFlowNode(this.messageThrowEvent.id, this.flowNodeInstanceId, {});
 
-    return processModelFacade.getNextFlowNodesFor(this.messageThrowEvent);
+      await this.persistOnExit(token);
+
+      return processModelFacade.getNextFlowNodesFor(this.messageThrowEvent);
+    } catch (error) {
+      this.logger.error(`Failed to send message: ${error.message}`);
+
+      token.payload = {};
+
+      this.persistOnError(token, error);
+
+      throw error;
+    }
+  }
+
+  private async _ensureHasClaim(identity: IIdentity, processModelFacade: IProcessModelFacade): Promise<void> {
+
+    const processModelHasNoLanes: boolean = !processModelFacade.getProcessModelHasLanes();
+    if (processModelHasNoLanes) {
+      return;
+    }
+
+    const laneForFlowNode: Model.ProcessElements.Lane = processModelFacade.getLaneForFlowNode(this.flowNode.id);
+    const claimName: string = laneForFlowNode.name;
+
+    await this._iamService.ensureHasClaim(identity, claimName);
   }
 }

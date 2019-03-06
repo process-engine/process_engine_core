@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.11.3">
+  <bpmn:collaboration id="ProcessResult_001">
+    <bpmn:participant id="GenericSample" name="Generic Sample" processRef="generic_sample" />
+  </bpmn:collaboration>
+  <bpmn:process id="generic_sample" name="generic_sample" isExecutable="true">
+    <bpmn:startEvent id="ProcessInputEvent" name="Message empfangen">
+      <bpmn:outgoing>ProcessInput</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="ShouldEncryptGateway" name="Message verschlüsseln?">
+      <bpmn:incoming>TransformResult</bpmn:incoming>
+      <bpmn:outgoing>TokenizeInput</bpmn:outgoing>
+      <bpmn:outgoing>EncryptInput</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="ShouldEncryptJoin">
+      <bpmn:incoming>TokenizeResult</bpmn:incoming>
+      <bpmn:incoming>EncryptResult</bpmn:incoming>
+      <bpmn:outgoing>StoreInput</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="ProcessResultEvent" name="Message verarbeitet">
+      <bpmn:incoming>ProcessResult</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="HandleErrorStoreActivityJoinGateway">
+      <bpmn:incoming>StoreResult</bpmn:incoming>
+      <bpmn:incoming>ErrorMessage</bpmn:incoming>
+      <bpmn:outgoing>ProcessResult</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="ProcessInput" sourceRef="ProcessInputEvent" targetRef="TransformActivity" />
+    <bpmn:sequenceFlow id="TokenizeInput" name="nein" sourceRef="ShouldEncryptGateway" targetRef="TokenizeActivity" />
+    <bpmn:sequenceFlow id="TokenizeResult" sourceRef="TokenizeActivity" targetRef="ShouldEncryptJoin" />
+    <bpmn:sequenceFlow id="StoreInput" sourceRef="ShouldEncryptJoin" targetRef="StoreActivity" />
+    <bpmn:sequenceFlow id="StoreResult" sourceRef="StoreActivity" targetRef="HandleErrorStoreActivityJoinGateway" />
+    <bpmn:sequenceFlow id="TransformResult" sourceRef="TransformActivity" targetRef="ShouldEncryptGateway" />
+    <bpmn:sequenceFlow id="EncryptInput" name="ja" sourceRef="ShouldEncryptGateway" targetRef="EncryptActivity" />
+    <bpmn:sequenceFlow id="EncryptResult" sourceRef="EncryptActivity" targetRef="ShouldEncryptJoin" />
+    <bpmn:sequenceFlow id="ProcessResult" sourceRef="HandleErrorStoreActivityJoinGateway" targetRef="ProcessResultEvent" />
+    <bpmn:sequenceFlow id="ErrorMessage" sourceRef="BoundaryEvent_1gfzfcg" targetRef="HandleErrorStoreActivityJoinGateway" />
+    <bpmn:serviceTask id="TransformActivity" name="Message transformieren">
+      <bpmn:incoming>ProcessInput</bpmn:incoming>
+      <bpmn:outgoing>TransformResult</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="TokenizeActivity" name="Message tokenisieren">
+      <bpmn:incoming>TokenizeInput</bpmn:incoming>
+      <bpmn:outgoing>TokenizeResult</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="EncryptActivity" name="Message verschlüsseln">
+      <bpmn:incoming>EncryptInput</bpmn:incoming>
+      <bpmn:outgoing>EncryptResult</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="StoreActivity" name="Message speichern">
+      <bpmn:incoming>StoreInput</bpmn:incoming>
+      <bpmn:outgoing>StoreResult</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_1gfzfcg" name="Payload == &#34;error&#34;" attachedToRef="StoreActivity">
+      <bpmn:outgoing>ErrorMessage</bpmn:outgoing>
+      <bpmn:errorEventDefinition />
+    </bpmn:boundaryEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ProcessResult_001">
+      <bpmndi:BPMNShape id="Participant_0yv4605_di" bpmnElement="DemoProcess.Orchestration">
+        <dc:Bounds x="119" y="85" width="1101" height="365" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="ProcessInputEvent">
+        <dc:Bounds x="203" y="186" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="193" y="222" width="56" height="25" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_085bp4n_di" bpmnElement="ProcessInput">
+        <di:waypoint xsi:type="dc:Point" x="239" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="305" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="227" y="182.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0iqpqcr_di" bpmnElement="TransformResult">
+        <di:waypoint xsi:type="dc:Point" x="405" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="461" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="388" y="182.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1by0n9q_di" bpmnElement="TokenizeResult">
+        <di:waypoint xsi:type="dc:Point" x="673" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="741" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="662" y="182.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1dejkz2_di" bpmnElement="ProcessResultEvent">
+        <dc:Bounds x="1125" y="186" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1117" y="225" width="52" height="25" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0kbpr0x_di" bpmnElement="StoreResult">
+        <di:waypoint xsi:type="dc:Point" x="959" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="1035" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="952" y="182.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1tn7klk_di" bpmnElement="ShouldEncryptGateway" isMarkerVisible="true">
+        <dc:Bounds x="461" y="179" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="449" y="141" width="73" height="25" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0osm3du_di" bpmnElement="TokenizeInput">
+        <di:waypoint xsi:type="dc:Point" x="511" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="573" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="512" y="187" width="21" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1d8o3wp_di" bpmnElement="ShouldEncryptJoin" isMarkerVisible="true">
+        <dc:Bounds x="741" y="179" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="721" y="232" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ladgwm_di" bpmnElement="StoreInput">
+        <di:waypoint xsi:type="dc:Point" x="791" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="859" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="780" y="182.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0a7d1mn_di" bpmnElement="EncryptInput">
+        <di:waypoint xsi:type="dc:Point" x="486" y="229" />
+        <di:waypoint xsi:type="dc:Point" x="486" y="367" />
+        <di:waypoint xsi:type="dc:Point" x="573" y="367" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="492" y="231" width="10" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ldwsd7_di" bpmnElement="EncryptResult">
+        <di:waypoint xsi:type="dc:Point" x="673" y="367" />
+        <di:waypoint xsi:type="dc:Point" x="766" y="367" />
+        <di:waypoint xsi:type="dc:Point" x="766" y="229" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="674.5" y="345.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_12zm9c2_di" bpmnElement="BoundaryEvent_1gfzfcg">
+        <dc:Bounds x="907" y="226" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="936" y="255" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1ug7iph_di" bpmnElement="HandleErrorStoreActivityJoinGateway" isMarkerVisible="true">
+        <dc:Bounds x="1035" y="179" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1015" y="232" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1bhfi1k_di" bpmnElement="ProcessResult">
+        <di:waypoint xsi:type="dc:Point" x="1085" y="204" />
+        <di:waypoint xsi:type="dc:Point" x="1125" y="204" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1060" y="182" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1aydt4m_di" bpmnElement="ErrorMessage">
+        <di:waypoint xsi:type="dc:Point" x="925" y="262" />
+        <di:waypoint xsi:type="dc:Point" x="925" y="285" />
+        <di:waypoint xsi:type="dc:Point" x="1060" y="285" />
+        <di:waypoint xsi:type="dc:Point" x="1060" y="229" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="947.5" y="263.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1b0y691_di" bpmnElement="TransformActivity">
+        <dc:Bounds x="305" y="164" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_06kians_di" bpmnElement="TokenizeActivity">
+        <dc:Bounds x="573" y="164" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0yz0crr_di" bpmnElement="EncryptActivity">
+        <dc:Bounds x="573" y="327" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0542ylb_di" bpmnElement="StoreActivity">
+        <dc:Bounds x="859" y="164" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
