@@ -347,6 +347,28 @@ export class ExecuteProcessService implements IExecuteProcessService {
         identity,
       );
 
+      const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+        .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+      this._eventAggregator.subscribeOnce(terminateEvent, async() => {
+        const terminateError: Error = new InternalServerError('Process was terminated!');
+
+        await this
+          ._correlationService
+          .finishProcessInstanceInCorrelationWithError(identity,
+                                                       processInstanceConfig.correlationId,
+                                                       processInstanceConfig.processInstanceId,
+                                                       terminateError);
+
+        this
+          ._logProcessError(processInstanceConfig.correlationId,
+                            processInstanceConfig.processModelId,
+                            processInstanceConfig.processInstanceId,
+                            terminateError);
+
+        return;
+      });
+
       const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken: IFlowNodeInstanceResult = allResults.pop();
 
