@@ -15,7 +15,7 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.initialize();
   });
 
-  it('should successfully parse the process_engine_io_release.bpmn Diagram, which contains one lane', async() => {
+  it('should successfully parse the process_engine_io_release.bpmn Diagram, which contains one lane.', async() => {
 
     const processModelFilePath: string = './test/bpmns/process_engine_io_release.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -35,7 +35,7 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse the DemoNutztierRiss.bpmn Diagram, which contains multiple parallel lanes', async() => {
+  it('should successfully parse the DemoNutztierRiss.bpmn Diagram, which contains multiple parallel lanes.', async() => {
 
     const processModelFilePath: string = './test/bpmns/DemoNutztierRiss.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -63,7 +63,7 @@ describe('ProcessModelParser ', () => {
     should(invocation.params).be.eql('[\'http://localhost:5000/api/vorgaenge/anlegen\', token.history.VorgangErfassen]');
   });
 
-  it('should successfully parse the generic_sample.bpmn Diagram, which contains no lanes', async() => {
+  it('should successfully parse the generic_sample.bpmn Diagram, which contains no lanes.', async() => {
 
     const processModelFilePath: string = './test/bpmns/generic_sample.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -83,7 +83,7 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse the empty_lane_test.bpmn Diagram, which contains an empty lane', async() => {
+  it('should successfully parse the empty_lane_test.bpmn Diagram, which contains an empty lane.', async() => {
 
     const processModelFilePath: string = './test/bpmns/empty_lane_test.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -96,7 +96,7 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse the sublane_test.bpmn Diagram, which contains several sublanes', async() => {
+  it('should successfully parse the sublane_test.bpmn Diagram, which contains several sublanes.', async() => {
 
     const processModelFilePath: string = './test/bpmns/sublane_test.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
