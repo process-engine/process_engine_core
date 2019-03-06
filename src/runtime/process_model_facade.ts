@@ -236,7 +236,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
    * the lanes contains a FlowNode with the given ID.
    *
    * If the lane has a childLaneSet, the FlowNodeID will be searched within
-   * that childe lane set.
+   * that child lane set.
    *
    * @param   flowNodeId The FlowNodeId to find.
    * @param   laneSet    The LaneSet in which to search for the FlowNodeId.
