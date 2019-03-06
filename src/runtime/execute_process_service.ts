@@ -351,7 +351,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
       this._eventAggregator.subscribeOnce(terminateEvent, async() => {
-        const terminateError: Error = new InternalServerError('Process was terminated!');
+        const terminateError: InternalServerError = new InternalServerError('Process was terminated!');
 
         await this
           ._correlationService
