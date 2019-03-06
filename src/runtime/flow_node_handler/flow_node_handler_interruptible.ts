@@ -165,11 +165,18 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
+      const payloadIsDefined: boolean = message !== undefined;
 
-      const processTerminatedError: string = `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`;
+      const processTerminatedError: string = payloadIsDefined
+                                           ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
+                                           : 'Process was terminated!';
+
+      token.payload = payloadIsDefined
+                    ? message.currentToken
+                    : {};
+
       this.logger.error(processTerminatedError);
 
-      token.payload = message.currentToken;
       await this.interrupt(token, true);
 
       const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
