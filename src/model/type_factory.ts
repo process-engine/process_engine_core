@@ -1,12 +1,19 @@
 import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 
-export function getModelPropertyAsArray(model: any, elementName: string): any {
+/**
+ * Retrieves an element from the given raw ProcessModel data.
+ *
+ * @param   rawProcessModel The raw ProcessModel from which to extract an element.
+ * @param   elementName     The name of the element to extract.
+ * @returns                 The extracted element.
+ */
+export function getModelPropertyAsArray(rawProcessModel: any, elementName: string): any {
 
-  if (!model[elementName]) {
+  if (!rawProcessModel[elementName]) {
     return undefined;
   }
 
-  const modelElement: any = model[elementName];
+  const modelElement: any = rawProcessModel[elementName];
 
   if (Array.isArray(modelElement)) {
     return modelElement;
@@ -19,28 +26,45 @@ export function getModelPropertyAsArray(model: any, elementName: string): any {
   return [modelElement];
 }
 
+/**
+ * Uses the given raw data to create an instance of one of our own ProcessModel elements.
+ * This can be any support element, like a Process, Collaboration, FlowNode, etc.
+ *
+ * @param   rawData    The raw data from which to create an instance.
+ * @param   targetType A type that matches one of our own ProcessModel elements.
+ * @returns            The created instance.
+ */
 export function createObjectWithCommonProperties<TTargetType extends Model.Base.BaseElement>(
-    data: any,
-    type: Model.Base.IConstructor<TTargetType>,
-  ): TTargetType {
+  rawData: any,
+  targetType: Model.Base.IConstructor<TTargetType>,
+): TTargetType {
 
-    let instance: TTargetType = new type();
-    instance = <TTargetType> setCommonObjectPropertiesFromData(data, instance);
+  let instance: TTargetType = new targetType();
+  instance = <TTargetType> setCommonObjectPropertiesFromData(rawData, instance);
 
-    return instance;
+  return instance;
+}
+
+/**
+ * Takes the given instance of one of our own ProcessModel elements and fills
+ * out all the properties that are common for every BPMN element
+ * (ID, documentation, etc), using the given raw data as a baseline.
+ *
+ * @param   rawData  The raw data from which to get the values.
+ * @param   instance The instance for which to set the common properties.
+ * @returns          The updated instance.
+ */
+export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.Base.BaseElement): Model.Base.BaseElement {
+
+  instance.id = rawData.id;
+
+  if (rawData[BpmnTags.FlowElementProperty.Documentation]) {
+    instance.documentation = [rawData[BpmnTags.FlowElementProperty.Documentation]];
   }
 
-export function setCommonObjectPropertiesFromData(data: any, instance: Model.Base.BaseElement): Model.Base.BaseElement {
+  if (rawData[BpmnTags.FlowElementProperty.ExtensionElements]) {
 
-  instance.id = data.id;
-
-  if (data[BpmnTags.FlowElementProperty.Documentation]) {
-    instance.documentation = [data[BpmnTags.FlowElementProperty.Documentation]];
-  }
-
-  if (data[BpmnTags.FlowElementProperty.ExtensionElements]) {
-
-    const extensionData: any = data[BpmnTags.FlowElementProperty.ExtensionElements];
+    const extensionData: any = rawData[BpmnTags.FlowElementProperty.ExtensionElements];
 
     instance.extensionElements = new Model.Base.Types.ExtensionElements();
     instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.CamundaProperty.ExecutionListener];

@@ -4,6 +4,7 @@ const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 
 const {
   CallActivityHandler,
+  EmptyActivityHandler,
   EndEventHandler,
   ErrorBoundaryEventHandler,
   ExclusiveGatewayHandler,
@@ -24,6 +25,7 @@ const {
 } = require('./dist/commonjs/index');
 
 const {
+  IntermediateEmptyEventHandler,
   IntermediateLinkCatchEventHandler,
   IntermediateLinkThrowEventHandler,
   IntermediateMessageCatchEventHandler,
@@ -85,6 +87,7 @@ function registerServices(container) {
     .dependencies(
       'BpmnModelParser',
       'CorrelationService',
+      'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
       'LoggingApiService',
@@ -163,11 +166,19 @@ function registerFlowNodeHandlers(container) {
     );
 
   container
-    .register('EndEventHandler', EndEventHandler)
+    .register('EmptyActivityHandler', EmptyActivityHandler)
     .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
+    .register('EndEventHandler', EndEventHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'IamService');
+
+  container
     .register('ExclusiveGatewayHandler', ExclusiveGatewayHandler)
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+
+  container
+    .register('IntermediateEmptyEventHandler', IntermediateEmptyEventHandler)
     .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
 
   container
@@ -184,7 +195,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('IntermediateMessageThrowEventHandler', IntermediateMessageThrowEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'IamService');
 
   container
     .register('IntermediateSignalCatchEventHandler', IntermediateSignalCatchEventHandler)
@@ -192,7 +203,7 @@ function registerFlowNodeHandlers(container) {
 
   container
     .register('IntermediateSignalThrowEventHandler', IntermediateSignalThrowEventHandler)
-    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade');
+    .dependencies('EventAggregator', 'FlowNodeHandlerFactory', 'FlowNodePersistenceFacade', 'IamService');
 
   container
     .register('IntermediateTimerCatchEventHandler', IntermediateTimerCatchEventHandler)

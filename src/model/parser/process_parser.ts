@@ -10,8 +10,11 @@ import {
   getModelPropertyAsArray,
 } from './../type_factory';
 
-import * as Parser from './index';
+import {Parsers} from './index';
 
+// TODO: The following elements are not supported yet:
+// - Text annotations
+// - Associations
 export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Process> {
 
   const processData: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
@@ -28,9 +31,9 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
     const bpmnErrors: Array<Model.GlobalElements.Error> = parseErrorsFromProcessModel(parsedObjectModel);
     const eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = parseEventDefinitionsFromObjectModel(parsedObjectModel);
 
-    process.laneSet = Parser.parseProcessLaneSet(processRaw);
-    process.sequenceFlows = Parser.parseProcessSequenceFlows(processRaw);
-    process.flowNodes = Parser.parseProcessFlowNodes(processRaw, bpmnErrors, eventDefinitions);
+    process.laneSet = Parsers.ProcessLaneSetParser.parseProcessLaneSet(processRaw);
+    process.sequenceFlows = Parsers.SequenceFlowParser.parseProcessSequenceFlows(processRaw);
+    process.flowNodes = Parsers.FlowNodeParser.parseProcessFlowNodes(processRaw, bpmnErrors, eventDefinitions);
 
     processes.push(process);
   }

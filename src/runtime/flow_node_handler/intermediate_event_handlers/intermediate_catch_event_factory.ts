@@ -1,10 +1,9 @@
 import {IContainer} from 'addict-ioc';
 
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-
 import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
+import {FlowNodeHandler} from '../flow_node_handler';
 import {FlowNodeHandlerInterruptible} from '../flow_node_handler_interruptible';
 
 export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedFactory<Model.Events.IntermediateCatchEvent> {
@@ -41,6 +40,8 @@ export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedF
         .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
     }
 
-    throw new UnprocessableEntityError(`The IntermediateCatchEventType used with FlowNode ${flowNode.id} is not supported!`);
+    return this
+      ._container
+      .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateEmptyEventHandler', [flowNode]);
   }
 }
