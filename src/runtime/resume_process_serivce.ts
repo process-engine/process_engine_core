@@ -245,6 +245,28 @@ export class ResumeProcessService implements IResumeProcessService {
       const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken: IFlowNodeInstanceResult = allResults.pop();
 
+      const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+        .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+      this._eventAggregator.subscribeOnce(terminateEvent, async() => {
+        const terminateError: InternalServerError = new InternalServerError('Process was terminated!');
+
+        await this
+          ._correlationService
+          .finishProcessInstanceInCorrelationWithError(identity,
+                                                      processInstanceConfig.correlationId,
+                                                      processInstanceConfig.processInstanceId,
+                                                      terminateError);
+
+        this
+          ._logProcessError(processInstanceConfig.correlationId,
+                            processInstanceConfig.processModelId,
+                            processInstanceConfig.processInstanceId,
+                            terminateError);
+
+        return;
+      });
+
       this._logProcessFinished(correlationId, processModelId, processInstanceId);
 
       await this
@@ -252,6 +274,7 @@ export class ResumeProcessService implements IResumeProcessService {
         .finishProcessInstanceInCorrelation(identity, correlationId, processInstanceId);
 
       this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
+
     } catch (error) {
       this._logProcessError(correlationId, processModelId, processInstanceId, error);
 
