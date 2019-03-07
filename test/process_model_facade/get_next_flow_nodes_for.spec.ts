@@ -22,16 +22,6 @@ describe('ProcessModelFacade.getNextFlowNodesFor', () => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  const flowNodeIds: Array<string> = [
-    'ValidTask',
-    'StartEvent_1',
-    'ExclusiveGateway_0a4jn5v',
-    'InvalidTask',
-    'EndEvent_1',
-    'EndEvent_2',
-    'EndEvent_3',
-  ];
-
   it('should return a single succeeding FlowNode for a FlowNode that has one outgoing SequenceFlow.', async() => {
 
     const startEventId: string = 'StartEvent_1';
