@@ -11,13 +11,13 @@ describe('ProcessModelFacade.getIncomingSequenceFlowsFor', () => {
 
   let fixtureProvider: TestFixtureProvider;
 
-  const processModelFilePath: string = './test/bpmns/process_engine_io_release.bpmn';
   let processModelFacade: ProcessModelFacade;
 
   before(async() => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
+    const processModelFilePath: string = './test/bpmns/process_engine_io_release.bpmn';
     const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
