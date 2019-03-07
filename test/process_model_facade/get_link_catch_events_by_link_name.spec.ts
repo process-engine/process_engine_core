@@ -33,8 +33,6 @@ describe('ProcessModelFacade.getLinkCatchEventsByLinkName', () => {
     should(linkEvents[0].linkEventDefinition.name).be.equal(linkNameToFind);
   });
 
-  // This is valid for the ProcessModelfacade, because it is not supposed to handle validations.
-  // That is because the facade cannot know what the requesting class intends to do with the result.
   it('should return multiple matching LinkCatchEvent for testlink2.', async() => {
 
     const linkNameToFind: string = 'testlink2';
