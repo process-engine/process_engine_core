@@ -7,7 +7,7 @@ import {ProcessModelFacade} from '../../src/runtime/process_model_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 // tslint:disable:no-magic-numbers
-describe('ProcessModelFacade.getProcessModelHasLanes', () => {
+describe('ProcessModelFacade.getBoundaryEventsFor', () => {
 
   let fixtureProvider: TestFixtureProvider;
   let processModelFacade: ProcessModelFacade;
