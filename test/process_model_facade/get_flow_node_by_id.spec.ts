@@ -35,9 +35,7 @@ describe('ProcessModelFacade.getFlowNodeById', () => {
 
     for (const expectedId of expectedFlowNodeIds) {
       const flowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(expectedId);
-
-      should.exist(flowNode, `The Facade was unable to find the FlowNode '${expectedId}'!`);
-      should(flowNode.id).be.equal(expectedId, `The Facade returned an incorrect FlowNode! Expected ${expectedId}, but got ${flowNode.id}!`);
+      assertFlowNode(flowNode, expectedId);
     }
   });
 
@@ -61,9 +59,7 @@ describe('ProcessModelFacade.getFlowNodeById', () => {
 
     for (const expectedId of expectedFlowNodeId) {
       const flowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(expectedId);
-
-      should.exist(flowNode, `The Facade was unable to find the FlowNode '${expectedId}'!`);
-      should(flowNode.id).be.equal(expectedId, `The Facade returned an incorrect FlowNode! Expected ${expectedId}, but got ${flowNode.id}!`);
+      assertFlowNode(flowNode, expectedId);
     }
   });
 
@@ -84,9 +80,12 @@ describe('ProcessModelFacade.getFlowNodeById', () => {
 
     for (const expectedId of expectedEndEventIds) {
       const flowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(expectedId);
-
-      should.exist(flowNode, `The Facade was unable to find the FlowNode '${expectedId}'!`);
-      should(flowNode.id).be.equal(expectedId, `The Facade returned an incorrect FlowNode! Expected ${expectedId}, but got ${flowNode.id}!`);
+      assertFlowNode(flowNode, expectedId);
     }
   });
+
+  function assertFlowNode(flowNode: Model.Base.FlowNode, expectedId: string): void {
+    should.exist(flowNode, `The Facade was unable to find the FlowNode '${expectedId}'!`);
+    should(flowNode.id).be.equal(expectedId, `The Facade returned an incorrect FlowNode! Expected ${expectedId}, but got ${flowNode.id}!`);
+  }
 });
