@@ -155,6 +155,11 @@ export class ProcessInstanceStateHandlingFacade {
     const correlation: Correlation =
       await this._correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
 
+    const noSubprocessesFound: boolean = !correlation || !correlation.processModels || correlation.processModels.length === 0;
+    if (noSubprocessesFound) {
+      return;
+    }
+
     for (const subprocess of correlation.processModels) {
 
       const subprocessIsAlreadyFinished: boolean = subprocess.state !== CorrelationState.running;
