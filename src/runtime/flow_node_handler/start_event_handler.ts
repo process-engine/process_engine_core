@@ -113,7 +113,7 @@ export class StartEventHandler extends FlowNodeHandler<Model.Events.StartEvent> 
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processStarted, processStartedMessage);
 
-    const processStartedBaseName: string = eventAggregatorSettings.messagePaths.processInstanceStarted;
+    const processStartedBaseName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdStarted;
     const processModelIdParam: string = eventAggregatorSettings.messageParams.processModelId;
     const processWithIdStartedMessage: string =
       processStartedBaseName

@@ -245,7 +245,7 @@ export class ResumeProcessService implements IResumeProcessService {
       const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken: IFlowNodeInstanceResult = allResults.pop();
 
-      const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
       this._eventAggregator.subscribeOnce(terminateEvent, async() => {
@@ -396,7 +396,7 @@ export class ResumeProcessService implements IResumeProcessService {
   ): void {
 
     // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceEnded
+    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(

@@ -27,9 +27,7 @@ import {ProcessModelFacade} from './process_model_facade';
 import {ProcessTokenFacade} from './process_token_facade';
 
 /**
- * Contains all infos about a specific ProcessInstance.
- *
- * Only use internally.
+ * Internal type for storing a config for a new ProcessInstance.
  */
 interface IProcessInstanceConfig {
   correlationId: string;
@@ -103,7 +101,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                      processInstanceConfig.processInstanceId,
                                      startEventId,
                                      // We don't yet know the StartEvent's instanceId, because it hasn't been created yet.
-                                     // It will be contained in the ProcessStarted Notification that the StartEventHandler sends.
                                      undefined,
                                      identity,
                                      initialPayload);
@@ -252,6 +249,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
   /**
    * Creates a Set of configurations for a new ProcessInstance.
+   * Contains infos such as the CorrelationId and the ProcessInstanceId.
    *
    * @async
    * @param identity       The identity of the requesting user.
@@ -267,10 +265,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
    *                       CallActivity, this contains the ID of the calling
    *                       ProcessInstance.
    * @returns              A set of configurations for the new ProcessInstance.
-   *                       Contains a ProcessInstanceId, CorrelationId,
-   *                       a ProcessToken, facades for the ProcessModel and
-   *                       the ProcessToken and the StartEvent that has the ID
-   *                       specified in startEventId.
    */
   private async _createProcessInstanceConfig(
     identity: IIdentity,
@@ -347,7 +341,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         identity,
       );
 
-      const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+      const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
       this._eventAggregator.subscribeOnce(terminateEvent, async() => {
@@ -360,11 +354,10 @@ export class ExecuteProcessService implements IExecuteProcessService {
                                                        processInstanceConfig.processInstanceId,
                                                        terminateError);
 
-        this
-          ._logProcessError(processInstanceConfig.correlationId,
-                            processInstanceConfig.processModelId,
-                            processInstanceConfig.processInstanceId,
-                            terminateError);
+        this._logProcessError(processInstanceConfig.correlationId,
+                              processInstanceConfig.processModelId,
+                              processInstanceConfig.processInstanceId,
+                              terminateError);
 
         return;
       });
@@ -483,7 +476,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   ): void {
 
     // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceEnded
+    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(

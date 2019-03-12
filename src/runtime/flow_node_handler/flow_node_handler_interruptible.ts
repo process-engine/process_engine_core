@@ -161,7 +161,7 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
   private _subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
 
-    const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+    const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
