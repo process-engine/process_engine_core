@@ -1,3 +1,4 @@
+// tslint:disable:max-file-line-count
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
 
@@ -5,7 +6,7 @@ import {BadRequestError, InternalServerError, NotFoundError} from '@essential-pr
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
-import {ICorrelationService} from '@process-engine/correlation.contracts';
+import {Correlation, ICorrelationService} from '@process-engine/correlation.contracts';
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
@@ -19,12 +20,14 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   ProcessEndedMessage,
+  ProcessErrorMessage,
   ProcessStartedMessage,
+  ProcessTerminatedMessage,
 } from '@process-engine/process_engine_contracts';
 import {IProcessModelUseCases, Model, ProcessDefinitionFromRepository} from '@process-engine/process_model.contracts';
 
-import {ProcessModelFacade} from './process_model_facade';
-import {ProcessTokenFacade} from './process_token_facade';
+import {ProcessModelFacade} from './facades/process_model_facade';
+import {ProcessTokenFacade} from './facades/process_token_facade';
 
 /**
  * Internal type for storing a config for a new ProcessInstance.
@@ -345,40 +348,31 @@ export class ExecuteProcessService implements IExecuteProcessService {
         .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
       this._eventAggregator.subscribeOnce(terminateEvent, async() => {
-        const terminateError: InternalServerError = new InternalServerError('Process was terminated!');
+        await this._terminateSubprocesses(identity, processInstanceConfig.processInstanceId);
 
-        await this
-          ._correlationService
-          .finishProcessInstanceInCorrelationWithError(identity,
-                                                       processInstanceConfig.correlationId,
-                                                       processInstanceConfig.processInstanceId,
-                                                       terminateError);
-
-        this._logProcessError(processInstanceConfig.correlationId,
-                              processInstanceConfig.processModelId,
-                              processInstanceConfig.processInstanceId,
-                              terminateError);
-
-        return;
+        throw new InternalServerError('Process was terminated!');
       });
 
       const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken: IFlowNodeInstanceResult = allResults.pop();
 
-      this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
-
       await this
         ._correlationService
         .finishProcessInstanceInCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId);
 
+      this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+
       this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
     } catch (error) {
-      this
-        ._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
 
       await this
         ._correlationService
         .finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, error);
+
+      this
+        ._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
+
+      this._sendProcessInstanceErrorNotification(identity, processInstanceConfig, error);
 
       throw error;
     }
@@ -489,5 +483,48 @@ export class ExecuteProcessService implements IExecuteProcessService {
       resultToken.result);
 
     this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
+  }
+
+  private _sendProcessInstanceErrorNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
+
+    // Send notification about the finished ProcessInstance.
+    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+    const instanceErroredMessage: ProcessErrorMessage = new ProcessErrorMessage(
+      processInstanceConfig.correlationId,
+      processInstanceConfig.processModelId,
+      processInstanceConfig.processInstanceId,
+      undefined,
+      undefined,
+      identity,
+      error);
+
+    this._eventAggregator.publish(instanceFinishedEventName, instanceErroredMessage);
+    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
+  }
+
+  private async _terminateSubprocesses(identity: IIdentity, processInstanceId: string): Promise<void> {
+
+    const correlation: Correlation =
+      await this._correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
+
+    for (const subprocess of correlation.processModels) {
+
+      const terminateProcessMessage: string = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+        .replace(eventAggregatorSettings.messageParams.processInstanceId, subprocess.processInstanceId);
+
+      const terminationMessage: ProcessTerminatedMessage = new ProcessTerminatedMessage(
+        correlation.id,
+        subprocess.processModelId,
+        subprocess.processInstanceId,
+        undefined,
+        undefined,
+        correlation.identity,
+        new InternalServerError(`Process terminated by parent ProcessInstance ${processInstanceId}`),
+      );
+
+      this._eventAggregator.publish(terminateProcessMessage, terminationMessage);
+    }
   }
 }
