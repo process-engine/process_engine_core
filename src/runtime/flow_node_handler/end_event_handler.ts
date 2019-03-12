@@ -7,6 +7,7 @@ import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   BpmnError,
   EndEventReachedMessage,
+  ErrorEndEventReachedMessage,
   eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
@@ -96,6 +97,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
         // Finalization
         if (flowNodeIsErrorEndEvent) {
+          this._notifyAboutError(identity, token, errorObj);
+
           return reject(errorObj);
         }
 
@@ -184,6 +187,35 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.signalTriggered, message);
 
     this._notifyAboutRegularEnd(identity, token);
+  }
+
+  /**
+   * When an ErrorEndEvent is used, an event with the corresponding
+   * error notification is published to the EventAggregator.
+   *
+   * @param identity The identity that owns the EndEvent instance.
+   * @param token    The current ProcessToken.
+   */
+  private _notifyAboutError(identity: IIdentity, token: ProcessToken, error: Error): void {
+
+    // Publish termination message to cancel all FlowNodeInstance executions and
+    // finish with an error.
+    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const message: ErrorEndEventReachedMessage = new ErrorEndEventReachedMessage(token.correlationId,
+                                                                                 token.processModelId,
+                                                                                 token.processInstanceId,
+                                                                                 this.endEvent.id,
+                                                                                 this.flowNodeInstanceId,
+                                                                                 identity,
+                                                                                 token.payload,
+                                                                                 error,
+                                                                                 this.endEvent.name);
+    // ProcessInstance specific notification
+    this.eventAggregator.publish(eventName, message);
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, message);
   }
 
   /**
