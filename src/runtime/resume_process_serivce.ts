@@ -29,8 +29,8 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
-import {ProcessModelFacade} from './process_model_facade';
-import {ProcessTokenFacade} from './process_token_facade';
+import {ProcessModelFacade} from './facades/process_model_facade';
+import {ProcessTokenFacade} from './facades/process_token_facade';
 
 const logger: Logger = new Logger('processengine:runtime:resume_process_service');
 

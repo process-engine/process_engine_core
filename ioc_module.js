@@ -39,6 +39,7 @@ const {
   AutoStartService,
   ExecuteProcessService,
   FlowNodePersistenceFacade,
+  ProcessInstanceStateHandlingFacade,
   ResumeProcessService,
   TimerFacade,
 } = require('./dist/commonjs/index');
@@ -73,12 +74,10 @@ function registerServices(container) {
   container
     .register('ExecuteProcessService', ExecuteProcessService)
     .dependencies(
-      'CorrelationService',
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'IdentityService',
-      'LoggingApiService',
-      'MetricsApiService',
+      'ProcessInstanceStateHandlingFacade',
       'ProcessModelUseCases'
     );
 
@@ -97,6 +96,16 @@ function registerServices(container) {
   container
     .register('FlowNodePersistenceFacade', FlowNodePersistenceFacade)
     .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+
+  container
+    .register('ProcessInstanceStateHandlingFacade', ProcessInstanceStateHandlingFacade)
+    .dependencies(
+      'CorrelationService',
+      'EventAggregator',
+      'LoggingApiService',
+      'MetricsApiService',
+      'ProcessModelUseCases'
+    );
 
   container
     .register('TimerFacade', TimerFacade)

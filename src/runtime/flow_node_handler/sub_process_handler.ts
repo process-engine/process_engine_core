@@ -16,7 +16,7 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
-import {ProcessTokenFacade} from '../process_token_facade';
+import {ProcessTokenFacade} from '../facades/process_token_facade';
 import {FlowNodeHandlerInterruptible} from './index';
 
 interface IProcessInstanceConfig {
