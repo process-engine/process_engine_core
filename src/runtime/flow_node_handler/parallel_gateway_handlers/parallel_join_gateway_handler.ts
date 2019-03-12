@@ -1,22 +1,24 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
+import {FlowNodeHandler} from '../index';
 
-export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Model.Gateways.ParallelGateway> {
+export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.ParallelGateway> {
 
   private readonly _container: IContainer;
 
@@ -24,6 +26,9 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
   private onEnterStatePersisted: boolean = false;
+  private isInterrupted: boolean = false;
+
+  private _processTerminationSubscription: Subscription;
 
   constructor(
     container: IContainer,
@@ -48,11 +53,19 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     identity: IIdentity,
   ): Promise<void> {
 
+    const expectedResultsAlreadySet: boolean = this.expectedNumberOfResults > -1;
+
+    // Safety check to prevent a handler to be resolved and called after it was already finished.
+    const handlerIsAlreadyFinished: boolean = expectedResultsAlreadySet || this.isInterrupted;
+    if (handlerIsAlreadyFinished) {
+      return;
+    }
+
     await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
 
-    const expectedResultsAlreadySet: boolean = this.expectedNumberOfResults > -1;
-    if (expectedResultsAlreadySet) {
-      return;
+    const subscriptionForProcessTerminationNeeded: boolean = !this._processTerminationSubscription;
+    if (subscriptionForProcessTerminationNeeded) {
+      this._subscribeToProcessTermination(token);
     }
 
     const preceedingFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
@@ -65,6 +78,10 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
+
+    if (this.isInterrupted) {
+      return;
+    }
 
     // We must only store this state change once to prevent duplicate database entries.
     if (!this.onEnterStatePersisted) {
@@ -116,6 +133,36 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandlerInterruptible<Mod
     }
 
     return resultToken;
+  }
+
+  private _subscribeToProcessTermination(token: ProcessToken): void {
+
+    const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
+      // This is done to prevent anybody from accessing the handler after a termination message was received.
+      // This is necessary, to prevent access until the the state change to "terminated" is done.
+      this.isInterrupted = true;
+
+      const payloadIsDefined: boolean = message !== undefined;
+
+      const processTerminatedError: string = payloadIsDefined
+                                           ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
+                                           : 'Process was terminated!';
+
+      token.payload = payloadIsDefined
+                    ? message.currentToken
+                    : {};
+
+      this.logger.error(processTerminatedError);
+
+      await this.persistOnTerminate(token);
+
+      this._removeInstanceFromIocContainer(token);
+    };
+
+    this._processTerminationSubscription = this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
   }
 
   private _removeInstanceFromIocContainer(processToken: ProcessToken): void {
