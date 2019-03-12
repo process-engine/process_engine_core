@@ -191,7 +191,14 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     } catch (error) {
       this.logger.error(error);
 
-      await this.persistOnError(token, error);
+      const terminationRegex: RegExp = /terminated/i;
+      const isTerminationMessage: boolean = terminationRegex.test(error.message);
+
+      if (isTerminationMessage) {
+        await this.persistOnTerminate(token);
+      } else {
+        await this.persistOnError(token, error);
+      }
 
       throw error;
     }
@@ -230,6 +237,5 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
       endEventId: result.flowNodeId,
       endEventName: result.flowNodeName,
     };
-
   }
 }
