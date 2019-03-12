@@ -4,7 +4,7 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {Correlation, ICorrelationService} from '@process-engine/correlation.contracts';
+import {Correlation, CorrelationState, ICorrelationService} from '@process-engine/correlation.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
@@ -156,6 +156,11 @@ export class ProcessInstanceStateHandlingFacade {
       await this._correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
 
     for (const subprocess of correlation.processModels) {
+
+      const subprocessIsAlreadyFinished: boolean = subprocess.state !== CorrelationState.running;
+      if (subprocessIsAlreadyFinished) {
+        continue;
+      }
 
       const terminateProcessMessage: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, subprocess.processInstanceId);
