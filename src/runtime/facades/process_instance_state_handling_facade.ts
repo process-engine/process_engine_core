@@ -157,7 +157,7 @@ export class ProcessInstanceStateHandlingFacade {
 
     for (const subprocess of correlation.processModels) {
 
-      const terminateProcessMessage: string = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+      const terminateProcessMessage: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, subprocess.processInstanceId);
 
       const terminationMessage: ProcessTerminatedMessage = new ProcessTerminatedMessage(

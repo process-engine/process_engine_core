@@ -304,6 +304,15 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async _executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
     try {
+      const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+        .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+      this._eventAggregator.subscribeOnce(terminateEvent, async() => {
+        await this._processInstanceStateHandlingFacade.terminateSubprocesses(identity, processInstanceConfig.processInstanceId);
+
+        throw new InternalServerError('Process was terminated!');
+      });
+
       await this._processInstanceStateHandlingFacade.saveCorrelation(identity, processInstanceConfig);
 
       const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
@@ -316,15 +325,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
         processInstanceConfig.processModelFacade,
         identity,
       );
-
-      const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
-        .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
-
-      this._eventAggregator.subscribeOnce(terminateEvent, async() => {
-        await this._processInstanceStateHandlingFacade.terminateSubprocesses(identity, processInstanceConfig.processInstanceId);
-
-        throw new InternalServerError('Process was terminated!');
-      });
 
       const allResults: Array<IFlowNodeInstanceResult> = await processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken: IFlowNodeInstanceResult = allResults.pop();
