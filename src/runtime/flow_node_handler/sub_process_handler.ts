@@ -31,7 +31,6 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
 
-  private awaitSubProcessPromise: Promise<any>;
   private subProcessFinishedSubscription: Subscription;
   private subProcessTerminatedSubscription: Subscription;
 
@@ -99,7 +98,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
           const subProcessWasNotStarted: boolean = flowNodeInstancesForSubprocessInstance.length === 0;
           const subProcessResult: any = subProcessWasNotStarted
-            ? await this._executeSubprocess(processInstanceConfig, identity)
+            ? await this._waitForSubProcessExecution(processInstanceConfig, identity)
             : await this._resumeSubProcess(flowNodeInstancesForSubprocessInstance, processInstanceConfig, identity);
 
           onSuspendToken.payload = subProcessResult;
@@ -158,7 +157,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
           };
 
           await this.persistOnSuspend(token);
-          const subProcessResult: any = await this._executeSubprocess(processInstanceConfig, identity);
+          const subProcessResult: any = await this._waitForSubProcessExecution(processInstanceConfig, identity);
           token.payload = subProcessResult;
           await this.persistOnResume(token);
 
@@ -192,13 +191,6 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
     return handlerPromise;
   }
 
-  private async _executeSubprocess(processInstanceConfig: IProcessInstanceConfig, identity: IIdentity): Promise<any> {
-
-    this.awaitSubProcessPromise = this._waitForSubProcessExecution(processInstanceConfig, identity);
-
-    return await this.awaitSubProcessPromise;
-  }
-
   private async _resumeSubProcess(
     flowNodeInstancesForSubprocess: Array<FlowNodeInstance>,
     processInstanceConfig: IProcessInstanceConfig,
@@ -212,14 +204,10 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
     const startEventWasNotYetStarted: boolean = !flowNodeInstanceForStartEvent;
     if (startEventWasNotYetStarted) {
-      this.awaitSubProcessPromise = this._waitForSubProcessExecution(processInstanceConfig, identity);
-
-      return await this.awaitSubProcessPromise;
+      return await this._waitForSubProcessExecution(processInstanceConfig, identity);
     }
 
-    this.awaitSubProcessPromise = this._waitForSubProcessResumption(processInstanceConfig, identity, flowNodeInstancesForSubprocess);
-
-    return await this.awaitSubProcessPromise;
+    return await this._waitForSubProcessResumption(processInstanceConfig, identity, flowNodeInstancesForSubprocess);
   }
 
   private _createProcessInstanceConfig(
@@ -310,7 +298,7 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
 
         return resolve();
       } catch (error) {
-        this.logger.error('Failed to execute Subprocess!');
+        this.logger.error('Failed to resume Subprocess!');
         this.logger.error(error);
 
         return reject(error);

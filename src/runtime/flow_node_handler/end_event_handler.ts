@@ -200,7 +200,7 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
 
     // Publish termination message to cancel all FlowNodeInstance executions and
     // finish with an error.
-    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const message: ErrorEndEventReachedMessage = new ErrorEndEventReachedMessage(token.correlationId,
