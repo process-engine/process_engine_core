@@ -47,11 +47,6 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     return super.flowNode;
   }
 
-  // TODO: We can't interrupt a Subprocess yet, so this will remain inactive.
-  public interrupt(token: ProcessToken, terminate?: boolean): Promise<void> {
-    return Promise.resolve();
-  }
-
   protected async executeInternally(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -73,39 +68,60 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    // First we need to find out if the Subprocess was already started.
-    const correlation: Correlation
-      = await this._correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
+    try {
+      // First we need to find out if the Subprocess was already started.
+      const correlation: Correlation
+        = await this._correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
-    const noSubprocessesFound: boolean = correlation === undefined;
+      const noSubprocessesFound: boolean = correlation === undefined;
 
-    const matchingSubprocess: CorrelationProcessInstance = noSubprocessesFound
-      ? undefined
-      : correlation.processModels.find((entry: CorrelationProcessInstance): boolean => {
-          return entry.processModelId === this.callActivity.calledReference;
-        });
+      const matchingSubprocess: CorrelationProcessInstance = noSubprocessesFound
+        ? undefined
+        : correlation.processModels.find((entry: CorrelationProcessInstance): boolean => {
+            return entry.processModelId === this.callActivity.calledReference;
+          });
 
-    let callActivityResult: EndEventReachedMessage;
+      let callActivityResult: EndEventReachedMessage;
 
-    const callActivityNotYetExecuted: boolean = matchingSubprocess === undefined;
-    if (callActivityNotYetExecuted) {
-      // Subprocess not yet started. We need to run the handler again.
-      const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
+      const callActivityNotYetExecuted: boolean = matchingSubprocess === undefined;
+      if (callActivityNotYetExecuted) {
+        // Subprocess not yet started. We need to run the handler again.
+        const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
-      callActivityResult = await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
-    } else {
-      // Subprocess was already started. Resume it and wait for the result:
-      callActivityResult =
-        await this._resumeProcessService.resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
+        callActivityResult = await this._executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
+      } else {
+        // Subprocess was already started. Resume it and wait for the result:
+        callActivityResult = await this
+          ._resumeProcessService
+          .resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
+      }
+
+      onSuspendToken.payload = this._createResultTokenPayloadFromCallActivityResult(callActivityResult);
+
+      await this.persistOnResume(onSuspendToken);
+      processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
+      await this.persistOnExit(onSuspendToken);
+
+      return processModelFacade.getNextFlowNodesFor(this.callActivity);
+    } catch (error) {
+      this.logger.error(error);
+
+      onSuspendToken.payload = {
+        error: error.message,
+        additionalInformation: error.additionalInformation,
+      };
+
+      const terminationRegex: RegExp = /terminated/i;
+      const isTerminationMessage: boolean = terminationRegex.test(error.message);
+
+      if (isTerminationMessage) {
+        await this.persistOnTerminate(onSuspendToken);
+      } else {
+        await this.persistOnError(onSuspendToken, error);
+      }
+
+      throw error;
     }
-
-    onSuspendToken.payload = this._createResultTokenPayloadFromCallActivityResult(callActivityResult);
-
-    await this.persistOnResume(onSuspendToken);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
-    await this.persistOnExit(onSuspendToken);
-
-    return processModelFacade.getNextFlowNodesFor(this.callActivity);
   }
 
   protected async _executeHandler(
@@ -115,20 +131,40 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
+    try {
+      const startEventId: string = await this._getAccessibleCallActivityStartEvent(identity);
 
-    await this.persistOnSuspend(token);
+      await this.persistOnSuspend(token);
 
-    const callActivityResult: EndEventReachedMessage =
-      await this._executeSubprocess(identity, startEventId, processTokenFacade, token);
+      const callActivityResult: EndEventReachedMessage =
+        await this._executeSubprocess(identity, startEventId, processTokenFacade, token);
 
-    token.payload = this._createResultTokenPayloadFromCallActivityResult(callActivityResult);
+      token.payload = this._createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
-    await this.persistOnResume(token);
-    processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
-    await this.persistOnExit(token);
+      await this.persistOnResume(token);
+      processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
+      await this.persistOnExit(token);
 
-    return processModelFacade.getNextFlowNodesFor(this.callActivity);
+      return processModelFacade.getNextFlowNodesFor(this.callActivity);
+    } catch (error) {
+      this.logger.error(error);
+
+      token.payload = {
+        error: error.message,
+        additionalInformation: error.additionalInformation,
+      };
+
+      const terminationRegex: RegExp = /terminated/i;
+      const isTerminationMessage: boolean = terminationRegex.test(error.message);
+
+      if (isTerminationMessage) {
+        await this.persistOnTerminate(token);
+      } else {
+        await this.persistOnError(token, error);
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -183,18 +219,10 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
     const processModelId: string = this.callActivity.calledReference;
 
-    try {
-      const result: EndEventReachedMessage =
-        await this._executeProcessService.startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, processInstanceId);
+    const result: EndEventReachedMessage =
+      await this._executeProcessService.startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, processInstanceId);
 
-      return result;
-    } catch (error) {
-      this.logger.error(error);
-
-      await this.persistOnError(token, error);
-
-      throw error;
-    }
+    return result;
   }
 
   private _createResultTokenPayloadFromCallActivityResult(result: EndEventReachedMessage): any {
@@ -230,6 +258,5 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
       endEventId: result.flowNodeId,
       endEventName: result.flowNodeName,
     };
-
   }
 }

@@ -13,6 +13,7 @@ import {
   OnBoundaryEventTriggeredCallback,
   OnBoundaryEventTriggeredData,
   onInterruptionCallback,
+  ProcessTerminatedMessage,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -83,14 +84,22 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
       } catch (error) {
         const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
 
+        await this.afterExecute(token);
+
+        const terminationRegex: RegExp = /terminated/i;
+        const isTerminationMessage: boolean = terminationRegex.test(error.message);
+        if (isTerminationMessage) {
+          this._terminateProcessInstance(identity, token);
+
+          return reject(error);
+        }
+
         const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
         if (noErrorBoundaryEventsAvailable) {
           return reject(error);
         }
 
         token.payload = error;
-
-        await this.afterExecute(token);
 
         await Promise.map(errorBoundaryEvents, async(errorHandler: ErrorBoundaryEventHandler) => {
           const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = errorHandler.getNextFlowNode(processModelFacade);
@@ -126,16 +135,27 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
             ._resumeWithBoundaryEvents(flowNodeInstancesAfterBoundaryEvents, flowNodeInstances, processTokenFacade, processModelFacade, identity);
         }
       } catch (error) {
+
+        const token: ProcessToken = processTokenFacade.createProcessToken();
+        token.payload = error;
+        token.flowNodeInstanceId = this.flowNodeInstanceId;
+
         const errorBoundaryEvents: Array<ErrorBoundaryEventHandler> = this._findErrorBoundaryEventHandlersForError(error);
+
+        await this.afterExecute(token);
+
+        const terminationRegex: RegExp = /terminated/i;
+        const isTerminationMessage: boolean = terminationRegex.test(error.message);
+        if (isTerminationMessage) {
+          this._terminateProcessInstance(identity, token);
+
+          return reject(error);
+        }
 
         const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
         if (noErrorBoundaryEventsAvailable) {
           return reject(error);
         }
-
-        const token: ProcessToken = processTokenFacade.createProcessToken();
-        token.payload = error;
-        token.flowNodeInstanceId = this.flowNodeInstanceId;
 
         await Promise.map(errorBoundaryEvents, async(errorHandler: ErrorBoundaryEventHandler) => {
           const flowNodeAfterBoundaryEvent: Model.Base.FlowNode = errorHandler.getNextFlowNode(processModelFacade);
@@ -161,15 +181,22 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
 
   private _subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
 
-    const terminateEvent: string = eventAggregatorSettings.messagePaths.terminateEndEventReached
+    const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
+      const payloadIsDefined: boolean = message !== undefined;
 
-      const processTerminatedError: string = `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`;
+      const processTerminatedError: string = payloadIsDefined
+                                           ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
+                                           : 'Process was terminated!';
+
+      token.payload = payloadIsDefined
+                    ? message.currentToken
+                    : {};
+
       this.logger.error(processTerminatedError);
 
-      token.payload = message.currentToken;
       await this.interrupt(token, true);
 
       const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
@@ -189,7 +216,6 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
     resolve: Function,
     reject: Function,
   ): Promise<void> {
-
     const tokenForHandlerHooks: ProcessToken = flowNodeInstance.tokens[0];
 
     this._terminationSubscription = this._subscribeToProcessTermination(tokenForHandlerHooks, reject);
@@ -378,9 +404,8 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
    *
    * This will start a new execution flow that travels down the path attached
    * to the BoundaryEvent.
-   *
-   * If the triggered BoundaryEvent is interrupting, this will also cancel this
-   * handler as well as all attached BoundaryEvents.
+   * If the triggered BoundaryEvent is interrupting, this function will also cancel
+   * this handler as well as all attached BoundaryEvents.
    *
    * @async
    * @param eventData           The data sent with the triggered BoundaryEvent.
@@ -451,5 +476,23 @@ export abstract class FlowNodeHandlerInterruptible<TFlowNode extends Model.Base.
        await boundaryEventHandler.cancel(token, processModelFacade);
      }
      this._attachedBoundaryEventHandlers = [];
+   }
+
+   private _terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
+
+     const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+     const message: ProcessTerminatedMessage = new ProcessTerminatedMessage(token.correlationId,
+                                                                            token.processModelId,
+                                                                            token.processInstanceId,
+                                                                            this.flowNode.id,
+                                                                            this.flowNodeInstanceId,
+                                                                            identity,
+                                                                            token.payload);
+     // ProcessInstance specific notification
+     this.eventAggregator.publish(eventName, message);
+     // Global notification
+     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
    }
 }
