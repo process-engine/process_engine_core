@@ -60,7 +60,7 @@ export class ProcessInstanceStateHandlingFacade {
                                                processDefinition.hash,
                                                processInstanceConfig.parentProcessInstanceId);
 
-    this._logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+    this.logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
   }
 
   /**
@@ -81,7 +81,7 @@ export class ProcessInstanceStateHandlingFacade {
       ._correlationService
       .finishProcessInstanceInCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId);
 
-    this._logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+    this.logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
 
     this.sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
   }
@@ -104,7 +104,7 @@ export class ProcessInstanceStateHandlingFacade {
       ._correlationService
       .finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, error);
 
-    this._logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
+    this.logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
 
     this.sendProcessInstanceErrorNotification(identity, processInstanceConfig, error);
   }
@@ -191,9 +191,11 @@ export class ProcessInstanceStateHandlingFacade {
    * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
-  private _logProcessStarted(correlationId: string, processModelId: string, processInstanceId: string): void {
+  public logProcessStarted(correlationId: string, processModelId: string, processInstanceId: string): void {
 
     const startTime: moment.Moment = moment.utc();
+
+    this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
 
     this._loggingApiService.writeLogForProcessModel(correlationId,
                                                     processModelId,
@@ -202,8 +204,27 @@ export class ProcessInstanceStateHandlingFacade {
                                                     `Process instance started.`,
                                                     startTime.toDate());
 
+  }
+
+  /**
+   * Writes logs and metrics at the beginning of a ProcessInstance's resumption.
+   *
+   * @param correlationId     The ProcessInstance's CorrelationId.
+   * @param processModelId    The ProcessInstance's ProcessModelId.
+   * @param processInstanceId The ID of the ProcessInstance.
+   */
+  public logProcessResumed(correlationId: string, processModelId: string, processInstanceId: string): void {
+
+    const startTime: moment.Moment = moment.utc();
+
     this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
 
+    this._loggingApiService.writeLogForProcessModel(correlationId,
+                                                    processModelId,
+                                                    processInstanceId,
+                                                    LogLevel.info,
+                                                    `ProcessInstance resumed.`,
+                                                    startTime.toDate());
   }
 
   /**
@@ -213,7 +234,7 @@ export class ProcessInstanceStateHandlingFacade {
    * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
-  private _logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
+  public logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
 
     const endTime: moment.Moment = moment.utc();
 
@@ -234,7 +255,7 @@ export class ProcessInstanceStateHandlingFacade {
    * @param processModelId    The ProcessInstance's ProcessModelId.
    * @param processInstanceId The ID of the ProcessInstance.
    */
-  private _logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
+  public logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
 
     const errorTime: moment.Moment = moment.utc();
 

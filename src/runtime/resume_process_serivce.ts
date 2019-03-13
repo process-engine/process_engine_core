@@ -1,5 +1,4 @@
 import {Logger} from 'loggerhythm';
-import * as moment from 'moment';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
@@ -13,8 +12,6 @@ import {
   ProcessToken,
   ProcessTokenType,
 } from '@process-engine/flow_node_instance.contracts';
-import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
   EndEventReachedMessage,
   eventAggregatorSettings,
@@ -25,12 +22,14 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
-  ProcessEndedMessage,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
+import {ProcessInstanceStateHandlingFacade} from './facades/process_instance_state_handling_facade';
 import {ProcessModelFacade} from './facades/process_model_facade';
 import {ProcessTokenFacade} from './facades/process_token_facade';
+
+import {IProcessInstanceConfig} from './facades/iprocess_instance_config';
 
 const logger: Logger = new Logger('processengine:runtime:resume_process_service');
 
@@ -38,17 +37,6 @@ interface IProcessInstanceModelAssociation {
   processModelId: string;
   processInstanceId: string;
   processInstanceOwner: IIdentity;
-}
-
-interface IProcessInstanceConfig {
-  correlationId: string;
-  processModelId: string;
-  processInstanceId: string;
-  processModelFacade: IProcessModelFacade;
-  startEvent: Model.Events.StartEvent;
-  startEventInstance: FlowNodeInstance;
-  processToken: ProcessToken;
-  processTokenFacade: IProcessTokenFacade;
 }
 
 /**
@@ -68,8 +56,7 @@ export class ResumeProcessService implements IResumeProcessService {
   private readonly _eventAggregator: IEventAggregator;
   private readonly _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
-  private readonly _loggingApiService: ILoggingApi;
-  private readonly _metricsApiService: IMetricsApi;
+  private readonly _processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   constructor(
     bpmnModelParser: IModelParser,
@@ -77,16 +64,14 @@ export class ResumeProcessService implements IResumeProcessService {
     eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodeInstanceService: IFlowNodeInstanceService,
-    loggingApiService: ILoggingApi,
-    metricsApiService: IMetricsApi,
+    processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade,
   ) {
     this._bpmnModelParser = bpmnModelParser;
     this._correlationService = correlationService;
     this._eventAggregator = eventAggregator,
     this._flowNodeHandlerFactory = flowNodeHandlerFactory;
     this._flowNodeInstanceService = flowNodeInstanceService;
-    this._loggingApiService = loggingApiService;
-    this._metricsApiService = metricsApiService;
+    this._processInstanceStateHandlingFacade = processInstanceStateHandlingFacade;
   }
 
   public async findAndResumeInterruptedProcessInstances(identity: IIdentity): Promise<void> {
@@ -230,10 +215,12 @@ export class ResumeProcessService implements IResumeProcessService {
       // because the FlowNodeHandlers will do that for us.
       // When we reached the interrupted FlowNodeInstance and finished resuming it, the ProcessInstance will
       // continue to run normally; i.e. all following FlowNodes will be 'executed' and no longer 'resumed'.
-      this._logProcessResumed(correlationId, processModelId, processInstanceId);
+      this._processInstanceStateHandlingFacade.logProcessResumed(correlationId, processModelId, processInstanceId);
 
       const flowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
         await this._flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
+
+      logger.info(`Resuming ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}...`);
 
       await flowNodeHandler.resume(
         flowNodeInstances,
@@ -249,38 +236,12 @@ export class ResumeProcessService implements IResumeProcessService {
         .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
       this._eventAggregator.subscribeOnce(terminateEvent, async() => {
-        const terminateError: InternalServerError = new InternalServerError('Process was terminated!');
-
-        await this
-          ._correlationService
-          .finishProcessInstanceInCorrelationWithError(identity,
-                                                      processInstanceConfig.correlationId,
-                                                      processInstanceConfig.processInstanceId,
-                                                      terminateError);
-
-        this
-          ._logProcessError(processInstanceConfig.correlationId,
-                            processInstanceConfig.processModelId,
-                            processInstanceConfig.processInstanceId,
-                            terminateError);
-
-        return;
+        throw new InternalServerError('Process was terminated!');
       });
 
-      this._logProcessFinished(correlationId, processModelId, processInstanceId);
-
-      await this
-        ._correlationService
-        .finishProcessInstanceInCorrelation(identity, correlationId, processInstanceId);
-
-      this._sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
-
+      await this._processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(identity, processInstanceConfig, resultToken);
     } catch (error) {
-      this._logProcessError(correlationId, processModelId, processInstanceId, error);
-
-      await this
-        ._correlationService
-        .finishProcessInstanceInCorrelationWithError(identity, correlationId, processInstanceId, error);
+      await this._processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig, error);
 
       throw error;
     }
@@ -326,88 +287,5 @@ export class ResumeProcessService implements IResumeProcessService {
     }
 
     return activeProcessInstances;
-  }
-
-  /**
-   * Writes logs and metrics at the beginning of a ProcessInstance's resumption.
-   *
-   * @param correlationId     The ProcessInstance's CorrelationId.
-   * @param processModelId    The ProcessInstance's ProcessModelId.
-   * @param processInstanceId The ID of the ProcessInstance.
-   */
-  private _logProcessResumed(correlationId: string, processModelId: string, processInstanceId: string): void {
-
-    logger.info(`ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId} successfully resumed.`);
-    const startTime: moment.Moment = moment.utc();
-    this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.info,
-                                                    `ProcessInstance resumed.`,
-                                                    startTime.toDate());
-  }
-
-  /**
-   * Writes logs and metrics after a ProcessInstance finishes execution.
-   *
-   * @param correlationId     The ProcessInstance's CorrelationId.
-   * @param processModelId    The ProcessInstance's ProcessModelId.
-   * @param processInstanceId The ID of the ProcessInstance.
-   */
-  private _logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
-
-    logger.info(`ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId} successfully finished.`);
-
-    const endTime: moment.Moment = moment.utc();
-    this._metricsApiService.writeOnProcessFinished(correlationId, processModelId, endTime);
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.info,
-                                                    `ProcessInstance finished.`,
-                                                    endTime.toDate());
-  }
-
-  /**
-   * Writes logs and metrics when a ProcessInstances was interrupted by an error.
-   *
-   * @param correlationId     The ProcessInstance's CorrelationId.
-   * @param processModelId    The ProcessInstance's ProcessModelId.
-   * @param processInstanceId The ID of the ProcessInstance.
-   */
-  private _logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
-
-    logger.error(`ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId} failed with error.`, error);
-    const errorTime: moment.Moment = moment.utc();
-    this._metricsApiService.writeOnProcessError(correlationId, processModelId, error, errorTime);
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.error,
-                                                    error.message,
-                                                    errorTime.toDate());
-  }
-
-  private _sendProcessInstanceFinishedNotification(
-    identity: IIdentity,
-    processInstanceConfig: IProcessInstanceConfig,
-    resultToken: IFlowNodeInstanceResult,
-  ): void {
-
-    // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
-
-    const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
-      processInstanceConfig.correlationId,
-      processInstanceConfig.processModelId,
-      processInstanceConfig.processInstanceId,
-      resultToken.flowNodeId,
-      resultToken.flowNodeInstanceId,
-      identity,
-      resultToken.result);
-
-    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
   }
 }

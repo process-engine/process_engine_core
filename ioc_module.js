@@ -89,8 +89,7 @@ function registerServices(container) {
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
-      'LoggingApiService',
-      'MetricsApiService'
+      'ProcessInstanceStateHandlingFacade'
     );
 
   container
