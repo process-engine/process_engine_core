@@ -48,23 +48,23 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
 
 function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): string {
 
-  if (
-    serviceTask.extensionElements &&
-    serviceTask.extensionElements.camundaExtensionProperties &&
-    serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
+  const serviceTaskHasNoExtensionProperties: boolean =
+    !serviceTask.extensionElements ||
+    !serviceTask.extensionElements.camundaExtensionProperties ||
+    serviceTask.extensionElements.camundaExtensionProperties.length === 0;
 
-    const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
-    const payloadProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
-
-    const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
-
-    if (payloadPropertyHasValue) {
-
-      return payloadProperty.value;
-    }
+  if (serviceTaskHasNoExtensionProperties) {
+    return undefined;
   }
 
-  return undefined;
+  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
+  const payloadProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+
+  const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
+
+  if (payloadPropertyHasValue) {
+    return payloadProperty.value;
+  }
 }
 
 function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocations.Invocation {
