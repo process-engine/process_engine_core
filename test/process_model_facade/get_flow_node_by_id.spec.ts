@@ -1,9 +1,9 @@
-import {before, describe, it} from 'mocha';
+// import {before, describe, it} from 'mocha';
 import * as should from 'should';
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {ProcessModelFacade} from '../../src/runtime/process_model_facade';
+import {ProcessModelFacade} from '../../src/runtime/facades/process_model_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessModelFacade.getFlowNodeById', () => {
