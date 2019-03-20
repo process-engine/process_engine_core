@@ -70,6 +70,7 @@ function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
   endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
   assignEventDefinitions(endEvent, endEventRaw);
+  endEvent.inputValues = getInputValues(endEvent);
 
   return endEvent;
 }
@@ -130,10 +131,35 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
     assignEventDefinitions(event, eventRaw);
 
+    (event as any).inputValues = getInputValues(event);
+
     events.push(event);
   }
 
   return events;
+}
+
+function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
+
+  const eventHasNoExtensionElements: boolean =
+    !event.extensionElements ||
+    !event.extensionElements.camundaExtensionProperties ||
+    event.extensionElements.camundaExtensionProperties.length === 0;
+
+  if (eventHasNoExtensionElements) {
+    return;
+  }
+
+  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = event.extensionElements.camundaExtensionProperties;
+  const inputValueProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('inputValues', extensionProperties);
+
+  const payloadPropertyHasValue: boolean = inputValueProperty && inputValueProperty.value && inputValueProperty.value.length > 0;
+
+  if (payloadPropertyHasValue) {
+    return inputValueProperty.value;
+  }
+
+  return undefined;
 }
 
 function assignEventDefinitions(event: any, eventRaw: any): void {
@@ -237,4 +263,14 @@ function getErrorById(errorId: string): Model.GlobalElements.Error {
   }
 
   return matchingError;
+}
+
+function findExtensionPropertyByName(
+  propertyName: string,
+  extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>,
+): Model.Base.Types.CamundaExtensionProperty {
+
+  return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
+    return property.name === propertyName;
+  });
 }

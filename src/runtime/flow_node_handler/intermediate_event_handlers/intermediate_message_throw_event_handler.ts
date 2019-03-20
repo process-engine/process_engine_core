@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
@@ -59,6 +60,8 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     try {
       await this._ensureHasClaim(identity, processModelFacade);
 
+      token.payload = this._getTokenPayloadFromInputValues(token, processTokenFacade, identity);
+
       const messageName: string = this.messageThrowEvent.messageEventDefinition.name;
 
       const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
@@ -107,5 +110,38 @@ export class IntermediateMessageThrowEventHandler extends FlowNodeHandler<Model.
     const claimName: string = laneForFlowNode.name;
 
     await this._iamService.ensureHasClaim(identity, claimName);
+  }
+
+  /**
+   * Retrives the payload to use with the event.
+   *
+   * This will either be expression contained in the `inputValues` property
+   * of the FlowNode, if it exists, or the current token.
+   *
+   * @param   token              The current ProcessToken.
+   * @param   processTokenFacade The facade for handling all ProcessTokens.
+   * @param   identity           The requesting users identity.
+   * @returns                    The retrieved payload for the event.
+   */
+  private _getTokenPayloadFromInputValues(token: ProcessToken, processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
+
+    try {
+      const eventUsesDefaultPayload: boolean = this.messageThrowEvent.inputValues === undefined;
+
+      if (eventUsesDefaultPayload) {
+        return token.payload;
+      }
+
+      const tokenHistory: any = processTokenFacade.getOldTokenFormat();
+
+      const evaluatePayloadFunction: Function = new Function('token', 'identity', `return ${this.messageThrowEvent.inputValues}`);
+
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
+    } catch (error) {
+      const errorMessage: string = `MessageThrowEvent configuration for inputValues '${this.messageThrowEvent.inputValues}' is invalid!`;
+      this.logger.error(errorMessage);
+
+      throw new InternalServerError(errorMessage);
+    }
   }
 }

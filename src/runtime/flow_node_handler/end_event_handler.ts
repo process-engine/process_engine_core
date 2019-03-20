@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIAMService, IIdentity} from '@essential-projects/iam_contracts';
 
@@ -75,6 +76,8 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
           await this._ensureHasClaim(identity, processModelFacade);
         }
 
+        token.payload = this._getFinalTokenPayloadFromInputValues(token, processTokenFacade, identity);
+
         // Event persisting
         if (flowNodeIsTerminateEndEvent) {
           await this.persistOnTerminate(token);
@@ -114,6 +117,52 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
         return reject(error);
       }
     });
+  }
+
+  private async _ensureHasClaim(identity: IIdentity, processModelFacade: IProcessModelFacade): Promise<void> {
+
+    const processModelHasNoLanes: boolean = !processModelFacade.getProcessModelHasLanes();
+    if (processModelHasNoLanes) {
+      return;
+    }
+
+    const laneForFlowNode: Model.ProcessElements.Lane = processModelFacade.getLaneForFlowNode(this.flowNode.id);
+    const claimName: string = laneForFlowNode.name;
+
+    await this._iamService.ensureHasClaim(identity, claimName);
+  }
+
+  /**
+   * Retrives the payload to use with the event.
+   *
+   * This will either be expression contained in the `inputValues` property
+   * of the FlowNode, if it exists, or the current token.
+   *
+   * @param   token              The current ProcessToken.
+   * @param   processTokenFacade The facade for handling all ProcessTokens.
+   * @param   identity           The requesting users identity.
+   * @returns                    The retrieved payload for the event.
+   */
+  private _getFinalTokenPayloadFromInputValues(token: ProcessToken, processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
+
+    try {
+      const eventUsesDefaultPayload: boolean = this.endEvent.inputValues === undefined;
+
+      if (eventUsesDefaultPayload) {
+        return token.payload;
+      }
+
+      const tokenHistory: any = processTokenFacade.getOldTokenFormat();
+
+      const evaluatePayloadFunction: Function = new Function('token', 'identity', `return ${this.endEvent.inputValues}`);
+
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
+    } catch (error) {
+      const errorMessage: string = `EndEvent configuration for inputValues '${this.endEvent.inputValues}' is invalid!`;
+      this.logger.error(errorMessage);
+
+      throw new InternalServerError(errorMessage);
+    }
   }
 
   /**
@@ -271,18 +320,5 @@ export class EndEventHandler extends FlowNodeHandler<Model.Events.EndEvent> {
     this.eventAggregator.publish(processEndMessageName, message);
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
-  }
-
-  private async _ensureHasClaim(identity: IIdentity, processModelFacade: IProcessModelFacade): Promise<void> {
-
-    const processModelHasNoLanes: boolean = !processModelFacade.getProcessModelHasLanes();
-    if (processModelHasNoLanes) {
-      return;
-    }
-
-    const laneForFlowNode: Model.ProcessElements.Lane = processModelFacade.getLaneForFlowNode(this.flowNode.id);
-    const claimName: string = laneForFlowNode.name;
-
-    await this._iamService.ensureHasClaim(identity, claimName);
   }
 }
