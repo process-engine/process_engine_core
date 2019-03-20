@@ -79,8 +79,8 @@ export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activi
             await this._flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
 
           const flowNodeInstancesForSubprocessInstance: Array<FlowNodeInstance> =
-            flowNodeInstancesForSubProcess.filter((instance: FlowNodeInstance) => {
-              return instance.parentProcessInstanceId = flowNodeInstance.processInstanceId;
+            flowNodeInstancesForSubProcess.filter((instance: FlowNodeInstance): boolean => {
+              return instance.parentProcessInstanceId === flowNodeInstance.processInstanceId;
             });
 
           const subProcessInstanceId: string = flowNodeInstancesForSubprocessInstance[0].processInstanceId;

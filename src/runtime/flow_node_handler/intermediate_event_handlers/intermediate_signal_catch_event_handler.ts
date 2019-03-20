@@ -43,7 +43,6 @@ export class IntermediateSignalCatchEventHandler extends FlowNodeHandlerInterrup
 
     this.logger.verbose(`Executing SignalCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
-    await this.persistOnSuspend(token);
 
     return await this._executeHandler(token, processTokenFacade, processModelFacade);
   }
