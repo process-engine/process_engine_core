@@ -104,7 +104,9 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         resolve(nextFlowNode);
       };
 
-      this.onInterruptedCallback = (): void => {
+      this.onInterruptedCallback = async(): Promise<void> => {
+
+        await this._abortExternalTask(onSuspendToken);
 
         if (this.externalTaskSubscription) {
           this.eventAggregator.unsubscribe(this.externalTaskSubscription);
@@ -151,7 +153,10 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         await this.persistOnSuspend(token);
         const externalTaskExecutorPromise: Promise<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
 
-        this.onInterruptedCallback = (): void => {
+        this.onInterruptedCallback = async(): Promise<void> => {
+
+          await this._abortExternalTask(token);
+
           externalTaskExecutorPromise.cancel();
           handlerPromise.cancel();
 
@@ -327,5 +332,20 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
   private _publishExternalTaskCreatedNotification(): void {
     const externalTaskCreatedEventName: string = `/externaltask/topic/${this.serviceTask.topic}/created`;
     this.eventAggregator.publish(externalTaskCreatedEventName);
+  }
+
+  private async _abortExternalTask(token: ProcessToken): Promise<void> {
+
+    const matchingExternalTask: ExternalTask<any> =
+      await this._externalTaskRepository.getByInstanceIds(token.correlationId, token.processInstanceId, this.flowNodeInstanceId);
+
+    const taskIsAlreadyFinished: boolean = matchingExternalTask.state === ExternalTaskState.finished;
+    if (taskIsAlreadyFinished) {
+      return;
+    }
+
+    const abortError: Error = new InternalServerError('The ExternalTask was aborted, because the corresponding ProcessInstance was interrupted!');
+
+    await this._externalTaskRepository.finishWithError(matchingExternalTask.id, abortError);
   }
 }
