@@ -63,26 +63,6 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
     const resumerPromise: Promise<Array<Model.Base.FlowNode>> =
       new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
 
-      const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
-
-      let externalTaskExecutorPromise: Promise<any>;
-
-      const noMatchingExteralTaskExists: boolean = !externalTask;
-      if (noMatchingExteralTaskExists) {
-        // No ExternalTask has been created yet. We can just execute the normal handler.
-        externalTaskExecutorPromise = this._executeExternalServiceTask(onSuspendToken, processTokenFacade, identity);
-
-        const result: any = await externalTaskExecutorPromise;
-
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
-        onSuspendToken.payload = result;
-        await this.persistOnExit(onSuspendToken);
-
-        const nextFlowNode: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
-
-        return resolve(nextFlowNode);
-      }
-
       // Callback for processing an ExternalTask result.
       let processExternalTaskResult: Function = async(error: Error, result: any): Promise<void> => {
 
@@ -111,16 +91,28 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
         if (this.externalTaskSubscription) {
           this.eventAggregator.unsubscribe(this.externalTaskSubscription);
         }
-
-        if (externalTaskExecutorPromise) {
-          externalTaskExecutorPromise.cancel();
-        }
         resumerPromise.cancel();
 
         processExternalTaskResult = (): void => { return; };
 
         return;
       };
+
+      const externalTask: ExternalTask<any> = await this._getExternalTaskForFlowNodeInstance(flowNodeInstance);
+
+      const noMatchingExteralTaskExists: boolean = !externalTask;
+      if (noMatchingExteralTaskExists) {
+        // No ExternalTask has been created yet. We can just execute the normal handler.
+        const result: any = await this._executeExternalServiceTask(onSuspendToken, processTokenFacade, identity);
+
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
+        onSuspendToken.payload = result;
+        await this.persistOnExit(onSuspendToken);
+
+        const nextFlowNode: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        return resolve(nextFlowNode);
+      }
 
       const externalTaskIsAlreadyFinished: boolean = externalTask.state === ExternalTaskState.finished;
       if (externalTaskIsAlreadyFinished) {
@@ -151,18 +143,16 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
       try {
         this.logger.verbose('Executing external ServiceTask');
         await this.persistOnSuspend(token);
-        const externalTaskExecutorPromise: Promise<any> = this._executeExternalServiceTask(token, processTokenFacade, identity);
 
         this.onInterruptedCallback = async(): Promise<void> => {
 
           await this._abortExternalTask(token);
 
-          externalTaskExecutorPromise.cancel();
           handlerPromise.cancel();
 
           return;
         };
-        const result: any = await externalTaskExecutorPromise;
+        const result: any = await this._executeExternalServiceTask(token, processTokenFacade, identity);
 
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
