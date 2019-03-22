@@ -1,3 +1,4 @@
+// tslint:disable:max-file-line-count
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -194,7 +195,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     });
   }
 
-  public async interrupt(token: ProcessToken, terminate?: boolean): Promise<void> {
+  public async interrupt(token: ProcessToken, terminate?: boolean, interruptorId?: string): Promise<void> {
     await this.onInterruptedCallback(token);
     await this.afterExecute(token);
 
@@ -202,7 +203,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       return this.persistOnTerminate(token);
     }
 
-    return this.persistOnExit(token);
+    return this.persistOnInterrupt(token, interruptorId);
   }
 
   protected async resumeFromState(
@@ -312,21 +313,25 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
-      const payloadIsDefined = message !== undefined;
+      const eventHasMessagePayload = message !== undefined;
 
-      const processTerminatedError = payloadIsDefined
+      const processTerminatedError = eventHasMessagePayload
         ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
         : 'Process was terminated!';
 
-      token.payload = payloadIsDefined
+      token.payload = eventHasMessagePayload
         ? message.currentToken
         : {};
 
       this.logger.error(processTerminatedError);
 
-      await this.interrupt(token, true);
+      if (eventHasMessagePayload) {
+        await this.interrupt(token, true);
+      } else {
+        await this.interrupt(token, true, message.flowNodeInstanceId);
+      }
 
-      const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
+      const terminationError = new InternalServerError(processTerminatedError);
 
       return rejectionFunction(terminationError);
     };
@@ -609,6 +614,10 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
 
     return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, boundaryInstanceId);
+  }
+
+  protected async persistOnInterrupt(processToken: ProcessToken, interruptorInstanceId: string): Promise<void> {
+    await this.flowNodePersistenceFacade.persistOnInterrupt(this.flowNode, this.flowNodeInstanceId, processToken, interruptorInstanceId);
   }
 
 }
