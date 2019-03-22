@@ -32,7 +32,7 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
         serviceTask.extensionElements.camundaExtensionProperties &&
         serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-        const invocation: Model.Activities.Invocations.Invocation = getInvocationForServiceTask(serviceTask);
+        const invocation: Model.Activities.Invocations.Invocation = getMethodInvocationforInternalServiceTask(serviceTask);
 
         if (invocation) {
           serviceTask.invocation = invocation;
@@ -67,14 +67,9 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
   }
 }
 
-function getInvocationForServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocations.Invocation {
+function getMethodInvocationforInternalServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocations.Invocation {
 
-  const extensionParameters: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
-
-  return getMethodInvocation(extensionParameters);
-}
-
-function getMethodInvocation(extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>): Model.Activities.Invocations.MethodInvocation {
+  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
 
   const methodInvocation: Model.Activities.Invocations.MethodInvocation = new Model.Activities.Invocations.MethodInvocation();
 

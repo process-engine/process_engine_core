@@ -66,6 +66,7 @@ function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
   const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
 
   endEvent.name = endEventRaw.name,
+  endEvent.defaultOutgoingSequenceFlowId = endEventRaw.default;
   endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
   endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
@@ -86,24 +87,25 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
   }
 
   for (const boundaryEventRaw of boundaryEventsRaw) {
-    const event: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
+    const boundaryEvent: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
 
-    event.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+    boundaryEvent.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    boundaryEvent.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-    event.name = boundaryEventRaw.name;
-    event.attachedToRef = boundaryEventRaw.attachedToRef;
+    boundaryEvent.name = boundaryEventRaw.name;
+    boundaryEvent.defaultOutgoingSequenceFlowId = boundaryEventRaw.default;
+    boundaryEvent.attachedToRef = boundaryEventRaw.attachedToRef;
 
     // NOTE: Interrupting BoundaryEvents will sometimes not have this property!
     // However, non-interrupting BoundaryEvents always have it.
     const cancelActivity: boolean = boundaryEventRaw.cancelActivity === undefined ||
                                     boundaryEventRaw.cancelActivity === 'true' ||
                                     boundaryEventRaw.cancelActivity === true;
-    event.cancelActivity = cancelActivity;
+    boundaryEvent.cancelActivity = cancelActivity;
 
-    assignEventDefinitions(event, boundaryEventRaw);
+    assignEventDefinitions(boundaryEvent, boundaryEventRaw);
 
-    events.push(event);
+    events.push(boundaryEvent);
   }
 
   return events;
@@ -126,6 +128,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
   for (const eventRaw of eventsRaw) {
     const event: TEvent = createObjectWithCommonProperties<TEvent>(eventRaw, type);
     event.name = eventRaw.name;
+    event.defaultOutgoingSequenceFlowId = eventRaw.default;
     event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
