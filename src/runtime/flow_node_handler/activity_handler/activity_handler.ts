@@ -610,8 +610,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     identity: IIdentity,
   ): Promise<void> {
 
-    const handlerForNextFlowNode: IFlowNodeHandler<TNextFlowNode> =
-      await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
+    const handlerForNextFlowNode = await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
 
     return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, boundaryInstanceId);
   }
