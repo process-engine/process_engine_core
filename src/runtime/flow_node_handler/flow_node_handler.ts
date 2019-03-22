@@ -1,3 +1,4 @@
+// tslint:disable:max-file-line-count
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 

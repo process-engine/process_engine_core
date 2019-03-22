@@ -299,6 +299,33 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
+  /**
+   * Resumes the given FlowNodeInstance from the point it was interrupted.
+   * This is used to divert ProcessResumption through the BoundaryEvent
+   * that previously interrupted the FlowNodeInstance.
+   *
+   * @async
+   * @param   onInterruptToken   The final ProcessToken, after the
+   *                             FlowNodeInstance was interrupted.
+   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
+   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   identity           The identity of the user that originally
+   *                             started the ProcessInstance.
+   * @returns                    The Info for the next FlowNode to run.
+   */
+  protected async _continueAfterInterrupt(
+    onInterruptToken: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity?: IIdentity,
+  ): Promise<Array<Model.Base.FlowNode>> {
+
+    // WIP
+    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, onInterruptToken.payload);
+
+    return processModelFacade.getNextFlowNodesFor(this.flowNode);
+  }
+
   protected async persistOnSuspend(processToken: ProcessToken): Promise<void> {
     await this.flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
   }
