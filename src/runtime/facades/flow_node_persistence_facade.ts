@@ -83,6 +83,33 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
     );
   }
 
+  public async persistOnInterrupt(
+    flowNode: Model.Base.FlowNode,
+    flowNodeInstanceId: string,
+    processToken: ProcessToken,
+    interruptorInstanceId: string,
+  ): Promise<void> {
+
+    await this._flowNodeInstanceService.persistOnInterrupt(flowNode, flowNodeInstanceId, processToken, interruptorInstanceId);
+
+    const now: moment.Moment = moment.utc();
+
+    this._metricsApiService.writeOnFlowNodeInstanceExit(processToken.correlationId,
+                                                        processToken.processModelId,
+                                                        flowNodeInstanceId,
+                                                        flowNode.id,
+                                                        processToken,
+                                                        now);
+
+    this._loggingApiService.writeLogForFlowNode(processToken.correlationId,
+                                                processToken.processModelId,
+                                                processToken.processInstanceId,
+                                                flowNodeInstanceId,
+                                                flowNode.id,
+                                                LogLevel.error,
+                                                `Flow Node interrupted by BoundaryEvent instance ${interruptorInstanceId}.`);
+  }
+
   public async persistOnTerminate(
     flowNode: Model.Base.FlowNode,
     flowNodeInstanceId: string,
