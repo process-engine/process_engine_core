@@ -313,7 +313,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    *                             started the ProcessInstance.
    * @returns                    The Info for the next FlowNode to run.
    */
-  protected async _continueAfterInterrupt(
+  protected async continueAfterInterrupt(
     onInterruptToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -378,10 +378,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     token.payload = error;
 
-    const allResults = processTokenFacade.getAllResults();
-    // This check is necessary to prevent duplicate entries,
-    // in case the Promise-Chain was broken further down the road.
-    const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+    // This check is necessary to prevent duplicate entries, in case the Promise-Chain was broken further down the road.
+    const noResultStoredYet = !processTokenFacade.containsResultForFlowNodeInstance(this.flowNodeInstanceId);
     if (noResultStoredYet) {
       processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
     }

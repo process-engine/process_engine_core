@@ -1,4 +1,3 @@
-// tslint:disable:max-file-line-count
 import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
@@ -295,9 +294,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     token.payload = error;
 
     // This check is necessary to prevent duplicate entries, in case the Promise-Chain was broken further down the road.
-    const allResults = processTokenFacade.getAllResults();
-
-    const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+    const noResultStoredYet = !processTokenFacade.containsResultForFlowNodeInstance(this.flowNodeInstanceId);
     if (noResultStoredYet) {
       processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, token);
     }
