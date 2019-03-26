@@ -322,10 +322,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
         identity,
       );
 
-      const allResults = await processInstanceConfig.processTokenFacade.getAllResults();
-      const resultToken = allResults.pop();
+      const finalResult = processInstanceConfig.processTokenFacade.getLatestResult();
 
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(identity, processInstanceConfig, resultToken);
+      await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(identity, processInstanceConfig, finalResult);
     } catch (error) {
       await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig, error);
 
