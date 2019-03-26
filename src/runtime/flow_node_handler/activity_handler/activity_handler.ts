@@ -1,4 +1,3 @@
-// tslint:disable:max-file-line-count
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -12,7 +11,6 @@ import {
 import {
   IBoundaryEventHandler,
   IFlowNodeHandler,
-  IFlowNodeInstanceResult,
   IInterruptible,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -129,8 +127,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         } else {
           await this.resumeWithBoundaryEvents(
             flowNodeInstanceForHandler,
-            flowNodeInstancesAfterBoundaryEvents,
             allFlowNodeInstances,
+            flowNodeInstancesAfterBoundaryEvents,
             processTokenFacade,
             processModelFacade,
             identity,
@@ -406,9 +404,9 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
   }
 
   private async resumeWithBoundaryEvents(
-    currentFlowNodeInstance: FlowNodeInstance,
+    flowNodeInstanceForHandler: FlowNodeInstance,
+    allFlowNodeInstances: Array<FlowNodeInstance>,
     flowNodeInstancesAfterBoundaryEvents: Array<IFlowNodeModelInstanceAssociation>,
-    flowNodeInstances: Array<FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -426,15 +424,14 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         return entry.nextFlowNodeInstance.id === handler.getInstanceId();
       });
 
-      return handler.resume(matchingEntry.nextFlowNodeInstance, flowNodeInstances, processTokenFacade, processModelFacade, identity);
+      return handler.resume(matchingEntry.nextFlowNodeInstance, allFlowNodeInstances, processTokenFacade, processModelFacade, identity);
     });
 
-    // Check if one of the BoundaryEvents was interrupting. If so, the handler must not be resumed.
-    const noInterruptingBoundaryEventsTriggered = !flowNodeInstancesAfterBoundaryEvents
-      .some((entry: IFlowNodeModelInstanceAssociation): boolean => entry.boundaryEventModel.cancelActivity === true);
-
+    // Check if the FlowNodeInstance was placed in an interrupted state.
+    // If so, it must not be resumed.
+    const noInterruptingBoundaryEventsTriggered = flowNodeInstanceForHandler.state !== FlowNodeInstanceState.interrupted;
     if (noInterruptingBoundaryEventsTriggered) {
-      handlerResumptionPromises.push(this.resumeFromState(currentFlowNodeInstance, processTokenFacade, processModelFacade, identity));
+      handlerResumptionPromises.push(this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity));
     }
 
     await Promise.all(handlerResumptionPromises);
@@ -577,8 +574,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    *
    * This will start a new execution flow that travels down the path attached
    * to the BoundaryEvent.
-   * If the triggered BoundaryEvent is interrupting, this function will also cancel
-   * this handler as well as all attached BoundaryEvents.
+   * If the triggered BoundaryEvent is interrupting, this handler and all other
+   * BoundaryEvents will be canceled.
    *
    * @async
    * @param eventData           The data sent with the triggered BoundaryEvent.
