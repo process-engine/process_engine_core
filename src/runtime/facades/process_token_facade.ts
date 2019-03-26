@@ -24,6 +24,10 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
     return clone(this.processTokenResults);
   }
 
+  public getLatestResult(): IFlowNodeInstanceResult {
+    return this.processTokenResults.pop();
+  }
+
   public createProcessToken(payload?: any): ProcessToken {
     const token: ProcessToken = new ProcessToken();
     token.processInstanceId = this.processInstanceId;
