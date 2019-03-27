@@ -195,6 +195,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
           if (error) {
             this.logger.error(`The external worker failed to process the ExternalTask!`, error);
+            await this.persistOnError(token, error);
 
             return reject(error);
           }
