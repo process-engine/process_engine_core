@@ -68,9 +68,10 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         if (error) {
           this.logger.error(`External processing of ServiceTask failed!`, error);
+          onSuspendToken.payload = error;
           await this.persistOnError(onSuspendToken, error);
 
-          throw error;
+          return reject(error);
         }
 
         this.logger.verbose('External processing of the ServiceTask finished successfully.');
@@ -195,6 +196,8 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
           if (error) {
             this.logger.error(`The external worker failed to process the ExternalTask!`, error);
+            token.payload = error;
+            await this.persistOnError(token, error);
 
             return reject(error);
           }
