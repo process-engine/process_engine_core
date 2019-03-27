@@ -70,7 +70,7 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
           this.logger.error(`External processing of ServiceTask failed!`, error);
           await this.persistOnError(onSuspendToken, error);
 
-          throw error;
+          return reject(error);
         }
 
         this.logger.verbose('External processing of the ServiceTask finished successfully.');
