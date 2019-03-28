@@ -176,7 +176,7 @@ export class ProcessInstanceStateHandlingFacade {
         subprocess.processInstanceId,
         undefined,
         undefined,
-        correlation.identity,
+        subprocess.identity,
         new InternalServerError(`Process terminated by parent ProcessInstance ${processInstanceId}`),
       );
 
