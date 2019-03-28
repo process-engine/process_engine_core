@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/process-engine/process_engine_core#readme",
   "dependencies": {
-    "@essential-projects/errors_ts": "^1.4.0",
+    "@essential-projects/errors_ts": "^1.4.5",
     "@essential-projects/timing_contracts": "^4.0.0",
     "@process-engine/external_task_api_contracts": "^1.0.0",
     "@process-engine/correlation.contracts": "^1.0.2",
