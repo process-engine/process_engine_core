@@ -160,7 +160,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
     const correlation: Correlation = await this._correlationService.getByProcessInstanceId(identity, processInstanceId);
 
-    const processModelCorrelation: CorrelationProcessInstance = correlation.processModels[0];
+    const processModelCorrelation: CorrelationProcessInstance = correlation.processInstances[0];
 
     const processModelDefinitions: Model.Definitions = await this._bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
     const processModel: Model.Process = processModelDefinitions.processes[0];

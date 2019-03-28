@@ -77,7 +77,7 @@ export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Acti
 
       const matchingSubprocess: CorrelationProcessInstance = noSubprocessesFound
         ? undefined
-        : correlation.processModels.find((entry: CorrelationProcessInstance): boolean => {
+        : correlation.processInstances.find((entry: CorrelationProcessInstance): boolean => {
             return entry.processModelId === this.callActivity.calledReference;
           });
 
