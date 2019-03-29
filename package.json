@@ -24,7 +24,7 @@
     "@essential-projects/errors_ts": "^1.4.5",
     "@essential-projects/timing_contracts": "^4.0.0",
     "@process-engine/external_task_api_contracts": "^1.0.0",
-    "@process-engine/correlation.contracts": "feature~fix_naming_inconsistencies",
+    "@process-engine/correlation.contracts": "1.0.2-af15aac2-b7",
     "@process-engine/flow_node_instance.contracts": "1.1.0-5c9e963c-b7",
     "@process-engine/logging_api_contracts": "^1.0.0",
     "@process-engine/metrics_api_contracts": "^1.0.0",
