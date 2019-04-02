@@ -125,10 +125,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                           running process.
    */
   protected async beforeExecute(
-    token?: ProcessToken,
-    processTokenFacade?: IProcessTokenFacade,
-    processModelFacade?: IProcessModelFacade,
-    identity?: IIdentity,
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
   ): Promise<void> {
     return Promise.resolve();
   }
@@ -194,7 +194,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade?: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<void> {
-    this.eventAggregator.unsubscribe(this._terminationSubscription);
+    if (this._terminationSubscription) {
+      this.eventAggregator.unsubscribe(this._terminationSubscription);
+    }
   }
 
   /**

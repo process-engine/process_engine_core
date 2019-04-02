@@ -42,6 +42,17 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
     return super.flowNode;
   }
 
+  // Overriding this hook here prevents it from creating subscriptions for
+  // ProcessTermination, which we neither need nor want for EndEvents.
+  protected async beforeExecute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
   protected async executeInternally(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,

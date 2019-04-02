@@ -17,6 +17,27 @@ import {FlowNodeHandler} from '../flow_node_handler';
  */
 export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> {
 
+  /**
+   * Allows each handler to perform custom preprations prior to execution.
+   *
+   * @async
+   * @param token              The current ProcessToken.
+   * @param processTokenFacade The ProcessTokenFacade of the currently
+   *                           running process.
+   * @param processModelFacade The ProcessModelFacade of the currently
+   *                           running process.
+   */
+  protected async beforeExecute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    terminationCallback?: Function,
+  ): Promise<void> {
+    await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
+    this._terminationSubscription = this.subscribeToProcessTermination(token, terminationCallback);
+  }
+
   public async execute(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -31,9 +52,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
         token.flowNodeInstanceId = this.flowNodeInstanceId;
         let nextFlowNodes: Array<Model.Base.FlowNode>;
 
-        this._terminationSubscription = this.subscribeToProcessTermination(token, reject);
-
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
+        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
         nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
@@ -101,7 +120,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
         this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
         this._flowNodeInstanceId = flowNodeInstance.id;
 
-        // WIth regards to ParallelGateways, we need to be able to handle multiple results here.
+        // With regards to ParallelGateways, we need to be able to handle multiple results here.
         let nextFlowNodes: Array<Model.Base.FlowNode>;
 
         // It doesn't really matter which token is used here, since payload-specific operations should
@@ -109,9 +128,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
         // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
         const tokenForHandlerHooks: ProcessToken = flowNodeInstance.tokens[0];
 
-        await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
-
-        this._terminationSubscription = this.subscribeToProcessTermination(tokenForHandlerHooks, reject);
+        await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, reject);
 
         nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
