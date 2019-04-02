@@ -155,9 +155,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
           }
 
           await Promise.all(nextFlowNodeExecutionPromises);
-
-          return resolve();
         }
+
+        return resolve();
       } catch (error) {
         const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
         // This check is necessary to prevent duplicate entries,
@@ -289,6 +289,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
           await Promise.all(nextFlowNodeExecutionPromises);
         }
+
+        return resolve();
       } catch (error) {
         const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
         // This check is necessary to prevent duplicate entries,
