@@ -7,12 +7,14 @@ import {Correlation, CorrelationProcessInstance, ICorrelationService} from '@pro
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   EndEventReachedMessage,
+  eventAggregatorSettings,
   IExecuteProcessService,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   IResumeProcessService,
+  ProcessTerminatedMessage,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
@@ -116,6 +118,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
       if (isTerminationMessage) {
         await this.persistOnTerminate(onSuspendToken);
+        this._terminateProcessInstance(identity, onSuspendToken);
       } else {
         await this.persistOnError(onSuspendToken, error);
       }
@@ -159,6 +162,7 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
 
       if (isTerminationMessage) {
         await this.persistOnTerminate(token);
+        this._terminateProcessInstance(identity, token);
       } else {
         await this.persistOnError(token, error);
       }
@@ -258,5 +262,23 @@ export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallAc
       endEventId: result.flowNodeId,
       endEventName: result.flowNodeName,
     };
+  }
+
+  private _terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
+
+    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const message: ProcessTerminatedMessage = new ProcessTerminatedMessage(token.correlationId,
+                                                                          token.processModelId,
+                                                                          token.processInstanceId,
+                                                                          this.flowNode.id,
+                                                                          this.flowNodeInstanceId,
+                                                                          identity,
+                                                                          token.payload);
+    // ProcessInstance specific notification
+    this.eventAggregator.publish(eventName, message);
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 }

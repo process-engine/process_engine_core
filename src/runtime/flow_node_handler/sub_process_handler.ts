@@ -13,6 +13,7 @@ import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ProcessTerminatedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -123,6 +124,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
           if (isTerminationMessage) {
             await this.persistOnTerminate(onSuspendToken);
+            this._terminateProcessInstance(identity, onSuspendToken);
           } else {
             await this.persistOnError(onSuspendToken, error);
           }
@@ -180,6 +182,7 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
           if (isTerminationMessage) {
             await this.persistOnTerminate(token);
+            this._terminateProcessInstance(identity, token);
           } else {
             await this.persistOnError(token, error);
           }
@@ -333,6 +336,24 @@ export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProce
 
     this.subProcessTerminatedSubscription =
       this.eventAggregator.subscribeOnce(subProcessTerminatedEvent, callback);
+  }
+
+  private _terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
+
+    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const message: ProcessTerminatedMessage = new ProcessTerminatedMessage(token.correlationId,
+                                                                          token.processModelId,
+                                                                          token.processInstanceId,
+                                                                          this.flowNode.id,
+                                                                          this.flowNodeInstanceId,
+                                                                          identity,
+                                                                          token.payload);
+    // ProcessInstance specific notification
+    this.eventAggregator.publish(eventName, message);
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
   private _cancelEventAggregatorSubscriptions(): void {

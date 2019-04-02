@@ -19,7 +19,6 @@ import {
   OnBoundaryEventTriggeredCallback,
   OnBoundaryEventTriggeredData,
   onInterruptionCallback,
-  ProcessTerminatedMessage,
   TerminateEndEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -174,14 +173,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
         const terminationRegex: RegExp = /terminated/i;
         const isTerminationMessage: boolean = terminationRegex.test(error.message);
-        if (isTerminationMessage) {
-          this._terminateProcessInstance(identity, token);
-
-          return reject(error);
-        }
 
         const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
-        if (noErrorBoundaryEventsAvailable) {
+        if (noErrorBoundaryEventsAvailable || isTerminationMessage) {
           return reject(error);
         }
 
@@ -314,14 +308,10 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
         const terminationRegex: RegExp = /terminated/i;
         const isTerminationMessage: boolean = terminationRegex.test(error.message);
-        if (isTerminationMessage) {
-          this._terminateProcessInstance(identity, token);
-
-          return reject(error);
-        }
 
         const noErrorBoundaryEventsAvailable: boolean = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
-        if (noErrorBoundaryEventsAvailable) {
+
+        if (noErrorBoundaryEventsAvailable || isTerminationMessage) {
           return reject(error);
         }
 
@@ -907,23 +897,5 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       await boundaryEventHandler.cancel(token, processModelFacade);
     }
     this._attachedBoundaryEventHandlers = [];
-  }
-
-  private _terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
-
-    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
-
-    const message: ProcessTerminatedMessage = new ProcessTerminatedMessage(token.correlationId,
-                                                                          token.processModelId,
-                                                                          token.processInstanceId,
-                                                                          this.flowNode.id,
-                                                                          this.flowNodeInstanceId,
-                                                                          identity,
-                                                                          token.payload);
-    // ProcessInstance specific notification
-    this.eventAggregator.publish(eventName, message);
-    // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 }
