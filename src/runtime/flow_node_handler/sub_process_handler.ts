@@ -17,7 +17,7 @@ import {
 import {Model} from '@process-engine/process_model.contracts';
 
 import {ProcessTokenFacade} from '../facades/process_token_facade';
-import {FlowNodeHandlerInterruptible} from './index';
+import {FlowNodeHandler} from './index';
 
 interface IProcessInstanceConfig {
   processInstanceId: string;
@@ -27,7 +27,7 @@ interface IProcessInstanceConfig {
   processTokenFacade: IProcessTokenFacade;
 }
 
-export class SubProcessHandler extends FlowNodeHandlerInterruptible<Model.Activities.SubProcess> {
+export class SubProcessHandler extends FlowNodeHandler<Model.Activities.SubProcess> {
 
   private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
 

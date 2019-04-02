@@ -65,7 +65,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
 
     const subscriptionForProcessTerminationNeeded: boolean = !this._processTerminationSubscription;
     if (subscriptionForProcessTerminationNeeded) {
-      this._subscribeToProcessTermination(token);
+      this._processTerminationSubscription = this._subscribeToProcessTermination(token);
     }
 
     const preceedingFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
@@ -135,7 +135,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
     return resultToken;
   }
 
-  private _subscribeToProcessTermination(token: ProcessToken): void {
+  protected _subscribeToProcessTermination(token: ProcessToken): Subscription {
 
     const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
@@ -162,7 +162,7 @@ export class ParallelJoinGatewayHandler extends FlowNodeHandler<Model.Gateways.P
       this._removeInstanceFromIocContainer(token);
     };
 
-    this._processTerminationSubscription = this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+    return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
   }
 
   private _removeInstanceFromIocContainer(processToken: ProcessToken): void {

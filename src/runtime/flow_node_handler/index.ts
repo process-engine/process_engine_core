@@ -1,6 +1,5 @@
 export * from './flow_node_handler_factory';
 export * from './flow_node_handler';
-export * from './flow_node_handler_interruptible';
 export * from './empty_activity_handler';
 export * from './end_event_handler';
 export * from './script_task_handler';

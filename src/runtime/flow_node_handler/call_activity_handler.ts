@@ -16,9 +16,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
-import {FlowNodeHandlerInterruptible} from './index';
+import {FlowNodeHandler} from './index';
 
-export class CallActivityHandler extends FlowNodeHandlerInterruptible<Model.Activities.CallActivity> {
+export class CallActivityHandler extends FlowNodeHandler<Model.Activities.CallActivity> {
 
   private _correlationService: ICorrelationService;
   private _executeProcessService: IExecuteProcessService;

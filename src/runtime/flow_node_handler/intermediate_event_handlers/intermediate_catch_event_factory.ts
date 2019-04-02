@@ -4,7 +4,6 @@ import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engin
 import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
-import {FlowNodeHandlerInterruptible} from '../flow_node_handler_interruptible';
 
 export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedFactory<Model.Events.IntermediateCatchEvent> {
 
@@ -19,25 +18,25 @@ export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedF
     if (flowNode.linkEventDefinition) {
       return this
         ._container
-        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.messageEventDefinition) {
       return this
         ._container
-        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.signalEventDefinition) {
       return this
         ._container
-        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.timerEventDefinition) {
       return this
         ._container
-        .resolveAsync<FlowNodeHandlerInterruptible<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
+        .resolveAsync<FlowNodeHandler<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
     }
 
     return this

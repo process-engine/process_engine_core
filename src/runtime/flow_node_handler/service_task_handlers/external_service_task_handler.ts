@@ -14,9 +14,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
-import {FlowNodeHandlerInterruptible} from '../index';
+import {FlowNodeHandler} from '../index';
 
-export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ServiceTask> {
+export class ExternalServiceTaskHandler extends FlowNodeHandler<Model.Activities.ServiceTask> {
 
   private _externalTaskRepository: IExternalTaskRepository;
 

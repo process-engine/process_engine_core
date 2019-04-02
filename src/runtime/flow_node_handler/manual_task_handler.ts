@@ -16,9 +16,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
-import {FlowNodeHandlerInterruptible} from './index';
+import {FlowNodeHandler} from './index';
 
-export class ManualTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ManualTask> {
+export class ManualTaskHandler extends FlowNodeHandler<Model.Activities.ManualTask> {
 
   private manualTaskSubscription: Subscription;
 

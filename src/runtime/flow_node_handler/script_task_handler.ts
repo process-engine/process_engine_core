@@ -12,9 +12,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
-import {FlowNodeHandlerInterruptible} from './index';
+import {FlowNodeHandler} from './index';
 
-export class ScriptTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.ScriptTask> {
+export class ScriptTaskHandler extends FlowNodeHandler<Model.Activities.ScriptTask> {
 
   constructor(
     eventAggregator: IEventAggregator,

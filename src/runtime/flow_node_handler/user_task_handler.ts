@@ -17,9 +17,9 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
-import {FlowNodeHandlerInterruptible} from './index';
+import {FlowNodeHandler} from './index';
 
-export class UserTaskHandler extends FlowNodeHandlerInterruptible<Model.Activities.UserTask> {
+export class UserTaskHandler extends FlowNodeHandler<Model.Activities.UserTask> {
 
   private userTaskSubscription: Subscription;
 
