@@ -17,16 +17,6 @@ import {FlowNodeHandler} from '../flow_node_handler';
  */
 export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> {
 
-  /**
-   * Allows each handler to perform custom preprations prior to execution.
-   *
-   * @async
-   * @param token              The current ProcessToken.
-   * @param processTokenFacade The ProcessTokenFacade of the currently
-   *                           running process.
-   * @param processModelFacade The ProcessModelFacade of the currently
-   *                           running process.
-   */
   protected async beforeExecute(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
