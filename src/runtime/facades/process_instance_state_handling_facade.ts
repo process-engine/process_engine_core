@@ -155,12 +155,12 @@ export class ProcessInstanceStateHandlingFacade {
     const correlation: Correlation =
       await this._correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
 
-    const noSubprocessesFound: boolean = !correlation || !correlation.processModels || correlation.processModels.length === 0;
+    const noSubprocessesFound: boolean = !correlation || !correlation.processInstances || correlation.processInstances.length === 0;
     if (noSubprocessesFound) {
       return;
     }
 
-    for (const subprocess of correlation.processModels) {
+    for (const subprocess of correlation.processInstances) {
 
       const subprocessIsAlreadyFinished: boolean = subprocess.state !== CorrelationState.running;
       if (subprocessIsAlreadyFinished) {
@@ -176,7 +176,7 @@ export class ProcessInstanceStateHandlingFacade {
         subprocess.processInstanceId,
         undefined,
         undefined,
-        correlation.identity,
+        subprocess.identity,
         new InternalServerError(`Process terminated by parent ProcessInstance ${processInstanceId}`),
       );
 

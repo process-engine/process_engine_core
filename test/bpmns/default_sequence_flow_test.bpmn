@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definition_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="BPMN Studio" exporterVersion="1">
+  <bpmn:collaboration id="Collaboration_1cidyxu" name="">
+    <bpmn:participant id="Participant_0px403d" name="default_sequence_flow_test" processRef="default_sequence_flow_test" />
+  </bpmn:collaboration>
+  <bpmn:process id="default_sequence_flow_test" name="default_sequence_flow_test" isExecutable="true">
+    <bpmn:laneSet>
+      <bpmn:lane id="Lane_1xzf0d3" name="Lane">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ExclusiveGateway_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_2</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="SequenceFlowBeforeGateway" name="" sourceRef="StartEvent_1" targetRef="ExclusiveGateway_1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:startEvent id="StartEvent_1" name="Start Event">
+      <bpmn:outgoing>SequenceFlowBeforeGateway</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_1" name="End Event 1">
+      <bpmn:incoming>DefaultSequenceFlowAfterGateway</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1" name="Gateway with default path" default="DefaultSequenceFlowAfterGateway">
+      <bpmn:incoming>SequenceFlowBeforeGateway</bpmn:incoming>
+      <bpmn:outgoing>DefaultSequenceFlowAfterGateway</bpmn:outgoing>
+      <bpmn:outgoing>ConditionalSequenceFlowAfterGateway</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="DefaultSequenceFlowAfterGateway" name="Default" sourceRef="ExclusiveGateway_1" targetRef="EndEvent_1">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="EndEvent_2" name="End Event 2">
+      <bpmn:incoming>ConditionalSequenceFlowAfterGateway</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="ConditionalSequenceFlowAfterGateway" name="Conditional" sourceRef="ExclusiveGateway_1" targetRef="EndEvent_2">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1cidyxu">
+      <bpmndi:BPMNShape id="Participant_0px403d_di" bpmnElement="Participant_0px403d">
+        <dc:Bounds x="5" y="4" width="577" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1xzf0d3_di" bpmnElement="Lane_1xzf0d3">
+        <dc:Bounds x="35" y="4" width="547" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1mox3jl_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="78" y="161" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="69" y="197" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0eie6q6_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="500" y="44" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="489" y="80" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1jdocur_di" bpmnElement="SequenceFlowBeforeGateway">
+        <di:waypoint x="114" y="179" />
+        <di:waypoint x="202" y="179" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_16vk733_di" bpmnElement="ExclusiveGateway_1" isMarkerVisible="true">
+        <dc:Bounds x="202" y="154" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="253" y="165" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0h789if_di" bpmnElement="DefaultSequenceFlowAfterGateway">
+        <di:waypoint x="227" y="154" />
+        <di:waypoint x="227" y="62" />
+        <di:waypoint x="500" y="62" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="250" y="94" width="35" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_065brho_di" bpmnElement="EndEvent_2">
+        <dc:Bounds x="500" y="284" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="488" y="327" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1m2v5og_di" bpmnElement="ConditionalSequenceFlowAfterGateway">
+        <di:waypoint x="227" y="204" />
+        <di:waypoint x="227" y="302" />
+        <di:waypoint x="500" y="302" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="254" y="262" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

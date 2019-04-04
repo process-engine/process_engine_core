@@ -127,6 +127,21 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
     const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
 
+      // if no SequenceFlows have a truthy condition, but a default Sequence Flow is defined,
+      // return the targetRef of that SequenceFlow.
+      const gatewayHasDefaultSequenceFlow: boolean = this.exclusiveGateway.defaultOutgoingSequenceFlowId !== undefined;
+      if (gatewayHasDefaultSequenceFlow) {
+
+        const defaultSequenceFlow: Model.ProcessElements.SequenceFlow =
+          sequenceFlows.find((flow: Model.ProcessElements.SequenceFlow): boolean => {
+            return flow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
+          });
+
+        return defaultSequenceFlow.targetRef;
+      }
+
+      // If no SequenceFlows have a truthy condition and no default SequenceFlow exists,
+      // throw an error
       const noSequenceFlowFoundError: BadRequestError =
         new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
@@ -158,8 +173,13 @@ export class ExclusiveGatewayHandler extends FlowNodeHandler<Model.Gateways.Excl
 
     for (const sequenceFlow of sequenceFlows) {
 
+      // The default Flow must not be conditional.
+      // Thus, it must not be included with the condition evaluations.
+      const sequenceFlowIsDefaultFlow: boolean = sequenceFlow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
+
       const sequenceFlowHasNoCondition: boolean = sequenceFlow.conditionExpression === undefined || sequenceFlow.conditionExpression === null;
-      if (sequenceFlowHasNoCondition) {
+
+      if (sequenceFlowHasNoCondition || sequenceFlowIsDefaultFlow) {
         continue;
       }
 

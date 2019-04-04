@@ -40,6 +40,7 @@ function parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
     let gateway: TGateway = new type();
     gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
     gateway.name = gatewayRaw.name;
+    gateway.defaultOutgoingSequenceFlowId = gatewayRaw.default;
     gateway.incoming = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     gateway.outgoing = getModelPropertyAsArray(gatewayRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
     gateways.push(gateway);

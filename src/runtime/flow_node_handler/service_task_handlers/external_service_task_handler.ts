@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {BaseError, InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -68,9 +68,13 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
         if (error) {
           this.logger.error(`External processing of ServiceTask failed!`, error);
+          onSuspendToken.payload = {
+            errorMessage: error.message,
+            errorCode: (error as BaseError).code,
+          };
           await this.persistOnError(onSuspendToken, error);
 
-          throw error;
+          return reject(error);
         }
 
         this.logger.verbose('External processing of the ServiceTask finished successfully.');
@@ -195,6 +199,11 @@ export class ExternalServiceTaskHandler extends FlowNodeHandlerInterruptible<Mod
 
           if (error) {
             this.logger.error(`The external worker failed to process the ExternalTask!`, error);
+            token.payload = {
+              errorMessage: error.message,
+              errorCode: (error as BaseError).code,
+            };
+            await this.persistOnError(token, error);
 
             return reject(error);
           }

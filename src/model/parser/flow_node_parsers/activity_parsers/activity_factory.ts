@@ -14,6 +14,7 @@ export function createActivityInstance<TActivity extends Model.Activities.Activi
   instance.outgoing = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowOutgoing) || [];
 
   instance.name = data.name;
+  instance.defaultOutgoingSequenceFlowId = data.default;
 
   return instance;
 }

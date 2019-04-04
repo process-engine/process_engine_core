@@ -139,4 +139,29 @@ describe('ProcessModelParser ', () => {
     should(endEvent).have.property('inputValues');
     should(endEvent.inputValues).be.equal(expectedInputValuesExpression);
   });
+
+  it('should correctly interpret a default SequenceFlow for an ExclusiveSplitGateway.', async() => {
+
+    const processModelFilePath: string = './test/bpmns/default_sequence_flow_test.bpmn';
+    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+
+    const expectedFlowNodeIdList: Array<string> = [
+      'StartEvent_1',
+      'EndEvent_1',
+      'ExclusiveGateway_1',
+      'EndEvent_2',
+    ];
+
+    await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
+
+    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+
+    const exclusiveGateway: Model.Gateways.ExclusiveGateway =
+      processModelFacade.getFlowNodeById('ExclusiveGateway_1') as Model.Gateways.ExclusiveGateway;
+
+    const expectedDefaultSequenceFlowId: string = 'DefaultSequenceFlowAfterGateway';
+
+    should(exclusiveGateway).have.property('defaultOutgoingSequenceFlowId');
+    should(exclusiveGateway.defaultOutgoingSequenceFlowId).be.equal(expectedDefaultSequenceFlowId);
+  });
 });
