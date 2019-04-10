@@ -26,12 +26,11 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
       try {
         this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
         token.flowNodeInstanceId = this.flowNodeInstanceId;
-        let nextFlowNodes: Array<Model.Base.FlowNode>;
 
         this._terminationSubscription = this.subscribeToProcessTermination(token, reject);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-        nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes: Array<Model.Base.FlowNode>; = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
         const nextFlowNodesFound: boolean = nextFlowNodes && nextFlowNodes.length > 0;
@@ -98,8 +97,6 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
         this._flowNodeInstanceId = flowNodeInstance.id;
 
-        // With regards to ParallelGateways, we need to be able to handle multiple results here.
-        let nextFlowNodes: Array<Model.Base.FlowNode>;
 
         // It doesn't really matter which token is used here, since payload-specific operations should
         // only ever be done during the handlers execution.
@@ -110,7 +107,8 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
 
         this._terminationSubscription = this.subscribeToProcessTermination(tokenForHandlerHooks, reject);
 
-        nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        // With regards to ParallelGateways, we need to be able to handle multiple results here.
+        const nextFlowNodes: Array<Model.Base.FlowNode> = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
         await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
 

@@ -111,7 +111,6 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
         this._flowNodeInstanceId = flowNodeInstance.id;
 
         // With regards to ParallelGateways, we need to be able to handle multiple results here.
-        let nextFlowNodes: Array<Model.Base.FlowNode>;
 
         // It doesn't really matter which token is used here, since payload-specific operations should
         // only ever be done during the handlers execution.
@@ -120,7 +119,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
         await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, reject);
 
-        nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes: Array<Model.Base.FlowNode>; = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
         await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
 
@@ -259,10 +258,10 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    * @param   onSuspendToken     The token the FlowNodeInstance had when it was
    *                             suspended.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   processModelFacade The ProcessModelFacade to use for resuming.
    * @param   identity           The identity of the user that originally
    *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
+   * @returns                    The info for the next FlowNode to run.
    */
   protected async _continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
@@ -286,10 +285,10 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    * @param   resumeToken        The ProcessToken stored after resuming the
    *                             FlowNodeInstance.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   processModelFacade The ProcessModelFacade to use for resuming.
    * @param   identity           The identity of the user that originally
    *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
+   * @returns                    The info for the next FlowNode to run.
    */
   protected async _continueAfterResume(
     resumeToken: ProcessToken,

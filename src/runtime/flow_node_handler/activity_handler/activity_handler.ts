@@ -46,18 +46,17 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       try {
         this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
         token.flowNodeInstanceId = this.flowNodeInstanceId;
-        let nextFlowNodes: Array<Model.Base.FlowNode>;
 
         this._terminationSubscription = this._subscribeToProcessTermination(token, reject);
         await this._attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-        nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes: Array<Model.Base.FlowNode> = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
         // EndEvents will return "undefined" as the next FlowNode.
         // So if no FlowNode is to be run next, we have arrived at the end of the current flow.
-        const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished: boolean = nextFlowNodes !== undefined && nextFlowNodes.length > 0;
         if (processIsNotYetFinished) {
 
           const executeNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
@@ -345,10 +344,10 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    * @param   onSuspendToken     The token the FlowNodeInstance had when it was
    *                             suspended.
    * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
+   * @param   processModelFacade The ProcessModelFacade to use for resuming.
    * @param   identity           The identity of the user that originally
    *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
+   * @returns                    The info for the next FlowNode to run.
    */
   protected async _continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
@@ -675,6 +674,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     for (const boundaryEventHandler of this._attachedBoundaryEventHandlers) {
       await boundaryEventHandler.cancel(token, processModelFacade);
     }
+
     this._attachedBoundaryEventHandlers = [];
   }
 }
