@@ -119,7 +119,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
         await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, reject);
 
-        const nextFlowNodes: Array<Model.Base.FlowNode>; = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes: Array<Model.Base.FlowNode> = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
         await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
 

@@ -30,7 +30,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         this._terminationSubscription = this.subscribeToProcessTermination(token, reject);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-        const nextFlowNodes: Array<Model.Base.FlowNode>; = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes: Array<Model.Base.FlowNode> = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
         const nextFlowNodesFound: boolean = nextFlowNodes && nextFlowNodes.length > 0;
