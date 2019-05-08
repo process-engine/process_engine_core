@@ -27,7 +27,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
   }
 
   private get scriptTask(): Model.Activities.ScriptTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

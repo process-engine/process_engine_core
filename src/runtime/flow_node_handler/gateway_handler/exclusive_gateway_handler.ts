@@ -28,7 +28,7 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
   }
 
   private get exclusiveGateway(): Model.Gateways.ExclusiveGateway {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

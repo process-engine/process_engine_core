@@ -33,7 +33,7 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
   }
 
   private get serviceTask(): Model.Activities.ServiceTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

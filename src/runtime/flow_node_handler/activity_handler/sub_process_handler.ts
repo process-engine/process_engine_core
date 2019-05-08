@@ -48,7 +48,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
   }
 
   private get subProcess(): Model.Activities.SubProcess {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

@@ -46,7 +46,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   }
 
   private get callActivity(): Model.Activities.CallActivity {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

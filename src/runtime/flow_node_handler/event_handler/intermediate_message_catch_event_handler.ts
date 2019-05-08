@@ -31,7 +31,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
   }
 
   private get messageCatchEvent(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

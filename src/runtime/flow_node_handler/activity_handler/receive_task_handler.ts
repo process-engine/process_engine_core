@@ -31,7 +31,7 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
   }
 
   private get receiveTask(): Model.Activities.ReceiveTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

@@ -31,7 +31,7 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
   }
 
   private get sendTask(): Model.Activities.SendTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

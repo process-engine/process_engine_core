@@ -39,7 +39,7 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
   }
 
   private get endEvent(): Model.Events.EndEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   // Overriding this hook here prevents it from creating subscriptions for

@@ -34,7 +34,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
   }
 
   private get emptyActivity(): Model.Activities.EmptyActivity {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

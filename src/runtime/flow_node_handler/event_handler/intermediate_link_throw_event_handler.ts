@@ -28,7 +28,7 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
   }
 
   private get linkThrowEventModel(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

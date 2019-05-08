@@ -43,7 +43,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   }
 
   private get parallelGateway(): Model.Gateways.ParallelGateway {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async beforeExecute(

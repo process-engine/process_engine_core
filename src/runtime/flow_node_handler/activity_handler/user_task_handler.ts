@@ -34,7 +34,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
   }
 
   private get userTask(): Model.Activities.UserTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

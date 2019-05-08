@@ -35,7 +35,7 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
   }
 
   private get startEvent(): Model.Events.StartEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

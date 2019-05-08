@@ -27,7 +27,7 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
   }
 
   private get parallelGateway(): Model.Gateways.ParallelGateway {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

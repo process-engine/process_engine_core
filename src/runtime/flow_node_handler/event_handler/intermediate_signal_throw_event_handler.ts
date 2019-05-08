@@ -34,7 +34,7 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
   }
 
   private get signalThrowEvent(): Model.Events.IntermediateThrowEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

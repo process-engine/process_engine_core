@@ -33,7 +33,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
   }
 
   private get manualTask(): Model.Activities.ManualTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(

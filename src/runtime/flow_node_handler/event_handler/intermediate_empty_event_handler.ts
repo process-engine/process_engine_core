@@ -27,7 +27,7 @@ export class IntermediateEmptyEventHandler extends EventHandler<Model.Events.Int
   }
 
   private get emptyEventModel(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
