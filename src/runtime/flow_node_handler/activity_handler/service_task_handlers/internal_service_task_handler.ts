@@ -18,7 +18,7 @@ import {ActivityHandler} from '../activity_handler';
 
 export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities.ServiceTask> {
 
-  private _container: IContainer;
+  private container: IContainer;
 
   constructor(
     container: IContainer,
@@ -28,7 +28,7 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
     serviceTaskModel: Model.Activities.ServiceTask,
   ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, serviceTaskModel);
-    this._container = container;
+    this.container = container;
     this.logger = Logger.createLogger(`processengine:internal_service_task:${serviceTaskModel.id}`);
   }
 
@@ -46,17 +46,17 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
     this.logger.verbose(`Executing internal ServiceTask instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const serviceTaskHasNoInvocation: boolean = this.serviceTask.invocation === undefined;
+    const serviceTaskHasNoInvocation = this.serviceTask.invocation === undefined;
     if (serviceTaskHasNoInvocation) {
       this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
 
@@ -65,14 +65,14 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.serviceTask);
 
       return nextFlowNodeInfo;
     }
 
-    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Promise<any> = this._executeInternalServiceTask(token, processTokenFacade, identity);
+      const executionPromise = this.executeInternalServiceTask(token, processTokenFacade, identity);
 
       this.onInterruptedCallback = (): void => {
         executionPromise.cancel();
@@ -83,14 +83,14 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
       try {
         this.logger.verbose('Executing internal ServiceTask');
-        const result: any = await executionPromise;
+        const result = await executionPromise;
 
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
 
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.serviceTask);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
@@ -116,36 +116,36 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
    * @param   identity           The identity that started the ProcessInstance.
    * @returns                    The ServiceTask's result.
    */
-  private _executeInternalServiceTask(
+  private executeInternalServiceTask(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     identity: IIdentity,
   ): Promise<any> {
 
-    return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
+    return new Promise<any>(async (resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
-      const isMethodInvocation: boolean = this.serviceTask.invocation instanceof Model.Activities.Invocations.MethodInvocation;
+      const isMethodInvocation = this.serviceTask.invocation instanceof Model.Activities.Invocations.MethodInvocation;
 
       if (!isMethodInvocation) {
-        const notSupportedErrorMessage: string = 'Internal ServiceTasks must use MethodInvocations!';
+        const notSupportedErrorMessage = 'Internal ServiceTasks must use MethodInvocations!';
         this.logger.error(notSupportedErrorMessage);
 
         throw new UnprocessableEntityError(notSupportedErrorMessage);
       }
 
-      const tokenData: any = processTokenFacade.getOldTokenFormat();
+      const tokenData = processTokenFacade.getOldTokenFormat();
 
-      const invocation: Model.Activities.Invocations.MethodInvocation = this.serviceTask.invocation as Model.Activities.Invocations.MethodInvocation;
+      const invocation = this.serviceTask.invocation as Model.Activities.Invocations.MethodInvocation;
 
-      const serviceInstance: any = await this._container.resolveAsync(invocation.module);
+      const serviceInstance = await this.container.resolveAsync(invocation.module);
 
-      const evaluateParamsFunction: Function = new Function('context', 'token', `return ${invocation.params}`);
-      const argumentsToPassThrough: Array<any> = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
+      const evaluateParamsFunction = new Function('context', 'token', `return ${invocation.params}`);
+      const argumentsToPassThrough = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
 
-      const serviceMethod: Function = serviceInstance[invocation.method];
+      const serviceMethod = serviceInstance[invocation.method];
 
       if (!serviceMethod) {
-        const error: Error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
+        const error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
         await this.persistOnError(token, error);
 
         return reject(error);
@@ -160,4 +160,5 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
       }
     });
   }
+
 }

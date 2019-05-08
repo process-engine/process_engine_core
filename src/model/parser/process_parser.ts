@@ -8,7 +8,7 @@ import {
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-} from './../type_factory';
+} from '../type_factory';
 
 import {Parsers} from './index';
 
@@ -26,7 +26,7 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
     const process: Model.Process = createObjectWithCommonProperties(processRaw, Model.Process);
 
     process.name = processRaw.name;
-    process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
+    process.isExecutable = processRaw.isExecutable === 'true';
 
     const bpmnErrors: Array<Model.GlobalElements.Error> = parseErrorsFromProcessModel(parsedObjectModel);
     const eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = parseEventDefinitionsFromObjectModel(parsedObjectModel);
@@ -99,6 +99,7 @@ function parseEventDefinitionTypeFromObjectModel<TEventDefinition>(
   }
 
   for (const rawDefinition of rawDefinitions) {
+    // eslint-disable-next-line 6river/new-cap
     const newDefinition: TEventDefinition = new typeFactory();
 
     (newDefinition as any).id = rawDefinition.id;

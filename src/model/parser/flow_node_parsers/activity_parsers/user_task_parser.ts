@@ -115,38 +115,37 @@ function getFinishedMessageForUserTask(userTaskRaw: Model.Activities.UserTask): 
 function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activities.UserTask): string {
   const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
 
-  const extensionElementsIsNotExisting: boolean = extensionElements === undefined;
-  if (extensionElementsIsNotExisting) {
-    return;
+  const userTaskHasNoExtensions: boolean = extensionElements === undefined;
+  if (userTaskHasNoExtensions) {
+    return undefined;
   }
 
   const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
 
-  const extensionPropertiesDataIsNotExisting: boolean =
+  const extensionPropertiesAreEmpty: boolean =
     extensionPropertiesDataRaw === undefined || extensionPropertiesDataRaw.length < 1;
 
-  if (extensionPropertiesDataIsNotExisting) {
-    return;
+  if (extensionPropertiesAreEmpty) {
+    return undefined;
   }
 
-  const extensionPropertiesRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
+  const extensionPropertyRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
 
-  const extensionPropertiesAreNotExisting: boolean =
-    extensionPropertiesRaw === undefined || extensionPropertiesRaw.length < 1;
+  const extensionPropertyIsEmpty: boolean =
+    extensionPropertyRaw === undefined || extensionPropertyRaw.length < 1;
 
-  if (extensionPropertiesAreNotExisting) {
-    return;
+  if (extensionPropertyIsEmpty) {
+    return undefined;
   }
 
-  const extensionProperties: any = parseExtensionProperties(extensionPropertiesRaw);
+  const extensionProperties: any = parseExtensionProperties(extensionPropertyRaw);
   const preferredControlProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName(name, extensionProperties);
 
-  const preferredControlPropertyIsNotExisting: boolean = preferredControlProperty === undefined;
-  if (preferredControlPropertyIsNotExisting) {
-    return;
-  }
+  const userTaskHasPreferredControl: boolean = preferredControlProperty !== undefined;
 
-  return preferredControlProperty.value;
+  return userTaskHasPreferredControl
+    ? preferredControlProperty.value
+    : undefined;
 }
 
 function findExtensionPropertyByName(

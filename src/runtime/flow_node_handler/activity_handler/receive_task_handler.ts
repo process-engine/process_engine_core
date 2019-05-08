@@ -5,12 +5,12 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -45,10 +45,10 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
     await this.persistOnEnter(token);
     await this.persistOnSuspend(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(
+  protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -56,20 +56,19 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    return this._executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(onSuspendToken, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise: Promise<MessageEventReachedMessage> = this._waitForMessage();
+      const executionPromise = this.waitForMessage();
 
       this.onInterruptedCallback = (): void => {
         if (this.messageSubscription) {
@@ -78,20 +77,20 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
         executionPromise.cancel();
         handlerPromise.cancel();
 
-        return;
+        return undefined;
       };
 
-      const receivedMessage: MessageEventReachedMessage = await executionPromise;
+      const receivedMessage = await executionPromise;
 
       token.payload = receivedMessage.currentToken;
 
       await this.persistOnResume(token);
-      this._sendReplyToSender(identity, token);
+      this.sendReplyToSender(identity, token);
 
       processTokenFacade.addResultForFlowNode(this.receiveTask.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(receivedMessage.currentToken);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.receiveTask);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.receiveTask);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -105,17 +104,17 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
    * @async
    * @returns The received message.
    */
-  private async _waitForMessage(): Promise<MessageEventReachedMessage> {
+  private async waitForMessage(): Promise<MessageEventReachedMessage> {
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
-      const messageEventName: string = eventAggregatorSettings
+      const messageEventName = eventAggregatorSettings
         .messagePaths
         .sendTaskReached
         .replace(eventAggregatorSettings.messageParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
       this.messageSubscription =
-        this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+        this.eventAggregator.subscribeOnce(messageEventName, (message: MessageEventReachedMessage): void => {
           resolve(message);
         });
     });
@@ -128,17 +127,17 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
    * @param identity The identity that owns the ReceiveTask instance.
    * @param token    The current ProcessToken.
    */
-  private _sendReplyToSender(identity: IIdentity, token: ProcessToken): void {
+  private sendReplyToSender(identity: IIdentity, token: ProcessToken): void {
 
-    const messageName: string = this.receiveTask.messageEventDefinition.name;
+    const messageName = this.receiveTask.messageEventDefinition.name;
 
-    const messageEventName: string =
+    const messageEventName =
       eventAggregatorSettings
         .messagePaths
         .receiveTaskReached
         .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
-    const messageToSend: MessageEventReachedMessage = new MessageEventReachedMessage(
+    const messageToSend = new MessageEventReachedMessage(
       messageName,
       token.correlationId,
       token.processModelId,
@@ -146,8 +145,10 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
       this.receiveTask.id,
       this.flowNodeInstanceId,
       identity,
-      token.payload);
+      token.payload,
+    );
 
     this.eventAggregator.publish(messageEventName, messageToSend);
   }
+
 }

@@ -40,10 +40,10 @@ export class IntermediateEmptyEventHandler extends EventHandler<Model.Events.Int
     this.logger.verbose(`Executing EmptyEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return await this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -55,4 +55,5 @@ export class IntermediateEmptyEventHandler extends EventHandler<Model.Events.Int
 
     return processModelFacade.getNextFlowNodesFor(this.emptyEventModel);
   }
+
 }

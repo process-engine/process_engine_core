@@ -2,7 +2,7 @@ import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-} from './../type_factory';
+} from '../type_factory';
 
 export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 

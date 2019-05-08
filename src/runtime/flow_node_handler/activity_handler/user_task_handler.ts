@@ -6,7 +6,6 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   FinishUserTaskMessage,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
@@ -14,6 +13,7 @@ import {
   IProcessTokenFacade,
   UserTaskFinishedMessage,
   UserTaskReachedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -28,7 +28,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     userTaskModel: Model.Activities.UserTask,
-   ) {
+  ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, userTaskModel);
     this.logger = new Logger(`processengine:user_task_handler:${userTaskModel.id}`);
   }
@@ -47,56 +47,55 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     this.logger.verbose(`Executing UserTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-        try {
-          this._validateUserTaskFormFieldConfigurations(token, processTokenFacade);
+      try {
+        this.validateUserTaskFormFieldConfigurations(token, processTokenFacade);
 
-          this.onInterruptedCallback = (): void => {
-            const subscriptionIsActive: boolean = this.userTaskSubscription !== undefined;
-            if (subscriptionIsActive) {
-              this.eventAggregator.unsubscribe(this.userTaskSubscription);
-            }
-            handlerPromise.cancel();
+        this.onInterruptedCallback = (): void => {
+          const subscriptionIsActive = this.userTaskSubscription !== undefined;
+          if (subscriptionIsActive) {
+            this.eventAggregator.unsubscribe(this.userTaskSubscription);
+          }
+          handlerPromise.cancel();
 
-            return;
-          };
+          return undefined;
+        };
 
-          const userTaskResult: any = await this._suspendAndWaitForUserTaskResult(identity, token);
-          token.payload = userTaskResult;
+        const userTaskResult = await this.suspendAndWaitForUserTaskResult(identity, token);
+        token.payload = userTaskResult;
 
-          await this.persistOnResume(token);
+        await this.persistOnResume(token);
 
-          processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
-          await this.persistOnExit(token);
+        processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
+        await this.persistOnExit(token);
 
-          this._sendUserTaskFinishedNotification(identity, token);
+        this.sendUserTaskFinishedNotification(identity, token);
 
-          const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
+        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.userTask);
 
-          return resolve(nextFlowNodeInfo);
-        } catch (error) {
-          this.logger.error('Failed to execute UserTask!', error);
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        this.logger.error('Failed to execute UserTask!', error);
 
-          return reject(error);
-        }
+        return reject(error);
+      }
     });
 
     return handlerPromise;
   }
 
-  protected async _continueAfterSuspend(
+  protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -104,57 +103,56 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-        this.onInterruptedCallback = (): void => {
-          const subscriptionIsActive: boolean = this.userTaskSubscription !== undefined;
-          if (subscriptionIsActive) {
-            this.eventAggregator.unsubscribe(this.userTaskSubscription);
-          }
-          handlerPromise.cancel();
+      this.onInterruptedCallback = (): void => {
+        const subscriptionIsActive = this.userTaskSubscription !== undefined;
+        if (subscriptionIsActive) {
+          this.eventAggregator.unsubscribe(this.userTaskSubscription);
+        }
+        handlerPromise.cancel();
 
-          return;
-        };
+        return undefined;
+      };
 
-        const waitForMessagePromise: Promise<any> = this._waitForUserTaskResult(identity, onSuspendToken);
+      const waitForMessagePromise = this.waitForUserTaskResult(identity, onSuspendToken);
 
-        this._sendUserTaskReachedNotification(identity, onSuspendToken);
+      this.sendUserTaskReachedNotification(identity, onSuspendToken);
 
-        const userTaskResult: any = await waitForMessagePromise;
+      const userTaskResult = await waitForMessagePromise;
 
-        onSuspendToken.payload = userTaskResult;
+      onSuspendToken.payload = userTaskResult;
 
-        await this.persistOnResume(onSuspendToken);
+      await this.persistOnResume(onSuspendToken);
 
-        processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
-        await this.persistOnExit(onSuspendToken);
+      processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
+      await this.persistOnExit(onSuspendToken);
 
-        this._sendUserTaskFinishedNotification(identity, onSuspendToken);
+      this.sendUserTaskFinishedNotification(identity, onSuspendToken);
 
-        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.userTask);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.userTask);
 
-        return resolve(nextFlowNodeInfo);
-      });
+      return resolve(nextFlowNodeInfo);
+    });
 
     return handlerPromise;
   }
 
-  private _validateUserTaskFormFieldConfigurations(token: ProcessToken, processTokenFacade: IProcessTokenFacade): void {
+  private validateUserTaskFormFieldConfigurations(token: ProcessToken, processTokenFacade: IProcessTokenFacade): void {
 
-    const oldTokenFormat: any = processTokenFacade.getOldTokenFormat();
+    const oldTokenFormat = processTokenFacade.getOldTokenFormat();
 
     for (const formField of this.userTask.formFields) {
       try {
-        this._validateExpression(formField.label, oldTokenFormat);
-        this._validateExpression(formField.defaultValue, oldTokenFormat);
-        this._validateExpression(formField.preferredControl, oldTokenFormat);
+        this.validateExpression(formField.label, oldTokenFormat);
+        this.validateExpression(formField.defaultValue, oldTokenFormat);
+        this.validateExpression(formField.preferredControl, oldTokenFormat);
       } catch (error) {
-        const errorMessage: string = `The configuration for FormField ${formField.id} is invalid!`;
+        const errorMessage = `The configuration for FormField ${formField.id} is invalid!`;
 
-        const invalidFormFieldError: InternalServerError = new InternalServerError(errorMessage);
+        const invalidFormFieldError = new InternalServerError(errorMessage);
 
-        const errorDetails: any = {
+        const errorDetails = {
           processModelId: token.processModelId,
           processInstanceId: token.processInstanceId,
           correlationId: token.correlationId,
@@ -165,7 +163,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
           validationError: error.message,
         };
 
-        invalidFormFieldError.additionalInformation = errorDetails;
+        invalidFormFieldError.additionalInformation = errorDetails as any;
 
         this.logger.error(errorMessage);
 
@@ -175,30 +173,30 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     }
   }
 
-  private _validateExpression(expression: string, token: any): void {
+  private validateExpression(expression: string, token: any): void {
 
     try {
       if (!expression) {
         return;
       }
 
-      const expressionStartsOn: string = '${';
-      const expressionEndsOn: string = '}';
+      const expressionStartsOn = '${';
+      const expressionEndsOn = '}';
 
-      const isExpression: boolean = expression.charAt(0) === '$';
+      const isExpression = expression.charAt(0) === '$';
       if (isExpression === false) {
         return;
       }
 
-      const finalExpressionLength: number = expression.length - expressionStartsOn.length - expressionEndsOn.length;
-      const expressionBody: string = expression.substr(expressionStartsOn.length, finalExpressionLength);
+      const finalExpressionLength = expression.length - expressionStartsOn.length - expressionEndsOn.length;
+      const expressionBody = expression.substr(expressionStartsOn.length, finalExpressionLength);
 
-      const functionString: string = `return ${expressionBody}`;
-      const scriptFunction: Function = new Function('token', functionString);
+      const functionString = `return ${expressionBody}`;
+      const scriptFunction = new Function('token', functionString);
 
       scriptFunction.call(token, token);
     } catch (error) {
-      const errorMsg: string = `Cannot evaluate expression ${expression}! The ProcessToken is missing some required properties!`;
+      const errorMsg = `Cannot evaluate expression ${expression}! The ProcessToken is missing some required properties!`;
       this.logger.error(errorMsg);
 
       throw new InternalServerError(errorMsg);
@@ -216,13 +214,13 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
    *                 creating the EventSubscription.
    * @returns        The recevied UserTask result.
    */
-  private async _suspendAndWaitForUserTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
-    const waitForUserTaskResultPromise: Promise<any> = this._waitForUserTaskResult(identity, token);
+  private async suspendAndWaitForUserTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
+    const waitForUserTaskResultPromise = this.waitForUserTaskResult(identity, token);
     await this.persistOnSuspend(token);
 
-    this._sendUserTaskReachedNotification(identity, token);
+    this.sendUserTaskReachedNotification(identity, token);
 
-    return await waitForUserTaskResultPromise;
+    return waitForUserTaskResultPromise;
   }
 
   /**
@@ -236,16 +234,18 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
    *                 creating the EventSubscription.
    * @returns        The recevied UserTask result.
    */
-  private _waitForUserTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
+  private waitForUserTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
 
-    return new Promise<any>(async(resolve: Function): Promise<void> => {
+    return new Promise<any>(async (resolve: Function): Promise<void> => {
 
-      const finishUserTaskEvent: string = this._getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
+      const finishUserTaskEvent = this.getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
 
       this.userTaskSubscription =
-        this.eventAggregator.subscribeOnce(finishUserTaskEvent, async(message: FinishUserTaskMessage): Promise<void> => {
-          const userTaskResult: any = {
-            form_fields: message.result || null,
+        this.eventAggregator.subscribeOnce(finishUserTaskEvent, async (message: FinishUserTaskMessage): Promise<void> => {
+          const userTaskResult = {
+            // TODO: We need to investigate how many components will break when we change this.
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            form_fields: message.result || undefined,
           };
 
           resolve(userTaskResult);
@@ -260,15 +260,17 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
    * @param identity The identity that owns the UserTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendUserTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private sendUserTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: UserTaskReachedMessage = new UserTaskReachedMessage(token.correlationId,
-                                                                       token.processModelId,
-                                                                       token.processInstanceId,
-                                                                       this.userTask.id,
-                                                                       this.flowNodeInstanceId,
-                                                                       identity,
-                                                                       token.payload);
+    const message = new UserTaskReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.userTask.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
   }
@@ -284,26 +286,28 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
    * @param identity The identity that owns the UserTask instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendUserTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+  private sendUserTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: UserTaskFinishedMessage = new UserTaskFinishedMessage(token.payload,
-                                                                         token.correlationId,
-                                                                         token.processModelId,
-                                                                         token.processInstanceId,
-                                                                         this.userTask.id,
-                                                                         this.flowNodeInstanceId,
-                                                                         identity,
-                                                                         token.payload);
+    const message = new UserTaskFinishedMessage(
+      token.payload,
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.userTask.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
 
     // FlowNode-specific notification
-    const userTaskFinishedEvent: string = this._getUserTaskFinishedEventName(token.correlationId, token.processInstanceId);
+    const userTaskFinishedEvent: string = this.getUserTaskFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(userTaskFinishedEvent, message);
 
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskFinished, message);
   }
 
-  private _getFinishUserTaskEventName(correlationId: string, processInstanceId: string): string {
+  private getFinishUserTaskEventName(correlationId: string, processInstanceId: string): string {
 
     const finishUserTaskEvent: string = eventAggregatorSettings.messagePaths.finishUserTask
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
@@ -313,7 +317,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     return finishUserTaskEvent;
   }
 
-  private _getUserTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
+  private getUserTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     // FlowNode-specific notification
     const userTaskFinishedEvent: string = eventAggregatorSettings.messagePaths.userTaskWithInstanceIdFinished
@@ -323,4 +327,5 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
 
     return userTaskFinishedEvent;
   }
+
 }

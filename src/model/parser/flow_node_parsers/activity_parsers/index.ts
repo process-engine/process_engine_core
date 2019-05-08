@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as callActivityParser from './call_activity_parser';
 import * as emptyActivityParser from './empty_activity_parser';
 import * as manualTaskParser from './manual_task_parser';
@@ -8,7 +9,6 @@ import * as serviceTaskParser from './service_task_parser';
 import * as subProcessParser from './subprocess_parser';
 import * as userTaskParser from './user_task_parser';
 
-// tslint:disable-next-line:no-namespace
 export namespace ActivityParsers {
   export import CallActivityParser = callActivityParser;
   export import EmptyActivityParser = emptyActivityParser;

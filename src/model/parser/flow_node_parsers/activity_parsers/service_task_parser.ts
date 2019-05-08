@@ -62,9 +62,7 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
 
   const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
 
-  if (payloadPropertyHasValue) {
-    return payloadProperty.value;
-  }
+  return payloadPropertyHasValue ? payloadProperty.value : undefined;
 }
 
 function getMethodInvocationforInternalServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocations.Invocation {

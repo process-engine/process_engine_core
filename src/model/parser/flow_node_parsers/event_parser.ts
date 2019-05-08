@@ -1,11 +1,10 @@
+import {NotFoundError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
 } from '../../type_factory';
-
-import {NotFoundError} from '@essential-projects/errors_ts';
 
 let errors: Array<Model.GlobalElements.Error> = [];
 let eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = [];
@@ -46,7 +45,7 @@ function parseEndEvents(processData: any): Array<Model.Events.EndEvent> {
 
   const endEventsRaw: any = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
 
-  const events: Array<Model.Events.EndEvent> = endEventsRaw.map((endEventRaw: any) => {
+  const events: Array<Model.Events.EndEvent> = endEventsRaw.map((endEventRaw: any): Model.Events.EndEvent => {
     return parseEndEvent(endEventRaw);
   });
 
@@ -65,7 +64,7 @@ function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
 
   const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
 
-  endEvent.name = endEventRaw.name,
+  endEvent.name = endEventRaw.name;
   endEvent.defaultOutgoingSequenceFlowId = endEventRaw.default;
   endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
   endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
@@ -150,7 +149,7 @@ function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
     event.extensionElements.camundaExtensionProperties.length === 0;
 
   if (eventHasNoExtensionElements) {
-    return;
+    return undefined;
   }
 
   const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = event.extensionElements.camundaExtensionProperties;
@@ -158,11 +157,9 @@ function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
 
   const payloadPropertyHasValue: boolean = inputValueProperty && inputValueProperty.value && inputValueProperty.value.length > 0;
 
-  if (payloadPropertyHasValue) {
-    return inputValueProperty.value;
-  }
-
-  return undefined;
+  return payloadPropertyHasValue
+    ? inputValueProperty.value
+    : undefined;
 }
 
 function assignEventDefinitions(event: any, eventRaw: any): void {
@@ -232,7 +229,6 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error 
 
   const errorIsNotAnonymous: boolean =
     errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined &&
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== null &&
     errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
 
   if (errorIsNotAnonymous) {

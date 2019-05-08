@@ -9,7 +9,6 @@ import {
   IProcessTokenFacade,
   ITimerFacade,
   OnBoundaryEventTriggeredCallback,
-  OnBoundaryEventTriggeredData,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -17,11 +16,10 @@ import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
-  private readonly _timerFacade: ITimerFacade;
+  private readonly logger: Logger;
+  private readonly timerFacade: ITimerFacade;
 
   private timerSubscription: Subscription;
-
-  private readonly logger: Logger;
 
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
@@ -29,7 +27,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
     super(flowNodePersistenceFacade, boundaryEventModel);
-    this._timerFacade = timerFacade;
+    this.timerFacade = timerFacade;
     this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
   }
 
@@ -42,20 +40,20 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   ): Promise<void> {
 
     this.logger.verbose(`Initializing TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId}`);
-    this._attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     await this.persistOnEnter(token);
 
-    const timerElapsed: any = async(): Promise<void> => {
+    const timerElapsed = async (): Promise<void> => {
 
       this.logger.verbose(`TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId} was triggered.`);
 
-      const nextFlowNode: Model.Base.FlowNode = this.getNextFlowNode(processModelFacade);
+      const nextFlowNode = this.getNextFlowNode(processModelFacade);
 
-      const eventData: OnBoundaryEventTriggeredData = {
-        boundaryInstanceId: this.flowNodeInstanceId,
+      const eventData = {
+        boundaryInstanceId: this.boundaryEventInstanceId,
         nextFlowNode: nextFlowNode,
-        interruptHandler: this.boundaryEvent.cancelActivity,
+        interruptHandler: this.boundaryEventModel.cancelActivity,
         eventPayload: {},
       };
 
@@ -63,12 +61,13 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     };
 
     this.timerSubscription = this
-      ._timerFacade
-      .initializeTimerFromDefinition(this.boundaryEvent, this.boundaryEvent.timerEventDefinition, processTokenFacade, timerElapsed);
+      .timerFacade
+      .initializeTimerFromDefinition(this.boundaryEventModel, this.boundaryEventModel.timerEventDefinition, processTokenFacade, timerElapsed);
   }
 
   public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
     await super.cancel(token, processModelFacade);
-    this._timerFacade.cancelTimerSubscription(this.timerSubscription);
+    this.timerFacade.cancelTimerSubscription(this.timerSubscription);
   }
+
 }

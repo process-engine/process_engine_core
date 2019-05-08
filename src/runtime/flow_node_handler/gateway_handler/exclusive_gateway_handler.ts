@@ -41,10 +41,10 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
     this.logger.verbose(`Executing ExclusiveGateway instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _continueAfterExit(
+  protected async continueAfterExit(
     onExitToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -52,37 +52,36 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
     processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, this.flowNodeInstanceId, onExitToken.payload);
 
-    const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
+    const isExclusiveJoinGateway = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
     if (isExclusiveJoinGateway) {
       return processModelFacade.getNextFlowNodesFor(this.exclusiveGateway);
     }
 
-    const outgoingSequenceFlows: Array<Model.ProcessElements.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
+    const outgoingSequenceFlows = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
 
     // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
     // If this were not the case, the Gateway would not have been executed at all.
-    const matchingSequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
-      await this._getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade);
+    const matchingSequenceFlows = await this.getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade);
 
-    const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(matchingSequenceFlows[0].targetRef);
+    const nextFlowNodeAfterSplit = processModelFacade.getFlowNodeById(matchingSequenceFlows[0].targetRef);
 
     return [nextFlowNodeAfterSplit];
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const gatewayTypeIsNotSupported: boolean =
+    const gatewayTypeIsNotSupported =
       this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
       this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
 
     if (gatewayTypeIsNotSupported) {
-      const unsupportedErrorMessage: string =
+      const unsupportedErrorMessage =
         `ExclusiveGateway ${this.exclusiveGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
-      const unsupportedError: UnprocessableEntityError = new UnprocessableEntityError(unsupportedErrorMessage);
+      const unsupportedError = new UnprocessableEntityError(unsupportedErrorMessage);
 
       this.persistOnError(token, unsupportedError);
 
@@ -91,14 +90,14 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
     processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, this.flowNodeInstanceId, token.payload);
 
-    const outgoingSequenceFlows: Array<Model.ProcessElements.SequenceFlow> = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
+    const outgoingSequenceFlows = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
 
-    const isExclusiveJoinGateway: boolean = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
+    const isExclusiveJoinGateway = this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Converging;
     if (isExclusiveJoinGateway) {
 
       // If this is a join gateway, just return the next FlowNode to execute.
       // Prerequisite for this UseCase is that only one outgoing SequenceFlow exists here.
-      const nextFlowNodeAfterJoin: Model.Base.FlowNode = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
+      const nextFlowNodeAfterJoin = processModelFacade.getFlowNodeById(outgoingSequenceFlows[0].targetRef);
 
       await this.persistOnExit(token);
 
@@ -107,10 +106,10 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
     // If this is a split gateway, find the SequenceFlow that has a truthy condition
     // and continue execution with its target FlowNode.
-    const nextFlowNodeId: string = await this.determineBranchToTake(token, outgoingSequenceFlows, processTokenFacade);
+    const nextFlowNodeId = await this.determineBranchToTake(token, outgoingSequenceFlows, processTokenFacade);
     await this.persistOnExit(token);
 
-    const nextFlowNodeAfterSplit: Model.Base.FlowNode = processModelFacade.getFlowNodeById(nextFlowNodeId);
+    const nextFlowNodeAfterSplit = processModelFacade.getFlowNodeById(nextFlowNodeId);
 
     return [nextFlowNodeAfterSplit];
   }
@@ -121,50 +120,48 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
     processTokenFacade: IProcessTokenFacade,
   ): Promise<string> {
 
-    const truthySequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
-      await this._getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
+    const truthySequenceFlows = await this.getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
 
-    const noTruthySequenceFlowsExist: boolean = truthySequenceFlows.length === 0;
+    const noTruthySequenceFlowsExist = truthySequenceFlows.length === 0;
     if (noTruthySequenceFlowsExist) {
 
       // if no SequenceFlows have a truthy condition, but a default Sequence Flow is defined,
       // return the targetRef of that SequenceFlow.
-      const gatewayHasDefaultSequenceFlow: boolean = this.exclusiveGateway.defaultOutgoingSequenceFlowId !== undefined;
+      const gatewayHasDefaultSequenceFlow = this.exclusiveGateway.defaultOutgoingSequenceFlowId !== undefined;
       if (gatewayHasDefaultSequenceFlow) {
 
-        const defaultSequenceFlow: Model.ProcessElements.SequenceFlow =
-          sequenceFlows.find((flow: Model.ProcessElements.SequenceFlow): boolean => {
-            return flow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
-          });
+        const defaultSequenceFlow = sequenceFlows.find((flow: Model.ProcessElements.SequenceFlow): boolean => {
+          return flow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
+        });
 
         return defaultSequenceFlow.targetRef;
       }
 
       // If no SequenceFlows have a truthy condition and no default SequenceFlow exists,
       // throw an error
-      const noSequenceFlowFoundError: BadRequestError =
+      const noSequenceFlowFoundError =
         new BadRequestError(`No outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
       await this.persistOnError(token, noSequenceFlowFoundError);
       throw noSequenceFlowFoundError;
     }
 
-    const tooManyTruthySequenceFlowsExist: boolean = truthySequenceFlows.length > 1;
+    const tooManyTruthySequenceFlowsExist = truthySequenceFlows.length > 1;
     if (tooManyTruthySequenceFlowsExist) {
 
-      const tooManySequenceFlowsError: BadRequestError =
+      const tooManySequenceFlowsError =
         new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
 
       await this.persistOnError(token, tooManySequenceFlowsError);
       throw tooManySequenceFlowsError;
     }
 
-    const nextFlowNodeRef: string = truthySequenceFlows[0].targetRef;
+    const nextFlowNodeRef = truthySequenceFlows[0].targetRef;
 
     return nextFlowNodeRef;
   }
 
-  private async _getSequenceFlowsWithMatchingCondition(
+  private async getSequenceFlowsWithMatchingCondition(
     sequenceFlows: Array<Model.ProcessElements.SequenceFlow>,
     processTokenFacade: IProcessTokenFacade,
   ): Promise<Array<Model.ProcessElements.SequenceFlow>> {
@@ -175,15 +172,15 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
       // The default Flow must not be conditional.
       // Thus, it must not be included with the condition evaluations.
-      const sequenceFlowIsDefaultFlow: boolean = sequenceFlow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
+      const sequenceFlowIsDefaultFlow = sequenceFlow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
 
-      const sequenceFlowHasNoCondition: boolean = sequenceFlow.conditionExpression === undefined || sequenceFlow.conditionExpression === null;
+      const sequenceFlowHasNoCondition = sequenceFlow.conditionExpression === undefined;
 
       if (sequenceFlowHasNoCondition || sequenceFlowIsDefaultFlow) {
         continue;
       }
 
-      const conditionIsFulfilled: boolean = await this.executeCondition(sequenceFlow.conditionExpression.expression, processTokenFacade);
+      const conditionIsFulfilled = await this.executeCondition(sequenceFlow.conditionExpression.expression, processTokenFacade);
 
       if (conditionIsFulfilled) {
         truthySequenceFlows.push(sequenceFlow);
@@ -194,11 +191,11 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
   }
 
   private async executeCondition(condition: string, processTokenFacade: IProcessTokenFacade): Promise<boolean> {
-    const tokenData: any = processTokenFacade.getOldTokenFormat();
+    const tokenData = processTokenFacade.getOldTokenFormat();
 
     try {
-      const functionString: string = `return ${condition}`;
-      const evaluateFunction: Function = new Function('token', functionString);
+      const functionString = `return ${condition}`;
+      const evaluateFunction = new Function('token', functionString);
 
       return evaluateFunction.call(tokenData, tokenData);
 
@@ -206,4 +203,5 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
       return false;
     }
   }
+
 }

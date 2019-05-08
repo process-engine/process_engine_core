@@ -40,10 +40,10 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
     this.logger.verbose(`Executing ParallelSplitGateway instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

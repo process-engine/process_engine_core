@@ -13,10 +13,7 @@ export function parseSendTasks(
 
   const sendTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
 
-  const noSendTasksFound: boolean = sendTasksRaw === undefined
-                                      || sendTasksRaw === null
-                                      || sendTasksRaw.length === 0;
-
+  const noSendTasksFound: boolean = sendTasksRaw === undefined || sendTasksRaw.length === 0;
   if (noSendTasksFound) {
     return sendTasks;
   }
@@ -41,7 +38,8 @@ export function parseSendTasks(
 
 function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
   eventDefinitionId: string,
-  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>): TEventDefinition {
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
+): TEventDefinition {
 
   const matchingEventDefintion: Model.Events.Definitions.EventDefinition =
     eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {

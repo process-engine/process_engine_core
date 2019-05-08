@@ -37,6 +37,7 @@ function parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
   }
 
   for (const gatewayRaw of gatewaysRaw) {
+    // eslint-disable-next-line 6river/new-cap
     let gateway: TGateway = new type();
     gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
     gateway.name = gatewayRaw.name;

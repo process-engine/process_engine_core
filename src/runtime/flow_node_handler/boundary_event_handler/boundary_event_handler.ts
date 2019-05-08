@@ -15,36 +15,24 @@ import {Model} from '@process-engine/process_model.contracts';
  */
 export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
-  private readonly _boundaryEventModel: Model.Events.BoundaryEvent;
-  private readonly _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
+  protected attachedFlowNodeInstanceId: string;
 
-  private readonly _boundaryEventInstanceId: string;
+  protected readonly boundaryEventModel: Model.Events.BoundaryEvent;
+  protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
-  protected _attachedFlowNodeInstanceId: string;
+  protected readonly boundaryEventInstanceId: string;
 
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    this._flowNodePersistenceFacade = flowNodePersistenceFacade;
-    this._boundaryEventModel = boundaryEventModel;
-    this._boundaryEventInstanceId = uuid.v4();
-  }
-
-  protected get attachedFlowNodeInstanceId(): string {
-    return this._attachedFlowNodeInstanceId;
-  }
-
-  protected get boundaryEvent(): Model.Events.BoundaryEvent {
-    return this._boundaryEventModel;
-  }
-
-  protected get flowNodeInstanceId(): string {
-    return this._boundaryEventInstanceId;
+    this.flowNodePersistenceFacade = flowNodePersistenceFacade;
+    this.boundaryEventModel = boundaryEventModel;
+    this.boundaryEventInstanceId = uuid.v4();
   }
 
   public getInstanceId(): string {
-    return this._boundaryEventInstanceId;
+    return this.boundaryEventInstanceId;
   }
 
   public abstract async waitForTriggeringEvent(
@@ -61,22 +49,25 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   public getNextFlowNode(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
     // By convention, BoundaryEvents must only lead to one FlowNode.
-    return processModelFacade.getNextFlowNodesFor(this._boundaryEventModel).pop();
+    return processModelFacade.getNextFlowNodesFor(this.boundaryEventModel).pop();
   }
 
   protected async persistOnEnter(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnEnter(this.boundaryEvent, this.flowNodeInstanceId, processToken, this.attachedFlowNodeInstanceId);
+    await this
+      .flowNodePersistenceFacade
+      .persistOnEnter(this.boundaryEventModel, this.boundaryEventInstanceId, processToken, this.attachedFlowNodeInstanceId);
   }
 
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnExit(this.boundaryEvent, this.flowNodeInstanceId, processToken);
+    await this.flowNodePersistenceFacade.persistOnExit(this.boundaryEventModel, this.boundaryEventInstanceId, processToken);
   }
 
   protected async persistOnTerminate(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnTerminate(this.boundaryEvent, this.flowNodeInstanceId, processToken);
+    await this.flowNodePersistenceFacade.persistOnTerminate(this.boundaryEventModel, this.boundaryEventInstanceId, processToken);
   }
 
   protected async persistOnError(processToken: ProcessToken, error: Error): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnError(this.boundaryEvent, this.flowNodeInstanceId, processToken, error);
+    await this.flowNodePersistenceFacade.persistOnError(this.boundaryEventModel, this.boundaryEventInstanceId, processToken, error);
   }
+
 }

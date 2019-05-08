@@ -1,0 +1,8 @@
+{
+  "extends": "@essential-projects/eslint-config",
+  "rules": {
+    "@typescript-eslint/no-explicit-any": ["off"],
+    "no-case-declarations": ["off"],
+    "no-param-reassign": ["off"]
+  }
+}

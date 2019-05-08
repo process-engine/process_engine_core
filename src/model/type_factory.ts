@@ -39,6 +39,7 @@ export function createObjectWithCommonProperties<TTargetType extends Model.Base.
   targetType: Model.Base.IConstructor<TTargetType>,
 ): TTargetType {
 
+  // eslint-disable-next-line 6river/new-cap
   let instance: TTargetType = new targetType();
   instance = <TTargetType> setCommonObjectPropertiesFromData(rawData, instance);
 
@@ -107,7 +108,7 @@ function filterOutEmptyProperties(camundaProperties: any): any {
   const filteredProperties: Array<any> = camundaProperties.filter((property: any): boolean => {
     const isNotEmpty: boolean = property !== undefined;
 
-    let hasValue: boolean = false;
+    let hasValue = false;
 
     if (typeof property === 'string') {
       hasValue = isNotEmpty && property.length > 0;

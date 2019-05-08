@@ -7,18 +7,19 @@ import {ActivityHandler} from '../activity_handler';
 
 export class ServiceTaskFactory implements IFlowNodeHandlerDedicatedFactory<Model.Activities.ServiceTask> {
 
-  private _container: IContainer;
+  private container: IContainer;
 
   constructor(container: IContainer) {
-    this._container = container;
+    this.container = container;
   }
 
   public async create(flowNode: Model.Activities.ServiceTask): Promise<IFlowNodeHandler<Model.Activities.ServiceTask>> {
 
     if (flowNode.type === Model.Activities.ServiceTaskType.external) {
-      return this._container.resolveAsync<ActivityHandler<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [flowNode]);
+      return this.container.resolveAsync<ActivityHandler<Model.Activities.ServiceTask>>('ExternalServiceTaskHandler', [flowNode]);
     }
 
-    return this._container.resolveAsync<ActivityHandler<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [flowNode]);
+    return this.container.resolveAsync<ActivityHandler<Model.Activities.ServiceTask>>('InternalServiceTaskHandler', [flowNode]);
   }
+
 }

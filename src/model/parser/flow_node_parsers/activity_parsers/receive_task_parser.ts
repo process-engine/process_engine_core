@@ -13,10 +13,7 @@ export function parseReceiveTasks(
 
   const receiveTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ReceiveTask);
 
-  const noReceiveTasksFound: boolean = receiveTasksRaw === undefined
-                                        || receiveTasksRaw === null
-                                        || receiveTasksRaw.length === 0;
-
+  const noReceiveTasksFound: boolean = receiveTasksRaw === undefined || receiveTasksRaw.length === 0;
   if (noReceiveTasksFound) {
     return receiveTasks;
   }
@@ -41,7 +38,8 @@ export function parseReceiveTasks(
 
 function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
   eventDefinitionId: string,
-  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>): TEventDefinition {
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
+): TEventDefinition {
 
   const matchingEventDefintion: Model.Events.Definitions.EventDefinition =
     eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {

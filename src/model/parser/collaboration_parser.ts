@@ -2,7 +2,7 @@ import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/process_model
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-} from './../type_factory';
+} from '../type_factory';
 
 export function parseCollaboration(parsedObjectModel: IParsedObjectModel): Model.Collaboration {
 
