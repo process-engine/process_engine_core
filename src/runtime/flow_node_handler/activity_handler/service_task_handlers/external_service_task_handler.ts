@@ -1,4 +1,3 @@
-/* eslint-disable consistent-return */
 import {Logger} from 'loggerhythm';
 
 import {BaseError, InternalServerError} from '@essential-projects/errors_ts';
@@ -61,6 +60,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
+    // eslint-disable-next-line consistent-return
     const resumerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       // Callback for processing an ExternalTask result.
@@ -204,15 +204,16 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
             };
             await this.persistOnError(token, error);
 
-            return reject(error);
+            reject(error);
+          } else {
+
+            this.logger.verbose('The external worker successfully finished processing the ExternalTask.');
+            token.payload = result;
+
+            await this.persistOnResume(token);
+
+            resolve(result);
           }
-
-          this.logger.verbose('The external worker successfully finished processing the ExternalTask.');
-          token.payload = result;
-
-          await this.persistOnResume(token);
-
-          return resolve(result);
         };
 
         this.waitForExternalTaskResult(externalTaskFinishedCallback);
@@ -229,7 +230,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         this.logger.error(error);
         await this.persistOnError(token, error);
 
-        return reject(error);
+        reject(error);
       }
     });
   }
