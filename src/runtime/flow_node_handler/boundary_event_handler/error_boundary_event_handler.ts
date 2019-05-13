@@ -5,9 +5,9 @@ import {
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
+
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
   /**
@@ -24,16 +24,16 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
    */
   public canHandleError(error: Error): boolean {
 
-    const errorDefinition: Model.Events.Definitions.ErrorEventDefinition = this.boundaryEvent.errorEventDefinition;
+    const errorDefinition = this.boundaryEventModel.errorEventDefinition;
 
-    const modelHasNoErrorDefinition: boolean = !errorDefinition || !errorDefinition.name || errorDefinition.name === '';
+    const modelHasNoErrorDefinition = !errorDefinition || !errorDefinition.name || errorDefinition.name === '';
     if (modelHasNoErrorDefinition) {
       return true;
     }
 
     const errorNamesMatch: boolean = errorDefinition.name === error.name;
     // The error code is optional and must only be evaluated, if the definition contains it.
-    const errorCodesMatch: boolean =
+    const errorCodesMatch =
       (!errorDefinition.code || errorDefinition.code === '') ||
       errorDefinition.code === (error as BpmnError).code;
 
@@ -50,6 +50,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
     await this.persistOnEnter(token);
 
-    this._attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
   }
+
 }

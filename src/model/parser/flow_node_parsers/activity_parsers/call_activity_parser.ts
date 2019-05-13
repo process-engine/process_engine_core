@@ -7,14 +7,14 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
 
   const callActivities: Array<Model.Activities.CallActivity> = [];
 
-  const callActivitiesRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
+  const callActivitiesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
 
   if (!callActivitiesRaw || callActivitiesRaw.length === 0) {
     return [];
   }
 
   for (const callActivityRaw of callActivitiesRaw) {
-    let callActivity: Model.Activities.CallActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
+    let callActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
 
     if (callActivityRaw.calledElement) {
       // NOTE: There is also a CMMN type, which is not supported yet.

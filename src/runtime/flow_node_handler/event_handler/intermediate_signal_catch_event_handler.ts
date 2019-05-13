@@ -5,12 +5,12 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   SignalEventReachedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -31,7 +31,7 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
   }
 
   private get signalCatchEvent(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -44,16 +44,16 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     this.logger.verbose(`Executing SignalCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return await this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
@@ -65,10 +65,10 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
 
         handlerPromise.cancel();
 
-        return;
+        return undefined;
       };
 
-      const receivedMessage: SignalEventReachedMessage = await this._suspendAndWaitForSignal(token);
+      const receivedMessage = await this.suspendAndWaitForSignal(token);
 
       token.payload = receivedMessage.currentToken;
       await this.persistOnResume(token);
@@ -76,7 +76,7 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
       processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.signalCatchEvent);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.signalCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -84,14 +84,14 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     return handlerPromise;
   }
 
-  protected async _continueAfterSuspend(
+  protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
@@ -103,10 +103,10 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
 
         handlerPromise.cancel();
 
-        return;
+        return undefined;
       };
 
-      const receivedMessage: SignalEventReachedMessage = await this._waitForSignal();
+      const receivedMessage = await this.waitForSignal();
 
       onSuspendToken.payload = receivedMessage.currentToken;
       await this.persistOnResume(onSuspendToken);
@@ -114,7 +114,7 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
       processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(onSuspendToken);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.signalCatchEvent);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.signalCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -122,22 +122,22 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     return handlerPromise;
   }
 
-  private async _suspendAndWaitForSignal(token: ProcessToken): Promise<SignalEventReachedMessage> {
-    const waitForSignalPromise: Promise<SignalEventReachedMessage> = this._waitForSignal();
+  private async suspendAndWaitForSignal(token: ProcessToken): Promise<SignalEventReachedMessage> {
+    const waitForSignalPromise = this.waitForSignal();
     await this.persistOnSuspend(token);
 
-    return await waitForSignalPromise;
+    return waitForSignalPromise;
   }
 
-  private async _waitForSignal(): Promise<SignalEventReachedMessage> {
+  private async waitForSignal(): Promise<SignalEventReachedMessage> {
 
     return new Promise<SignalEventReachedMessage>((resolve: Function): void => {
 
-      const signalEventName: string = eventAggregatorSettings.messagePaths.signalEventReached
+      const signalEventName = eventAggregatorSettings.messagePaths.signalEventReached
         .replace(eventAggregatorSettings.messageParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
 
       this.subscription =
-        this.eventAggregator.subscribeOnce(signalEventName, async(signal: SignalEventReachedMessage) => {
+        this.eventAggregator.subscribeOnce(signalEventName, (signal: SignalEventReachedMessage): void => {
           this.logger.verbose(
             `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
             signal,
@@ -149,4 +149,5 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
       this.logger.verbose(`SignalCatchEvent instance ${this.flowNodeInstanceId} waiting for signal ${signalEventName}.`);
     });
   }
+
 }

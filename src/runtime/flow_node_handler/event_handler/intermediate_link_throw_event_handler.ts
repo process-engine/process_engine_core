@@ -28,7 +28,7 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
   }
 
   private get linkThrowEventModel(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -41,18 +41,17 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
     this.logger.verbose(`Executing LinkThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return await this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
-    const matchingCatchEvents: Array<Model.Events.IntermediateCatchEvent> =
-      processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
 
-    const matchingCatchEvent: Model.Events.IntermediateCatchEvent = await this._getMatchingCatchEvent(token, matchingCatchEvents);
+    const matchingCatchEvents = processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
+    const matchingCatchEvent = await this.getMatchingCatchEvent(token, matchingCatchEvents);
 
     // LinkEvents basically work like SequenceFlows, in that they do nothing but direct
     // the ProcessInstance to another FlowNode.
@@ -63,17 +62,17 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
     return [matchingCatchEvent];
   }
 
-  private async _getMatchingCatchEvent(
+  private async getMatchingCatchEvent(
     token: ProcessToken,
     events: Array<Model.Events.IntermediateCatchEvent>,
   ): Promise<Model.Events.IntermediateCatchEvent> {
 
-    const noMatchingLinkCatchEventExists: boolean = !events || events.length === 0;
+    const noMatchingLinkCatchEventExists = !events || events.length === 0;
     if (noMatchingLinkCatchEventExists) {
-      const errorMessage: string = `No IntermediateCatchEvent with a link called '${this.linkThrowEventModel.linkEventDefinition.name}' exists!`;
+      const errorMessage = `No IntermediateCatchEvent with a link called '${this.linkThrowEventModel.linkEventDefinition.name}' exists!`;
       this.logger.error(errorMessage);
 
-      const notFoundError: NotFoundError = new NotFoundError(errorMessage);
+      const notFoundError = new NotFoundError(errorMessage);
       await this.persistOnError(token, notFoundError);
 
       throw notFoundError;
@@ -81,12 +80,12 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
 
     // By BPMN Specs, all IntermediateLinkCatchEvents must have unique link names.
     // So if multiple links with the same name exist, it constitutes an invalid process model.
-    const tooManyMatchingLinkCatchEvents: boolean = events.length > 1;
+    const tooManyMatchingLinkCatchEvents = events.length > 1;
     if (tooManyMatchingLinkCatchEvents) {
-      const errorMessage: string = `Too many CatchEvents for link '${this.linkThrowEventModel.linkEventDefinition.name}' exist!`;
+      const errorMessage = `Too many CatchEvents for link '${this.linkThrowEventModel.linkEventDefinition.name}' exist!`;
       this.logger.error(errorMessage);
 
-      const notFoundError: BadRequestError = new BadRequestError(errorMessage);
+      const notFoundError = new BadRequestError(errorMessage);
       await this.persistOnError(token, notFoundError);
 
       throw notFoundError;
@@ -94,4 +93,5 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
 
     return events[0];
   }
+
 }

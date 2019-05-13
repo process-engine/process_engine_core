@@ -5,12 +5,12 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -31,7 +31,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
   }
 
   private get messageCatchEvent(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -44,16 +44,16 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
     this.logger.verbose(`Executing MessageCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return await this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
@@ -65,10 +65,10 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
 
         handlerPromise.cancel();
 
-        return;
+        return undefined;
       };
 
-      const receivedMessage: MessageEventReachedMessage = await this._suspendAndWaitForMessage(token);
+      const receivedMessage = await this.suspendAndWaitForMessage(token);
 
       token.payload = receivedMessage.currentToken;
       await this.persistOnResume(token);
@@ -76,7 +76,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
       processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -84,14 +84,14 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
     return handlerPromise;
   }
 
-  protected async _continueAfterSuspend(
+  protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
@@ -103,10 +103,10 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
 
         handlerPromise.cancel();
 
-        return;
+        return undefined;
       };
 
-      const receivedMessage: MessageEventReachedMessage = await this._waitForMessage();
+      const receivedMessage = await this.waitForMessage();
 
       onSuspendToken.payload = receivedMessage.currentToken;
       await this.persistOnResume(onSuspendToken);
@@ -114,7 +114,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
       processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(onSuspendToken);
 
-      const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);
 
       return resolve(nextFlowNodeInfo);
     });
@@ -122,22 +122,22 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
     return handlerPromise;
   }
 
-  private async _suspendAndWaitForMessage(token: ProcessToken): Promise<MessageEventReachedMessage> {
-    const waitForMessagePromise: Promise<MessageEventReachedMessage> = this._waitForMessage();
+  private async suspendAndWaitForMessage(token: ProcessToken): Promise<MessageEventReachedMessage> {
+    const waitForMessagePromise = this.waitForMessage();
     await this.persistOnSuspend(token);
 
-    return await waitForMessagePromise;
+    return waitForMessagePromise;
   }
 
-  private async _waitForMessage(): Promise<MessageEventReachedMessage> {
+  private async waitForMessage(): Promise<MessageEventReachedMessage> {
 
     return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
 
-      const messageEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+      const messageEventName = eventAggregatorSettings.messagePaths.messageEventReached
         .replace(eventAggregatorSettings.messageParams.messageReference, this.messageCatchEvent.messageEventDefinition.name);
 
       this.subscription =
-        this.eventAggregator.subscribeOnce(messageEventName, async(message: MessageEventReachedMessage) => {
+        this.eventAggregator.subscribeOnce(messageEventName, (message: MessageEventReachedMessage): void => {
           this.logger.verbose(
             `MessageCatchEvent instance ${this.flowNodeInstanceId} message ${messageEventName} received:`,
             message,
@@ -149,4 +149,5 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
       this.logger.verbose(`MessageCatchEvent instance ${this.flowNodeInstanceId} waiting for message ${messageEventName}.`);
     });
   }
+
 }

@@ -13,7 +13,7 @@ export function getModelPropertyAsArray(rawProcessModel: any, elementName: strin
     return undefined;
   }
 
-  const modelElement: any = rawProcessModel[elementName];
+  const modelElement = rawProcessModel[elementName];
 
   if (Array.isArray(modelElement)) {
     return modelElement;
@@ -39,7 +39,8 @@ export function createObjectWithCommonProperties<TTargetType extends Model.Base.
   targetType: Model.Base.IConstructor<TTargetType>,
 ): TTargetType {
 
-  let instance: TTargetType = new targetType();
+  // eslint-disable-next-line 6river/new-cap
+  let instance = new targetType();
   instance = <TTargetType> setCommonObjectPropertiesFromData(rawData, instance);
 
   return instance;
@@ -64,14 +65,14 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
 
   if (rawData[BpmnTags.FlowElementProperty.ExtensionElements]) {
 
-    const extensionData: any = rawData[BpmnTags.FlowElementProperty.ExtensionElements];
+    const extensionData = rawData[BpmnTags.FlowElementProperty.ExtensionElements];
 
     instance.extensionElements = new Model.Base.Types.ExtensionElements();
     instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.CamundaProperty.ExecutionListener];
 
     // NOTE: The extension property collection is wrapped in a property named "camunda:property",
     // which in turn is located in "camunda:properties".
-    let camundaProperties: any = extensionData[BpmnTags.CamundaProperty.Properties];
+    let camundaProperties = extensionData[BpmnTags.CamundaProperty.Properties];
 
     camundaProperties = filterOutEmptyProperties(camundaProperties);
 
@@ -104,10 +105,10 @@ function filterOutEmptyProperties(camundaProperties: any): any {
     return camundaProperties;
   }
 
-  const filteredProperties: Array<any> = camundaProperties.filter((property: any): boolean => {
-    const isNotEmpty: boolean = property !== undefined;
+  const filteredProperties = camundaProperties.filter((property: any): boolean => {
+    const isNotEmpty = property !== undefined;
 
-    let hasValue: boolean = false;
+    let hasValue = false;
 
     if (typeof property === 'string') {
       hasValue = isNotEmpty && property.length > 0;

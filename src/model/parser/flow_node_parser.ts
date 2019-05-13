@@ -9,10 +9,9 @@ export function parseProcessFlowNodes(
 
   let nodes: Array<Model.Base.FlowNode> = [];
 
-  const events: Array<Model.Events.Event> = FlowNodeParsers.EventParser.parseEventsFromProcessData(processData, errors, eventDefinitions);
-  const gateways: Array<Model.Gateways.Gateway> = FlowNodeParsers.GatewayParser.parseGatewaysFromProcessData(processData);
-  const activities: Array<Model.Activities.Activity> =
-    FlowNodeParsers.ActivityParser.parseActivitiesFromProcessData(processData, errors, eventDefinitions);
+  const events = FlowNodeParsers.EventParser.parseEventsFromProcessData(processData, errors, eventDefinitions);
+  const gateways = FlowNodeParsers.GatewayParser.parseGatewaysFromProcessData(processData);
+  const activities = FlowNodeParsers.ActivityParser.parseActivitiesFromProcessData(processData, errors, eventDefinitions);
 
   nodes = nodes.concat(gateways, activities, events);
 

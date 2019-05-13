@@ -1,18 +1,18 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
-import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   TerminateEndEventReachedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -20,7 +20,7 @@ import {GatewayHandler} from './index';
 
 export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.ParallelGateway> {
 
-  private readonly _container: IContainer;
+  private readonly container: IContainer;
 
   private expectedNumberOfResults: number = -1;
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
@@ -28,7 +28,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   private onEnterStatePersisted: boolean = false;
   private isInterrupted: boolean = false;
 
-  private _processTerminationSubscription: Subscription;
+  private processTerminationSubscription: Subscription;
 
   constructor(
     container: IContainer,
@@ -38,12 +38,12 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     parallelGatewayModel: Model.Gateways.ParallelGateway,
   ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, parallelGatewayModel);
-    this._container = container;
+    this.container = container;
     this.logger = Logger.createLogger(`processengine:parallel_join_gateway:${parallelGatewayModel.id}`);
   }
 
   private get parallelGateway(): Model.Gateways.ParallelGateway {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async beforeExecute(
@@ -53,22 +53,22 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     identity: IIdentity,
   ): Promise<void> {
 
-    const expectedResultsAlreadySet: boolean = this.expectedNumberOfResults > -1;
+    const expectedResultsAlreadySet = this.expectedNumberOfResults > -1;
 
     // Safety check to prevent a handler to be resolved and called after it was already finished.
-    const handlerIsAlreadyFinished: boolean = expectedResultsAlreadySet || this.isInterrupted;
+    const handlerIsAlreadyFinished = expectedResultsAlreadySet || this.isInterrupted;
     if (handlerIsAlreadyFinished) {
       return;
     }
 
     await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
 
-    const subscriptionForProcessTerminationNeeded: boolean = !this._processTerminationSubscription;
+    const subscriptionForProcessTerminationNeeded = !this.processTerminationSubscription;
     if (subscriptionForProcessTerminationNeeded) {
-      this._processTerminationSubscription = this._subscribeToProcessTermination(token);
+      this.processTerminationSubscription = this.subscribeToProcessTermination(token);
     }
 
-    const preceedingFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
+    const preceedingFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
     this.expectedNumberOfResults = preceedingFlowNodes.length;
   }
 
@@ -80,7 +80,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   ): Promise<Array<Model.Base.FlowNode>> {
 
     if (this.isInterrupted) {
-      return;
+      return undefined;
     }
 
     // We must only store this state change once to prevent duplicate database entries.
@@ -91,42 +91,42 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const latestResult: IFlowNodeInstanceResult = this._getLatestFlowNodeResultFromFacade(processTokenFacade);
+    const latestResult = this.getLatestFlowNodeResultFromFacade(processTokenFacade);
     this.receivedResults.push(latestResult);
 
-    const notAllBranchesHaveFinished: boolean = this.receivedResults.length < this.expectedNumberOfResults;
+    const notAllBranchesHaveFinished = this.receivedResults.length < this.expectedNumberOfResults;
     if (notAllBranchesHaveFinished) {
       return undefined;
     }
 
-    const aggregatedResults: any = this._aggregateResults();
+    const aggregatedResults = this.aggregateResults();
 
     token.payload = aggregatedResults;
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, aggregatedResults);
     await this.persistOnExit(token);
 
-    this._removeInstanceFromIocContainer(token);
+    this.removeInstanceFromIocContainer(token);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  private _getLatestFlowNodeResultFromFacade(processTokenFacade: IProcessTokenFacade): IFlowNodeInstanceResult {
+  private getLatestFlowNodeResultFromFacade(processTokenFacade: IProcessTokenFacade): IFlowNodeInstanceResult {
     return processTokenFacade.getAllResults().pop();
   }
 
-  private _aggregateResults(): any {
-    const resultToken: any = {};
+  private aggregateResults(): any {
+    const resultToken = {};
 
     for (const branchResult of this.receivedResults) {
       resultToken[branchResult.flowNodeId] = branchResult.result;
@@ -135,41 +135,42 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     return resultToken;
   }
 
-  protected _subscribeToProcessTermination(token: ProcessToken): Subscription {
+  protected subscribeToProcessTermination(token: ProcessToken): Subscription {
 
-    const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
+    const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
       // This is done to prevent anybody from accessing the handler after a termination message was received.
       // This is necessary, to prevent access until the the state change to "terminated" is done.
       this.isInterrupted = true;
 
-      const payloadIsDefined: boolean = message !== undefined;
+      const payloadIsDefined = message !== undefined;
 
-      const processTerminatedError: string = payloadIsDefined
-                                           ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
-                                           : 'Process was terminated!';
+      const processTerminatedError = payloadIsDefined
+        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
+        : 'Process was terminated!';
 
       token.payload = payloadIsDefined
-                    ? message.currentToken
-                    : {};
+        ? message.currentToken
+        : {};
 
       this.logger.error(processTerminatedError);
 
       await this.persistOnTerminate(token);
 
-      this._removeInstanceFromIocContainer(token);
+      this.removeInstanceFromIocContainer(token);
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
   }
 
-  private _removeInstanceFromIocContainer(processToken: ProcessToken): void {
+  private removeInstanceFromIocContainer(processToken: ProcessToken): void {
 
-    const joinGatewayRegistration: string =
+    const joinGatewayRegistration =
       `ParallelJoinGatewayHandlerInstance-${processToken.correlationId}-${processToken.processInstanceId}-${this.parallelGateway.id}`;
 
-    this._container.unregister(joinGatewayRegistration);
+    this.container.unregister(joinGatewayRegistration);
   }
+
 }

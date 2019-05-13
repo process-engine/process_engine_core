@@ -7,11 +7,11 @@ import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance
 import {
   EmptyActivityFinishedMessage,
   EmptyActivityReachedMessage,
-  eventAggregatorSettings,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -34,7 +34,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
   }
 
   private get emptyActivity(): Model.Activities.EmptyActivity {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -47,46 +47,45 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     this.logger.verbose(`Executing empty activity instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-        this.onInterruptedCallback = (): void => {
-          const subscriptionIsActive: boolean = this.emptyActivitySubscription !== undefined;
-          if (subscriptionIsActive) {
-            this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
-          }
-          handlerPromise.cancel();
+      this.onInterruptedCallback = (): void => {
+        const subscriptionIsActive = this.emptyActivitySubscription !== undefined;
+        if (subscriptionIsActive) {
+          this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
+        }
+        handlerPromise.cancel();
 
-          return;
-        };
+        return undefined;
+      };
 
-        await this._suspendAndWaitForFinishEvent(identity, token);
-        await this.persistOnResume(token);
+      await this.suspendAndWaitForFinishEvent(identity, token);
+      await this.persistOnResume(token);
 
-        processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, token.payload);
-        await this.persistOnExit(token);
+      processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, token.payload);
+      await this.persistOnExit(token);
 
-        this._sendEmptyActivityFinishedNotification(identity, token);
+      this.sendEmptyActivityFinishedNotification(identity, token);
 
-        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.emptyActivity);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.emptyActivity);
 
-        return resolve(nextFlowNodeInfo);
-      });
+      return resolve(nextFlowNodeInfo);
+    });
 
     return handlerPromise;
   }
 
-  protected async _continueAfterSuspend(
+  protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -94,35 +93,34 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-        this.onInterruptedCallback = (): void => {
-          const subscriptionIsActive: boolean = this.emptyActivitySubscription !== undefined;
-          if (subscriptionIsActive) {
-            this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
-          }
-          handlerPromise.cancel();
+      this.onInterruptedCallback = (): void => {
+        const subscriptionIsActive: boolean = this.emptyActivitySubscription !== undefined;
+        if (subscriptionIsActive) {
+          this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
+        }
+        handlerPromise.cancel();
 
-          return;
-        };
+        return undefined;
+      };
 
-        const waitForContinueEventPromise: Promise<any> = await this._waitForFinishEvent(onSuspendToken);
+      const waitForContinueEventPromise = await this.waitForFinishEvent(onSuspendToken);
 
-        this._sendEmptyTaskReachedNotification(identity, onSuspendToken);
+      this.sendEmptyTaskReachedNotification(identity, onSuspendToken);
 
-        await waitForContinueEventPromise;
-        await this.persistOnResume(onSuspendToken);
+      await waitForContinueEventPromise;
+      await this.persistOnResume(onSuspendToken);
 
-        processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, onSuspendToken.payload);
-        await this.persistOnExit(onSuspendToken);
+      processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, onSuspendToken.payload);
+      await this.persistOnExit(onSuspendToken);
 
-        this._sendEmptyActivityFinishedNotification(identity, onSuspendToken);
+      this.sendEmptyActivityFinishedNotification(identity, onSuspendToken);
 
-        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.emptyActivity);
+      const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.emptyActivity);
 
-        return resolve(nextFlowNodeInfo);
-      });
+      return resolve(nextFlowNodeInfo);
+    });
 
     return handlerPromise;
   }
@@ -136,13 +134,13 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
    * @param token    Contains all relevant info the EventAggregator will need for
    *                 creating the EventSubscription.
    */
-  private async _suspendAndWaitForFinishEvent(identity: IIdentity, token: ProcessToken): Promise<any> {
-    const waitForEmptyActivityResultPromise: Promise<any> = this._waitForFinishEvent(token);
+  private async suspendAndWaitForFinishEvent(identity: IIdentity, token: ProcessToken): Promise<any> {
+    const waitForEmptyActivityResultPromise: Promise<any> = this.waitForFinishEvent(token);
     await this.persistOnSuspend(token);
 
-    this._sendEmptyTaskReachedNotification(identity, token);
+    this.sendEmptyTaskReachedNotification(identity, token);
 
-    return await waitForEmptyActivityResultPromise;
+    return waitForEmptyActivityResultPromise;
   }
 
   /**
@@ -154,10 +152,10 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
    * @param token    Contains all relevant info the EventAggregator will need for
    *                 creating the EventSubscription.
    */
-  private _waitForFinishEvent(token: ProcessToken): Promise<any> {
+  private waitForFinishEvent(token: ProcessToken): Promise<any> {
 
-    return new Promise<any>(async(resolve: EventReceivedCallback): Promise<void> => {
-      const continueEmptyActivityEvent: string = this._getFinishEmptyActivityEventName(token.correlationId, token.processInstanceId);
+    return new Promise<any>(async (resolve: EventReceivedCallback): Promise<void> => {
+      const continueEmptyActivityEvent = this.getFinishEmptyActivityEventName(token.correlationId, token.processInstanceId);
 
       this.emptyActivitySubscription = this.eventAggregator.subscribeOnce(continueEmptyActivityEvent, resolve);
     });
@@ -170,16 +168,17 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
    * @param identity The identity that owns the EmptyActivity instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendEmptyTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private sendEmptyTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: EmptyActivityReachedMessage =
-      new EmptyActivityReachedMessage(token.correlationId,
-                                      token.processModelId,
-                                      token.processInstanceId,
-                                      this.emptyActivity.id,
-                                      this.flowNodeInstanceId,
-                                      identity,
-                                      token.payload);
+    const message = new EmptyActivityReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.emptyActivity.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.emptyActivityReached, message);
   }
@@ -195,28 +194,29 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
    * @param identity The identity that owns the EmptyActivity instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendEmptyActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+  private sendEmptyActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: EmptyActivityFinishedMessage =
-      new EmptyActivityFinishedMessage(token.correlationId,
-                                       token.processModelId,
-                                       token.processInstanceId,
-                                       this.emptyActivity.id,
-                                       this.flowNodeInstanceId,
-                                       identity,
-                                       token.payload);
+    const message = new EmptyActivityFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.emptyActivity.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
 
     // FlowNode-specific notification
-    const emptyActivityFinishedEvent: string = this._getEmptyActivityFinishedEventName(token.correlationId, token.processInstanceId);
+    const emptyActivityFinishedEvent = this.getEmptyActivityFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(emptyActivityFinishedEvent, message);
 
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.emptyActivityFinished, message);
   }
 
-  private _getFinishEmptyActivityEventName(correlationId: string, processInstanceId: string): string {
+  private getFinishEmptyActivityEventName(correlationId: string, processInstanceId: string): string {
 
-    const finishEmptyActivityEvent: string = eventAggregatorSettings.messagePaths.finishEmptyActivity
+    const finishEmptyActivityEvent = eventAggregatorSettings.messagePaths.finishEmptyActivity
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
@@ -224,14 +224,15 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     return finishEmptyActivityEvent;
   }
 
-  private _getEmptyActivityFinishedEventName(correlationId: string, processInstanceId: string): string {
+  private getEmptyActivityFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     // FlowNode-specific notification
-    const emptyActivityFinishedEvent: string = eventAggregatorSettings.messagePaths.emptyActivityWithInstanceIdFinished
+    const emptyActivityFinishedEvent = eventAggregatorSettings.messagePaths.emptyActivityWithInstanceIdFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
     return emptyActivityFinishedEvent;
   }
+
 }

@@ -7,17 +7,10 @@ import {
 
 export function parseGatewaysFromProcessData(processData: any): Array<Model.Gateways.Gateway> {
 
-  const exclusiveGateways: Array<Model.Gateways.ExclusiveGateway> =
-    parseGatewaysByType(processData, BpmnTags.GatewayElement.ExclusiveGateway, Model.Gateways.ExclusiveGateway);
-
-  const parallelGateways: Array<Model.Gateways.ParallelGateway> =
-    parseGatewaysByType(processData, BpmnTags.GatewayElement.ParallelGateway, Model.Gateways.ParallelGateway);
-
-  const inclusiveGateways: Array<Model.Gateways.InclusiveGateway> =
-    parseGatewaysByType(processData, BpmnTags.GatewayElement.InclusiveGateway, Model.Gateways.InclusiveGateway);
-
-  const complexGateways: Array<Model.Gateways.ComplexGateway> =
-    parseGatewaysByType(processData, BpmnTags.GatewayElement.ComplexGateway, Model.Gateways.ComplexGateway);
+  const exclusiveGateways = parseGatewaysByType(processData, BpmnTags.GatewayElement.ExclusiveGateway, Model.Gateways.ExclusiveGateway);
+  const parallelGateways = parseGatewaysByType(processData, BpmnTags.GatewayElement.ParallelGateway, Model.Gateways.ParallelGateway);
+  const inclusiveGateways = parseGatewaysByType(processData, BpmnTags.GatewayElement.InclusiveGateway, Model.Gateways.InclusiveGateway);
+  const complexGateways = parseGatewaysByType(processData, BpmnTags.GatewayElement.ComplexGateway, Model.Gateways.ComplexGateway);
 
   return Array.prototype.concat(parallelGateways, exclusiveGateways, inclusiveGateways, complexGateways);
 }
@@ -30,14 +23,15 @@ function parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
 
   const gateways: Array<TGateway> = [];
 
-  const gatewaysRaw: Array<any> = getModelPropertyAsArray(processData, gatewayType);
+  const gatewaysRaw = getModelPropertyAsArray(processData, gatewayType);
 
   if (!gatewaysRaw || gatewaysRaw.length === 0) {
     return [];
   }
 
   for (const gatewayRaw of gatewaysRaw) {
-    let gateway: TGateway = new type();
+    // eslint-disable-next-line 6river/new-cap
+    let gateway = new type();
     gateway = <TGateway> setCommonObjectPropertiesFromData(gatewayRaw, gateway);
     gateway.name = gatewayRaw.name;
     gateway.defaultOutgoingSequenceFlowId = gatewayRaw.default;

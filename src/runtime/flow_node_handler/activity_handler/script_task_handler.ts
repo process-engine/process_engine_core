@@ -27,7 +27,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
   }
 
   private get scriptTask(): Model.Activities.ScriptTask {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -40,21 +40,21 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
     this.logger.verbose(`Executing ScriptTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<any> = new Promise<any>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
-        let result: any = {};
+        let result = {};
 
-        const executionPromise: Promise<any> = this._executeScriptTask(processTokenFacade, identity);
+        const executionPromise = this.executeScriptTask(processTokenFacade, identity);
 
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
           processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, interruptionToken.payload);
@@ -69,7 +69,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
         token.payload = result;
         await this.persistOnExit(token);
 
-        const nextFlowNodeInfo: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.scriptTask);
+        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.scriptTask);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
@@ -82,24 +82,24 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
     return handlerPromise;
   }
 
-  private _executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
+  private executeScriptTask(processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<any> {
 
-    return new Promise<any>(async(resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
+    return new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
 
-        const script: string = this.scriptTask.script;
+        const script = this.scriptTask.script;
 
         if (!script) {
           return undefined;
         }
 
-        const scriptFunction: Function = new Function('token', 'identity', script);
+        const scriptFunction = new Function('token', 'identity', script);
 
-        const tokenData: any = processTokenFacade.getOldTokenFormat();
+        const tokenData = processTokenFacade.getOldTokenFormat();
 
-        let result: any = await scriptFunction.call(this, tokenData, identity);
+        let result = await scriptFunction.call(this, tokenData, identity);
         result = result === undefined
-          ? null
+          ? {}
           : result;
 
         return resolve(result);
@@ -110,4 +110,5 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
       }
     });
   }
+
 }

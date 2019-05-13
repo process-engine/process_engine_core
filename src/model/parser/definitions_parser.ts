@@ -8,14 +8,14 @@ import {Parsers} from './index';
 
 export function parseDefinitions(parsedObjectModel: IParsedObjectModel): Model.Definitions {
 
-  const definitions: any = parsedObjectModel[BpmnTags.CommonElement.Definitions];
+  const definitions = parsedObjectModel[BpmnTags.CommonElement.Definitions];
 
   return convertToInternalObjectModel(definitions);
 }
 
 function convertToInternalObjectModel(parsedXml: any): Model.Definitions {
 
-  const definitions: Model.Definitions = createDefinitionBaseObject(parsedXml);
+  const definitions = createDefinitionBaseObject(parsedXml);
 
   definitions.collaboration = Parsers.CollaborationParser.parseCollaboration(parsedXml);
   definitions.processes = Parsers.ProcessParser.parseProcesses(parsedXml);
@@ -25,7 +25,7 @@ function convertToInternalObjectModel(parsedXml: any): Model.Definitions {
 
 function createDefinitionBaseObject(parsedXml: any): Model.Definitions {
 
-  const basicDefinition: Model.Definitions = new Model.Definitions();
+  const basicDefinition = new Model.Definitions();
 
   basicDefinition.id = parsedXml.id;
   basicDefinition.xmlns = {

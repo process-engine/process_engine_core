@@ -2,75 +2,50 @@ import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  onInterruptionCallback,
   TerminateEndEventReachedMessage,
+  eventAggregatorSettings,
+  onInterruptionCallback,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-  protected _flowNodeInstanceId: string = undefined;
-  protected _flowNode: TFlowNode;
-  protected _previousFlowNodeInstanceId: string;
-  protected _terminationSubscription: Subscription;
+  protected flowNodeInstanceId: string = undefined;
+  protected flowNode: TFlowNode;
+  protected previousFlowNodeInstanceId: string;
+  protected terminationSubscription: Subscription;
 
   protected logger: Logger;
 
-  private _eventAggregator: IEventAggregator;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
-  private _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
+  protected eventAggregator: IEventAggregator;
+  protected flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+  protected flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
-  // tslint:disable-next-line:no-empty
-  private _onInterruptedCallback: onInterruptionCallback = (): void => {};
-
-  // tslint:disable-next-line:member-ordering
   constructor(
     eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     flowNode: TFlowNode,
   ) {
-    this._eventAggregator = eventAggregator;
-    this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._flowNodePersistenceFacade = flowNodePersistenceFacade;
-    this._flowNode = flowNode;
-    this._flowNodeInstanceId = uuid.v4();
+    this.eventAggregator = eventAggregator;
+    this.flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this.flowNodePersistenceFacade = flowNodePersistenceFacade;
+    this.flowNode = flowNode;
+    this.flowNodeInstanceId = uuid.v4();
   }
 
-  protected get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
-  protected get flowNode(): TFlowNode {
-    return this._flowNode;
-  }
-
-  protected get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
-    return this._flowNodeHandlerFactory;
-  }
-
-  protected get flowNodeInstanceId(): string {
-    return this._flowNodeInstanceId;
-  }
-
-  protected get flowNodePersistenceFacade(): IFlowNodePersistenceFacade {
-    return this._flowNodePersistenceFacade;
-  }
-
-  protected get previousFlowNodeInstanceId(): string {
-    return this._previousFlowNodeInstanceId;
-  }
+  // eslint-disable-next-line @typescript-eslint/member-naming
+  private _onInterruptedCallback: onInterruptionCallback = (): void => {};
 
   /**
    * Gets the callback that gets called when an interrupt-command was received.
@@ -194,8 +169,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade?: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<void> {
-    if (this._terminationSubscription) {
-      this.eventAggregator.unsubscribe(this._terminationSubscription);
+    if (this.terminationSubscription) {
+      this.eventAggregator.unsubscribe(this.terminationSubscription);
     }
   }
 
@@ -212,13 +187,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                             started the ProcessInstance.
    * @returns                    The Info for the next FlowNode to run.
    */
-  protected async _continueAfterEnter(
+  protected async continueAfterEnter(
     onEnterToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
   /**
@@ -234,7 +209,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                             started the ProcessInstance.
    * @returns                    The Info for the next FlowNode to run.
    */
-  protected async _continueAfterExit(
+  protected async continueAfterExit(
     onExitToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -255,7 +230,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * @param   identity           The requesting users identity.
    * @returns                    Info about the next FlowNode to run.
    */
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -266,28 +241,28 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   protected subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
 
-    const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onTerminatedCallback: EventReceivedCallback = async(message: TerminateEndEventReachedMessage): Promise<void> => {
-      const payloadIsDefined: boolean = message !== undefined;
+    const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
+      const payloadIsDefined = message !== undefined;
 
       token.payload = payloadIsDefined
-                    ? message.currentToken
-                    : {};
+        ? message.currentToken
+        : {};
 
       await this.onInterruptedCallback(token);
       await this.afterExecute(token);
 
       await this.persistOnTerminate(token);
 
-      const processTerminatedError: string = payloadIsDefined
-                                           ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
-                                           : 'Process was terminated!';
+      const processTerminatedError = payloadIsDefined
+        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
+        : 'Process was terminated!';
 
       this.logger.error(processTerminatedError);
 
-      const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
+      const terminationError = new InternalServerError(processTerminatedError);
 
       return rejectionFunction(terminationError);
     };
@@ -296,18 +271,19 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   protected async persistOnEnter(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
+    await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
   }
 
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
+    await this.flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
   protected async persistOnTerminate(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
+    await this.flowNodePersistenceFacade.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
   protected async persistOnError(processToken: ProcessToken, error: Error): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
+    await this.flowNodePersistenceFacade.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
   }
+
 }

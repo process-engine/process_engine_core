@@ -7,13 +7,12 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {FlowNodeInstance, IFlowNodeInstanceService, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   EndEventReachedMessage,
-  eventAggregatorSettings,
-  IFlowNodeHandler,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   ProcessTerminatedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -31,7 +30,7 @@ interface IProcessInstanceConfig {
 
 export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProcess> {
 
-  private readonly _flowNodeInstanceService: IFlowNodeInstanceService;
+  private readonly flowNodeInstanceService: IFlowNodeInstanceService;
 
   private subProcessFinishedSubscription: Subscription;
   private subProcessTerminatedSubscription: Subscription;
@@ -44,12 +43,12 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     subProcessModel: Model.Activities.SubProcess,
   ) {
     super(eventAggregator, flowNodeHandlerFactory, flowNodePersistenceFacade, subProcessModel);
-    this._flowNodeInstanceService = flowNodeInstanceService;
+    this.flowNodeInstanceService = flowNodeInstanceService;
     this.logger = Logger.createLogger(`processengine:sub_process_handler:${subProcessModel.id}`);
   }
 
   private get subProcess(): Model.Activities.SubProcess {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -62,10 +61,10 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     this.logger.verbose(`Executing SubProcess instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return this._executeHandler(token, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
-  protected async _continueAfterSuspend(
+  protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -73,148 +72,142 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-        try {
-          const flowNodeInstancesForSubProcess: Array<FlowNodeInstance> =
-            await this._flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
+      try {
+        const flowNodeInstancesForSubProcess = await this.flowNodeInstanceService.queryByProcessModel(this.subProcess.id);
 
-          const flowNodeInstancesForSubprocessInstance: Array<FlowNodeInstance> =
-            flowNodeInstancesForSubProcess.filter((instance: FlowNodeInstance): boolean => {
-              return instance.parentProcessInstanceId === flowNodeInstance.processInstanceId;
-            });
+        const flowNodeInstancesForSubprocessInstance = flowNodeInstancesForSubProcess.filter((instance: FlowNodeInstance): boolean => {
+          return instance.parentProcessInstanceId === flowNodeInstance.processInstanceId;
+        });
 
-          const subProcessInstanceId: string = flowNodeInstancesForSubprocessInstance[0].processInstanceId;
+        const subProcessInstanceId = flowNodeInstancesForSubprocessInstance[0].processInstanceId;
 
-          const processInstanceConfig: IProcessInstanceConfig =
-            this._createProcessInstanceConfig(processModelFacade, processTokenFacade, onSuspendToken, identity, subProcessInstanceId);
+        const processInstanceConfig =
+          this.createProcessInstanceConfig(processModelFacade, processTokenFacade, onSuspendToken, identity, subProcessInstanceId);
 
-          this.onInterruptedCallback = (): void => {
+        this.onInterruptedCallback = (): void => {
 
-            this._cancelEventAggregatorSubscriptions();
-            this._sendTerminationSignalToSubProcess(subProcessInstanceId);
+          this.cancelEventAggregatorSubscriptions();
+          this.sendTerminationSignalToSubProcess(subProcessInstanceId);
 
-            return;
-          };
+          return undefined;
+        };
 
-          const subProcessWasNotStarted: boolean = flowNodeInstancesForSubprocessInstance.length === 0;
-          const subProcessResult: any = subProcessWasNotStarted
-            ? await this._waitForSubProcessExecution(processInstanceConfig, identity)
-            : await this._resumeSubProcess(flowNodeInstancesForSubprocessInstance, processInstanceConfig, identity);
+        const subProcessWasNotStarted = flowNodeInstancesForSubprocessInstance.length === 0;
+        const subProcessResult = subProcessWasNotStarted
+          ? await this.waitForSubProcessExecution(processInstanceConfig, identity)
+          : await this.resumeSubProcess(flowNodeInstancesForSubprocessInstance, processInstanceConfig, identity);
 
-          onSuspendToken.payload = subProcessResult;
-          await this.persistOnResume(onSuspendToken);
+        onSuspendToken.payload = subProcessResult;
+        await this.persistOnResume(onSuspendToken);
 
-          processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
-          await this.persistOnExit(onSuspendToken);
+        processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
+        await this.persistOnExit(onSuspendToken);
 
-          const nextFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.subProcess);
+        const nextFlowNodes = processModelFacade.getNextFlowNodesFor(this.subProcess);
 
-          resolve(nextFlowNodes);
-        } catch (error) {
-          this.logger.error(error);
+        return resolve(nextFlowNodes);
+      } catch (error) {
+        this.logger.error(error);
 
-          onSuspendToken.payload = {
-            error: error.message,
-            additionalInformation: error.additionalInformation,
-          };
+        onSuspendToken.payload = {
+          error: error.message,
+          additionalInformation: error.additionalInformation,
+        };
 
-          const terminationRegex: RegExp = /terminated/i;
-          const isTerminationMessage: boolean = terminationRegex.test(error.message);
+        const terminationRegex = /terminated/i;
+        const isTerminationMessage = terminationRegex.test(error.message);
 
-          if (isTerminationMessage) {
-            await this.persistOnTerminate(onSuspendToken);
-            this._terminateProcessInstance(identity, onSuspendToken);
-          } else {
-            await this.persistOnError(onSuspendToken, error);
-          }
-
-          return reject(error);
+        if (isTerminationMessage) {
+          await this.persistOnTerminate(onSuspendToken);
+          this.terminateProcessInstance(identity, onSuspendToken);
+        } else {
+          await this.persistOnError(onSuspendToken, error);
         }
-      });
+
+        return reject(error);
+      }
+    });
 
     return handlerPromise;
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const handlerPromise: Promise<Array<Model.Base.FlowNode>> =
-      new Promise<Array<Model.Base.FlowNode>>(async(resolve: Function, reject: Function): Promise<void> => {
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-        const processInstanceConfig: IProcessInstanceConfig =
-          this._createProcessInstanceConfig(processModelFacade, processTokenFacade, token, identity);
+      const processInstanceConfig = this.createProcessInstanceConfig(processModelFacade, processTokenFacade, token, identity);
 
-        try {
-          this.onInterruptedCallback = (): void => {
+      try {
+        this.onInterruptedCallback = (): void => {
 
-            this._cancelEventAggregatorSubscriptions();
-            this._sendTerminationSignalToSubProcess(processInstanceConfig.processInstanceId);
+          this.cancelEventAggregatorSubscriptions();
+          this.sendTerminationSignalToSubProcess(processInstanceConfig.processInstanceId);
 
-            return;
-          };
+          return undefined;
+        };
 
-          await this.persistOnSuspend(token);
-          const subProcessResult: any = await this._waitForSubProcessExecution(processInstanceConfig, identity);
-          token.payload = subProcessResult;
-          await this.persistOnResume(token);
+        await this.persistOnSuspend(token);
+        const subProcessResult = await this.waitForSubProcessExecution(processInstanceConfig, identity);
+        token.payload = subProcessResult;
+        await this.persistOnResume(token);
 
-          processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
-          await this.persistOnExit(token);
+        processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
+        await this.persistOnExit(token);
 
-          const nextFlowNodes: Array<Model.Base.FlowNode> = processModelFacade.getNextFlowNodesFor(this.subProcess);
+        const nextFlowNodes = processModelFacade.getNextFlowNodesFor(this.subProcess);
 
-          return resolve(nextFlowNodes);
-        } catch (error) {
-          this.logger.error(error);
+        return resolve(nextFlowNodes);
+      } catch (error) {
+        this.logger.error(error);
 
-          token.payload = {
-            error: error.message,
-            additionalInformation: error.additionalInformation,
-          };
+        token.payload = {
+          error: error.message,
+          additionalInformation: error.additionalInformation,
+        };
 
-          const terminationRegex: RegExp = /terminated/i;
-          const isTerminationMessage: boolean = terminationRegex.test(error.message);
+        const terminationRegex = /terminated/i;
+        const isTerminationMessage = terminationRegex.test(error.message);
 
-          if (isTerminationMessage) {
-            await this.persistOnTerminate(token);
-            this._terminateProcessInstance(identity, token);
-          } else {
-            await this.persistOnError(token, error);
-          }
-
-          return reject(error);
+        if (isTerminationMessage) {
+          await this.persistOnTerminate(token);
+          this.terminateProcessInstance(identity, token);
+        } else {
+          await this.persistOnError(token, error);
         }
-      });
+
+        return reject(error);
+      }
+    });
 
     return handlerPromise;
   }
 
-  private async _resumeSubProcess(
+  private async resumeSubProcess(
     flowNodeInstancesForSubprocess: Array<FlowNodeInstance>,
     processInstanceConfig: IProcessInstanceConfig,
     identity: IIdentity,
   ): Promise<any> {
 
-    const flowNodeInstanceForStartEvent: FlowNodeInstance =
-      flowNodeInstancesForSubprocess.find((entry: FlowNodeInstance): boolean => {
-        return entry.flowNodeId === processInstanceConfig.startEvent.id;
-      });
+    const flowNodeInstanceForStartEvent = flowNodeInstancesForSubprocess.find((entry: FlowNodeInstance): boolean => {
+      return entry.flowNodeId === processInstanceConfig.startEvent.id;
+    });
 
-    const startEventWasNotYetStarted: boolean = !flowNodeInstanceForStartEvent;
+    const startEventWasNotYetStarted = !flowNodeInstanceForStartEvent;
     if (startEventWasNotYetStarted) {
-      return await this._waitForSubProcessExecution(processInstanceConfig, identity);
+      return this.waitForSubProcessExecution(processInstanceConfig, identity);
     }
 
-    return await this._waitForSubProcessResumption(processInstanceConfig, identity, flowNodeInstancesForSubprocess);
+    return this.waitForSubProcessResumption(processInstanceConfig, identity, flowNodeInstancesForSubprocess);
   }
 
-  private _createProcessInstanceConfig(
+  private createProcessInstanceConfig(
     processModelFacade: IProcessModelFacade,
     processTokenFacade: IProcessTokenFacade,
     currentProcessToken: ProcessToken,
@@ -222,25 +215,24 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     processInstanceId?: string,
   ): IProcessInstanceConfig {
 
-    const subProcessModelFacade: IProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
+    const subProcessModelFacade = processModelFacade.getSubProcessModelFacade(this.subProcess);
 
-    const subProcessStartEvents: Array<Model.Events.StartEvent> = subProcessModelFacade.getStartEvents();
-    const subProcessStartEvent: Model.Events.StartEvent = subProcessStartEvents[0];
+    const subProcessStartEvents = subProcessModelFacade.getStartEvents();
+    const subProcessStartEvent = subProcessStartEvents[0];
 
-    const subProcessInstanceId: string = processInstanceId || uuid.v4();
+    const subProcessInstanceId = processInstanceId || uuid.v4();
 
-    const currentResults: any = processTokenFacade.getAllResults();
+    const currentResults = processTokenFacade.getAllResults();
 
-    const subProcessTokenFacade: IProcessTokenFacade =
-      new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
+    const subProcessTokenFacade = new ProcessTokenFacade(subProcessInstanceId, this.subProcess.id, currentProcessToken.correlationId, identity);
 
     subProcessTokenFacade.importResults(currentResults);
 
-    const subProcessToken: ProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
+    const subProcessToken = subProcessTokenFacade.createProcessToken(currentProcessToken.payload);
     subProcessToken.caller = currentProcessToken.processInstanceId;
     subProcessToken.payload = currentProcessToken.payload;
 
-    const processInstanceConfig: IProcessInstanceConfig = {
+    const processInstanceConfig = {
       processInstanceId: subProcessInstanceId,
       processModelFacade: subProcessModelFacade,
       startEvent: subProcessStartEvent,
@@ -251,25 +243,26 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     return processInstanceConfig;
   }
 
-  private async _waitForSubProcessExecution(
+  private async waitForSubProcessExecution(
     processInstanceConfig: IProcessInstanceConfig,
     identity: IIdentity,
   ): Promise<any> {
 
-    return new Promise<any>(async(resolve: EventReceivedCallback, reject: Function): Promise<void> => {
+    return new Promise<any>(async (resolve: EventReceivedCallback, reject: Function): Promise<void> => {
       try {
-        const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-          await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
+        const startEventHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
-        this._subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);
-        this._subscribeToSubProcessTermination(processInstanceConfig.processInstanceId, reject as EventReceivedCallback);
+        this.subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);
+        this.subscribeToSubProcessTermination(processInstanceConfig.processInstanceId, reject as EventReceivedCallback);
 
-        await startEventHandler.execute(processInstanceConfig.processToken,
-                                        processInstanceConfig.processTokenFacade,
-                                        processInstanceConfig.processModelFacade,
-                                        identity);
+        await startEventHandler.execute(
+          processInstanceConfig.processToken,
+          processInstanceConfig.processTokenFacade,
+          processInstanceConfig.processModelFacade,
+          identity,
+        );
 
-        this._cancelEventAggregatorSubscriptions();
+        this.cancelEventAggregatorSubscriptions();
 
         return resolve();
       } catch (error) {
@@ -281,24 +274,23 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     });
   }
 
-  private async _waitForSubProcessResumption(
+  private async waitForSubProcessResumption(
     processInstanceConfig: IProcessInstanceConfig,
     identity: IIdentity,
     flowNodeInstance: Array<FlowNodeInstance>,
   ): Promise<any> {
 
-    return new Promise<any>(async(resolve: EventReceivedCallback, reject: Function): Promise<void> => {
+    return new Promise<any>(async (resolve: EventReceivedCallback, reject: Function): Promise<void> => {
       try {
-        const startEventHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-          await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
+        const startEventHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
-        this._subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);
-        this._subscribeToSubProcessTermination(processInstanceConfig.processInstanceId, reject as EventReceivedCallback);
+        this.subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);
+        this.subscribeToSubProcessTermination(processInstanceConfig.processInstanceId, reject as EventReceivedCallback);
 
         await startEventHandler
           .resume(flowNodeInstance, processInstanceConfig.processTokenFacade, processInstanceConfig.processModelFacade, identity);
 
-        this._cancelEventAggregatorSubscriptions();
+        this.cancelEventAggregatorSubscriptions();
 
         return resolve();
       } catch (error) {
@@ -310,17 +302,17 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     });
   }
 
-  private _sendTerminationSignalToSubProcess(subProcessInstanceId: string): void {
+  private sendTerminationSignalToSubProcess(subProcessInstanceId: string): void {
 
-    const subProcessTerminatedEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const subProcessTerminatedEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, subProcessInstanceId);
 
     this.eventAggregator.publish(subProcessTerminatedEvent);
   }
 
-  private _subscribeToSubProcessEndEvent(token: ProcessToken, callback: EventReceivedCallback): void {
+  private subscribeToSubProcessEndEvent(token: ProcessToken, callback: EventReceivedCallback): void {
 
-    const subProcessFinishedEvent: string = eventAggregatorSettings.messagePaths.endEventReached
+    const subProcessFinishedEvent = eventAggregatorSettings.messagePaths.endEventReached
       .replace(eventAggregatorSettings.messageParams.correlationId, token.correlationId)
       .replace(eventAggregatorSettings.messageParams.processModelId, token.processModelId);
 
@@ -330,7 +322,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
       });
   }
 
-  private _subscribeToSubProcessTermination(processInstanceId: string, callback: EventReceivedCallback): void {
+  private subscribeToSubProcessTermination(processInstanceId: string, callback: EventReceivedCallback): void {
 
     const subProcessTerminatedEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId);
@@ -339,26 +331,30 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
       this.eventAggregator.subscribeOnce(subProcessTerminatedEvent, callback);
   }
 
-  private _terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
+  private terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
 
-    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const eventName = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const message: ProcessTerminatedMessage = new ProcessTerminatedMessage(token.correlationId,
-                                                                          token.processModelId,
-                                                                          token.processInstanceId,
-                                                                          this.flowNode.id,
-                                                                          this.flowNodeInstanceId,
-                                                                          identity,
-                                                                          token.payload);
+    const message = new ProcessTerminatedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
+
     // ProcessInstance specific notification
     this.eventAggregator.publish(eventName, message);
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
-  private _cancelEventAggregatorSubscriptions(): void {
+  private cancelEventAggregatorSubscriptions(): void {
     this.eventAggregator.unsubscribe(this.subProcessFinishedSubscription);
     this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
   }
+
 }

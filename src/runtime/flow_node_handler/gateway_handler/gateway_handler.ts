@@ -1,9 +1,13 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {FlowNodeInstance, FlowNodeInstanceState, ProcessToken, ProcessTokenType} from '@process-engine/flow_node_instance.contracts';
 import {
-  IFlowNodeHandler,
+  FlowNodeInstance,
+  FlowNodeInstanceState,
+  ProcessToken,
+  ProcessTokenType,
+} from '@process-engine/flow_node_instance.contracts';
+import {
   IFlowNodeInstanceResult,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -22,30 +26,29 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
     previousFlowNodeInstanceId?: string,
   ): Promise<void> {
 
-    return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
-        this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
+        this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
         token.flowNodeInstanceId = this.flowNodeInstanceId;
 
-        this._terminationSubscription = this.subscribeToProcessTermination(token, reject);
+        this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-        const nextFlowNodes: Array<Model.Base.FlowNode> = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const nextFlowNodesFound: boolean = nextFlowNodes && nextFlowNodes.length > 0;
+        const nextFlowNodesFound = nextFlowNodes && nextFlowNodes.length > 0;
         if (nextFlowNodesFound) {
 
-          const executeNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-            const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-              await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
+          const executeNextFlowNode = async (nextFlowNode: Model.Base.FlowNode): Promise<void> => {
+            const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
 
             // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
-            const tokenForNextFlowNode: ProcessToken = nextFlowNodes.length > 1
+            const tokenForNextFlowNode = nextFlowNodes.length > 1
               ? processTokenFacade.createProcessToken(token.payload)
               : token;
 
-            const processTokenFacadeForFlowNode: IProcessTokenFacade = nextFlowNodes.length > 1
+            const processTokenFacadeForFlowNode = nextFlowNodes.length > 1
               ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
               : processTokenFacade;
 
@@ -68,9 +71,9 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
 
         token.payload = error;
 
-        const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
+        const allResults = processTokenFacade.getAllResults();
         // This check is necessary to prevent duplicate entries, in case the Promise-Chain was broken further down the road.
-        const noResultStoredYet: boolean = !allResults.some((entry: IFlowNodeInstanceResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+        const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
         if (noResultStoredYet) {
           processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
         }
@@ -89,55 +92,51 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
     identity: IIdentity,
   ): Promise<void> {
 
-    return new Promise<void>(async(resolve: Function, reject: Function): Promise<void> => {
+    return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
-        const flowNodeInstance: FlowNodeInstance =
-          flowNodeInstances.find((instance: FlowNodeInstance) => instance.flowNodeId === this.flowNode.id);
+        const flowNodeInstance = flowNodeInstances.find((instance: FlowNodeInstance): boolean => instance.flowNodeId === this.flowNode.id);
 
-        this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
-        this._flowNodeInstanceId = flowNodeInstance.id;
-
+        this.previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
+        this.flowNodeInstanceId = flowNodeInstance.id;
 
         // It doesn't really matter which token is used here, since payload-specific operations should
         // only ever be done during the handlers execution.
         // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
-        const tokenForHandlerHooks: ProcessToken = flowNodeInstance.tokens[0];
+        const tokenForHandlerHooks = flowNodeInstance.tokens[0];
 
         await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
 
-        this._terminationSubscription = this.subscribeToProcessTermination(tokenForHandlerHooks, reject);
+        this.terminationSubscription = this.subscribeToProcessTermination(tokenForHandlerHooks, reject);
 
         // With regards to ParallelGateways, we need to be able to handle multiple results here.
-        const nextFlowNodes: Array<Model.Base.FlowNode> = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
 
         await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
 
-        const nextFlowNodesFound: boolean = nextFlowNodes && nextFlowNodes.length > 0;
+        const nextFlowNodesFound = nextFlowNodes && nextFlowNodes.length > 0;
         if (nextFlowNodesFound) {
 
-          const currentResult: IFlowNodeInstanceResult = processTokenFacade
+          const currentResult = processTokenFacade
             .getAllResults()
             .pop();
 
-          const handleNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-            const processToken: ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
+          const handleNextFlowNode = async (nextFlowNode: Model.Base.FlowNode): Promise<void> => {
+            const processToken = processTokenFacade.createProcessToken(currentResult.result);
 
-            const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-              await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processToken);
+            const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processToken);
 
-            const nextFlowNodeInstance: FlowNodeInstance =
-              flowNodeInstances.find((instance: FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);
+            const nextFlowNodeInstance = flowNodeInstances.find((instance: FlowNodeInstance): boolean => instance.flowNodeId === nextFlowNode.id);
 
             processToken.flowNodeInstanceId = nextFlowNodeInstance
               ? nextFlowNodeInstance.id
               : nextFlowNodeHandler.getInstanceId();
 
             // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
-            const tokenForNextFlowNode: ProcessToken = nextFlowNodes.length > 1
+            const tokenForNextFlowNode = nextFlowNodes.length > 1
               ? processTokenFacade.createProcessToken(processToken.payload)
               : processToken;
 
-            const processTokenFacadeForFlowNode: IProcessTokenFacade = nextFlowNodes.length > 1
+            const processTokenFacadeForFlowNode = nextFlowNodes.length > 1
               ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
               : processTokenFacade;
 
@@ -163,14 +162,14 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         return resolve();
       } catch (error) {
 
-        const token: ProcessToken = processTokenFacade.createProcessToken();
+        const token = processTokenFacade.createProcessToken();
         token.payload = error;
         token.flowNodeInstanceId = this.flowNodeInstanceId;
 
         // This check is necessary to prevent duplicate entries, in case the Promise-Chain was broken further down the road.
-        const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
+        const allResults = processTokenFacade.getAllResults();
 
-        const noResultStoredYet: boolean = !allResults.some((entry: IFlowNodeInstanceResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+        const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
         if (noResultStoredYet) {
           processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, token);
         }
@@ -195,31 +194,34 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
 
       case FlowNodeInstanceState.running:
 
-        this.logger.verbose(`Resuming FlowNodeInstance.`);
-        const onEnterToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);
+        this.logger.verbose('Resuming FlowNodeInstance.');
+        const onEnterToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);
 
-        return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
+        return this.continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
 
       case FlowNodeInstanceState.finished:
-        this.logger.verbose(`FlowNodeInstance was already finished. Skipping ahead.`);
-        const onExitToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onExit);
+        this.logger.verbose('FlowNodeInstance was already finished. Skipping ahead.');
+        const onExitToken = flowNodeInstance.getTokenByType(ProcessTokenType.onExit);
 
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
+        return this.continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
 
       case FlowNodeInstanceState.error:
-        this.logger.error(`Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it previously exited with an error!`,
-                     flowNodeInstance.error);
+        this.logger.error(
+          `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it previously exited with an error!`,
+          flowNodeInstance.error,
+        );
         throw flowNodeInstance.error;
 
       case FlowNodeInstanceState.terminated:
-        const terminatedError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
+        const terminatedError = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
         this.logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
 
       default:
-        const invalidStateError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        const invalidStateError = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
         this.logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
   }
+
 }

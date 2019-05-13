@@ -7,7 +7,8 @@ import {
 
 export function createActivityInstance<TActivity extends Model.Activities.Activity>(data: any, type: Model.Base.IConstructor<TActivity>): TActivity {
 
-  let instance: TActivity = new type();
+  // eslint-disable-next-line 6river/new-cap
+  let instance = new type();
   instance = <TActivity> setCommonObjectPropertiesFromData(data, instance);
 
   instance.incoming = getModelPropertyAsArray(data, BpmnTags.FlowElementProperty.SequenceFlowIncoming) || [];

@@ -27,7 +27,7 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
   }
 
   private get linkCatchEventModel(): Model.Events.IntermediateCatchEvent {
-    return super.flowNode;
+    return this.flowNode;
   }
 
   protected async executeInternally(
@@ -40,10 +40,10 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
     this.logger.verbose(`Executing LinkCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    return await this._executeHandler(token, processTokenFacade, processModelFacade);
+    return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -55,4 +55,5 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
 
     return processModelFacade.getNextFlowNodesFor(this.linkCatchEventModel);
   }
+
 }
