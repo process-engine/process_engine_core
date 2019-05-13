@@ -17,7 +17,6 @@ import {
   IProcessTokenFacade,
   IResumeProcessService,
   ProcessTerminatedMessage,
-  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
