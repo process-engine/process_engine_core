@@ -7,17 +7,17 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
 
   const serviceTasks: Array<Model.Activities.ServiceTask> = [];
 
-  const serviceTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ServiceTask);
+  const serviceTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ServiceTask);
 
-  const noServiceTasksFound: boolean = !serviceTasksRaw || serviceTasksRaw.length === 0;
+  const noServiceTasksFound = !serviceTasksRaw || serviceTasksRaw.length === 0;
   if (noServiceTasksFound) {
     return [];
   }
 
   for (const serviceTaskRaw of serviceTasksRaw) {
-    const serviceTask: Model.Activities.ServiceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
+    const serviceTask = createActivityInstance(serviceTaskRaw, Model.Activities.ServiceTask);
 
-    const isExternalTask: boolean = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external';
+    const isExternalTask = serviceTaskRaw[BpmnTags.CamundaProperty.Type] === 'external';
     if (isExternalTask) {
 
       serviceTask.type = Model.Activities.ServiceTaskType.external;
@@ -32,7 +32,7 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
         serviceTask.extensionElements.camundaExtensionProperties &&
         serviceTask.extensionElements.camundaExtensionProperties.length > 0) {
 
-        const invocation: Model.Activities.Invocations.Invocation = getMethodInvocationforInternalServiceTask(serviceTask);
+        const invocation = getMethodInvocationforInternalServiceTask(serviceTask);
 
         if (invocation) {
           serviceTask.invocation = invocation;
@@ -48,7 +48,7 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
 
 function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): string {
 
-  const serviceTaskHasNoExtensionProperties: boolean =
+  const serviceTaskHasNoExtensionProperties =
     !serviceTask.extensionElements ||
     !serviceTask.extensionElements.camundaExtensionProperties ||
     serviceTask.extensionElements.camundaExtensionProperties.length === 0;
@@ -57,26 +57,26 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
     return undefined;
   }
 
-  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
-  const payloadProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('payload', extensionProperties);
+  const extensionProperties = serviceTask.extensionElements.camundaExtensionProperties;
+  const payloadProperty = findExtensionPropertyByName('payload', extensionProperties);
 
-  const payloadPropertyHasValue: boolean = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
+  const payloadPropertyHasValue = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
 
   return payloadPropertyHasValue ? payloadProperty.value : undefined;
 }
 
 function getMethodInvocationforInternalServiceTask(serviceTask: Model.Activities.ServiceTask): Model.Activities.Invocations.Invocation {
 
-  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = serviceTask.extensionElements.camundaExtensionProperties;
+  const extensionProperties = serviceTask.extensionElements.camundaExtensionProperties;
 
-  const methodInvocation: Model.Activities.Invocations.MethodInvocation = new Model.Activities.Invocations.MethodInvocation();
+  const methodInvocation = new Model.Activities.Invocations.MethodInvocation();
 
-  const moduleProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('module', extensionProperties);
-  const methodProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('method', extensionProperties);
-  const paramsProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('params', extensionProperties);
+  const moduleProperty = findExtensionPropertyByName('module', extensionProperties);
+  const methodProperty = findExtensionPropertyByName('method', extensionProperties);
+  const paramsProperty = findExtensionPropertyByName('params', extensionProperties);
 
   // 'params' is optional on MethodInvocations, so we don't need to check them here.
-  const isNotValidMethodInvocation: boolean = !moduleProperty || !methodProperty;
+  const isNotValidMethodInvocation = !moduleProperty || !methodProperty;
   if (isNotValidMethodInvocation) {
     return undefined;
   }

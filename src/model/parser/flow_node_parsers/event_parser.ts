@@ -18,17 +18,13 @@ export function parseEventsFromProcessData(
   errors = parsedErrors;
   eventDefinitions = parsedEventDefinitions;
 
-  const startEvents: Array<Model.Events.StartEvent> = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
+  const startEvents = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
+  const endEvents = parseEndEvents(processData);
 
-  const endEvents: Array<Model.Events.EndEvent> = parseEndEvents(processData);
+  const boundaryEvents = parseBoundaryEvents(processData);
 
-  const boundaryEvents: Array<Model.Events.BoundaryEvent> = parseBoundaryEvents(processData);
-
-  const intermediateThrowEvents: Array<Model.Events.Event> =
-    parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent);
-
-  const intermediateCatchEvents: Array<Model.Events.Event> =
-    parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent);
+  const intermediateThrowEvents = parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent);
+  const intermediateCatchEvents = parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent);
 
   return Array.prototype.concat(startEvents, endEvents, boundaryEvents, intermediateThrowEvents, intermediateCatchEvents);
 }
@@ -43,9 +39,9 @@ export function parseEventsFromProcessData(
  */
 function parseEndEvents(processData: any): Array<Model.Events.EndEvent> {
 
-  const endEventsRaw: any = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
+  const endEventsRaw = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
 
-  const events: Array<Model.Events.EndEvent> = endEventsRaw.map((endEventRaw: any): Model.Events.EndEvent => {
+  const events = endEventsRaw.map((endEventRaw: any): Model.Events.EndEvent => {
     return parseEndEvent(endEventRaw);
   });
 
@@ -62,7 +58,7 @@ function parseEndEvents(processData: any): Array<Model.Events.EndEvent> {
  */
 function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
 
-  const endEvent: Model.Events.EndEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
+  const endEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
 
   endEvent.name = endEventRaw.name;
   endEvent.defaultOutgoingSequenceFlowId = endEventRaw.default;
@@ -79,14 +75,14 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
   const events: Array<Model.Events.BoundaryEvent> = [];
 
-  const boundaryEventsRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
+  const boundaryEventsRaw = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
 
   if (!boundaryEventsRaw || boundaryEventsRaw.length === 0) {
     return [];
   }
 
   for (const boundaryEventRaw of boundaryEventsRaw) {
-    const boundaryEvent: Model.Events.BoundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
+    const boundaryEvent = createObjectWithCommonProperties(boundaryEventRaw, Model.Events.BoundaryEvent);
 
     boundaryEvent.incoming = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     boundaryEvent.outgoing = getModelPropertyAsArray(boundaryEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
@@ -95,11 +91,11 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     boundaryEvent.defaultOutgoingSequenceFlowId = boundaryEventRaw.default;
     boundaryEvent.attachedToRef = boundaryEventRaw.attachedToRef;
 
-    // NOTE: Interrupting BoundaryEvents will sometimes not have this property!
+    // NOTE: Interrupting BoundaryEvents are sometimes missing this property!
     // However, non-interrupting BoundaryEvents always have it.
-    const cancelActivity: boolean = boundaryEventRaw.cancelActivity === undefined ||
-                                    boundaryEventRaw.cancelActivity === 'true' ||
-                                    boundaryEventRaw.cancelActivity === true;
+    const cancelActivity = boundaryEventRaw.cancelActivity === undefined ||
+                           boundaryEventRaw.cancelActivity === 'true' ||
+                           boundaryEventRaw.cancelActivity === true;
     boundaryEvent.cancelActivity = cancelActivity;
 
     assignEventDefinitions(boundaryEvent, boundaryEventRaw);
@@ -118,14 +114,14 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
   const events: Array<TEvent> = [];
 
-  const eventsRaw: Array<any> = getModelPropertyAsArray(data, eventType);
+  const eventsRaw = getModelPropertyAsArray(data, eventType);
 
   if (!eventsRaw || eventsRaw.length === 0) {
     return [];
   }
 
   for (const eventRaw of eventsRaw) {
-    const event: TEvent = createObjectWithCommonProperties<TEvent>(eventRaw, type);
+    const event = createObjectWithCommonProperties<TEvent>(eventRaw, type);
     event.name = eventRaw.name;
     event.defaultOutgoingSequenceFlowId = eventRaw.default;
     event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
@@ -143,7 +139,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
 function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
 
-  const eventHasNoExtensionElements: boolean =
+  const eventHasNoExtensionElements =
     !event.extensionElements ||
     !event.extensionElements.camundaExtensionProperties ||
     event.extensionElements.camundaExtensionProperties.length === 0;
@@ -152,10 +148,10 @@ function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
     return undefined;
   }
 
-  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = event.extensionElements.camundaExtensionProperties;
-  const inputValueProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName('inputValues', extensionProperties);
+  const extensionProperties = event.extensionElements.camundaExtensionProperties;
+  const inputValueProperty = findExtensionPropertyByName('inputValues', extensionProperties);
 
-  const payloadPropertyHasValue: boolean = inputValueProperty && inputValueProperty.value && inputValueProperty.value.length > 0;
+  const payloadPropertyHasValue = inputValueProperty && inputValueProperty.value && inputValueProperty.value.length > 0;
 
   return payloadPropertyHasValue
     ? inputValueProperty.value
@@ -172,14 +168,15 @@ function assignEventDefinitions(event: any, eventRaw: any): void {
 }
 
 function assignEventDefinition(
-  event: any, eventRaw: any,
+  event: any,
+  eventRaw: any,
   eventRawTagName: BpmnTags.FlowElementProperty,
   targetPropertyName: string,
 ): void {
 
-  const eventDefinitonValue: any = eventRaw[eventRawTagName];
+  const eventDefinitonValue = eventRaw[eventRawTagName];
 
-  const eventHasNoMatchingDefinition: boolean = eventDefinitonValue === undefined;
+  const eventHasNoMatchingDefinition = eventDefinitonValue === undefined;
   if (eventHasNoMatchingDefinition) {
     return;
   }
@@ -227,12 +224,12 @@ function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions
  */
 function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
 
-  const errorIsNotAnonymous: boolean =
+  const errorIsNotAnonymous =
     errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined &&
     errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
 
   if (errorIsNotAnonymous) {
-    const errorId: string = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+    const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
     return getErrorById(errorId);
   }
@@ -253,7 +250,7 @@ function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error 
  */
 function getErrorById(errorId: string): Model.GlobalElements.Error {
 
-  const matchingError: Model.GlobalElements.Error = errors.find((entry: Model.GlobalElements.Error): boolean => {
+  const matchingError = errors.find((entry: Model.GlobalElements.Error): boolean => {
     return entry.id === errorId;
   });
 

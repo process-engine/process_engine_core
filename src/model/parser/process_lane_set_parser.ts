@@ -6,7 +6,7 @@ import {
 
 export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
-  const laneSetData: any = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
+  const laneSetData = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
 
   if (!laneSetData) {
     return undefined;
@@ -14,7 +14,7 @@ export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
   const lanesRaw: Array<any> = getModelPropertyAsArray(laneSetData, BpmnTags.Lane.Lane);
 
-  const laneSet: Model.ProcessElements.LaneSet = new Model.ProcessElements.LaneSet();
+  const laneSet = new Model.ProcessElements.LaneSet();
   laneSet.lanes = [];
 
   if (!lanesRaw) {
@@ -22,22 +22,22 @@ export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
   }
 
   for (const laneRaw of lanesRaw) {
-    const lane: Model.ProcessElements.Lane = createObjectWithCommonProperties(laneRaw, Model.ProcessElements.Lane);
+    const lane = createObjectWithCommonProperties(laneRaw, Model.ProcessElements.Lane);
 
     lane.name = laneRaw.name;
 
-    const flowNodeReferenceTrimmer: any = (reference: string): string => {
+    const flowNodeReferenceTrimmer = (reference: string): string => {
       return reference.trim();
     };
 
-    const flowNodeReferences: Array<string> = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
+    const flowNodeReferences = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
 
-    const laneHasNoFlowNodes: boolean = flowNodeReferences === undefined || flowNodeReferences.length === 0;
+    const laneHasNoFlowNodes = flowNodeReferences === undefined || flowNodeReferences.length === 0;
     if (laneHasNoFlowNodes) {
       return laneSet;
     }
 
-    const trimmedFlowNodeReferences: Array<string> = flowNodeReferences.map(flowNodeReferenceTrimmer);
+    const trimmedFlowNodeReferences = flowNodeReferences.map(flowNodeReferenceTrimmer);
     lane.flowNodeReferences = trimmedFlowNodeReferences;
 
     if (laneRaw[BpmnTags.LaneProperty.ChildLaneSet]) {

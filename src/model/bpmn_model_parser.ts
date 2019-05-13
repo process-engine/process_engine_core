@@ -15,7 +15,7 @@ export class BpmnModelParser implements IModelParser {
   private xmlParser: xml2js.Parser = undefined;
   private xmlParserFunc: Function = undefined;
 
-  private xmlParserOptions: any = {
+  private xmlParserOptions = {
     explicitArray: false,
     mergeAttrs: true,
   };
@@ -29,14 +29,14 @@ export class BpmnModelParser implements IModelParser {
 
   public async parseXmlToObjectModel(xml: string): Promise<Model.Definitions> {
 
-    const parsedObjectModel: IParsedObjectModel = await this.parseObjectModel(xml);
-    const definitions: Model.Definitions = Parsers.DefinitionParser.parseDefinitions(parsedObjectModel);
+    const parsedObjectModel = await this.parseObjectModel(xml);
+    const definitions = Parsers.DefinitionParser.parseDefinitions(parsedObjectModel);
 
     return definitions;
   }
 
   private async parseObjectModel(xml: string): Promise<IParsedObjectModel> {
-    const parsedXml: any = await this.xmlParserFunc(xml);
+    const parsedXml = await this.xmlParserFunc(xml);
 
     return parsedXml;
   }

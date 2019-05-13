@@ -9,15 +9,15 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   const userTasks: Array<Model.Activities.UserTask> = [];
 
-  const userTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
+  const userTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
 
-  const noUserTasksFound: boolean = !userTasksRaw || userTasksRaw.length === 0;
+  const noUserTasksFound = !userTasksRaw || userTasksRaw.length === 0;
   if (noUserTasksFound) {
     return [];
   }
 
   for (const userTaskRaw of userTasksRaw) {
-    const userTask: Model.Activities.UserTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
+    const userTask = createActivityInstance(userTaskRaw, Model.Activities.UserTask);
 
     userTask.assignee = userTaskRaw[BpmnTags.CamundaProperty.Assignee];
     userTask.candidateUsers = userTaskRaw[BpmnTags.CamundaProperty.CandidateUsers];
@@ -34,17 +34,17 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   function parseFormFields(userTaskRaw: any): Array<Model.Activities.Types.UserTaskFormField> {
 
-    const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
+    const extensionElements = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
     if (!extensionElements) {
       return [];
     }
 
-    const formDataRaw: any = extensionElements[BpmnTags.CamundaProperty.FormData];
+    const formDataRaw = extensionElements[BpmnTags.CamundaProperty.FormData];
     if (!formDataRaw) {
       return [];
     }
 
-    const formFieldsRaw: any = getModelPropertyAsArray(formDataRaw, BpmnTags.CamundaProperty.FormField);
+    const formFieldsRaw = getModelPropertyAsArray(formDataRaw, BpmnTags.CamundaProperty.FormField);
     if (!formFieldsRaw) {
       return [];
     }
@@ -52,7 +52,7 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
     const formFields: Array<Model.Activities.Types.UserTaskFormField> = [];
 
     for (const formFieldRaw of formFieldsRaw) {
-      const formField: Model.Activities.Types.UserTaskFormField = parseFormField(formFieldRaw);
+      const formField = parseFormField(formFieldRaw);
       formFields.push(formField);
     }
 
@@ -61,7 +61,7 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   function parseFormField(formFieldRaw: any): Model.Activities.Types.UserTaskFormField {
 
-    const formField: Model.Activities.Types.UserTaskFormField = new Model.Activities.Types.UserTaskFormField();
+    const formField = new Model.Activities.Types.UserTaskFormField();
 
     formField.id = formFieldRaw.id;
     formField.label = formFieldRaw.label;
@@ -70,10 +70,10 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
     formField.preferredControl = formFieldRaw.preferredControl;
 
     if (formField.type === 'enum') {
-      const rawValues: Array<any> = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
+      const rawValues = getModelPropertyAsArray(formFieldRaw, BpmnTags.CamundaProperty.Value);
 
       const valueMapper: any = (enumValueRaw: any): Model.Activities.Types.FormFieldEnumValue => {
-        const enumValue: Model.Activities.Types.FormFieldEnumValue = new Model.Activities.Types.FormFieldEnumValue();
+        const enumValue = new Model.Activities.Types.FormFieldEnumValue();
         enumValue.id = enumValueRaw.id;
         enumValue.name = enumValueRaw.name;
 
@@ -87,12 +87,12 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   function parseDate(value: string): Date {
 
-    const isValidDate: boolean = !value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid();
+    const isValidDate = !value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid();
     if (isValidDate) {
       return undefined;
     }
 
-    const dateObj: moment.Moment = moment(value);
+    const dateObj = moment(value);
 
     return dateObj.toDate();
   }
@@ -113,35 +113,31 @@ function getFinishedMessageForUserTask(userTaskRaw: Model.Activities.UserTask): 
 }
 
 function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activities.UserTask): string {
-  const extensionElements: any = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
+  const extensionElements = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
 
-  const userTaskHasNoExtensions: boolean = extensionElements === undefined;
+  const userTaskHasNoExtensions = extensionElements === undefined;
   if (userTaskHasNoExtensions) {
     return undefined;
   }
 
-  const extensionPropertiesDataRaw: any = extensionElements[BpmnTags.CamundaProperty.Properties];
+  const extensionPropertiesDataRaw = extensionElements[BpmnTags.CamundaProperty.Properties];
 
-  const extensionPropertiesAreEmpty: boolean =
-    extensionPropertiesDataRaw === undefined || extensionPropertiesDataRaw.length < 1;
-
+  const extensionPropertiesAreEmpty = extensionPropertiesDataRaw === undefined || extensionPropertiesDataRaw.length < 1;
   if (extensionPropertiesAreEmpty) {
     return undefined;
   }
 
-  const extensionPropertyRaw: any = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
+  const extensionPropertyRaw = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
 
-  const extensionPropertyIsEmpty: boolean =
-    extensionPropertyRaw === undefined || extensionPropertyRaw.length < 1;
-
+  const extensionPropertyIsEmpty = extensionPropertyRaw === undefined || extensionPropertyRaw.length < 1;
   if (extensionPropertyIsEmpty) {
     return undefined;
   }
 
-  const extensionProperties: any = parseExtensionProperties(extensionPropertyRaw);
-  const preferredControlProperty: Model.Base.Types.CamundaExtensionProperty = findExtensionPropertyByName(name, extensionProperties);
+  const extensionProperties = parseExtensionProperties(extensionPropertyRaw);
+  const preferredControlProperty = findExtensionPropertyByName(name, extensionProperties);
 
-  const userTaskHasPreferredControl: boolean = preferredControlProperty !== undefined;
+  const userTaskHasPreferredControl = preferredControlProperty !== undefined;
 
   return userTaskHasPreferredControl
     ? preferredControlProperty.value
@@ -161,7 +157,7 @@ function findExtensionPropertyByName(
 function parseExtensionProperties(extensionPropertiesRaw: any): any {
   const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = [];
 
-  const extensionPropertiesIsNoArray: boolean = !Array.isArray(extensionPropertiesRaw);
+  const extensionPropertiesIsNoArray = !Array.isArray(extensionPropertiesRaw);
   if (extensionPropertiesIsNoArray) {
     return [{
       name: extensionPropertiesRaw.name,

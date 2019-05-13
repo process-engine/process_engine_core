@@ -7,14 +7,13 @@ export function parseEmptyActivities(processData: any): Array<Model.Activities.E
 
   const emptyActivities: Array<Model.Activities.EmptyActivity> = [];
 
-  const emptyActivitiesRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.EmptyActivity);
-
+  const emptyActivitiesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.EmptyActivity);
   if (!emptyActivitiesRaw || emptyActivitiesRaw.length === 0) {
     return [];
   }
 
   for (const emptyActivityRaw of emptyActivitiesRaw) {
-    const emptyActivity: Model.Activities.EmptyActivity = createActivityInstance(emptyActivityRaw, Model.Activities.EmptyActivity);
+    const emptyActivity = createActivityInstance(emptyActivityRaw, Model.Activities.EmptyActivity);
     emptyActivities.push(emptyActivity);
   }
 

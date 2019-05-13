@@ -7,14 +7,14 @@ export function parseManualTasks(processData: any): Array<Model.Activities.Manua
 
   const manualTasks: Array<Model.Activities.ManualTask> = [];
 
-  const manualTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ManualTask);
+  const manualTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ManualTask);
 
   if (!manualTasksRaw || manualTasksRaw.length === 0) {
     return [];
   }
 
   for (const manualTaskRaw of manualTasksRaw) {
-    const manualTask: Model.Activities.ManualTask = createActivityInstance(manualTaskRaw, Model.Activities.ManualTask);
+    const manualTask = createActivityInstance(manualTaskRaw, Model.Activities.ManualTask);
     manualTasks.push(manualTask);
   }
 
