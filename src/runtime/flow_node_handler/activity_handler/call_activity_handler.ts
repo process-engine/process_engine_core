@@ -97,7 +97,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
           .resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
       }
 
-      this._sendCallActivityReachedNotification(identity, onSuspendToken);
+      this.sendCallActivityReachedNotification(identity, onSuspendToken);
 
       onSuspendToken.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
@@ -105,7 +105,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
       await this.persistOnExit(onSuspendToken);
 
-      this._sendCallActivityFinishedNotification(identity, onSuspendToken);
+      this.sendCallActivityFinishedNotification(identity, onSuspendToken);
 
       return processModelFacade.getNextFlowNodesFor(this.callActivity);
     } catch (error) {
@@ -150,7 +150,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
 
-      this._sendCallActivityFinishedNotification(identity, token);
+      this.sendCallActivityFinishedNotification(identity, token);
 
       return processModelFacade.getNextFlowNodesFor(this.callActivity);
     } catch (error) {
@@ -294,7 +294,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    * @param identity The identity that owns the CallActivity instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendCallActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private sendCallActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message: CallActivityReachedMessage = new CallActivityReachedMessage(token.correlationId,
                                                                        token.processModelId,
@@ -318,7 +318,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    * @param identity The identity that owns the CallActivity instance.
    * @param token    Contains all infos required for the Notification message.
    */
-  private _sendCallActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+  private sendCallActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message: CallActivityFinishedMessage = new CallActivityFinishedMessage(token.correlationId,
                                                                                  token.processModelId,
@@ -329,14 +329,14 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
                                                                                  token.payload);
 
     // FlowNode-specific notification
-    const callActivityFinishedEvent: string = this._getCallActivityFinishedEventName(token.correlationId, token.processInstanceId);
+    const callActivityFinishedEvent: string = this.getCallActivityFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(callActivityFinishedEvent, message);
 
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.callActivityFinished, message);
   }
 
-  private _getCallActivityFinishedEventName(correlationId: string, processInstanceId: string): string {
+  private getCallActivityFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     const callActivityFinishedEvent: string = eventAggregatorSettings.messagePaths.callActivityFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
