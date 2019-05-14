@@ -11,7 +11,6 @@ import {
   IProcessTokenFacade,
   ITimerFacade,
   ProcessStartedMessage,
-  TimerDefinitionType,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -21,6 +20,7 @@ import {EventHandler} from './index';
 export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
   private timerFacade: ITimerFacade;
+  private timerSubscription: Subscription;
 
   constructor(
     eventAggregator: IEventAggregator,
@@ -58,19 +58,42 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    // Only TimerStartEvents are suspendable, so no check is required here.
-    const newTokenPayload =
-      await new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
-        this.waitForTimerToElapse(onSuspendToken, resolve);
-      });
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-    onSuspendToken.payload = newTokenPayload;
-    await this.persistOnResume(onSuspendToken);
+      try {
+        this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
-    await this.persistOnExit(onSuspendToken);
+          if (this.timerSubscription) {
+            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+          }
 
-    return processModelFacade.getNextFlowNodesFor(this.startEvent);
+          processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, interruptionToken);
+
+          handlerPromise.cancel();
+        };
+
+        // Only TimerStartEvents are suspendable, so no check is required here.
+        const newTokenPayload =
+          await new Promise<any>(async (timerResolve: Function): Promise<void> => {
+            this.waitForTimerToElapse(onSuspendToken, processTokenFacade, timerResolve);
+          });
+
+        onSuspendToken.payload = newTokenPayload;
+        await this.persistOnResume(onSuspendToken);
+
+        processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
+        await this.persistOnExit(onSuspendToken);
+
+        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.startEvent);
+
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        await this.persistOnError(onSuspendToken, error);
+        return reject(error);
+      }
+    });
+
+    return handlerPromise;
   }
 
   protected async executeHandler(
@@ -80,30 +103,46 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.sendProcessStartedMessage(identity, token, this.startEvent.id);
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-    const flowNodeIsTimerStartEvent = this.startEvent.timerEventDefinition !== undefined;
+      try {
+        this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
 
-    // TimerStartEvents cannot be auto-started yet and must be handled manually here.
-    if (flowNodeIsTimerStartEvent) {
-      const newTokenPayload = await this.suspendAndWaitForTimerToElapse(token);
-      token.payload = newTokenPayload;
-      await this.persistOnResume(token);
-    }
+          if (this.timerSubscription) {
+            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+          }
 
-    processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, token.payload);
-    await this.persistOnExit(token);
+          processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, interruptionToken);
 
-    return processModelFacade.getNextFlowNodesFor(this.startEvent);
+          handlerPromise.cancel();
+        };
+
+        this.sendProcessStartedMessage(identity, token, this.startEvent.id);
+
+        const flowNodeIsTimerStartEvent = this.startEvent.timerEventDefinition !== undefined;
+
+        // TimerStartEvents cannot be auto-started yet and must be handled manually here.
+        if (flowNodeIsTimerStartEvent) {
+          const newTokenPayload = await this.suspendAndWaitForTimerToElapse(token, processTokenFacade);
+          token.payload = newTokenPayload;
+          await this.persistOnResume(token);
+        }
+
+        processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, token.payload);
+        await this.persistOnExit(token);
+
+        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.startEvent);
+
+        return resolve(nextFlowNodeInfo);
+      } catch (error) {
+        await this.persistOnError(token, error);
+        return reject(error);
+      }
+    });
+
+    return handlerPromise;
   }
 
-  /**
-   * Sends a message that the ProcessInstance was started.
-   *
-   * @param identity     The identity that owns the StartEvent instance.
-   * @param token        Current token object, which contains all necessary Process Metadata.
-   * @param startEventId Id of the used StartEvent.
-   */
   private sendProcessStartedMessage(identity: IIdentity, token: ProcessToken, startEventId: string): void {
     const processStartedMessage = new ProcessStartedMessage(
       token.correlationId,
@@ -124,40 +163,32 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
     this.eventAggregator.publish(processWithIdStartedMessage, processStartedMessage);
   }
 
-  private async suspendAndWaitForTimerToElapse(currentToken: ProcessToken): Promise<any> {
+  private async suspendAndWaitForTimerToElapse(currentToken: ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<any> {
     return new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
-      this.waitForTimerToElapse(currentToken, resolve);
-      await this.persistOnSuspend(currentToken);
+      try {
+        this.logger.verbose('Initializing Timer');
+        this.waitForTimerToElapse(currentToken, processTokenFacade, resolve);
+        this.logger.verbose('Suspending activity until timer expires');
+        await this.persistOnSuspend(currentToken);
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
-  /**
-   * If a timed StartEvent is used, this will delay the events execution
-   * until the timer has elapsed.
-   *
-   * @param currentToken The current ProcessToken.
-   * @param resolveFunc  The function to call after the timer has elapsed.
-   */
-  private waitForTimerToElapse(currentToken: ProcessToken, resolveFunc: Function): void {
+  private waitForTimerToElapse(currentToken: ProcessToken, processTokenFacade: IProcessTokenFacade, resolveFunc: Function): void {
 
     const timerDefinition = this.startEvent.timerEventDefinition;
 
-    let timerSubscription: Subscription;
-
-    const timerType = this.timerFacade.parseTimerDefinitionType(timerDefinition);
-    const timerValue = this.timerFacade.parseTimerDefinitionValue(timerDefinition);
-
     const timerElapsed = (): void => {
-
-      const cancelSubscription = timerSubscription && timerType !== TimerDefinitionType.cycle;
-      if (cancelSubscription) {
-        this.eventAggregator.unsubscribe(timerSubscription);
-      }
+      this.logger.verbose('Timer has expired, continuing execution');
+      // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
+      this.timerFacade.cancelTimerSubscription(this.timerSubscription);
 
       resolveFunc(currentToken.payload);
     };
 
-    timerSubscription = this.timerFacade.initializeTimer(this.startEvent, timerType, timerValue, timerElapsed);
+    this.timerSubscription = this.timerFacade.initializeTimerFromDefinition(this.startEvent, timerDefinition, processTokenFacade, timerElapsed);
   }
 
 }

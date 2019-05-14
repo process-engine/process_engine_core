@@ -66,8 +66,6 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
           processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
           handlerPromise.cancel();
-
-          return undefined;
         };
 
         await this.suspendAndExecuteTimer(token, processTokenFacade);
@@ -81,6 +79,7 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
+        await this.persistOnError(token, error);
         return reject(error);
       }
     });
@@ -107,8 +106,6 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
           processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
 
           handlerPromise.cancel();
-
-          return undefined;
         };
 
         await this.executeTimer(processTokenFacade);
@@ -122,6 +119,7 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
+        await this.persistOnError(onSuspendToken, error);
         return reject(error);
       }
     });
