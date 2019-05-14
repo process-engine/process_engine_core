@@ -109,6 +109,8 @@ export class TimerFacade implements ITimerFacade {
 
   private startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
 
+    logger.verbose(`Starting new cyclic timer with definition ${timerDefinition} and event name ${callbackEventName}`);
+
     const duration = moment.duration(timerDefinition);
 
     const timingRule: TimerRule = {
@@ -120,8 +122,9 @@ export class TimerFacade implements ITimerFacade {
       second: duration.seconds(),
     };
 
-    const subscription = this.eventAggregator.subscribe(callbackEventName, (): void => {
-      timerCallback();
+    const subscription = this.eventAggregator.subscribe(callbackEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Cyclic timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
     });
 
     this.timerService.periodic(timingRule, callbackEventName);
@@ -131,11 +134,14 @@ export class TimerFacade implements ITimerFacade {
 
   private startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
 
+    logger.verbose(`Starting new duration timer with definition ${timerDefinition} and event name ${callbackEventName}`);
+
     const duration = moment.duration(timerDefinition);
     const date = moment().add(duration);
 
-    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (): void => {
-      timerCallback();
+    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
     });
 
     this.timerService.once(date, callbackEventName);
@@ -145,10 +151,13 @@ export class TimerFacade implements ITimerFacade {
 
   private startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
 
+    logger.verbose(`Starting new date timer with definition ${timerDefinition} and event name ${callbackEventName}`);
+
     const date = moment(timerDefinition);
 
-    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (): void => {
-      timerCallback();
+    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Date timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
     });
 
     this.timerService.once(date, callbackEventName);

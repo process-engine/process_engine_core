@@ -166,7 +166,9 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
   private async suspendAndWaitForTimerToElapse(currentToken: ProcessToken, processTokenFacade: IProcessTokenFacade): Promise<any> {
     return new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
+        this.logger.verbose('Initializing Timer');
         this.waitForTimerToElapse(currentToken, processTokenFacade, resolve);
+        this.logger.verbose('Suspending activity until timer expires');
         await this.persistOnSuspend(currentToken);
       } catch (error) {
         reject(error);
@@ -179,6 +181,7 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
     const timerDefinition = this.startEvent.timerEventDefinition;
 
     const timerElapsed = (): void => {
+      this.logger.verbose('Timer has expired, continuing execution');
       // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
       this.timerFacade.cancelTimerSubscription(this.timerSubscription);
 
