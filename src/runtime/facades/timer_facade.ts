@@ -181,11 +181,20 @@ export class TimerFacade implements ITimerFacade {
 
     switch (timerType) {
       case TimerDefinitionType.date:
-        const dateIsInvalid = !moment(timerValue, moment.ISO_8601).isValid();
+        const dateIsInvalid = !moment(timerValue, moment.ISO_8601, true).isValid();
         if (dateIsInvalid) {
-          const invalidDateMessage = `The given date definition ${timerValue} is not in ISO8601 format`;
+          const invalidDateMessage = `The given date definition ${timerValue} is not in ISO8601 format!`;
           logger.error(invalidDateMessage);
           throw new UnprocessableEntityError(invalidDateMessage);
+        }
+
+        const now = moment();
+
+        const dateIsPast = moment(timerValue).isBefore(now);
+        if (dateIsPast) {
+          const dateIsPastErrorMessage = `The given date definition ${timerValue} is in the past!`;
+          logger.error(dateIsPastErrorMessage);
+          throw new UnprocessableEntityError(dateIsPastErrorMessage);
         }
 
         break;
