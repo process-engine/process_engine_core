@@ -73,10 +73,9 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
         };
 
         // Only TimerStartEvents are suspendable, so no check is required here.
-        const newTokenPayload =
-          await new Promise<any>(async (timerResolve: Function): Promise<void> => {
-            this.waitForTimerToElapse(onSuspendToken, processTokenFacade, timerResolve);
-          });
+        const newTokenPayload = await new Promise<any>(async (timerResolve: Function): Promise<void> => {
+          this.waitForTimerToElapse(onSuspendToken, processTokenFacade, timerResolve);
+        });
 
         onSuspendToken.payload = newTokenPayload;
         await this.persistOnResume(onSuspendToken);

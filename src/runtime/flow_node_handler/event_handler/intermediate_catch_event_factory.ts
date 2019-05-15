@@ -7,40 +7,41 @@ import {EventHandler} from './index';
 
 export class IntermediateCatchEventFactory implements IFlowNodeHandlerDedicatedFactory<Model.Events.IntermediateCatchEvent> {
 
-  private _container: IContainer;
+  private container: IContainer;
 
   constructor(container: IContainer) {
-    this._container = container;
+    this.container = container;
   }
 
   public async create(flowNode: Model.Events.IntermediateCatchEvent): Promise<IFlowNodeHandler<Model.Events.IntermediateCatchEvent>> {
 
     if (flowNode.linkEventDefinition) {
       return this
-        ._container
+        .container
         .resolveAsync<EventHandler<Model.Events.IntermediateCatchEvent>>('IntermediateLinkCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.messageEventDefinition) {
       return this
-        ._container
+        .container
         .resolveAsync<EventHandler<Model.Events.IntermediateCatchEvent>>('IntermediateMessageCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.signalEventDefinition) {
       return this
-        ._container
+        .container
         .resolveAsync<EventHandler<Model.Events.IntermediateCatchEvent>>('IntermediateSignalCatchEventHandler', [flowNode]);
     }
 
     if (flowNode.timerEventDefinition) {
       return this
-        ._container
+        .container
         .resolveAsync<EventHandler<Model.Events.IntermediateCatchEvent>>('IntermediateTimerCatchEventHandler', [flowNode]);
     }
 
     return this
-      ._container
+      .container
       .resolveAsync<EventHandler<Model.Events.IntermediateCatchEvent>>('IntermediateEmptyEventHandler', [flowNode]);
   }
+
 }
