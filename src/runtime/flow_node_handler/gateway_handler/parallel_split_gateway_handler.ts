@@ -30,7 +30,7 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
     return this.flowNode;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

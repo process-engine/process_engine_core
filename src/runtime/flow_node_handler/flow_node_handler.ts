@@ -119,7 +119,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * @param   identity           The requesting users identity.
    * @returns                    The FlowNode that follows after this one.
    */
-  protected async abstract executeInternally(
+  protected async abstract startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

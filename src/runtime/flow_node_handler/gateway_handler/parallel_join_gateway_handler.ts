@@ -72,7 +72,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     this.expectedNumberOfResults = preceedingFlowNodes.length;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

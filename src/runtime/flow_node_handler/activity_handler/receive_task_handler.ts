@@ -34,7 +34,7 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
     return this.flowNode;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

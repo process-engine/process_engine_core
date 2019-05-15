@@ -31,7 +31,7 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
     return this.flowNode;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

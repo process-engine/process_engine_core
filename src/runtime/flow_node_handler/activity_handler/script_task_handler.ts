@@ -30,7 +30,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
     return this.flowNode;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

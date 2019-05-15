@@ -37,7 +37,7 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
     return this.flowNode;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

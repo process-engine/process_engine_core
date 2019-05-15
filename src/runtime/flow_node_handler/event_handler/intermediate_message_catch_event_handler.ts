@@ -34,7 +34,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
     return this.flowNode;
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

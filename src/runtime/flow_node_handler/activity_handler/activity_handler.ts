@@ -55,7 +55,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-        const nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
         // EndEvents will return "undefined" as the next FlowNode.

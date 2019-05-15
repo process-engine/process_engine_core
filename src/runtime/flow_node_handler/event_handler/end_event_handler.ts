@@ -53,7 +53,7 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
     return Promise.resolve();
   }
 
-  protected async executeInternally(
+  protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
