@@ -1,5 +1,5 @@
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -283,17 +283,17 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     switch (flowNodeInstance.state) {
       case FlowNodeInstanceState.suspended:
         this.logger.verbose('FlowNodeInstance was left suspended. Waiting for the resuming event to happen.');
-        const suspendToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onSuspend);
+        const suspendToken = flowNodeInstance.getTokenByType(ProcessTokenType.onSuspend);
 
         return this.continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade, identity);
 
       case FlowNodeInstanceState.running:
-        const resumeToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onResume);
+        const resumeToken = flowNodeInstance.getTokenByType(ProcessTokenType.onResume);
 
-        const notSuspendedYet: boolean = resumeToken === undefined;
+        const notSuspendedYet = resumeToken === undefined;
         if (notSuspendedYet) {
           this.logger.verbose('FlowNodeInstance was interrupted at the beginning. Resuming from the start.');
-          const onEnterToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);
+          const onEnterToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);
 
           return this.continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
         }
@@ -304,7 +304,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
       case FlowNodeInstanceState.finished:
         this.logger.verbose('FlowNodeInstance was already finished. Skipping ahead.');
-        const onExitToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onExit);
+        const onExitToken = flowNodeInstance.getTokenByType(ProcessTokenType.onExit);
 
         return this.continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
 
@@ -316,12 +316,12 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         throw flowNodeInstance.error;
 
       case FlowNodeInstanceState.terminated:
-        const terminatedError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
+        const terminatedError = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
         this.logger.error(terminatedError);
         throw new InternalServerError(terminatedError);
 
       default:
-        const invalidStateError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
+        const invalidStateError = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
         this.logger.error(invalidStateError);
         throw new InternalServerError(invalidStateError);
     }
@@ -337,20 +337,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     await this.detachBoundaryEvents(token, processModelFacade);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
-   *                             suspended.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The ProcessModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The info for the next FlowNode to run.
-   */
   protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
@@ -365,19 +351,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it resumed activity,
-   * after having been suspended.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
-   */
   protected async continueAfterResume(
     resumeToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -400,13 +373,13 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
   protected subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
 
-    const terminateEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onTerminatedCallback: EventReceivedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
-      const payloadIsDefined: boolean = message !== undefined;
+    const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
+      const payloadIsDefined = message !== undefined;
 
-      const processTerminatedError: string = payloadIsDefined
+      const processTerminatedError = payloadIsDefined
         ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
         : 'Process was terminated!';
 
@@ -508,6 +481,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return flowNodeModelInstanceAssociations;
   }
 
+  // TODO: Move to BoundaryEventService.
+
   /**
    * Creates handlers for all BoundaryEvents attached this handler's FlowNode.
    *
@@ -536,18 +511,20 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       return;
     }
 
-    // Createa a handler for each attached BoundaryEvent and store it in the internal collection.
+    // Create a handler for each attached BoundaryEvent and store it in the internal collection.
     for (const model of boundaryEventModels) {
       await this.createBoundaryEventHandler(model, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
     }
   }
 
-  /**
-   * Finds and returns all ErrorBoundaryEvents that are configured to
-   * handle the given error.
-   *
-   * @returns The retrieved ErrorBoundaryEventHandlers.
-   */
+  private async detachBoundaryEvents(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+    for (const boundaryEventHandler of this.attachedBoundaryEventHandlers) {
+      await boundaryEventHandler.cancel(token, processModelFacade);
+    }
+
+    this.attachedBoundaryEventHandlers = [];
+  }
+
   private findErrorBoundaryEventHandlersForError(error: Error): Array<ErrorBoundaryEventHandler> {
     const errorBoundaryEventHandlers = this
       .attachedBoundaryEventHandlers
@@ -558,21 +535,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return handlersForError;
   }
 
-  /**
-   * Creates a handler for the given BoundaryEventModel and places it in this
-   * handlers internal storage.
-   *
-   * @async
-   * @param boundaryEventModel  The BoundaryEvent for which to create a handler.
-   * @param currentProcessToken The current Processtoken.
-   * @param processTokenFacade  The Facade for managing the ProcessInstance's
-   *                            ProcessTokens.
-   * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
-   * @param identity            The ProcessInstance owner.
-   * @param handlerResolve      The function that will cleanup the main handler
-   *                            Promise, if an interrupting BoundaryEvent was
-   *                            triggered.
-   */
   private async createBoundaryEventHandler(
     boundaryEventModel: Model.Events.BoundaryEvent,
     currentProcessToken: ProcessToken,
@@ -667,17 +629,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
 
     return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, boundaryInstanceId);
-  }
-
-  /**
-   * Cancels and clears all BoundaryEvents attached to this handler.
-   */
-  private async detachBoundaryEvents(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
-    for (const boundaryEventHandler of this.attachedBoundaryEventHandlers) {
-      await boundaryEventHandler.cancel(token, processModelFacade);
-    }
-
-    this.attachedBoundaryEventHandlers = [];
   }
 
 }

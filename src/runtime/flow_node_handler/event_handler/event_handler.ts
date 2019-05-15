@@ -251,20 +251,6 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     }
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
-   *                             suspended.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The ProcessModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The info for the next FlowNode to run.
-   */
   protected async continueAfterSuspend(
     flowNodeInstance: FlowNodeInstance,
     onSuspendToken: ProcessToken,
@@ -279,19 +265,6 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it resumed activity,
-   * after having been suspended.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The ProcessModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The info for the next FlowNode to run.
-   */
   protected async continueAfterResume(
     resumeToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
