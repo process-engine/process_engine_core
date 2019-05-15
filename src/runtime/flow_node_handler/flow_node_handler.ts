@@ -128,7 +128,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
 
   // TODO: Move to "FlowNodeResumptionService"
   /**
-   * Hook for starting the resumption of FlowNodes
+   * Hook for starting the resumption of FlowNodes.
    *
    * @async
    * @param   flowNodeInstance         The current ProcessToken.
@@ -142,7 +142,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                                   BoundaryEvents require these.
    * @returns                          The FlowNode that follows after this one.
    */
-  protected abstract async resumeInternally(
+  protected abstract async resumeFromState(
     flowNodeInstance: FlowNodeInstance,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,

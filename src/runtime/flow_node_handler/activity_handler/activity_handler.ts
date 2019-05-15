@@ -157,7 +157,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
           this.terminationSubscription = this.subscribeToProcessTermination(tokenForHandlerHooks, reject);
           await this.attachBoundaryEvents(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, resolve);
 
-          nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+          nextFlowNodes = await this.resumeFromState(flowNodeInstance, processTokenFacade, processModelFacade, identity);
         } else {
           await this.resumeWithBoundaryEvents(
             flowNodeInstance,
@@ -270,7 +270,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return this.persistOnExit(token);
   }
 
-  protected async resumeInternally(
+  protected async resumeFromState(
     flowNodeInstance: FlowNodeInstance,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -424,7 +424,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       .some((entry: IFlowNodeModelInstanceAssociation): boolean => entry.boundaryEventModel.cancelActivity === true);
 
     if (noInterruptingBoundaryEventsTriggered) {
-      handlerResumptionPromises.push(this.resumeInternally(currentFlowNodeInstnace, processTokenFacade, processModelFacade, identity));
+      handlerResumptionPromises.push(this.resumeFromState(currentFlowNodeInstnace, processTokenFacade, processModelFacade, identity));
     }
 
     await Promise.all(handlerResumptionPromises);
