@@ -97,8 +97,6 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
           .resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
       }
 
-      this.sendCallActivityReachedNotification(identity, onSuspendToken);
-
       onSuspendToken.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
       await this.persistOnResume(onSuspendToken);
@@ -141,6 +139,8 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
 
       await this.persistOnSuspend(token);
+
+      this.sendCallActivityReachedNotification(identity, token);
 
       const callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, token);
 
