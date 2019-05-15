@@ -102,7 +102,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         return undefined;
       };
 
-      const externalTask: ExternalTask<any> = await this.getExternalTaskForFlowNodeInstance(flowNodeInstance);
+      const externalTask = await this.getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
       const noMatchingExteralTaskExists = !externalTask;
       if (noMatchingExteralTaskExists) {
@@ -338,7 +338,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
   private async abortExternalTask(token: ProcessToken): Promise<void> {
 
-    const matchingExternalTask: ExternalTask<any> =
+    const matchingExternalTask =
       await this.externalTaskRepository.getByInstanceIds(token.correlationId, token.processInstanceId, this.flowNodeInstanceId);
 
     const taskIsAlreadyFinished = matchingExternalTask.state === ExternalTaskState.finished;

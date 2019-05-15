@@ -152,7 +152,7 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
       }
 
       try {
-        const result: any = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
+        const result = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
         return resolve(result);
       } catch (error) {
