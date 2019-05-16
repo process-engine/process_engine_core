@@ -10,9 +10,9 @@ import {
 import {
   IProcessModelFacade,
   IProcessTokenFacade,
+  IntermediateEventFinishedMessage,
   IntermediateEventReachedMessage,
   eventAggregatorSettings,
-  IntermediateEventFinishedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
@@ -254,8 +254,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     await this.flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
-
-    /**
+  /**
    * Publishes a notification on the EventAggregator, informing about a new
    * suspended IntermediateEvent.
    *
@@ -263,13 +262,15 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    */
   protected sendIntermediateEventReachedNotification(token: ProcessToken): void {
 
-    const message: IntermediateEventReachedMessage = new IntermediateEventReachedMessage(token.correlationId,
-                                                                                         token.processModelId,
-                                                                                         token.processInstanceId,
-                                                                                         this.flowNode.id,
-                                                                                         this.flowNodeInstanceId,
-                                                                                         undefined,
-                                                                                         token.payload);
+    const message: IntermediateEventReachedMessage = new IntermediateEventReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      undefined,
+      token.payload,
+    );
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateEventReached, message);
   }
@@ -286,13 +287,15 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    */
   protected sendIntermediateEventFinishedNotification(token: ProcessToken): void {
 
-    const message: IntermediateEventFinishedMessage = new IntermediateEventFinishedMessage(token.correlationId,
-                                                                                           token.processModelId,
-                                                                                           token.processInstanceId,
-                                                                                           this.flowNode.id,
-                                                                                           this.flowNodeInstanceId,
-                                                                                           undefined,
-                                                                                           token.payload);
+    const message: IntermediateEventFinishedMessage = new IntermediateEventFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      undefined,
+      token.payload,
+    );
 
     // FlowNode-specific notification
     const intermediateEventFinishedEvent: string = this.getIntermediateEventFinishedEventName(token.correlationId, token.processInstanceId);
@@ -311,4 +314,5 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
     return intermediateEventFinishedEvent;
   }
+
 }

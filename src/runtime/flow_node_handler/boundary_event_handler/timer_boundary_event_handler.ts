@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {Subscription, IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
@@ -25,7 +25,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     timerFacade: ITimerFacade,
     eventAggregator: IEventAggregator,
-    boundaryEventModel: Model.Events.BoundaryEvent
+    boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
     super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
     this.timerFacade = timerFacade;

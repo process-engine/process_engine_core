@@ -1,15 +1,15 @@
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   BpmnError,
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
-  IFlowNodePersistenceFacade,
 } from '@process-engine/process_engine_contracts';
 
-import {BoundaryEventHandler} from './boundary_event_handler';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {Model} from '@process-engine/process_model.contracts';
+import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
@@ -19,7 +19,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
     super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
-  } 
+  }
 
   /**
    * Checks if the name of the given error is equal to the one attached

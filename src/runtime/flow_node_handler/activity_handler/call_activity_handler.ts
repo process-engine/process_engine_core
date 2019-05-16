@@ -9,7 +9,6 @@ import {
   CallActivityFinishedMessage,
   CallActivityReachedMessage,
   EndEventReachedMessage,
-  eventAggregatorSettings,
   IExecuteProcessService,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
@@ -17,6 +16,7 @@ import {
   IProcessTokenFacade,
   IResumeProcessService,
   ProcessTerminatedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
@@ -296,13 +296,15 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    */
   private sendCallActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: CallActivityReachedMessage = new CallActivityReachedMessage(token.correlationId,
-                                                                       token.processModelId,
-                                                                       token.processInstanceId,
-                                                                       this.callActivity.id,
-                                                                       this.flowNodeInstanceId,
-                                                                       identity,
-                                                                       token.payload);
+    const message: CallActivityReachedMessage = new CallActivityReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.callActivity.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.callActivityReached, message);
   }
@@ -320,13 +322,15 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    */
   private sendCallActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: CallActivityFinishedMessage = new CallActivityFinishedMessage(token.correlationId,
-                                                                                 token.processModelId,
-                                                                                 token.processInstanceId,
-                                                                                 this.callActivity.id,
-                                                                                 this.flowNodeInstanceId,
-                                                                                 identity,
-                                                                                 token.payload);
+    const message: CallActivityFinishedMessage = new CallActivityFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.callActivity.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
 
     // FlowNode-specific notification
     const callActivityFinishedEvent: string = this.getCallActivityFinishedEventName(token.correlationId, token.processInstanceId);
@@ -345,4 +349,5 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
     return callActivityFinishedEvent;
   }
+
 }

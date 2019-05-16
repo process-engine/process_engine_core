@@ -2,14 +2,14 @@ import * as uuid from 'node-uuid';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  BoundaryEventFinishedMessage,
+  BoundaryEventReachedMessage,
   IBoundaryEventHandler,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
   eventAggregatorSettings,
-  BoundaryEventFinishedMessage,
-  BoundaryEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
@@ -31,7 +31,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
-    eventAggregator: IEventAggregator
+    eventAggregator: IEventAggregator,
   ) {
     this.flowNodePersistenceFacade = flowNodePersistenceFacade;
     this.boundaryEventModel = boundaryEventModel;
@@ -78,7 +78,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     await this.flowNodePersistenceFacade.persistOnError(this.boundaryEventModel, this.boundaryEventInstanceId, processToken, error);
   }
 
-    /**
+  /**
    * Publishes a notification on the EventAggregator, informing about a new
    * suspended Boundary Event.
    *
@@ -86,13 +86,15 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    */
   protected sendBoundaryEventReachedNotification(token: ProcessToken): void {
 
-    const message: BoundaryEventReachedMessage = new BoundaryEventReachedMessage(token.correlationId,
-                                                                       token.processModelId,
-                                                                       token.processInstanceId,
-                                                                       this.boundaryEventModel.id,
-                                                                       this.boundaryEventInstanceId,
-                                                                       undefined,
-                                                                       token.payload);
+    const message: BoundaryEventReachedMessage = new BoundaryEventReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.boundaryEventModel.id,
+      this.boundaryEventInstanceId,
+      undefined,
+      token.payload,
+    );
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventReached, message);
   }
@@ -109,13 +111,15 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    */
   protected sendBoundaryEventFinishedNotification(token: ProcessToken): void {
 
-    const message: BoundaryEventFinishedMessage = new BoundaryEventFinishedMessage(token.correlationId,
-                                                                                 token.processModelId,
-                                                                                 token.processInstanceId,
-                                                                                 this.boundaryEventModel.id,
-                                                                                 this.boundaryEventInstanceId,
-                                                                                 undefined,
-                                                                                 token.payload);
+    const message: BoundaryEventFinishedMessage = new BoundaryEventFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.boundaryEventModel.id,
+      this.boundaryEventInstanceId,
+      undefined,
+      token.payload,
+    );
 
     // FlowNode-specific notification
     const boundaryEventFinishedEvent: string = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
@@ -134,4 +138,5 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
     return boundaryEventFinishedEvent;
   }
+
 }

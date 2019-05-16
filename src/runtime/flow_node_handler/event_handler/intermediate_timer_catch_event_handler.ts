@@ -76,7 +76,6 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
-
         this.sendIntermediateEventFinishedNotification(token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);
