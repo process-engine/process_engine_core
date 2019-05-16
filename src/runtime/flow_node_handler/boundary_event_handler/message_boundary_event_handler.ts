@@ -15,8 +15,6 @@ import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
-  private readonly eventAggregator: IEventAggregator;
-
   private subscription: Subscription;
 
   constructor(
@@ -24,8 +22,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     eventAggregator: IEventAggregator,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    super(flowNodePersistenceFacade, boundaryEventModel);
-    this.eventAggregator = eventAggregator;
+    super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
   }
 
   public async waitForTriggeringEvent(
@@ -40,6 +37,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
     await this.persistOnEnter(token);
 
+    this.sendBoundaryEventReachedNotification(token);
+
     const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
       .replace(eventAggregatorSettings.messageParams.messageReference, this.boundaryEventModel.messageEventDefinition.name);
 
@@ -53,6 +52,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
         interruptHandler: this.boundaryEventModel.cancelActivity,
         eventPayload: message.currentToken,
       };
+
+      this.sendBoundaryEventFinishedNotification(token);
 
       return onTriggeredCallback(eventData);
     };

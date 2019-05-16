@@ -7,8 +7,12 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
+  eventAggregatorSettings,
+  BoundaryEventFinishedMessage,
+  BoundaryEventReachedMessage,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 
 /**
  * The base implementation for a BoundaryEventHandler.
@@ -16,6 +20,8 @@ import {Model} from '@process-engine/process_model.contracts';
 export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   protected attachedFlowNodeInstanceId: string;
+
+  protected readonly eventAggregator: IEventAggregator;
 
   protected readonly boundaryEventModel: Model.Events.BoundaryEvent;
   protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
@@ -25,10 +31,12 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
+    eventAggregator: IEventAggregator
   ) {
     this.flowNodePersistenceFacade = flowNodePersistenceFacade;
     this.boundaryEventModel = boundaryEventModel;
     this.boundaryEventInstanceId = uuid.v4();
+    this.eventAggregator = eventAggregator;
   }
 
   public getInstanceId(): string {
@@ -70,4 +78,61 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     await this.flowNodePersistenceFacade.persistOnError(this.boundaryEventModel, this.boundaryEventInstanceId, processToken, error);
   }
 
+    /**
+   * Publishes a notification on the EventAggregator, informing about a new
+   * suspended Boundary Event.
+   *
+   * @param token    Contains all infos required for the Notification message.
+   */
+  protected sendBoundaryEventReachedNotification(token: ProcessToken): void {
+
+    const message: BoundaryEventReachedMessage = new BoundaryEventReachedMessage(token.correlationId,
+                                                                       token.processModelId,
+                                                                       token.processInstanceId,
+                                                                       this.boundaryEventModel.id,
+                                                                       this.boundaryEventInstanceId,
+                                                                       undefined,
+                                                                       token.payload);
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventReached, message);
+  }
+
+  /**
+   * Publishes notifications on the EventAggregator, informing that a BoundaryEvent
+   * has finished execution.
+   *
+   * Two notifications will be send:
+   * - A global notification that everybody can receive
+   * - A notification specifically for this BoundaryEvent.
+   *
+   * @param identity The identity that owns the BoundaryEvent instance.
+   * @param token    Contains all infos required for the Notification message.
+   */
+  protected sendBoundaryEventFinishedNotification(token: ProcessToken): void {
+
+    const message: BoundaryEventFinishedMessage = new BoundaryEventFinishedMessage(token.correlationId,
+                                                                                 token.processModelId,
+                                                                                 token.processInstanceId,
+                                                                                 this.boundaryEventModel.id,
+                                                                                 this.boundaryEventInstanceId,
+                                                                                 undefined,
+                                                                                 token.payload);
+
+    // FlowNode-specific notification
+    const BoundaryEventFinishedEvent: string = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
+    this.eventAggregator.publish(BoundaryEventFinishedEvent, message);
+
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventReached, message);
+  }
+
+  protected getBoundaryEventFinishedEventName(correlationId: string, processInstanceId: string): string {
+
+    const BoundaryEventFinishedEvent: string = eventAggregatorSettings.messagePaths.boundaryEventFinished
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.boundaryEventInstanceId);
+
+    return BoundaryEventFinishedEvent;
+  }
 }

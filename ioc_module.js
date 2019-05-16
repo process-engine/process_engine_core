@@ -266,7 +266,7 @@ function registerBoundaryEventHandlers(container) {
 
   container
     .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade');
+    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
 
   container
     .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)

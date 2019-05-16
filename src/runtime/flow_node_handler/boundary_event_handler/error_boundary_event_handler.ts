@@ -4,11 +4,22 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
+  IFlowNodePersistenceFacade,
 } from '@process-engine/process_engine_contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import { Model } from '@process-engine/process_model.contracts';
 
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
+
+  constructor(
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    eventAggregator: IEventAggregator,
+    boundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
+  } 
 
   /**
    * Checks if the name of the given error is equal to the one attached
@@ -47,10 +58,13 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
+    this.sendBoundaryEventReachedNotification(token);
 
     await this.persistOnEnter(token);
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+
+    this.sendBoundaryEventFinishedNotification(token);
   }
 
 }

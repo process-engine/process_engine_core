@@ -15,8 +15,6 @@ import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class SignalBoundaryEventHandler extends BoundaryEventHandler {
 
-  private readonly eventAggregator: IEventAggregator;
-
   private subscription: Subscription;
 
   constructor(
@@ -24,8 +22,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     eventAggregator: IEventAggregator,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    super(flowNodePersistenceFacade, boundaryEventModel);
-    this.eventAggregator = eventAggregator;
+    super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
   }
 
   public async waitForTriggeringEvent(
@@ -37,6 +34,8 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
   ): Promise<void> {
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+
+    this.sendBoundaryEventReachedNotification(token);
 
     await this.persistOnEnter(token);
 
@@ -53,6 +52,8 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
         interruptHandler: this.boundaryEventModel.cancelActivity,
         eventPayload: signal.currentToken,
       };
+
+      this.sendBoundaryEventFinishedNotification(token);
 
       return onTriggeredCallback(eventData);
     };
