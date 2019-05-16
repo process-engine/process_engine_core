@@ -119,11 +119,11 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
                                                                                  token.payload);
 
     // FlowNode-specific notification
-    const BoundaryEventFinishedEvent: string = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
-    this.eventAggregator.publish(BoundaryEventFinishedEvent, message);
+    const boundaryEventFinishedEvent: string = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
+    this.eventAggregator.publish(boundaryEventFinishedEvent, message);
 
     // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventReached, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventFinished, message);
   }
 
   protected getBoundaryEventFinishedEventName(correlationId: string, processInstanceId: string): string {

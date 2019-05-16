@@ -9,7 +9,7 @@ import {
 
 import {BoundaryEventHandler} from './boundary_event_handler';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
-import { Model } from '@process-engine/process_model.contracts';
+import {Model} from '@process-engine/process_model.contracts';
 
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
