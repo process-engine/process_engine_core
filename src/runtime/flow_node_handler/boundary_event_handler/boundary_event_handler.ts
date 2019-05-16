@@ -105,7 +105,6 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    * - A global notification that everybody can receive
    * - A notification specifically for this BoundaryEvent.
    *
-   * @param identity The identity that owns the BoundaryEvent instance.
    * @param token    Contains all infos required for the Notification message.
    */
   protected sendBoundaryEventFinishedNotification(token: ProcessToken): void {
@@ -128,11 +127,11 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   protected getBoundaryEventFinishedEventName(correlationId: string, processInstanceId: string): string {
 
-    const BoundaryEventFinishedEvent: string = eventAggregatorSettings.messagePaths.boundaryEventFinished
+    const boundaryEventFinishedEvent: string = eventAggregatorSettings.messagePaths.boundaryEventFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.boundaryEventInstanceId);
 
-    return BoundaryEventFinishedEvent;
+    return boundaryEventFinishedEvent;
   }
 }

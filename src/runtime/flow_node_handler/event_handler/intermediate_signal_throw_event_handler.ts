@@ -47,6 +47,8 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
     this.logger.verbose(`Executing SignalThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
+    this.sendIntermediateEventReachedNotification(token);
+
     return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
 
@@ -88,6 +90,8 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
       processTokenFacade.addResultForFlowNode(this.signalThrowEvent.id, this.flowNodeInstanceId, {});
 
       await this.persistOnExit(token);
+
+      this.sendIntermediateEventFinishedNotification(token);
 
       return processModelFacade.getNextFlowNodesFor(this.signalThrowEvent);
     } catch (error) {
