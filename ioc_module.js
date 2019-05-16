@@ -278,7 +278,7 @@ function registerBoundaryEventHandlers(container) {
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'TimerFacade');
+    .dependencies('FlowNodePersistenceFacade', 'TimerFacade', 'EventAggregator');
 
 }
 

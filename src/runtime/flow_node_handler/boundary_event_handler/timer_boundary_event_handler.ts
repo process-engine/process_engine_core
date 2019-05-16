@@ -24,8 +24,8 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   constructor(
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     timerFacade: ITimerFacade,
-    boundaryEventModel: Model.Events.BoundaryEvent,
-    eventAggregator: IEventAggregator
+    eventAggregator: IEventAggregator,
+    boundaryEventModel: Model.Events.BoundaryEvent
   ) {
     super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
     this.timerFacade = timerFacade;
