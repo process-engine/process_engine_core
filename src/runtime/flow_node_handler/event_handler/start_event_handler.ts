@@ -181,8 +181,9 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
     const timerElapsed = (): void => {
       this.logger.verbose('Timer has expired, continuing execution');
-      // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
-      this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+      if (this.timerSubscription && this.timerSubscription.onlyReceiveOnce === false) {
+        this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+      }
 
       resolveFunc(currentToken.payload);
     };
