@@ -15,15 +15,15 @@ export function parseSubProcesses(
 
   const subProcesses: Array<Model.Activities.SubProcess> = [];
 
-  const subProcessesRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SubProcess);
+  const subProcessesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SubProcess);
 
-  const noSubProcessesFound: boolean = !subProcessesRaw || subProcessesRaw.length === 0;
+  const noSubProcessesFound = !subProcessesRaw || subProcessesRaw.length === 0;
   if (noSubProcessesFound) {
     return [];
   }
 
   for (const subProcessRaw of subProcessesRaw) {
-    const subProcess: Model.Activities.SubProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
+    const subProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
 
     subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
     subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors, eventDefinitions);

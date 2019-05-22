@@ -2,31 +2,34 @@ import {Logger} from 'loggerhythm';
 import * as uuid from 'node-uuid';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {FlowNodeInstance, FlowNodeInstanceState, ProcessToken, ProcessTokenType} from '@process-engine/flow_node_instance.contracts';
+import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
-  IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  TerminateEndEventReachedMessage,
+  eventAggregatorSettings,
+  onInterruptionCallback,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
 export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> implements IFlowNodeHandler<TFlowNode> {
 
-  protected _flowNodeInstanceId: string = undefined;
-  protected _flowNode: TFlowNode;
-  protected _previousFlowNodeInstanceId: string;
+  protected flowNodeInstanceId: string = undefined;
+  protected flowNode: TFlowNode;
+  protected previousFlowNodeInstanceId: string;
+  protected terminationSubscription: Subscription;
 
   protected logger: Logger;
 
-  private _eventAggregator: IEventAggregator;
-  private _flowNodeHandlerFactory: IFlowNodeHandlerFactory;
-  private _flowNodePersistenceFacade: IFlowNodePersistenceFacade;
+  protected eventAggregator: IEventAggregator;
+  protected flowNodeHandlerFactory: IFlowNodeHandlerFactory;
+  protected flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
   constructor(
     eventAggregator: IEventAggregator,
@@ -34,182 +37,30 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     flowNode: TFlowNode,
   ) {
-    this._eventAggregator = eventAggregator;
-    this._flowNodeHandlerFactory = flowNodeHandlerFactory;
-    this._flowNodePersistenceFacade = flowNodePersistenceFacade;
-    this._flowNode = flowNode;
-    this._flowNodeInstanceId = uuid.v4();
+    this.eventAggregator = eventAggregator;
+    this.flowNodeHandlerFactory = flowNodeHandlerFactory;
+    this.flowNodePersistenceFacade = flowNodePersistenceFacade;
+    this.flowNode = flowNode;
+    this.flowNodeInstanceId = uuid.v4();
   }
 
-  protected get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
+  // eslint-disable-next-line @typescript-eslint/member-naming
+  private _onInterruptedCallback: onInterruptionCallback = (): void => {};
+
+  /**
+   * Gets the callback that gets called when an interrupt-command was received.
+   * This can be used by the derived handlers to perform handler-specific actions
+   * necessary for stopping its work cleanly.
+   *
+   * Interruptions are currently done, when a TerminateEndEvent was reached, or
+   * an interrupting BoundaryEvent was triggered.
+   */
+  protected get onInterruptedCallback(): onInterruptionCallback {
+    return this._onInterruptedCallback;
   }
 
-  protected get flowNode(): TFlowNode {
-    return this._flowNode;
-  }
-
-  protected get flowNodeHandlerFactory(): IFlowNodeHandlerFactory {
-    return this._flowNodeHandlerFactory;
-  }
-
-  protected get flowNodeInstanceId(): string {
-    return this._flowNodeInstanceId;
-  }
-
-  protected get previousFlowNodeInstanceId(): string {
-    return this._previousFlowNodeInstanceId;
-  }
-
-  public async execute(
-    token: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-    previousFlowNodeInstanceId?: string,
-  ): Promise<void> {
-
-    try {
-      this._previousFlowNodeInstanceId = previousFlowNodeInstanceId;
-      token.flowNodeInstanceId = this.flowNodeInstanceId;
-      let nextFlowNodes: Array<Model.Base.FlowNode>;
-
-      await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-      nextFlowNodes = await this.executeInternally(token, processTokenFacade, processModelFacade, identity);
-      await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
-
-      // EndEvents will return "undefined" as the next FlowNode.
-      // So if no FlowNode is to be run next, we have arrived at the end of the ProcessInstance.
-      const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
-      if (processIsNotYetFinished) {
-
-        const executeNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-          const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
-
-          // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
-          const tokenForNextFlowNode: ProcessToken = nextFlowNodes.length > 1
-            ? processTokenFacade.createProcessToken(token.payload)
-            : token;
-
-          const processTokenFacadeForFlowNode: IProcessTokenFacade = nextFlowNodes.length > 1
-            ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
-            : processTokenFacade;
-
-          tokenForNextFlowNode.flowNodeInstanceId = nextFlowNodeHandler.getInstanceId();
-
-          return nextFlowNodeHandler
-            .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
-        };
-
-        // We cannot use `Promise.map` or `Promise.each` here, because the branches would not run truly in parallel to each other.
-        // The only way to guarantee that is to create the promises and then use `Promise.all` to await all of them.
-        const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
-        for (const nextFlowNode of nextFlowNodes) {
-          nextFlowNodeExecutionPromises.push(executeNextFlowNode(nextFlowNode));
-        }
-
-        await Promise.all(nextFlowNodeExecutionPromises);
-      }
-    } catch (error) {
-      const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
-      // This check is necessary to prevent duplicate entries,
-      // in case the Promise-Chain was broken further down the road.
-      const noResultStoredYet: boolean = !allResults.some((entry: IFlowNodeInstanceResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
-      if (noResultStoredYet) {
-        processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
-      }
-      throw error;
-    }
-  }
-
-  public async resume(
-    flowNodeInstances: Array<FlowNodeInstance>,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity: IIdentity,
-  ): Promise<void> {
-
-    try {
-      const flowNodeInstance: FlowNodeInstance =
-        flowNodeInstances.find((instance: FlowNodeInstance) => instance.flowNodeId === this.flowNode.id);
-
-      this._previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
-      this._flowNodeInstanceId = flowNodeInstance.id;
-
-      // WIth regards to ParallelGateways, we need to be able to handle multiple results here.
-      let nextFlowNodes: Array<Model.Base.FlowNode>;
-
-      // It doesn't really matter which token is used here, since payload-specific operations should
-      // only ever be done during the handlers execution.
-      // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
-      const tokenForHandlerHooks: ProcessToken = flowNodeInstance.tokens[0];
-
-      await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
-      nextFlowNodes = await this.resumeInternally(flowNodeInstance, processTokenFacade, processModelFacade, identity, flowNodeInstances);
-      await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
-
-      // EndEvents will return "undefined" as the next FlowNode.
-      // So if no FlowNode is returned, we have arrived at the end of the ProcessInstance.
-      const processIsNotYetFinished: boolean = nextFlowNodes && nextFlowNodes.length > 0;
-      if (processIsNotYetFinished) {
-
-        // No instance for the next FlowNode was found.
-        // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
-        const currentResult: IFlowNodeInstanceResult = processTokenFacade
-          .getAllResults()
-          .pop();
-
-        const handleNextFlowNode: Function = async(nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-          const processToken: ProcessToken = processTokenFacade.createProcessToken(currentResult.result);
-
-          const nextFlowNodeHandler: IFlowNodeHandler<Model.Base.FlowNode> =
-            await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processToken);
-
-          const nextFlowNodeInstance: FlowNodeInstance =
-            flowNodeInstances.find((instance: FlowNodeInstance) => instance.flowNodeId === nextFlowNode.id);
-
-          processToken.flowNodeInstanceId = nextFlowNodeInstance
-            ? nextFlowNodeInstance.id
-            : nextFlowNodeHandler.getInstanceId();
-
-          // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
-          const tokenForNextFlowNode: ProcessToken = nextFlowNodes.length > 1
-            ? processTokenFacade.createProcessToken(processToken.payload)
-            : processToken;
-
-          const processTokenFacadeForFlowNode: IProcessTokenFacade = nextFlowNodes.length > 1
-            ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
-            : processTokenFacade;
-
-          // An instance for the next FlowNode has already been created. Continue resuming
-          if (nextFlowNodeInstance) {
-            return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacadeForFlowNode, processModelFacade, identity);
-          }
-
-          return nextFlowNodeHandler
-            .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
-        };
-
-        // We cannot use `Promise.map` or `Promise.each` here, because the branches would not run truly in parallel to each other.
-        // The only way to guarantee that is to create the promises and then use `Promise.all` to await all of them.
-        const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
-        for (const nextFlowNode of nextFlowNodes) {
-          nextFlowNodeExecutionPromises.push(handleNextFlowNode(nextFlowNode));
-        }
-
-        await Promise.all(nextFlowNodeExecutionPromises);
-      }
-    } catch (error) {
-      const allResults: Array<IFlowNodeInstanceResult> = processTokenFacade.getAllResults();
-      // This check is necessary to prevent duplicate entries,
-      // in case the Promise-Chain was broken further down the road.
-      const noResultStoredYet: boolean = !allResults.some((entry: IFlowNodeInstanceResult) => entry.flowNodeInstanceId === this.flowNodeInstanceId);
-      if (noResultStoredYet) {
-        processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
-      }
-      throw error;
-    }
+  protected set onInterruptedCallback(value: onInterruptionCallback) {
+    this._onInterruptedCallback = value;
   }
 
   public getInstanceId(): string {
@@ -220,30 +71,44 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this.flowNode;
   }
 
-  /**
-   * Allows each handler to perform custom preprations prior to execution.
-   *
-   * @async
-   * @param token              The current ProcessToken.
-   * @param processTokenFacade The ProcessTokenFacade of the currently
-   *                           running process.
-   * @param processModelFacade The ProcessModelFacade of the currently
-   *                           running process.
-   */
+  public abstract async execute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    previousFlowNodeInstanceId?: string,
+  ): Promise<void>;
+
+  public abstract async resume(
+    flowNodeInstances: Array<FlowNodeInstance>,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void>;
+
   protected async beforeExecute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  protected async afterExecute(
     token?: ProcessToken,
     processTokenFacade?: IProcessTokenFacade,
     processModelFacade?: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<void> {
-    return Promise.resolve();
+    if (this.terminationSubscription) {
+      this.eventAggregator.unsubscribe(this.terminationSubscription);
+    }
   }
 
+  // TODO: Move to "FlowNodeExecutionService"
   /**
-   * This is the method where the derived handlers must implement their logic
-   * for executing new FlowNodeInstances.
-   *
-   * Here, the actual execution of the FlowNodes takes place.
+   * Hook for starting the execution of FlowNodes.
    *
    * @async
    * @param   token              The current ProcessToken.
@@ -254,34 +119,16 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * @param   identity           The requesting users identity.
    * @returns                    The FlowNode that follows after this one.
    */
-  protected async abstract executeInternally(
+  protected async abstract startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>>;
 
+  // TODO: Move to "FlowNodeResumptionService"
   /**
-   * Allows each handler to perform custom cleanup operations after execution.
-   *
-   * @async
-   * @param token              The current ProcessToken.
-   * @param processTokenFacade The ProcessTokenFacade of the currently
-   *                           running process.
-   * @param processModelFacade The ProcessModelFacade of the currently
-   *                           running process.
-   */
-  protected async afterExecute(
-    token?: ProcessToken,
-    processTokenFacade?: IProcessTokenFacade,
-    processModelFacade?: IProcessModelFacade,
-    identity?: IIdentity,
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-
-  /**
-   * Handles the resumption of FlowNodeInstances.
+   * Hook for starting the resumption of FlowNodes.
    *
    * @async
    * @param   flowNodeInstance         The current ProcessToken.
@@ -295,150 +142,24 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    *                                   BoundaryEvents require these.
    * @returns                          The FlowNode that follows after this one.
    */
-  protected async resumeInternally(
+  protected abstract async resumeFromState(
     flowNodeInstance: FlowNodeInstance,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     processFlowNodeInstances?: Array<FlowNodeInstance>,
-  ): Promise<Array<Model.Base.FlowNode>> {
+  ): Promise<Array<Model.Base.FlowNode>>;
 
-    this.logger.verbose(`Resuming FlowNodeInstance ${flowNodeInstance.id}.`);
-
-    switch (flowNodeInstance.state) {
-      case FlowNodeInstanceState.suspended:
-        this.logger.verbose(`FlowNodeInstance was left suspended. Waiting for the resuming event to happen.`);
-        const suspendToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onSuspend);
-
-        return this._continueAfterSuspend(flowNodeInstance, suspendToken, processTokenFacade, processModelFacade, identity);
-
-      case FlowNodeInstanceState.running:
-        const resumeToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onResume);
-
-        const notSuspendedYet: boolean = resumeToken === undefined;
-        if (notSuspendedYet) {
-          this.logger.verbose(`FlowNodeInstance was interrupted at the beginning. Resuming from the start.`);
-          const onEnterToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);
-
-          return this._continueAfterEnter(onEnterToken, processTokenFacade, processModelFacade, identity);
-        }
-
-        this.logger.verbose(`The FlowNodeInstance was already suspended and resumed. Finishing up the handler.`);
-
-        return this._continueAfterResume(resumeToken, processTokenFacade, processModelFacade);
-
-      case FlowNodeInstanceState.finished:
-        this.logger.verbose(`FlowNodeInstance was already finished. Skipping ahead.`);
-        const onExitToken: ProcessToken = flowNodeInstance.getTokenByType(ProcessTokenType.onExit);
-
-        return this._continueAfterExit(onExitToken, processTokenFacade, processModelFacade, identity);
-
-      case FlowNodeInstanceState.error:
-        this.logger.error(`Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it previously exited with an error!`,
-                     flowNodeInstance.error);
-        throw flowNodeInstance.error;
-
-      case FlowNodeInstanceState.terminated:
-        const terminatedError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because it was terminated!`;
-        this.logger.error(terminatedError);
-        throw new InternalServerError(terminatedError);
-
-      default:
-        const invalidStateError: string = `Cannot resume FlowNodeInstance ${flowNodeInstance.id}, because its state cannot be determined!`;
-        this.logger.error(invalidStateError);
-        throw new InternalServerError(invalidStateError);
-    }
-  }
-
-  /**
-   * Resumes the given FlowNodeInstance from the point its execution was
-   * first started.
-   *
-   * @async
-   * @param   onEnterToken       The token the FlowNodeInstance had when it was
-   *                             started.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  protected async _continueAfterEnter(
+  protected async continueAfterEnter(
     onEnterToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
-    return this._executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
+    return this.executeHandler(onEnterToken, processTokenFacade, processModelFacade, identity);
   }
 
-  /**
-   * Resumes the given FlowNodeInstance from the point where it assumed the
-   * "onSuspended" state.
-   *
-   * @async
-   * @param   flowNodeInstance   The FlowNodeInstance to resume.
-   * @param   onSuspendToken     The token the FlowNodeInstance had when it was
-   *                             suspended.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  protected async _continueAfterSuspend(
-    flowNodeInstance: FlowNodeInstance,
-    onSuspendToken: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity?: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, onSuspendToken.payload);
-    await this.persistOnResume(onSuspendToken);
-    await this.persistOnExit(onSuspendToken);
-
-    return processModelFacade.getNextFlowNodesFor(this.flowNode);
-  }
-
-  /**
-   * Resumes the given FlowNodeInstance from the point where it resumed activity,
-   * after having been suspended.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  protected async _continueAfterResume(
-    resumeToken: ProcessToken,
-    processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
-    identity?: IIdentity,
-  ): Promise<Array<Model.Base.FlowNode>> {
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, resumeToken.payload);
-    await this.persistOnExit(resumeToken);
-
-    return processModelFacade.getNextFlowNodesFor(this.flowNode);
-  }
-
-  /**
-   * Resumes the given FlowNodeInstance from the point it has finished execution.
-   * This is used to reconstruct Token Histories.
-   *
-   * @async
-   * @param   resumeToken        The ProcessToken stored after resuming the
-   *                             FlowNodeInstance.
-   * @param   processTokenFacade The ProcessTokenFacade to use for resuming.
-   * @param   processModelFacade The processModelFacade to use for resuming.
-   * @param   identity           The identity of the user that originally
-   *                             started the ProcessInstance.
-   * @returns                    The Info for the next FlowNode to run.
-   */
-  protected async _continueAfterExit(
+  protected async continueAfterExit(
     onExitToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -450,7 +171,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   /**
-   * Contains all common logic for executing and resuming FlowNodeHandlers.
+   * Main hook for executing and resuming FlowNodeHandlers from the start.
    *
    * @async
    * @param   token              The FlowNodeInstances current ProcessToken.
@@ -459,7 +180,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
    * @param   identity           The requesting users identity.
    * @returns                    Info about the next FlowNode to run.
    */
-  protected async _executeHandler(
+  protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
@@ -469,26 +190,50 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   }
 
   protected async persistOnEnter(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
+    await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
   }
 
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
+    await this.flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
   protected async persistOnTerminate(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
+    await this.flowNodePersistenceFacade.persistOnTerminate(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
   protected async persistOnError(processToken: ProcessToken, error: Error): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
+    await this.flowNodePersistenceFacade.persistOnError(this.flowNode, this.flowNodeInstanceId, processToken, error);
   }
 
-  protected async persistOnSuspend(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
+  protected subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
+
+    const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
+      const payloadIsDefined = message !== undefined;
+
+      token.payload = payloadIsDefined
+        ? message.currentToken
+        : {};
+
+      await this.onInterruptedCallback(token);
+      await this.afterExecute(token);
+
+      await this.persistOnTerminate(token);
+
+      const processTerminatedError = payloadIsDefined
+        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
+        : 'Process was terminated!';
+
+      this.logger.error(processTerminatedError);
+
+      const terminationError = new InternalServerError(processTerminatedError);
+
+      return rejectionFunction(terminationError);
+    };
+
+    return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
   }
 
-  protected async persistOnResume(processToken: ProcessToken): Promise<void> {
-    await this._flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
-  }
 }

@@ -6,14 +6,10 @@ import {SubProcessModelFacade} from './index';
 
 export class ProcessModelFacade implements IProcessModelFacade {
 
-  private _processModel: Model.Process;
+  protected processModel: Model.Process;
 
   constructor(processModel: Model.Process) {
-    this._processModel = processModel;
-  }
-
-  protected get processModel(): Model.Process {
-    return this._processModel;
+    this.processModel = processModel;
   }
 
   public getIsExecutable(): boolean {
@@ -25,20 +21,20 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getStartEvents(): Array<Model.Events.StartEvent> {
-    return this._filterFlowNodesByType<Model.Events.StartEvent>(Model.Events.StartEvent);
+    return this.filterFlowNodesByType<Model.Events.StartEvent>(Model.Events.StartEvent);
   }
 
   public getSingleStartEvent(): Model.Events.StartEvent {
-    const startEvents: Array<Model.Events.StartEvent> = this.getStartEvents();
+    const startEvents = this.getStartEvents();
 
     return startEvents[0];
   }
 
   public getStartEventById(startEventId: string): Model.Events.StartEvent {
 
-    const startEvents: Array<Model.Events.StartEvent> = this.getStartEvents();
+    const startEvents = this.getStartEvents();
 
-    const matchingStartEvent: Model.Events.StartEvent = startEvents.find((startEvent: Model.Events.StartEvent): boolean => {
+    const matchingStartEvent = startEvents.find((startEvent: Model.Events.StartEvent): boolean => {
       return startEvent.id === startEventId;
     });
 
@@ -50,15 +46,15 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getEndEvents(): Array<Model.Events.EndEvent> {
-    return this._filterFlowNodesByType<Model.Events.EndEvent>(Model.Events.EndEvent);
+    return this.filterFlowNodesByType<Model.Events.EndEvent>(Model.Events.EndEvent);
   }
 
   public getUserTasks(): Array<Model.Activities.UserTask> {
-    return this._filterFlowNodesByType<Model.Activities.UserTask>(Model.Activities.UserTask);
+    return this.filterFlowNodesByType<Model.Activities.UserTask>(Model.Activities.UserTask);
   }
 
   public getFlowNodeById(flowNodeId: string): Model.Base.FlowNode {
-    return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === flowNodeId);
+    return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === flowNodeId);
   }
 
   public getProcessModelHasLanes(): boolean {
@@ -70,22 +66,26 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
   public getLaneForFlowNode(flowNodeId: string): Model.ProcessElements.Lane {
 
-    const processModelHasNoLanes: boolean = !this.getProcessModelHasLanes();
+    const processModelHasNoLanes = !this.getProcessModelHasLanes();
     if (processModelHasNoLanes) {
       return undefined;
     }
 
-    const matchingLane: Model.ProcessElements.Lane = this._findLaneForFlowNodeIdFromLaneSet(flowNodeId, this.processModel.laneSet);
+    const matchingLane = this.findLaneForFlowNodeIdFromLaneSet(flowNodeId, this.processModel.laneSet);
 
     return matchingLane;
   }
 
   public getIncomingSequenceFlowsFor(flowNodeId: string): Array<Model.ProcessElements.SequenceFlow> {
-    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => sequenceFlow.targetRef === flowNodeId);
+    return this.processModel
+      .sequenceFlows
+      .filter((sequenceFlow: Model.ProcessElements.SequenceFlow): boolean => sequenceFlow.targetRef === flowNodeId);
   }
 
   public getOutgoingSequenceFlowsFor(flowNodeId: string): Array<Model.ProcessElements.SequenceFlow> {
-    return this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => sequenceFlow.sourceRef === flowNodeId);
+    return this.processModel
+      .sequenceFlows
+      .filter((sequenceFlow: Model.ProcessElements.SequenceFlow): boolean => sequenceFlow.sourceRef === flowNodeId);
   }
 
   public getSequenceFlowBetween(sourceNode: Model.Base.FlowNode, targetNode: Model.Base.FlowNode): Model.ProcessElements.SequenceFlow {
@@ -94,21 +94,21 @@ export class ProcessModelFacade implements IProcessModelFacade {
       return undefined;
     }
 
-    const sourceNodeBoundaryEvents: Array<Model.Events.BoundaryEvent> = this.getBoundaryEventsFor(sourceNode);
+    const sourceNodeBoundaryEvents = this.getBoundaryEventsFor(sourceNode);
 
     return this.processModel.sequenceFlows.find((sequenceFlow: Model.ProcessElements.SequenceFlow): boolean => {
-      const sourceRefMatches: boolean = sequenceFlow.sourceRef === sourceNode.id;
-      const targetRefMatches: boolean = sequenceFlow.targetRef === targetNode.id;
+      const sourceRefMatches = sequenceFlow.sourceRef === sourceNode.id;
+      const targetRefMatches = sequenceFlow.targetRef === targetNode.id;
 
-      const isFullMatch: boolean = sourceRefMatches && targetRefMatches;
+      const isFullMatch = sourceRefMatches && targetRefMatches;
 
       // If targetRef matches, but sourceRef does not, check if sourceRef
       // points to a BoundaryEvent that is attached to the sourceNode.
       // If so, the sourceRef still points to the correct FlowNode.
       if (!isFullMatch && targetRefMatches) {
 
-        const sourceRefPointsToBoundaryEventOfSourceNode: boolean =
-          sourceNodeBoundaryEvents.some((node: Model.Events.BoundaryEvent) => node.attachedToRef === sourceNode.id);
+        const sourceRefPointsToBoundaryEventOfSourceNode =
+          sourceNodeBoundaryEvents.some((node: Model.Events.BoundaryEvent): boolean => node.attachedToRef === sourceNode.id);
 
         return sourceRefPointsToBoundaryEventOfSourceNode;
       }
@@ -118,14 +118,13 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getBoundaryEventsFor(flowNode: Model.Base.FlowNode): Array<Model.Events.BoundaryEvent> {
-    const boundaryEvents: Array<Model.Base.FlowNode> =
-      this.processModel.flowNodes.filter((currentFlowNode: Model.Base.FlowNode) => {
 
-        const isBoundaryEvent: boolean = currentFlowNode.bpmnType === BpmnType.boundaryEvent;
-        const boundaryEventIsAttachedToFlowNode: boolean = (currentFlowNode as Model.Events.BoundaryEvent).attachedToRef === flowNode.id;
+    const boundaryEvents = this.processModel.flowNodes.filter((currentFlowNode: Model.Base.FlowNode): boolean => {
+      const isBoundaryEvent = currentFlowNode.bpmnType === BpmnType.boundaryEvent;
+      const boundaryEventIsAttachedToFlowNode = (currentFlowNode as Model.Events.BoundaryEvent).attachedToRef === flowNode.id;
 
-        return isBoundaryEvent && boundaryEventIsAttachedToFlowNode;
-      });
+      return isBoundaryEvent && boundaryEventIsAttachedToFlowNode;
+    });
 
     return boundaryEvents as Array<Model.Events.BoundaryEvent>;
   }
@@ -133,33 +132,32 @@ export class ProcessModelFacade implements IProcessModelFacade {
   public getPreviousFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
-    const sequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
-      this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
-        return sequenceFlow.targetRef === flowNode.id;
-      });
+    const sequenceFlows = this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow): boolean => {
+      return sequenceFlow.targetRef === flowNode.id;
+    });
 
-    const flowhasNoSource: boolean = !sequenceFlows || sequenceFlows.length === 0;
+    const flowhasNoSource = !sequenceFlows || sequenceFlows.length === 0;
     if (flowhasNoSource) {
       return undefined;
     }
 
     // Then find the source FlowNodes for each SequenceFlow
-    const previousFlowNodes: Array<Model.Base.FlowNode> =
-      sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow) => {
+    const previousFlowNodes = sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow): Model.Base.FlowNode => {
+      const sourceNode: Model.Base.FlowNode =
+        this.processModel
+          .flowNodes
+          .find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === currentSequenceFlow.sourceRef);
 
-        const sourceNode: Model.Base.FlowNode =
-          this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === currentSequenceFlow.sourceRef);
+      // If the sourceNode happens to be a BoundaryEvent, return the Node that the BoundaryEvent is attached to.
+      const sourceNodeIsBoundaryEvent = sourceNode.bpmnType === BpmnType.boundaryEvent;
+      if (sourceNodeIsBoundaryEvent) {
+        return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode): boolean => {
+          return currentFlowNode.id === (sourceNode as Model.Events.BoundaryEvent).attachedToRef;
+        });
+      }
 
-        // If the sourceNode happens to be a BoundaryEvent, return the Node that the BoundaryEvent is attached to.
-        const sourceNodeIsBoundaryEvent: boolean = sourceNode.bpmnType === BpmnType.boundaryEvent;
-        if (sourceNodeIsBoundaryEvent) {
-          return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => {
-            return currentFlowNode.id === (sourceNode as Model.Events.BoundaryEvent).attachedToRef;
-          });
-        }
-
-        return sourceNode;
-      });
+      return sourceNode;
+    });
 
     return previousFlowNodes;
   }
@@ -167,66 +165,63 @@ export class ProcessModelFacade implements IProcessModelFacade {
   public getNextFlowNodesFor(flowNode: Model.Base.FlowNode): Array<Model.Base.FlowNode> {
 
     // First find the SequenceFlows that contain the FlowNodes next targets
-    const sequenceFlows: Array<Model.ProcessElements.SequenceFlow> =
-      this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow) => {
-        return sequenceFlow.sourceRef === flowNode.id;
-      });
+    const sequenceFlows = this.processModel.sequenceFlows.filter((sequenceFlow: Model.ProcessElements.SequenceFlow): boolean => {
+      return sequenceFlow.sourceRef === flowNode.id;
+    });
 
-    const flowhasNoTarget: boolean = !sequenceFlows || sequenceFlows.length === 0;
+    const flowhasNoTarget = !sequenceFlows || sequenceFlows.length === 0;
     if (flowhasNoTarget) {
       return undefined;
     }
 
     // If multiple SequenceFlows were found, make sure that the FlowNode is a Gateway,
     // since only gateways are supposed to contain multiple outgoing SequenceFlows.
-    const flowNodeIsAGateway: boolean = flowNode.bpmnType === BpmnType.parallelGateway ||
-                                        flowNode.bpmnType === BpmnType.exclusiveGateway ||
-                                        flowNode.bpmnType === BpmnType.inclusiveGateway ||
-                                        flowNode.bpmnType === BpmnType.eventBasedGateway ||
-                                        flowNode.bpmnType === BpmnType.complexGateway;
+    const flowNodeIsAGateway = flowNode.bpmnType === BpmnType.parallelGateway ||
+                               flowNode.bpmnType === BpmnType.exclusiveGateway ||
+                               flowNode.bpmnType === BpmnType.inclusiveGateway ||
+                               flowNode.bpmnType === BpmnType.eventBasedGateway ||
+                               flowNode.bpmnType === BpmnType.complexGateway;
 
-    const tooManyOutgoingSequnceFlows: boolean = sequenceFlows.length > 1 && !flowNodeIsAGateway;
+    const tooManyOutgoingSequnceFlows = sequenceFlows.length > 1 && !flowNodeIsAGateway;
     if (tooManyOutgoingSequnceFlows) {
       throw new InternalServerError(`Non-Gateway FlowNode '${flowNode.id}' has more than one outgoing SequenceFlow!`);
     }
 
     // Then find the target FlowNodes for each SequenceFlow
-    const nextFlowNodes: Array<Model.Base.FlowNode> =
-      sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow) => {
-        return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode) => currentFlowNode.id === currentSequenceFlow.targetRef);
-      });
+    const nextFlowNodes = sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow): Model.Base.FlowNode => {
+      return this.processModel
+        .flowNodes
+        .find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === currentSequenceFlow.targetRef);
+    });
 
     return nextFlowNodes;
   }
 
   public getLinkCatchEventsByLinkName(linkName: string): Array<Model.Events.IntermediateCatchEvent> {
 
-    const matchingIntermediateCatchEvents: Array<Model.Base.FlowNode> =
-      this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
+    const matchingIntermediateCatchEvents = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
+      const flowNodeAsCatchEvent = flowNode as Model.Events.IntermediateCatchEvent;
 
-        const flowNodeAsCatchEvent: Model.Events.IntermediateCatchEvent = flowNode as Model.Events.IntermediateCatchEvent;
+      const isNoIntermediateLinkCatchEvent =
+        !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
+        flowNodeAsCatchEvent.linkEventDefinition === undefined;
 
-        const isNoIntermediateLinkCatchEvent: boolean =
-          !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
-          flowNodeAsCatchEvent.linkEventDefinition === undefined;
+      if (isNoIntermediateLinkCatchEvent) {
+        return false;
+      }
 
-        if (isNoIntermediateLinkCatchEvent) {
-          return false;
-        }
+      const linkHasMatchingName = flowNodeAsCatchEvent.linkEventDefinition.name === linkName;
 
-        const linkHasMatchingName: boolean = flowNodeAsCatchEvent.linkEventDefinition.name === linkName;
+      return linkHasMatchingName;
+    });
 
-        return linkHasMatchingName;
-      });
-
-    return <Array<Model.Events.IntermediateCatchEvent>> matchingIntermediateCatchEvents;
+    return matchingIntermediateCatchEvents as Array<Model.Events.IntermediateCatchEvent>;
   }
 
-  private _filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
-    const flowNodes: Array<Model.Base.FlowNode> =
-      this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode) => {
-        return flowNode instanceof type;
-      });
+  private filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
+    const flowNodes = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
+      return flowNode instanceof type;
+    });
 
     return flowNodes as Array<TFlowNode>;
   }
@@ -243,26 +238,26 @@ export class ProcessModelFacade implements IProcessModelFacade {
    * @returns            Either the lane containing the FlowNodeId,
    *                     or undefined, if not matching lane was found.
    */
-  private _findLaneForFlowNodeIdFromLaneSet(flowNodeId: string, laneSet: Model.ProcessElements.LaneSet): Model.ProcessElements.Lane {
+  private findLaneForFlowNodeIdFromLaneSet(flowNodeId: string, laneSet: Model.ProcessElements.LaneSet): Model.ProcessElements.Lane {
 
     for (const lane of laneSet.lanes) {
 
       let matchingLane: Model.ProcessElements.Lane;
 
-      const laneHasChildLaneSet: boolean = lane.childLaneSet !== undefined
-                                            && lane.childLaneSet.lanes !== undefined
-                                            && lane.childLaneSet.lanes.length > 0;
+      const laneHasChildLaneSet = lane.childLaneSet !== undefined
+                               && lane.childLaneSet.lanes !== undefined
+                               && lane.childLaneSet.lanes.length > 0;
 
       if (laneHasChildLaneSet) {
-        matchingLane = this._findLaneForFlowNodeIdFromLaneSet(flowNodeId, lane.childLaneSet);
+        matchingLane = this.findLaneForFlowNodeIdFromLaneSet(flowNodeId, lane.childLaneSet);
       } else {
-        const laneContainsFlowNode: boolean = lane.flowNodeReferences.some((flowNodeReference: string) => flowNodeReference === flowNodeId);
+        const laneContainsFlowNode = lane.flowNodeReferences.some((flowNodeReference: string): boolean => flowNodeReference === flowNodeId);
         if (laneContainsFlowNode) {
           matchingLane = lane;
         }
       }
 
-      const matchFound: boolean = matchingLane !== undefined;
+      const matchFound = matchingLane !== undefined;
       if (matchFound) {
         return matchingLane;
       }
@@ -270,4 +265,5 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     return undefined;
   }
+
 }

@@ -1,120 +1,59 @@
-:tada: **Thanks for submitting this Pull Request**
+## BEFORE SUBMITTING
 
-Please provide a list including your changes.
+> **Please ensure you have followed this guide, _before_ submitting your PR!**
+>
+> - Prefix the PR title according to the [gitmoji guide](https://gitmoji.carloscuesta.me/).
+> - Reference all PRs and issues relevant for this PR.
+> - **Be sure that you have reviewed and tested every change you made here!**
+>     - If you're not sure how you can test your changes, don't hesitate to contact us!
+> - List all fixed/closed issues here with `Closes #123` or `Fixes #123`.
+>     - **If no issue for this PR exists, please consider creating one!**
+>     - Of course, if this just fixes a typo, linter error or is something equally simple, no issue is required.
+> - Add the number of this PR to this PRs body, so you can add it to the commit message.
+> This will allow us to create a nice changelog for the next release.
+>
+><details>
+><summary>
+>Click here for a list of commonly used PR emojis.
+></summary>
+>
+>| Description              | Glyphe                      | Emoji|
+>|--------------------------|-----------------------------|------|
+>| Work In Progress (WIP)   | `:construction:`            | 🚧   |
+>| Bugfix                   | `:bug:`                     | 🐛   |
+>| Fixing Security Issues   | `:lock:`                    | 🔒   |
+>| Improving Performance    | `:zap:`                     | ⚡️   |
+>| New Feature              | `:sparkles:`                | ✨   |
+>| Refactoring Code         | `:recycle:`                 | ♻️   |
+>| CI Pipeline related      | `:construction_worker_man:` | 👷   |
+>| Configuration releated   | `:wrench:`                  | 🔧   |
+>| Tests                    | `:white_check_mark:`        | ✅   |
+>| Removing Stuff           | `:fire:`                    | 🔥   |
+>| Releasing / Version tags | `:bookmark:`                | 🔖   |
+>| Dependencies Downgrade   | `:arrow_down:`              | ⬇️   |
+>| Dependencies Upgrade     | `:arrow_up:`                | ⬆️   |
+>| Initial commit           | `:tada:`                    | 🎉   |
+>| Linter                   | `:rotating_light:`          | 🚨   |
+>| Cosmetic                 | `:lipstick:`                | 💄   |
+>| Formatting               | `:art:`                     | 🎨   |
+>| Miscellaneous            | `:package:`                 | 📦   |
+>
+></details>
+>
+> **Please remove this section when you're done creating this PR.**
 
-To help us to create a meaningful Changelog, we agreed
-to use an emoji-based commit-style. Use the [Emojis](#emojis)
-we provided below.
-
-Fill out the following, provide reference to issues
-and this PR- we will use this as merge commit message-body
-and the title of this PR as commit-headline:
-
----
-
-**Changes:**
+## Changes
 
 1. Change 1
 2. Change 2
 3. (...)
 
+## Issues
 
-**Issues:**
-
-Closes #Issue
-Closes #Issue
-Closes (...)
-
-PR: #PullRequest
-
----
-
-See the [examples](#example) for inspiration.
-
-## How can others test the changes?
-
-> Describe how others can test your changes (you can remove this section for typo fixes etc.)
-
-## PR-Checklist
-
-Please check the boxes in this list after submitting your PR:
-
-- [x] You can merge this PR **right now** (if not, please prefix the title with "WIP: ")
-- [x] I've tested **all** changes included in this PR.
-- [x] I've also reviewed this PR myself before submitting (e.g. for scrambled letters, typos, etc.).
-- [x] I've rebased the `develop` branch with my branch before finishing this PR.
-- [x] I've **summarized all changes** in a list above.
-- [x] I've mentioned all **PRs, which relate to this one**.
-- [x] I've prefixed my Pull Request title is according to [gitmoji guide](https://gitmoji.carloscuesta.me/).
-
-## Example
-
-<details>
-<summary>
-:warning: Before merging please click here to expand and follow the guide.
-</summary>
-<br>
-
-Please use `:twisted_rightwards_arrows:` at the beginning of your merge commit title.
-
-Example 1:
-
-<pre>
-<code>
-:twisted_rightwards_arrows: :bug: Fix Wrong Text Decoration at ...
-</code>
-</pre>
-
-To get your commit message, just copy the first part of this pull request.
-
-Example 2:
-<pre>
-<code>
-**Changes:**
-
-- Fixes Wrong Text Decoration at ...
-- Fixes some typos
-- ...
-
-**Issues:**
-
-Closes #NumberOfFixedIssue
+Closes #YourIssueNumber
 
 PR: #NumberOfThisPR
-</code>
-</pre>
-</details>
 
-## Emojis
+## How to test the changes
 
-<details>
-<summary>
-Expand for a list of most used Emojis.
-</summary>
-<br>
-
-Please prefix your commit messages with an Emoji.
-
-Ref: https://gitmoji.carloscuesta.me/
-
-| Description              | Glyphe               | Emoji  |
-|--------------------------|----------------------|--------|
-| Bugfix                   | `:bug:`              | 🐛     |
-| Fixing Security Issues   | `:lock:`             | 🔒     |
-| Configuration releated   | `:wrench:`           | 🔧     |
-| Cosmetic                 | `:lipstick:`         | 💄     |
-| Dependencies Downgrade   | `:arrow_down:`       | ⬇️     |
-| Dependencies Upgrade     | `:arrow_up:`         | ⬆️     |
-| Formatting               | `:art:`              | 🎨     |
-| Improving Performance    | `:zap:`              | ⚡️      |
-| Initial commit           | `:tada:`             | 🎉     |
-| Linter                   | `:rotating_light:`   | 🚨     |
-| Miscellaneous            | `:package:`          | 📦     |
-| New Feature              | `:sparkles:`         | ✨     |
-| Refactoring Code         | `:recycle:`          | ♻️      |
-| Releasing / Version tags | `:bookmark:`         | 🔖     |
-| Removing Stuff           | `:fire:`             | 🔥     |
-| Tests                    | `:white_check_mark:` | ✅     |
-| Work In Progress (WIP)   | `:construction:`     | 🚧     |
-
-</details>
+> Describe how others can test your changes (not required when fixing typos, linter errors and such)

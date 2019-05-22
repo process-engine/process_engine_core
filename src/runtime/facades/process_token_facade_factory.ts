@@ -3,7 +3,9 @@ import {IProcessTokenFacade, IProcessTokenFacadeFactory} from '@process-engine/p
 import {ProcessTokenFacade} from './process_token_facade';
 
 export class ProcessTokenFacadeFactory implements IProcessTokenFacadeFactory {
+
   public create(processInstanceId: string, processModelId: string, correlationId: string, identity: IIdentity): IProcessTokenFacade {
     return new ProcessTokenFacade(processInstanceId, processModelId, correlationId, identity);
   }
+
 }

@@ -8,7 +8,7 @@ import {
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
-} from './../type_factory';
+} from '../type_factory';
 
 import {Parsers} from './index';
 
@@ -17,19 +17,19 @@ import {Parsers} from './index';
 // - Associations
 export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Process> {
 
-  const processData: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
+  const processData = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
 
   const processes: Array<Model.Process> = [];
 
   for (const processRaw of processData) {
 
-    const process: Model.Process = createObjectWithCommonProperties(processRaw, Model.Process);
+    const process = createObjectWithCommonProperties(processRaw, Model.Process);
 
     process.name = processRaw.name;
-    process.isExecutable = processRaw.isExecutable === 'true' ? true : false;
+    process.isExecutable = processRaw.isExecutable === 'true';
 
-    const bpmnErrors: Array<Model.GlobalElements.Error> = parseErrorsFromProcessModel(parsedObjectModel);
-    const eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = parseEventDefinitionsFromObjectModel(parsedObjectModel);
+    const bpmnErrors = parseErrorsFromProcessModel(parsedObjectModel);
+    const eventDefinitions = parseEventDefinitionsFromObjectModel(parsedObjectModel);
 
     process.laneSet = Parsers.ProcessLaneSetParser.parseProcessLaneSet(processRaw);
     process.sequenceFlows = Parsers.SequenceFlowParser.parseProcessSequenceFlows(processRaw);
@@ -51,16 +51,16 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
 function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Array<Model.GlobalElements.Error> {
 
   const errors: Array<Model.GlobalElements.Error> = [];
-  const collaborationHasNoError: boolean = !parsedObjectModel[BpmnTags.CommonElement.Error];
+  const collaborationHasNoError = !parsedObjectModel[BpmnTags.CommonElement.Error];
 
   if (collaborationHasNoError) {
     return [];
   }
 
-  const rawErrors: Array<any> = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Error);
+  const rawErrors = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Error);
 
   for (const rawError of rawErrors) {
-    const newError: Model.GlobalElements.Error = createObjectWithCommonProperties(rawError, Model.GlobalElements.Error);
+    const newError = createObjectWithCommonProperties(rawError, Model.GlobalElements.Error);
 
     newError.code = rawError.errorCode;
     newError.name = rawError.name;
@@ -74,11 +74,11 @@ function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Arr
 
 function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.Events.Definitions.EventDefinition> {
 
-  const messageDefinitions: Array<Model.Events.Definitions.MessageEventDefinition> =
-  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.Events.Definitions.MessageEventDefinition);
+  const messageDefinitions =
+    parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.Events.Definitions.MessageEventDefinition);
 
-  const signalDefinitions: Array<Model.Events.Definitions.MessageEventDefinition> =
-  parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.Events.Definitions.SignalEventDefinition);
+  const signalDefinitions =
+    parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Signal, Model.Events.Definitions.SignalEventDefinition);
 
   return Array.prototype.concat(messageDefinitions, signalDefinitions);
 }
@@ -91,15 +91,16 @@ function parseEventDefinitionTypeFromObjectModel<TEventDefinition>(
 
   const eventDefinitions: Array<TEventDefinition> = [];
 
-  const rawDefinitions: Array<any> = getModelPropertyAsArray(parsedObjectModel, tagName);
+  const rawDefinitions = getModelPropertyAsArray(parsedObjectModel, tagName);
 
-  const collaborationHasNoMatchingDefinitions: boolean = !rawDefinitions || rawDefinitions.length === 0;
+  const collaborationHasNoMatchingDefinitions = !rawDefinitions || rawDefinitions.length === 0;
   if (collaborationHasNoMatchingDefinitions) {
     return eventDefinitions;
   }
 
   for (const rawDefinition of rawDefinitions) {
-    const newDefinition: TEventDefinition = new typeFactory();
+    // eslint-disable-next-line 6river/new-cap
+    const newDefinition = new typeFactory();
 
     (newDefinition as any).id = rawDefinition.id;
     (newDefinition as any).name = rawDefinition.name;

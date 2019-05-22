@@ -18,20 +18,12 @@ const logger: Logger = Logger.createLogger('processengine:runtime:timer_facade')
 
 export class TimerFacade implements ITimerFacade {
 
-  private _eventAggregator: IEventAggregator;
-  private _timerService: ITimerService;
+  private eventAggregator: IEventAggregator;
+  private timerService: ITimerService;
 
   constructor(eventAggregator: IEventAggregator, timerService: ITimerService) {
-    this._eventAggregator = eventAggregator;
-    this._timerService = timerService;
-  }
-
-  private get eventAggregator(): IEventAggregator {
-    return this._eventAggregator;
-  }
-
-  private get timerService(): ITimerService {
-    return this._timerService;
+    this.eventAggregator = eventAggregator;
+    this.timerService = timerService;
   }
 
   public initializeTimerFromDefinition(
@@ -41,9 +33,9 @@ export class TimerFacade implements ITimerFacade {
     callback: Function,
   ): Subscription {
 
-    const timerType: TimerDefinitionType = this.parseTimerDefinitionType(timerDefinition);
-    const timerValueFromDefinition: string = this.parseTimerDefinitionValue(timerDefinition);
-    const timerValue: string = this._executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
+    const timerType = this.parseTimerDefinitionType(timerDefinition);
+    const timerValueFromDefinition = this.parseTimerDefinitionValue(timerDefinition);
+    const timerValue = this.executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
 
     return this.initializeTimer(flowNode, timerType, timerValue, callback);
   }
@@ -55,34 +47,35 @@ export class TimerFacade implements ITimerFacade {
     timerCallback: Function,
   ): Subscription {
 
-    this._validateTimer(timerType, timerValue);
+    this.validateTimer(timerType, timerValue);
 
-    const callbackEventName: string = `${flowNode.id}_${uuid.v4()}`;
+    const callbackEventName = `${flowNode.id}_${uuid.v4()}`;
 
     switch (timerType) {
       case TimerDefinitionType.cycle:
-        return this._startCycleTimer(timerValue, timerCallback, callbackEventName);
+        return this.startCycleTimer(timerValue, timerCallback, callbackEventName);
       case TimerDefinitionType.date:
-        return this._startDateTimer(timerValue, timerCallback, callbackEventName);
+        return this.startDateTimer(timerValue, timerCallback, callbackEventName);
       case TimerDefinitionType.duration:
-        return this._startDurationTimer(timerValue, timerCallback, callbackEventName);
+        return this.startDurationTimer(timerValue, timerCallback, callbackEventName);
       default:
+        return undefined;
     }
   }
 
   public parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
 
-    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
     if (timerIsDuration) {
       return TimerDefinitionType.duration;
     }
 
-    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+    const timerIsCyclic = eventDefinition[TimerBpmnType.Cycle] !== undefined;
     if (timerIsCyclic) {
       return TimerDefinitionType.cycle;
     }
 
-    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+    const timerIsDate = eventDefinition[TimerBpmnType.Date] !== undefined;
     if (timerIsDate) {
       return TimerDefinitionType.date;
     }
@@ -92,17 +85,17 @@ export class TimerFacade implements ITimerFacade {
 
   public parseTimerDefinitionValue(eventDefinition: any): string {
 
-    const timerIsDuration: boolean = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
     if (timerIsDuration) {
       return eventDefinition[TimerBpmnType.Duration]._;
     }
 
-    const timerIsCyclic: boolean = eventDefinition[TimerBpmnType.Cycle] !== undefined;
+    const timerIsCyclic = eventDefinition[TimerBpmnType.Cycle] !== undefined;
     if (timerIsCyclic) {
       return eventDefinition[TimerBpmnType.Cycle]._;
     }
 
-    const timerIsDate: boolean = eventDefinition[TimerBpmnType.Date] !== undefined;
+    const timerIsDate = eventDefinition[TimerBpmnType.Date] !== undefined;
     if (timerIsDate) {
       return eventDefinition[TimerBpmnType.Date]._;
     }
@@ -111,12 +104,14 @@ export class TimerFacade implements ITimerFacade {
   }
 
   public cancelTimerSubscription(subscription: Subscription): void {
-    this._eventAggregator.unsubscribe(subscription);
+    this.eventAggregator.unsubscribe(subscription);
   }
 
-  private _startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
+  private startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
-    const duration: moment.Duration = moment.duration(timerDefinition);
+    logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
+
+    const duration = moment.duration(timerValue);
 
     const timingRule: TimerRule = {
       year: duration.years(),
@@ -127,8 +122,9 @@ export class TimerFacade implements ITimerFacade {
       second: duration.seconds(),
     };
 
-    const subscription: Subscription = this.eventAggregator.subscribe(callbackEventName, () => {
-      timerCallback();
+    const subscription = this.eventAggregator.subscribe(callbackEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Cyclic timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
     });
 
     this.timerService.periodic(timingRule, callbackEventName);
@@ -136,13 +132,16 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private _startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
+  private startDurationTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
-    const duration: moment.Duration = moment.duration(timerDefinition);
-    const date: moment.Moment = moment().add(duration);
+    logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const subscription: Subscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
-      timerCallback();
+    const duration = moment.duration(timerValue);
+    const date = moment().add(duration);
+
+    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
     });
 
     this.timerService.once(date, callbackEventName);
@@ -150,12 +149,25 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private _startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
+  private startDateTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
-    const date: moment.Moment = moment(timerDefinition);
+    logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const subscription: Subscription = this.eventAggregator.subscribeOnce(callbackEventName, () => {
-      timerCallback();
+    const date = moment(timerValue);
+
+    const now = moment();
+
+    const dateIsPast = date.isBefore(now);
+    if (dateIsPast) {
+      const dateIsInThePast = `The given date definition ${date} is in the past and will be executed immediately.`;
+      logger.warn(dateIsInThePast);
+
+      return timerCallback({}, callbackEventName);
+    }
+
+    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Date timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
     });
 
     this.timerService.once(date, callbackEventName);
@@ -163,19 +175,19 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private _executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
-    const tokenVariableName: string = 'token';
-    const isConstantTimerExpression: boolean = !timerExpression.includes(tokenVariableName);
+  private executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
+    const tokenVariableName = 'token';
+    const isConstantTimerExpression = !timerExpression.includes(tokenVariableName);
 
     if (isConstantTimerExpression) {
       return timerExpression;
     }
 
-    const tokenData: any = processTokenFacade.getOldTokenFormat();
+    const tokenData = processTokenFacade.getOldTokenFormat();
 
     try {
-      const functionString: string = `return ${timerExpression}`;
-      const evaluateFunction: Function = new Function(tokenVariableName, functionString);
+      const functionString = `return ${timerExpression}`;
+      const evaluateFunction = new Function(tokenVariableName, functionString);
 
       return evaluateFunction.call(tokenData, tokenData);
     } catch (err) {
@@ -184,13 +196,13 @@ export class TimerFacade implements ITimerFacade {
     }
   }
 
-  private _validateTimer(timerType: TimerDefinitionType, timerValue: string): void {
+  private validateTimer(timerType: TimerDefinitionType, timerValue: string): void {
 
     switch (timerType) {
       case TimerDefinitionType.date:
-        const dateIsInvalid: boolean = !moment(timerValue, moment.ISO_8601).isValid();
+        const dateIsInvalid = !moment(timerValue, moment.ISO_8601, true).isValid();
         if (dateIsInvalid) {
-          const invalidDateMessage: string = `The given date definition ${timerValue} is not in ISO8601 format`;
+          const invalidDateMessage = `The given date definition ${timerValue} is not in ISO8601 format!`;
           logger.error(invalidDateMessage);
           throw new UnprocessableEntityError(invalidDateMessage);
         }
@@ -209,12 +221,12 @@ export class TimerFacade implements ITimerFacade {
         /**
          * Taken from: https://stackoverflow.com/a/32045167
          */
-         /*tslint:disable-next-line:max-line-length*/
-        const durationRegex: RegExp = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
-        const durationIsInvalid: boolean = !durationRegex.test(timerValue);
+        // eslint-disable-next-line max-len
+        const durationRegex = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
+        const durationIsInvalid = !durationRegex.test(timerValue);
 
         if (durationIsInvalid) {
-          const invalidDurationMessage: string = `The given duration definition ${timerValue} is not in ISO8601 format`;
+          const invalidDurationMessage = `The given duration definition ${timerValue} is not in ISO8601 format`;
           logger.error(invalidDurationMessage);
           throw new UnprocessableEntityError(invalidDurationMessage);
         }
@@ -224,9 +236,10 @@ export class TimerFacade implements ITimerFacade {
         logger.error('Attempted to parse a cyclic timer! this is currently not supported!');
         throw new UnprocessableEntityError('Cyclic timer definitions are currently not supported!');
       default:
-        const invalidTimerTypeMessage: string = `Unknown Timer definition type '${timerType}'`;
+        const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
         logger.error(invalidTimerTypeMessage);
         throw new UnprocessableEntityError(invalidTimerTypeMessage);
     }
   }
+
 }

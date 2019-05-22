@@ -11,26 +11,23 @@ export function parseSendTasks(
 ): Array<Model.Activities.SendTask> {
   const sendTasks: Array<Model.Activities.SendTask> = [];
 
-  const sendTasksRaw: Array<any> = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
+  const sendTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
 
-  const noSendTasksFound: boolean = sendTasksRaw === undefined
-                                      || sendTasksRaw === null
-                                      || sendTasksRaw.length === 0;
-
+  const noSendTasksFound = sendTasksRaw === undefined || sendTasksRaw.length === 0;
   if (noSendTasksFound) {
     return sendTasks;
   }
 
   for (const currentRawSendTask of sendTasksRaw) {
-    const sendTask: Model.Activities.SendTask = createActivityInstance(currentRawSendTask, Model.Activities.SendTask);
+    const sendTask = createActivityInstance(currentRawSendTask, Model.Activities.SendTask);
 
-    const messageRefNotDefined: boolean = currentRawSendTask.messageRef === undefined;
+    const messageRefNotDefined = currentRawSendTask.messageRef === undefined;
     if (messageRefNotDefined) {
       throw new UnprocessableEntityError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
     }
 
-    const sendTaskMessageDefinition: Model.Events.Definitions.MessageEventDefinition =
-      getDefinitionForEvent(currentRawSendTask.messageRef, eventDefinitions);
+    const sendTaskMessageDefinition =
+      getDefinitionForEvent<Model.Events.Definitions.MessageEventDefinition>(currentRawSendTask.messageRef, eventDefinitions);
 
     sendTask.messageEventDefinition = sendTaskMessageDefinition;
     sendTasks.push(sendTask);
@@ -41,12 +38,12 @@ export function parseSendTasks(
 
 function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
   eventDefinitionId: string,
-  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>): TEventDefinition {
+  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
+): TEventDefinition {
 
-  const matchingEventDefintion: Model.Events.Definitions.EventDefinition =
-    eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
-      return entry.id === eventDefinitionId;
-    });
+  const matchingEventDefintion = eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
+    return entry.id === eventDefinitionId;
+  });
 
   return <TEventDefinition> matchingEventDefintion;
 }

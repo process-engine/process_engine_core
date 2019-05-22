@@ -4,27 +4,27 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {Correlation, CorrelationState, ICorrelationService} from '@process-engine/correlation.contracts';
+import {CorrelationState, ICorrelationService} from '@process-engine/correlation.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeInstanceResult,
   ProcessEndedMessage,
   ProcessErrorMessage,
   ProcessTerminatedMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {IProcessModelUseCases, ProcessDefinitionFromRepository} from '@process-engine/process_model.contracts';
+import {IProcessModelUseCases} from '@process-engine/process_model.contracts';
 
 import {IProcessInstanceConfig} from './iprocess_instance_config';
 
 export class ProcessInstanceStateHandlingFacade {
 
-  private readonly _correlationService: ICorrelationService;
-  private readonly _eventAggregator: IEventAggregator;
-  private readonly _loggingApiService: ILoggingApi;
-  private readonly _metricsApiService: IMetricsApi;
-  private readonly _processModelUseCases: IProcessModelUseCases;
+  private readonly correlationService: ICorrelationService;
+  private readonly eventAggregator: IEventAggregator;
+  private readonly loggingApiService: ILoggingApi;
+  private readonly metricsApiService: IMetricsApi;
+  private readonly processModelUseCases: IProcessModelUseCases;
 
   constructor(
     correlationService: ICorrelationService,
@@ -33,11 +33,11 @@ export class ProcessInstanceStateHandlingFacade {
     metricsApiService: IMetricsApi,
     processModelUseCases: IProcessModelUseCases,
   ) {
-    this._correlationService = correlationService;
-    this._eventAggregator = eventAggregator;
-    this._loggingApiService = loggingApiService;
-    this._metricsApiService = metricsApiService;
-    this._processModelUseCases = processModelUseCases;
+    this.correlationService = correlationService;
+    this.eventAggregator = eventAggregator;
+    this.loggingApiService = loggingApiService;
+    this.metricsApiService = metricsApiService;
+    this.processModelUseCases = processModelUseCases;
   }
 
   /**
@@ -50,15 +50,16 @@ export class ProcessInstanceStateHandlingFacade {
    */
   public async saveCorrelation(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
-    const processDefinition: ProcessDefinitionFromRepository =
-      await this._processModelUseCases.getProcessDefinitionAsXmlByName(identity, processInstanceConfig.processModelId);
+    const processDefinition = await this.processModelUseCases.getProcessDefinitionAsXmlByName(identity, processInstanceConfig.processModelId);
 
-    await this._correlationService.createEntry(identity,
-                                               processInstanceConfig.correlationId,
-                                               processInstanceConfig.processInstanceId,
-                                               processDefinition.name,
-                                               processDefinition.hash,
-                                               processInstanceConfig.parentProcessInstanceId);
+    await this.correlationService.createEntry(
+      identity,
+      processInstanceConfig.correlationId,
+      processInstanceConfig.processInstanceId,
+      processDefinition.name,
+      processDefinition.hash,
+      processInstanceConfig.parentProcessInstanceId,
+    );
 
     this.logProcessStarted(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
   }
@@ -78,7 +79,7 @@ export class ProcessInstanceStateHandlingFacade {
   ): Promise<void> {
 
     await this
-      ._correlationService
+      .correlationService
       .finishProcessInstanceInCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId);
 
     this.logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
@@ -101,7 +102,7 @@ export class ProcessInstanceStateHandlingFacade {
   ): Promise<void> {
 
     await this
-      ._correlationService
+      .correlationService
       .finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, error);
 
     this.logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
@@ -116,7 +117,7 @@ export class ProcessInstanceStateHandlingFacade {
   ): void {
 
     // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
+    const instanceFinishedEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
@@ -126,15 +127,16 @@ export class ProcessInstanceStateHandlingFacade {
       resultToken.flowNodeId,
       resultToken.flowNodeInstanceId,
       identity,
-      resultToken.result);
+      resultToken.result,
+    );
 
-    this._eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
+    this.eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
   }
 
   public sendProcessInstanceErrorNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
 
     // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+    const instanceFinishedEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
     const instanceErroredMessage: ProcessErrorMessage = new ProcessErrorMessage(
@@ -144,25 +146,26 @@ export class ProcessInstanceStateHandlingFacade {
       undefined,
       undefined,
       identity,
-      error);
+      error,
+    );
 
-    this._eventAggregator.publish(instanceFinishedEventName, instanceErroredMessage);
-    this._eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
+    this.eventAggregator.publish(instanceFinishedEventName, instanceErroredMessage);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
   }
 
   public async terminateSubprocesses(identity: IIdentity, processInstanceId: string): Promise<void> {
 
-    const correlation: Correlation =
-      await this._correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
+    const correlation =
+      await this.correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
 
-    const noSubprocessesFound: boolean = !correlation || !correlation.processInstances || correlation.processInstances.length === 0;
+    const noSubprocessesFound = !correlation || !correlation.processInstances || correlation.processInstances.length === 0;
     if (noSubprocessesFound) {
       return;
     }
 
     for (const subprocess of correlation.processInstances) {
 
-      const subprocessIsAlreadyFinished: boolean = subprocess.state !== CorrelationState.running;
+      const subprocessIsAlreadyFinished = subprocess.state !== CorrelationState.running;
       if (subprocessIsAlreadyFinished) {
         continue;
       }
@@ -170,7 +173,7 @@ export class ProcessInstanceStateHandlingFacade {
       const terminateProcessMessage: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, subprocess.processInstanceId);
 
-      const terminationMessage: ProcessTerminatedMessage = new ProcessTerminatedMessage(
+      const terminationMessage = new ProcessTerminatedMessage(
         correlation.id,
         subprocess.processModelId,
         subprocess.processInstanceId,
@@ -180,7 +183,7 @@ export class ProcessInstanceStateHandlingFacade {
         new InternalServerError(`Process terminated by parent ProcessInstance ${processInstanceId}`),
       );
 
-      this._eventAggregator.publish(terminateProcessMessage, terminationMessage);
+      this.eventAggregator.publish(terminateProcessMessage, terminationMessage);
     }
   }
 
@@ -193,16 +196,18 @@ export class ProcessInstanceStateHandlingFacade {
    */
   public logProcessStarted(correlationId: string, processModelId: string, processInstanceId: string): void {
 
-    const startTime: moment.Moment = moment.utc();
+    const startTime = moment.utc();
 
-    this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
+    this.metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
 
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.info,
-                                                    `Process instance started.`,
-                                                    startTime.toDate());
+    this.loggingApiService.writeLogForProcessModel(
+      correlationId,
+      processModelId,
+      processInstanceId,
+      LogLevel.info,
+      'Process instance started.',
+      startTime.toDate(),
+    );
 
   }
 
@@ -215,16 +220,18 @@ export class ProcessInstanceStateHandlingFacade {
    */
   public logProcessResumed(correlationId: string, processModelId: string, processInstanceId: string): void {
 
-    const startTime: moment.Moment = moment.utc();
+    const startTime = moment.utc();
 
-    this._metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
+    this.metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
 
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.info,
-                                                    `ProcessInstance resumed.`,
-                                                    startTime.toDate());
+    this.loggingApiService.writeLogForProcessModel(
+      correlationId,
+      processModelId,
+      processInstanceId,
+      LogLevel.info,
+      'ProcessInstance resumed.',
+      startTime.toDate(),
+    );
   }
 
   /**
@@ -236,16 +243,18 @@ export class ProcessInstanceStateHandlingFacade {
    */
   public logProcessFinished(correlationId: string, processModelId: string, processInstanceId: string): void {
 
-    const endTime: moment.Moment = moment.utc();
+    const endTime = moment.utc();
 
-    this._metricsApiService.writeOnProcessFinished(correlationId, processModelId, endTime);
+    this.metricsApiService.writeOnProcessFinished(correlationId, processModelId, endTime);
 
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.info,
-                                                    `Process instance finished.`,
-                                                    endTime.toDate());
+    this.loggingApiService.writeLogForProcessModel(
+      correlationId,
+      processModelId,
+      processInstanceId,
+      LogLevel.info,
+      'Process instance finished.',
+      endTime.toDate(),
+    );
   }
 
   /**
@@ -257,15 +266,18 @@ export class ProcessInstanceStateHandlingFacade {
    */
   public logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
 
-    const errorTime: moment.Moment = moment.utc();
+    const errorTime = moment.utc();
 
-    this._metricsApiService.writeOnProcessError(correlationId, processModelId, error, errorTime);
+    this.metricsApiService.writeOnProcessError(correlationId, processModelId, error, errorTime);
 
-    this._loggingApiService.writeLogForProcessModel(correlationId,
-                                                    processModelId,
-                                                    processInstanceId,
-                                                    LogLevel.error,
-                                                    error.message,
-                                                    errorTime.toDate());
+    this.loggingApiService.writeLogForProcessModel(
+      correlationId,
+      processModelId,
+      processInstanceId,
+      LogLevel.error,
+      error.message,
+      errorTime.toDate(),
+    );
   }
+
 }
