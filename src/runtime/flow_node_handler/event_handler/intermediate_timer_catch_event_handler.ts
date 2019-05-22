@@ -139,8 +139,9 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
         const timerElapsed = (): void => {
-          // TODO: Can't handle cyclic timers yet, so we always need to clean this up for now.
-          this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+          if (this.timerSubscription && this.timerSubscription.onlyReceiveOnce === false) {
+            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+          }
           resolve();
         };
 

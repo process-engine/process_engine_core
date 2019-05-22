@@ -107,11 +107,11 @@ export class TimerFacade implements ITimerFacade {
     this.eventAggregator.unsubscribe(subscription);
   }
 
-  private startCycleTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
+  private startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
-    logger.verbose(`Starting new cyclic timer with definition ${timerDefinition} and event name ${callbackEventName}`);
+    logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const duration = moment.duration(timerDefinition);
+    const duration = moment.duration(timerValue);
 
     const timingRule: TimerRule = {
       year: duration.years(),
@@ -132,11 +132,11 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private startDurationTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
+  private startDurationTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
-    logger.verbose(`Starting new duration timer with definition ${timerDefinition} and event name ${callbackEventName}`);
+    logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const duration = moment.duration(timerDefinition);
+    const duration = moment.duration(timerValue);
     const date = moment().add(duration);
 
     const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
@@ -149,11 +149,21 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private startDateTimer(timerDefinition: string, timerCallback: Function, callbackEventName: string): Subscription {
+  private startDateTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
-    logger.verbose(`Starting new date timer with definition ${timerDefinition} and event name ${callbackEventName}`);
+    logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const date = moment(timerDefinition);
+    const date = moment(timerValue);
+
+    const now = moment();
+
+    const dateIsPast = date.isBefore(now);
+    if (dateIsPast) {
+      const dateIsInThePast = `The given date definition ${date} is in the past and will be executed immediately.`;
+      logger.warn(dateIsInThePast);
+
+      return timerCallback({}, callbackEventName);
+    }
 
     const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
       logger.verbose(`Date timer ${eventName} has expired. Executing callback.`);
@@ -195,15 +205,6 @@ export class TimerFacade implements ITimerFacade {
           const invalidDateMessage = `The given date definition ${timerValue} is not in ISO8601 format!`;
           logger.error(invalidDateMessage);
           throw new UnprocessableEntityError(invalidDateMessage);
-        }
-
-        const now = moment();
-
-        const dateIsPast = moment(timerValue).isBefore(now);
-        if (dateIsPast) {
-          const dateIsPastErrorMessage = `The given date definition ${timerValue} is in the past!`;
-          logger.error(dateIsPastErrorMessage);
-          throw new UnprocessableEntityError(dateIsPastErrorMessage);
         }
 
         break;
