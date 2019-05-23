@@ -106,7 +106,6 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       await this.persistOnExit(onSuspendToken);
 
-
       return processModelFacade.getNextFlowNodesFor(this.callActivity);
     } catch (error) {
       this.logger.error(error);

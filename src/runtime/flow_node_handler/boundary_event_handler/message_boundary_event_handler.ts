@@ -1,4 +1,4 @@
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {

@@ -2,7 +2,6 @@ import * as uuid from 'node-uuid';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -89,7 +88,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    */
   protected sendBoundaryEventTriggeredNotification(token: ProcessToken): void {
 
-    const message = new BoundaryEventFinishedMessage(
+    const message = new BoundaryEventTriggeredMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,

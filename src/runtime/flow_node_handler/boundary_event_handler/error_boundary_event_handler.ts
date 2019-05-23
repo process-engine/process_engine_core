@@ -1,7 +1,6 @@
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   BpmnError,
-  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
@@ -10,6 +9,7 @@ import {
 import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
+
   /**
    * Checks if the name of the given error is equal to the one attached
    * to the BoundaryEvent model.

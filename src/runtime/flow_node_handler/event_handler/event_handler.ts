@@ -8,11 +8,11 @@ import {
   ProcessTokenType,
 } from '@process-engine/flow_node_instance.contracts';
 import {
-  eventAggregatorSettings,
   IFlowNodeInstanceResult,
-  IntermediateEventTriggeredMessage,
   IProcessModelFacade,
   IProcessTokenFacade,
+  IntermediateEventTriggeredMessage,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
