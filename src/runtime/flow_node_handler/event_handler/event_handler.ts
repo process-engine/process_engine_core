@@ -283,7 +283,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    * - A global notification that everybody can receive
    * - A notification specifically for this IntermediateEvent.
    *
-   * @param token    Contains all infos required for the Notification message.
+   * @param token    Contains all information required for the notification message.
    */
   protected sendIntermediateEventFinishedNotification(token: ProcessToken): void {
 
