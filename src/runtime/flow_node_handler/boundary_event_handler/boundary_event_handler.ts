@@ -2,6 +2,7 @@ import * as uuid from 'node-uuid';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
