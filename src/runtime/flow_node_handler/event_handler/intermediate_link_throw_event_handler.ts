@@ -40,7 +40,6 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
 
     this.logger.verbose(`Executing LinkThrowEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
-    this.sendIntermediateEventReachedNotification(token);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
@@ -60,7 +59,7 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
     processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, this.flowNodeInstanceId, {});
     await this.persistOnExit(token);
 
-    this.sendIntermediateEventFinishedNotification(token);
+    this.sendIntermediateEventTriggeredNotification(token);
 
     return [matchingCatchEvent];
   }

@@ -2,28 +2,18 @@ import {IEventAggregator, Subscription} from '@essential-projects/event_aggregat
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
   OnBoundaryEventTriggeredCallback,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
   private subscription: Subscription;
-
-  constructor(
-    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
-    eventAggregator: IEventAggregator,
-    boundaryEventModel: Model.Events.BoundaryEvent,
-  ) {
-    super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
-  }
 
   public async waitForTriggeringEvent(
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
@@ -36,8 +26,6 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     await this.persistOnEnter(token);
-
-    this.sendBoundaryEventReachedNotification(token);
 
     const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
       .replace(eventAggregatorSettings.messageParams.messageReference, this.boundaryEventModel.messageEventDefinition.name);
@@ -53,7 +41,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
         eventPayload: message.currentToken,
       };
 
-      this.sendBoundaryEventFinishedNotification(token);
+      this.sendBoundaryEventTriggeredNotification(token);
 
       return onTriggeredCallback(eventData);
     };

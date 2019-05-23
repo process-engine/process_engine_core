@@ -44,8 +44,6 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
     this.logger.verbose(`Executing MessageCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
-    this.sendIntermediateEventReachedNotification(token);
-
     return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
 
@@ -78,7 +76,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
       processTokenFacade.addResultForFlowNode(this.messageCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
-      this.sendIntermediateEventFinishedNotification(token);
+      this.sendIntermediateEventTriggeredNotification(token);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.messageCatchEvent);
 

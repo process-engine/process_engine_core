@@ -266,19 +266,19 @@ function registerBoundaryEventHandlers(container) {
 
   container
     .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade');
 
   container
     .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade');
 
   container
     .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade');
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'TimerFacade', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade', 'TimerFacade');
 
 }
 

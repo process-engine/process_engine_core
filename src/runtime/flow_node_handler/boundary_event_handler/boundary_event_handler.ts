@@ -2,8 +2,7 @@ import * as uuid from 'node-uuid';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  BoundaryEventFinishedMessage,
-  BoundaryEventReachedMessage,
+  BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -29,9 +28,9 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   protected readonly boundaryEventInstanceId: string;
 
   constructor(
+    eventAggregator: IEventAggregator,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
-    eventAggregator: IEventAggregator,
   ) {
     this.flowNodePersistenceFacade = flowNodePersistenceFacade;
     this.boundaryEventModel = boundaryEventModel;
@@ -79,27 +78,6 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   }
 
   /**
-   * Publishes a notification on the EventAggregator, informing about a new
-   * suspended Boundary Event.
-   *
-   * @param token    Contains all infos required for the Notification message.
-   */
-  protected sendBoundaryEventReachedNotification(token: ProcessToken): void {
-
-    const message = new BoundaryEventReachedMessage(
-      token.correlationId,
-      token.processModelId,
-      token.processInstanceId,
-      this.boundaryEventModel.id,
-      this.boundaryEventInstanceId,
-      undefined,
-      token.payload,
-    );
-
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventReached, message);
-  }
-
-  /**
    * Publishes notifications on the EventAggregator, informing that a BoundaryEvent
    * has finished execution.
    *
@@ -109,7 +87,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    *
    * @param token    Contains all infos required for the Notification message.
    */
-  protected sendBoundaryEventFinishedNotification(token: ProcessToken): void {
+  protected sendBoundaryEventTriggeredNotification(token: ProcessToken): void {
 
     const message = new BoundaryEventFinishedMessage(
       token.correlationId,
@@ -122,21 +100,21 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     );
 
     // FlowNode-specific notification
-    const boundaryEventFinishedEvent = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
-    this.eventAggregator.publish(boundaryEventFinishedEvent, message);
+    const BoundaryEventTriggeredEvent = this.getBoundaryEventTriggeredEventName(token.correlationId, token.processInstanceId);
+    this.eventAggregator.publish(BoundaryEventTriggeredEvent, message);
 
     // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventFinished, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.BoundaryEventTriggered, message);
   }
 
-  protected getBoundaryEventFinishedEventName(correlationId: string, processInstanceId: string): string {
+  protected getBoundaryEventTriggeredEventName(correlationId: string, processInstanceId: string): string {
 
-    const boundaryEventFinishedEvent = eventAggregatorSettings.messagePaths.boundaryEventFinished
+    const BoundaryEventTriggeredEvent = eventAggregatorSettings.messagePaths.BoundaryEventTriggered
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.boundaryEventInstanceId);
 
-    return boundaryEventFinishedEvent;
+    return BoundaryEventTriggeredEvent;
   }
 
 }

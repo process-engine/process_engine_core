@@ -101,9 +101,11 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       await this.persistOnResume(onSuspendToken);
       processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
-      await this.persistOnExit(onSuspendToken);
 
       this.sendCallActivityFinishedNotification(identity, onSuspendToken);
+
+      await this.persistOnExit(onSuspendToken);
+
 
       return processModelFacade.getNextFlowNodesFor(this.callActivity);
     } catch (error) {
@@ -138,9 +140,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     try {
       const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
 
-      await this.persistOnSuspend(token);
-
       this.sendCallActivityReachedNotification(identity, token);
+
+      await this.persistOnSuspend(token);
 
       const callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, token);
 

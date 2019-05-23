@@ -27,7 +27,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     eventAggregator: IEventAggregator,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    super(flowNodePersistenceFacade, boundaryEventModel, eventAggregator);
+    super(eventAggregator, flowNodePersistenceFacade, boundaryEventModel);
     this.timerFacade = timerFacade;
     this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
   }
@@ -42,8 +42,6 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
     this.logger.verbose(`Initializing TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId}`);
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
-
-    this.sendBoundaryEventReachedNotification(token);
 
     await this.persistOnEnter(token);
 
@@ -64,7 +62,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
         eventPayload: {},
       };
 
-      this.sendBoundaryEventFinishedNotification(token);
+      this.sendBoundaryEventTriggeredNotification(token);
 
       onTriggeredCallback(eventData);
     };
