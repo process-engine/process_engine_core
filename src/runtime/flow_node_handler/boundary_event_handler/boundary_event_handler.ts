@@ -86,7 +86,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    */
   protected sendBoundaryEventReachedNotification(token: ProcessToken): void {
 
-    const message: BoundaryEventReachedMessage = new BoundaryEventReachedMessage(
+    const message = new BoundaryEventReachedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -111,7 +111,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    */
   protected sendBoundaryEventFinishedNotification(token: ProcessToken): void {
 
-    const message: BoundaryEventFinishedMessage = new BoundaryEventFinishedMessage(
+    const message = new BoundaryEventFinishedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -122,7 +122,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     );
 
     // FlowNode-specific notification
-    const boundaryEventFinishedEvent: string = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
+    const boundaryEventFinishedEvent = this.getBoundaryEventFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(boundaryEventFinishedEvent, message);
 
     // Global notification
@@ -131,7 +131,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   protected getBoundaryEventFinishedEventName(correlationId: string, processInstanceId: string): string {
 
-    const boundaryEventFinishedEvent: string = eventAggregatorSettings.messagePaths.boundaryEventFinished
+    const boundaryEventFinishedEvent = eventAggregatorSettings.messagePaths.boundaryEventFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.boundaryEventInstanceId);

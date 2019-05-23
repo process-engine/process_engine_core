@@ -262,7 +262,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    */
   protected sendIntermediateEventReachedNotification(token: ProcessToken): void {
 
-    const message: IntermediateEventReachedMessage = new IntermediateEventReachedMessage(
+    const message = new IntermediateEventReachedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -287,7 +287,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
    */
   protected sendIntermediateEventFinishedNotification(token: ProcessToken): void {
 
-    const message: IntermediateEventFinishedMessage = new IntermediateEventFinishedMessage(
+    const message = new IntermediateEventFinishedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -298,7 +298,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     );
 
     // FlowNode-specific notification
-    const intermediateEventFinishedEvent: string = this.getIntermediateEventFinishedEventName(token.correlationId, token.processInstanceId);
+    const intermediateEventFinishedEvent = this.getIntermediateEventFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(intermediateEventFinishedEvent, message);
 
     // Global notification
@@ -307,7 +307,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
   protected getIntermediateEventFinishedEventName(correlationId: string, processInstanceId: string): string {
 
-    const intermediateEventFinishedEvent: string = eventAggregatorSettings.messagePaths.intermediateEventFinished
+    const intermediateEventFinishedEvent = eventAggregatorSettings.messagePaths.intermediateEventFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);

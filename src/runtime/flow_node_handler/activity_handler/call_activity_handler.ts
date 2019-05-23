@@ -296,7 +296,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    */
   private sendCallActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: CallActivityReachedMessage = new CallActivityReachedMessage(
+    const message = new CallActivityReachedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -322,7 +322,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    */
   private sendCallActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message: CallActivityFinishedMessage = new CallActivityFinishedMessage(
+    const message = new CallActivityFinishedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -333,7 +333,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     );
 
     // FlowNode-specific notification
-    const callActivityFinishedEvent: string = this.getCallActivityFinishedEventName(token.correlationId, token.processInstanceId);
+    const callActivityFinishedEvent = this.getCallActivityFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(callActivityFinishedEvent, message);
 
     // Global notification
@@ -342,7 +342,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
   private getCallActivityFinishedEventName(correlationId: string, processInstanceId: string): string {
 
-    const callActivityFinishedEvent: string = eventAggregatorSettings.messagePaths.callActivityFinished
+    const callActivityFinishedEvent = eventAggregatorSettings.messagePaths.callActivityFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
