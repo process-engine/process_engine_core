@@ -281,12 +281,12 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     this.eventAggregator.publish(IntermediateEventTriggeredEvent, message);
 
     // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.IntermediateEventTriggered, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateEventTriggered, message);
   }
 
   protected getIntermediateEventTriggeredEventName(correlationId: string, processInstanceId: string): string {
 
-    const IntermediateEventTriggeredEvent = eventAggregatorSettings.messagePaths.IntermediateEventTriggered
+    const IntermediateEventTriggeredEvent = eventAggregatorSettings.messagePaths.intermediateEventTriggered
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);

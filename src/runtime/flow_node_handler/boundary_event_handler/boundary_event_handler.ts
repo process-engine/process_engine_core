@@ -104,12 +104,12 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     this.eventAggregator.publish(BoundaryEventTriggeredEvent, message);
 
     // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.BoundaryEventTriggered, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventTriggered, message);
   }
 
   protected getBoundaryEventTriggeredEventName(correlationId: string, processInstanceId: string): string {
 
-    const BoundaryEventTriggeredEvent = eventAggregatorSettings.messagePaths.BoundaryEventTriggered
+    const BoundaryEventTriggeredEvent = eventAggregatorSettings.messagePaths.boundaryEventTriggered
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.boundaryEventInstanceId);
