@@ -1,4 +1,6 @@
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import * as clone from 'clone';
+
 import {IFlowNodeInstanceResult, IProcessTokenFacade} from '@process-engine/process_engine_contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
@@ -17,7 +19,9 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
   }
 
   public getAllResults(): Array<IFlowNodeInstanceResult> {
-    return this.processTokenResults;
+    // Must return a copy here, or whoever gets the result will be
+    // able to manipulate the actual values stored by this facade!
+    return clone(this.processTokenResults);
   }
 
   public createProcessToken(payload?: any): ProcessToken {
