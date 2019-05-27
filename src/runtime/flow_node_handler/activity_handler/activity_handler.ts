@@ -196,18 +196,11 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
               // ParallelJoinGateways always have multiple "previousFlowNodeInstanceIds".
               // These IDs are separated by ";", i.e.: ID1;ID2;ID3, etc.
               // We need to account for that fact here.
-              const previousFlowNodeInstanceIdIsAList =
-                instance.previousFlowNodeInstanceId &&
-                instance.previousFlowNodeInstanceId.indexOf(';') > -1;
+              // indexOf will return 0, if the two IDs are exact matches.
+              const instanceFollowedCurrentFlowNode = instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
+              const flowNodeIdsMatch = instance.flowNodeId === nextFlowNode.id;
 
-              if (previousFlowNodeInstanceIdIsAList) {
-                const instanceFollowedCurrentFlowNode = instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
-
-                return instanceFollowedCurrentFlowNode && instance.flowNodeId === nextFlowNode.id;
-              }
-
-              return instance.flowNodeId === nextFlowNode.id &&
-                     instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+              return instanceFollowedCurrentFlowNode && flowNodeIdsMatch;
             });
 
             const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);
