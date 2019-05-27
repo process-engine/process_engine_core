@@ -99,11 +99,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
 
-    const allPreviousFlowNodeInstanceIdsStored = this.incomingFlowNodeInstanceIds.length === this.expectedNumberOfResults;
-    if (allPreviousFlowNodeInstanceIdsStored) {
-      // We must only do the "onEnter" persistence, when we have ALL the IDs of the preceeding FlowNodeInstances.
-      await this.persistOnEnter(token, this.incomingFlowNodeInstanceIds);
-    }
+    await this.persistOnEnter(token, this.incomingFlowNodeInstanceIds);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
