@@ -78,12 +78,8 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   }
 
   /**
-   * Publishes notifications on the EventAggregator, informing that a BoundaryEvent
-   * has finished execution.
-   *
-   * Two notifications will be send:
-   * - A global notification that everybody can receive
-   * - A notification specifically for this BoundaryEvent.
+   * Publishes a notification on the EventAggregator, informing about a new
+   * triggered Boundary Event.
    *
    * @param token    Contains all infos required for the Notification message.
    */
@@ -99,22 +95,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
       token.payload,
     );
 
-    // FlowNode-specific notification
-    const BoundaryEventTriggeredEvent = this.getBoundaryEventTriggeredEventName(token.correlationId, token.processInstanceId);
-    this.eventAggregator.publish(BoundaryEventTriggeredEvent, message);
-
-    // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventTriggered, message);
-  }
-
-  protected getBoundaryEventTriggeredEventName(correlationId: string, processInstanceId: string): string {
-
-    const BoundaryEventTriggeredEvent = eventAggregatorSettings.messagePaths.boundaryEventTriggered
-      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
-      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.boundaryEventInstanceId);
-
-    return BoundaryEventTriggeredEvent;
   }
 
 }
