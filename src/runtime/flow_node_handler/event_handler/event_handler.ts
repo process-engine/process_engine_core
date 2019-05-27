@@ -147,7 +147,9 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
             const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);
 
-            processTokenForBranch.flowNodeInstanceId = nextFlowNodeInstance.id || nextFlowNodeHandler.getInstanceId();
+            processTokenForBranch.flowNodeInstanceId = nextFlowNodeInstance
+              ? nextFlowNodeInstance.id
+              : nextFlowNodeHandler.getInstanceId();
 
             // An instance for the next FlowNode has already been created. Continue resuming
             if (nextFlowNodeInstance) {
