@@ -190,8 +190,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  protected async persistOnEnter(processToken: ProcessToken): Promise<void> {
-    await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
+  protected async persistOnEnter(processToken: ProcessToken, previousFlowNodeInstanceIds?: Array<string>): Promise<void> {
+
+    const previousFlowNodeInstanceIdToPersist = previousFlowNodeInstanceIds
+      ? previousFlowNodeInstanceIds.join(';')
+      : this.previousFlowNodeInstanceId;
+
+    await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, previousFlowNodeInstanceIdToPersist);
   }
 
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
