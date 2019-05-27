@@ -209,9 +209,14 @@ export class ResumeProcessService implements IResumeProcessService {
 
       const flowNodeHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
+      const flowNodeInstance = flowNodeInstances.find((entry: FlowNodeInstance): boolean => {
+        return entry.flowNodeId === processInstanceConfig.startEvent.id;
+      });
+
       logger.info(`Resuming ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}...`);
 
       await flowNodeHandler.resume(
+        flowNodeInstance,
         flowNodeInstances,
         processInstanceConfig.processTokenFacade,
         processInstanceConfig.processModelFacade,
