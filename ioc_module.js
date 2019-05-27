@@ -78,7 +78,7 @@ function registerServices(container) {
       'FlowNodeHandlerFactory',
       'IdentityService',
       'ProcessInstanceStateHandlingFacade',
-      'ProcessModelUseCases'
+      'ProcessModelUseCases',
     );
 
   container
@@ -89,7 +89,7 @@ function registerServices(container) {
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
-      'ProcessInstanceStateHandlingFacade'
+      'ProcessInstanceStateHandlingFacade',
     );
 
   container
@@ -103,7 +103,7 @@ function registerServices(container) {
       'EventAggregator',
       'LoggingApiService',
       'MetricsApiService',
-      'ProcessModelUseCases'
+      'ProcessModelUseCases',
     );
 
   container
@@ -154,7 +154,7 @@ function registerFactories(container) {
       'IntermediateCatchEventFactory',
       'IntermediateThrowEventFactory',
       'ParallelGatewayFactory',
-      'ServiceTaskFactory'
+      'ServiceTaskFactory',
     )
     .singleton();
 }
@@ -170,7 +170,7 @@ function registerFlowNodeHandlers(container) {
       'FlowNodeHandlerFactory',
       'FlowNodePersistenceFacade',
       'ProcessModelUseCases',
-      'ResumeProcessService'
+      'ResumeProcessService',
     );
 
   container
