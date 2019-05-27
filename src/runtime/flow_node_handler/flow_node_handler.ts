@@ -80,7 +80,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   ): Promise<void>;
 
   public abstract async resume(
-    flowNodeInstances: Array<FlowNodeInstance>,
+    flowNodeInstanceForHandler: FlowNodeInstance,
+    allFlowNodeInstances: Array<FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
