@@ -53,11 +53,8 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     identity: IIdentity,
   ): Promise<void> {
 
-    const expectedResultsAlreadySet = this.expectedNumberOfResults > -1;
-
     // Safety check to prevent a handler to be resolved and called after it was already finished.
-    const handlerIsAlreadyFinished = expectedResultsAlreadySet || this.isInterrupted;
-    if (handlerIsAlreadyFinished) {
+    if (this.isInterrupted) {
       return;
     }
 
@@ -82,8 +79,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       this.processTerminationSubscription = this.subscribeToProcessTermination(token);
     }
 
-    const preceedingFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
-    this.expectedNumberOfResults = preceedingFlowNodes.length;
+    const expectedNumerOfResultsNotset = this.expectedNumberOfResults === -1;
+    if (expectedNumerOfResultsNotset) {
+      const preceedingFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
+      this.expectedNumberOfResults = preceedingFlowNodes.length;
+    }
   }
 
   protected async startExecution(

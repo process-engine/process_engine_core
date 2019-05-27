@@ -141,8 +141,19 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
               : processTokenFacade;
 
             const nextFlowNodeInstance = allFlowNodeInstances.find((instance: FlowNodeInstance): boolean => {
-              return instance.flowNodeId === nextFlowNode.id &&
-                     instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+
+              // ParallelJoinGateways always have multiple "previousFlowNodeInstanceIds".
+              // We need to account for that fact here.
+              const previousFlowNodeInstanceIdIsACollection =
+                instance.previousFlowNodeInstanceId &&
+                instance.previousFlowNodeInstanceId.indexOf(';') > -1;
+
+              if (previousFlowNodeInstanceIdIsACollection) {
+                const deserializedPreviousFlowNodeInstanceIds = instance.previousFlowNodeInstanceId.split(';');
+                return deserializedPreviousFlowNodeInstanceIds.some((entry): boolean => entry === this.flowNodeInstanceId);
+              }
+
+              return instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
             });
 
             const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);
