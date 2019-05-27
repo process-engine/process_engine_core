@@ -202,10 +202,15 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
               if (previousFlowNodeInstanceIdIsAList) {
                 const deserializedPreviousFlowNodeInstanceIds = instance.previousFlowNodeInstanceId.split(';');
-                return deserializedPreviousFlowNodeInstanceIds.some((entry): boolean => entry === this.flowNodeInstanceId);
+                const instanceHasMatchingPreviousFlowNodeInstanceId = deserializedPreviousFlowNodeInstanceIds.some((entry): boolean => {
+                  return entry === this.flowNodeInstanceId;
+                });
+
+                return instanceHasMatchingPreviousFlowNodeInstanceId && instance.flowNodeId === nextFlowNode.id;
               }
 
-              return instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+              return instance.flowNodeId === nextFlowNode.id &&
+                     instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
             });
 
             const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);

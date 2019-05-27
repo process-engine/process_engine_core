@@ -143,17 +143,23 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
             const nextFlowNodeInstance = allFlowNodeInstances.find((instance: FlowNodeInstance): boolean => {
 
               // ParallelJoinGateways always have multiple "previousFlowNodeInstanceIds".
+              // These IDs are separated by ";", i.e.: ID1;ID2;ID3, etc.
               // We need to account for that fact here.
-              const previousFlowNodeInstanceIdIsACollection =
+              const previousFlowNodeInstanceIdIsAList =
                 instance.previousFlowNodeInstanceId &&
                 instance.previousFlowNodeInstanceId.indexOf(';') > -1;
 
-              if (previousFlowNodeInstanceIdIsACollection) {
+              if (previousFlowNodeInstanceIdIsAList) {
                 const deserializedPreviousFlowNodeInstanceIds = instance.previousFlowNodeInstanceId.split(';');
-                return deserializedPreviousFlowNodeInstanceIds.some((entry): boolean => entry === this.flowNodeInstanceId);
+                const instanceHasMatchingPreviousFlowNodeInstanceId = deserializedPreviousFlowNodeInstanceIds.some((entry): boolean => {
+                  return entry === this.flowNodeInstanceId;
+                });
+
+                return instanceHasMatchingPreviousFlowNodeInstanceId && instance.flowNodeId === nextFlowNode.id;
               }
 
-              return instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+              return instance.flowNodeId === nextFlowNode.id &&
+                     instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
             });
 
             const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);
