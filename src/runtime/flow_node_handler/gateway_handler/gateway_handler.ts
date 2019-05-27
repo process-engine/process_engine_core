@@ -138,12 +138,9 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
                 instance.previousFlowNodeInstanceId.indexOf(';') > -1;
 
               if (previousFlowNodeInstanceIdIsAList) {
-                const deserializedPreviousFlowNodeInstanceIds = instance.previousFlowNodeInstanceId.split(';');
-                const instanceHasMatchingPreviousFlowNodeInstanceId = deserializedPreviousFlowNodeInstanceIds.some((entry): boolean => {
-                  return entry === this.flowNodeInstanceId;
-                });
+                const instanceFollowedCurrentFlowNode = instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
 
-                return instanceHasMatchingPreviousFlowNodeInstanceId && instance.flowNodeId === nextFlowNode.id;
+                return instanceFollowedCurrentFlowNode && instance.flowNodeId === nextFlowNode.id;
               }
 
               return instance.flowNodeId === nextFlowNode.id &&
