@@ -37,6 +37,8 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
+    this.sendIntermediateEventTriggeredNotification(token);
+
     this.logger.verbose(`Executing LinkCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
@@ -53,7 +55,7 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
     processTokenFacade.addResultForFlowNode(this.linkCatchEventModel.id, this.flowNodeInstanceId, {});
     await this.persistOnExit(token);
 
-    this.sendIntermediateEventTriggeredNotification(token);
+    this.sendIntermediateCatchEventFinishedNotification(token);
 
     return processModelFacade.getNextFlowNodesFor(this.linkCatchEventModel);
   }

@@ -11,6 +11,7 @@ import {
   IFlowNodeInstanceResult,
   IProcessModelFacade,
   IProcessTokenFacade,
+  IntermediateCatchEventFinishedMessage,
   IntermediateEventTriggeredMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
@@ -255,14 +256,10 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
   }
 
   /**
-   * Publishes notifications on the EventAggregator, informing that a IntermediateEvent
-   * has finished execution.
+   * Publishes a notification on the EventAggregator, informing about a new
+   * triggered IntermediateEvent.
    *
-   * Two notifications will be send:
-   * - A global notification that everybody can receive
-   * - A notification specifically for this IntermediateEvent.
-   *
-   * @param token    Contains all information required for the notification message.
+   * @param token    Contains all infos required for the Notification message.
    */
   protected sendIntermediateEventTriggeredNotification(token: ProcessToken): void {
 
@@ -276,22 +273,47 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       token.payload,
     );
 
-    // FlowNode-specific notification
-    const IntermediateEventTriggeredEvent = this.getIntermediateEventTriggeredEventName(token.correlationId, token.processInstanceId);
-    this.eventAggregator.publish(IntermediateEventTriggeredEvent, message);
-
-    // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateEventTriggered, message);
   }
 
-  protected getIntermediateEventTriggeredEventName(correlationId: string, processInstanceId: string): string {
+  /**
+   * Publishes notifications on the EventAggregator, informing that a IntermediateCatchEvent
+   * has finished execution.
+   *
+   * Two notifications will be send:
+   * - A global notification that everybody can receive
+   * - A notification specifically for this IntermediateCatchEvent.
+   *
+   * @param token    Contains all information required for the notification message.
+   */
+  protected sendIntermediateCatchEventFinishedNotification(token: ProcessToken): void {
 
-    const IntermediateEventTriggeredEvent = eventAggregatorSettings.messagePaths.intermediateEventTriggered
+    const message = new IntermediateCatchEventFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      undefined,
+      token.payload,
+    );
+
+    // FlowNode-specific notification
+    const IntermediateCatchEventFinishedEvent = this.getIntermediateCatchEventFinishedEventName(token.correlationId, token.processInstanceId);
+    this.eventAggregator.publish(IntermediateCatchEventFinishedEvent, message);
+
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateCatchEventFinished, message);
+  }
+
+  protected getIntermediateCatchEventFinishedEventName(correlationId: string, processInstanceId: string): string {
+
+    const IntermediateCatchEventFinishedEvent = eventAggregatorSettings.messagePaths.intermediateCatchEventFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
 
-    return IntermediateEventTriggeredEvent;
+    return IntermediateCatchEventFinishedEvent;
   }
 
 }

@@ -41,6 +41,8 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
+    this.sendIntermediateEventTriggeredNotification(token);
+
     this.logger.verbose(`Executing SignalCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
@@ -76,7 +78,7 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
       processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(token);
 
-      this.sendIntermediateEventTriggeredNotification(token);
+      this.sendIntermediateCatchEventFinishedNotification(token);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.signalCatchEvent);
 
