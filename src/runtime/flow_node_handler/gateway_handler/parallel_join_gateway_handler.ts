@@ -23,9 +23,9 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   private readonly container: IContainer;
 
   private expectedNumberOfResults: number = -1;
+  private incomingFlowNodeInstanceIds: Array<string> = [];
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
-  private onEnterStatePersisted: boolean = false;
   private isInterrupted: boolean = false;
 
   private processTerminationSubscription: Subscription;
@@ -63,6 +63,20 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
 
+    // TODO: Works for now, but there really must be a better solution for this problem.
+    //
+    // This ID gets overriden, each time an incoming SequenceFlow arrives.
+    // So with each execution of this hook, we get an additional ID of one of
+    // the preceeding FlowNodeInstances.
+    // Since we must store ALL previousFlowNodeInstanceIds for the gateway,
+    // we'll add each ID to the `incomingFlowNodeInstanceIds`.
+    // When all Ids have been stored, the "persistOnEnter" gets all IDs as a concatenated string.
+    // This way, we can be sure that the `previousFlowNodeInstanceId` database field has all the relevant IDs.
+    //
+    // We must do it like this, or resuming the Join Gateway will have unpredictable results and will most
+    // likely crash the ProcessInstance.
+    this.incomingFlowNodeInstanceIds.push(this.previousFlowNodeInstanceId);
+
     const subscriptionForProcessTerminationNeeded = !this.processTerminationSubscription;
     if (subscriptionForProcessTerminationNeeded) {
       this.processTerminationSubscription = this.subscribeToProcessTermination(token);
@@ -83,13 +97,13 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       return undefined;
     }
 
-    // We must only store this state change once to prevent duplicate database entries.
-    if (!this.onEnterStatePersisted) {
-      this.onEnterStatePersisted = true;
-      await this.persistOnEnter(token);
-    }
-
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
+
+    const allPreviousFlowNodeInstanceIdsStored = this.incomingFlowNodeInstanceIds.length === this.expectedNumberOfResults;
+    if (allPreviousFlowNodeInstanceIdsStored) {
+      // We must only do the "onEnter" persistence, when we have ALL the IDs of the preceeding FlowNodeInstances.
+      await this.persistOnEnter(token, this.incomingFlowNodeInstanceIds);
+    }
 
     return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
