@@ -99,7 +99,8 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
   }
 
   public async resume(
-    flowNodeInstances: Array<FlowNodeInstance>,
+    flowNodeInstanceForHandler: FlowNodeInstance,
+    allFlowNodeInstances: Array<FlowNodeInstance>,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -107,23 +108,21 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
-        const flowNodeInstance = flowNodeInstances.find((instance: FlowNodeInstance): boolean => instance.flowNodeId === this.flowNode.id);
-
-        this.previousFlowNodeInstanceId = flowNodeInstance.previousFlowNodeInstanceId;
-        this.flowNodeInstanceId = flowNodeInstance.id;
+        this.previousFlowNodeInstanceId = flowNodeInstanceForHandler.previousFlowNodeInstanceId;
+        this.flowNodeInstanceId = flowNodeInstanceForHandler.id;
 
         // With regards to ParallelGateways, we need to be able to handle multiple results here.
 
         // It doesn't really matter which token is used here, since payload-specific operations should
         // only ever be done during the handlers execution.
         // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
-        const tokenForHandlerHooks = flowNodeInstance.tokens[0];
+        const token = flowNodeInstanceForHandler.tokens[0];
 
-        await this.beforeExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity, reject);
+        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
 
-        const nextFlowNodes = await this.resumeFromState(flowNodeInstance, processTokenFacade, processModelFacade, identity);
+        const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
 
-        await this.afterExecute(tokenForHandlerHooks, processTokenFacade, processModelFacade, identity);
+        await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
         const nextFlowNodesFound = nextFlowNodes && nextFlowNodes.length > 0;
         if (nextFlowNodesFound) {
@@ -133,34 +132,35 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
             .pop();
 
           const handleNextFlowNode = async (nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-            const processToken = processTokenFacade.createProcessToken(currentResult.result);
-
-            const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processToken);
-
-            const nextFlowNodeInstance = flowNodeInstances.find((instance: FlowNodeInstance): boolean => instance.flowNodeId === nextFlowNode.id);
-
-            processToken.flowNodeInstanceId = nextFlowNodeInstance
-              ? nextFlowNodeInstance.id
-              : nextFlowNodeHandler.getInstanceId();
-
-            // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
-            const tokenForNextFlowNode = nextFlowNodes.length > 1
-              ? processTokenFacade.createProcessToken(processToken.payload)
-              : processToken;
+            const processTokenForBranch = nextFlowNodes.length > 1
+              ? processTokenFacade.createProcessToken(currentResult)
+              : token;
 
             const processTokenFacadeForFlowNode = nextFlowNodes.length > 1
               ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
               : processTokenFacade;
 
+            const nextFlowNodeInstance = allFlowNodeInstances.find((instance: FlowNodeInstance): boolean => {
+              return instance.flowNodeId === nextFlowNode.id &&
+                     instance.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+            });
+
+            const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);
+
+            processTokenForBranch.flowNodeInstanceId = nextFlowNodeInstance
+              ? nextFlowNodeInstance.id
+              : nextFlowNodeHandler.getInstanceId();
+
             // An instance for the next FlowNode has already been created. Continue resuming
             if (nextFlowNodeInstance) {
-              return nextFlowNodeHandler.resume(flowNodeInstances, processTokenFacadeForFlowNode, processModelFacade, identity);
+              return nextFlowNodeHandler
+                .resume(nextFlowNodeInstance, allFlowNodeInstances, processTokenFacadeForFlowNode, processModelFacade, identity);
             }
 
             // No instance for the next FlowNode was found.
             // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
             return nextFlowNodeHandler
-              .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
+              .execute(processTokenForBranch, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
           };
 
           const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];

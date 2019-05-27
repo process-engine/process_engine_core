@@ -61,9 +61,8 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
     // Since the Gateway was finished without error, we can assume that only one outgoing SequenceFlow with a matching condition exists.
     // If this were not the case, the Gateway would not have been executed at all.
-    const matchingSequenceFlows = await this.getSequenceFlowsWithMatchingCondition(outgoingSequenceFlows, processTokenFacade);
-
-    const nextFlowNodeAfterSplit = processModelFacade.getFlowNodeById(matchingSequenceFlows[0].targetRef);
+    const nextFlowNodeId = await this.determineBranchToTake(onExitToken, outgoingSequenceFlows, processTokenFacade);
+    const nextFlowNodeAfterSplit = processModelFacade.getFlowNodeById(nextFlowNodeId);
 
     return [nextFlowNodeAfterSplit];
   }
@@ -107,9 +106,9 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
     // If this is a split gateway, find the SequenceFlow that has a truthy condition
     // and continue execution with its target FlowNode.
     const nextFlowNodeId = await this.determineBranchToTake(token, outgoingSequenceFlows, processTokenFacade);
-    await this.persistOnExit(token);
-
     const nextFlowNodeAfterSplit = processModelFacade.getFlowNodeById(nextFlowNodeId);
+
+    await this.persistOnExit(token);
 
     return [nextFlowNodeAfterSplit];
   }

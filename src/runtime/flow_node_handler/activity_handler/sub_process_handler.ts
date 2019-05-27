@@ -260,6 +260,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
           processInstanceConfig.processTokenFacade,
           processInstanceConfig.processModelFacade,
           identity,
+          this.flowNodeInstanceId,
         );
 
         this.cancelEventAggregatorSubscriptions();
@@ -277,7 +278,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
   private async waitForSubProcessResumption(
     processInstanceConfig: IProcessInstanceConfig,
     identity: IIdentity,
-    flowNodeInstance: Array<FlowNodeInstance>,
+    flowNodeInstances: Array<FlowNodeInstance>,
   ): Promise<any> {
 
     return new Promise<any>(async (resolve: EventReceivedCallback, reject: Function): Promise<void> => {
@@ -287,8 +288,18 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
         this.subscribeToSubProcessEndEvent(processInstanceConfig.processToken, resolve);
         this.subscribeToSubProcessTermination(processInstanceConfig.processInstanceId, reject as EventReceivedCallback);
 
-        await startEventHandler
-          .resume(flowNodeInstance, processInstanceConfig.processTokenFacade, processInstanceConfig.processModelFacade, identity);
+        const firstFlowNodeInstance = flowNodeInstances.find((entry): boolean => {
+          return entry.flowNodeId === processInstanceConfig.startEvent.id &&
+                 entry.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+        });
+
+        await startEventHandler.resume(
+          firstFlowNodeInstance,
+          flowNodeInstances,
+          processInstanceConfig.processTokenFacade,
+          processInstanceConfig.processModelFacade,
+          identity,
+        );
 
         this.cancelEventAggregatorSubscriptions();
 
