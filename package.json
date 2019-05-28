@@ -46,6 +46,7 @@
     "@essential-projects/eslint-config": "^1.0.0",
     "@types/bluebird-global": "^3.5.9",
     "@types/express": "^4.16.0",
+    "@types/mocha": "^5.2.6",
     "@types/node": "^10.12.2",
     "eslint": "^5.16.0",
     "mocha": "^6.0.0",
@@ -59,8 +60,8 @@
     "build-commonjs": "tsc",
     "build-amd": "tsc --module amd --outDir ./dist/amd",
     "prepare": "npm run build",
-    "lint": "eslint  src/**/**/**/*.ts src/**/**/*.ts src/**/*.ts src/*.ts",
-    "lint-fix": "eslint --fix  src/**/**/**/*.ts src/**/**/*.ts src/**/*.ts src/*.ts",
+    "lint": "eslint  src/**/**/**/*.ts src/**/**/*.ts src/**/*.ts src/*.ts test/**/*.ts test/*.ts",
+    "lint-fix": "eslint --fix  src/**/**/**/*.ts src/**/**/*.ts src/**/*.ts src/*.ts test/**/*.ts test/*.ts",
     "test": "ts-mocha -p ./tsconfig.json ./test/**/*.spec.ts"
   }
 }
