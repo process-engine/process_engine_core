@@ -2,25 +2,24 @@ import * as should from 'should';
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {ProcessModelFacade} from '../../src/runtime/facades/process_model_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-describe('ProcessModelFacade.getFlowNodeById', () => {
+describe('ProcessModelFacade.getFlowNodeById', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
 
-  before(async() => {
+  before(async (): Promise<void> => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
   });
 
-  it('should be able to return each FlowNode of the given ProcessModel.', async() => {
+  it('should be able to return each FlowNode of the given ProcessModel.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/process_engine_io_release.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+    const processModelFilePath = './test/bpmns/process_engine_io_release.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
-    const expectedFlowNodeIds: Array<string> = [
+    const expectedFlowNodeIds = [
       'ausserordentlicher_start',
       'ExclusiveSplitGateway_1',
       'ExclusiveJoinGateway_1',
@@ -33,18 +32,18 @@ describe('ProcessModelFacade.getFlowNodeById', () => {
     ];
 
     for (const expectedId of expectedFlowNodeIds) {
-      const flowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(expectedId);
+      const flowNode = processModelFacade.getFlowNodeById(expectedId);
       assertFlowNode(flowNode, expectedId);
     }
   });
 
-  it('should be able to return each FlowNode of the given ProcessModel, even it has no lanes.', async() => {
+  it('should be able to return each FlowNode of the given ProcessModel, even it has no lanes.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/generic_sample.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
-    const expectedFlowNodeId: Array<string> = [
+    const expectedFlowNodeId = [
       'ProcessInputEvent',
       'ShouldEncryptGateway',
       'ShouldEncryptJoin',
@@ -57,18 +56,18 @@ describe('ProcessModelFacade.getFlowNodeById', () => {
     ];
 
     for (const expectedId of expectedFlowNodeId) {
-      const flowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(expectedId);
+      const flowNode = processModelFacade.getFlowNodeById(expectedId);
       assertFlowNode(flowNode, expectedId);
     }
   });
 
-  it('should be able to return each FlowNode of the given ProcessModel, if they are spread across multiple lanes.', async() => {
+  it('should be able to return each FlowNode of the given ProcessModel, if they are spread across multiple lanes.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/sublane_test.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+    const processModelFilePath = './test/bpmns/sublane_test.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
-    const expectedEndEventIds: Array<string> = [
+    const expectedEndEventIds = [
       'StartEvent_1',
       'ExclusiveGateway_1ax0imj',
       'Task_0ukwbko',
@@ -78,7 +77,7 @@ describe('ProcessModelFacade.getFlowNodeById', () => {
     ];
 
     for (const expectedId of expectedEndEventIds) {
-      const flowNode: Model.Base.FlowNode = processModelFacade.getFlowNodeById(expectedId);
+      const flowNode = processModelFacade.getFlowNodeById(expectedId);
       assertFlowNode(flowNode, expectedId);
     }
   });

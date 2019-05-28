@@ -3,29 +3,29 @@ import * as should from 'should';
 
 import * as Bluebird from 'bluebird';
 
+import {Model} from '@process-engine/process_model.contracts';
+
+import {BpmnModelParser} from '../src/model/bpmn_model_parser';
+import {ProcessModelFacade} from '../src/runtime';
+
 Bluebird.config({
   cancellation: true,
 });
 
 global.Promise = Bluebird;
 
-import {Model} from '@process-engine/process_model.contracts';
-
-import {BpmnModelParser} from '../src/model/bpmn_model_parser';
-import {ProcessModelFacade} from '../src/runtime';
-
 export class TestFixtureProvider {
 
-  private _parser: BpmnModelParser;
+  private parser: BpmnModelParser;
 
   public async initialize(): Promise<void> {
-    this._parser = new BpmnModelParser();
-    await this._parser.initialize();
+    this.parser = new BpmnModelParser();
+    await this.parser.initialize();
   }
 
   public async parseProcessModelFromFile(bpmnFilename: string): Promise<Model.Process> {
-    const bpmnXml: string = fs.readFileSync(bpmnFilename, 'utf8');
-    const definitions: Model.Definitions = await this._parser.parseXmlToObjectModel(bpmnXml);
+    const bpmnXml = fs.readFileSync(bpmnFilename, 'utf8');
+    const definitions = await this.parser.parseXmlToObjectModel(bpmnXml);
 
     return definitions.processes[0];
   }
@@ -37,9 +37,10 @@ export class TestFixtureProvider {
   public async assertThatProcessModelHasFlowNodes(processModel: Model.Process, expectedFlowNodeIds: Array<string>): Promise<void> {
 
     for (const flowNodeId of expectedFlowNodeIds) {
-      const flowNodeFound: boolean = processModel.flowNodes.some((flowNode: Model.Base.FlowNode) => flowNode.id === flowNodeId);
+      const flowNodeFound = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => flowNode.id === flowNodeId);
 
       should(flowNodeFound).be.true(`Failed to locate FlowNode '${flowNodeId}' in ProcessModel ${processModel.id}!`);
     }
   }
+
 }
