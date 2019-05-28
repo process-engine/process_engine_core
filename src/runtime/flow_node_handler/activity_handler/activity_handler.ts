@@ -47,10 +47,10 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
   ): Promise<void> {
 
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
-      try {
-        this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
-        token.flowNodeInstanceId = this.flowNodeInstanceId;
+      this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
+      token.flowNodeInstanceId = this.flowNodeInstanceId;
 
+      try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
         await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
 
@@ -63,12 +63,12 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         const processIsNotYetFinished = nextFlowNodes !== undefined && nextFlowNodes.length > 0;
         if (processIsNotYetFinished) {
 
-          const executeNextFlowNode = async (nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-            const nextFlowNodeHandler =
-              await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, token);
+          const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
+
+          for (const nextFlowNode of nextFlowNodes) {
 
             // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
-            const tokenForNextFlowNode = nextFlowNodes.length > 1
+            const processTokenForBranch = nextFlowNodes.length > 1
               ? processTokenFacade.createProcessToken(token.payload)
               : token;
 
@@ -76,17 +76,14 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
               ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
               : processTokenFacade;
 
-            tokenForNextFlowNode.flowNodeInstanceId = nextFlowNodeHandler.getInstanceId();
-
-            return nextFlowNodeHandler
-              .execute(tokenForNextFlowNode, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
-          };
-
-          // We cannot use `Promise.map` or `Promise.each` here, because the branches would not run truly in parallel to each other.
-          // The only way to guarantee that is to create the promises and then use `Promise.all` to await all of them.
-          const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
-          for (const nextFlowNode of nextFlowNodes) {
-            nextFlowNodeExecutionPromises.push(executeNextFlowNode(nextFlowNode));
+            const handleNextFlowNodePromise = this.handleNextFlowNode(
+              nextFlowNode,
+              processTokenFacadeForFlowNode,
+              processModelFacade,
+              processTokenForBranch,
+              identity,
+            );
+            nextFlowNodeExecutionPromises.push(handleNextFlowNodePromise);
           }
 
           await Promise.all(nextFlowNodeExecutionPromises);
@@ -94,35 +91,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         return resolve();
       } catch (error) {
-        const allResults = processTokenFacade.getAllResults();
-        // This check is necessary to prevent duplicate entries,
-        // in case the Promise-Chain was broken further down the road.
-        const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
-        if (noResultStoredYet) {
-          processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
-        }
-
-        const errorBoundaryEvents = this.findErrorBoundaryEventHandlersForError(error);
-
-        await this.afterExecute(token);
-
-        const terminationRegex = /terminated/i;
-        const isTerminationMessage = terminationRegex.test(error.message);
-
-        const noErrorBoundaryEventsAvailable = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
-        if (noErrorBoundaryEventsAvailable || isTerminationMessage) {
-          return reject(error);
-        }
-
-        token.payload = error;
-
-        await Promise.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
-          const flowNodeAfterBoundaryEvent = errorHandler.getNextFlowNode(processModelFacade);
-          const errorHandlerId = errorHandler.getInstanceId();
-          await this.continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
-        });
-
-        return resolve();
+        return this.handleActivityError(token, error, processTokenFacade, processModelFacade, identity, resolve, reject);
       }
     });
   }
@@ -136,18 +105,17 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
   ): Promise<void> {
 
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
+      this.previousFlowNodeInstanceId = flowNodeInstanceForHandler.previousFlowNodeInstanceId;
+      this.flowNodeInstanceId = flowNodeInstanceForHandler.id;
+
+      let nextFlowNodes: Array<Model.Base.FlowNode>;
+
+      // It doesn't really matter which token is used here, since payload-specific operations should
+      // only ever be done during the handlers execution.
+      // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
+      const token = flowNodeInstanceForHandler.tokens[0];
+
       try {
-        this.previousFlowNodeInstanceId = flowNodeInstanceForHandler.previousFlowNodeInstanceId;
-        this.flowNodeInstanceId = flowNodeInstanceForHandler.id;
-
-        // WIth regards to ParallelGateways, we need to be able to handle multiple results here.
-        let nextFlowNodes: Array<Model.Base.FlowNode>;
-
-        // It doesn't really matter which token is used here, since payload-specific operations should
-        // only ever be done during the handlers execution.
-        // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
-        const token = flowNodeInstanceForHandler.tokens[0];
-
         const flowNodeInstancesAfterBoundaryEvents = this.getFlowNodeInstancesAfterBoundaryEvents(allFlowNodeInstances, processModelFacade);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
@@ -175,14 +143,14 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
         if (processIsNotYetFinished) {
 
-          // No instance for the next FlowNode was found.
-          // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
           const currentResult = processTokenFacade
             .getAllResults()
             .pop();
 
-          const handleNextFlowNode = async (nextFlowNode: Model.Base.FlowNode): Promise<void> => {
-            // If we must execute multiple branches, then each branch must get its own ProcessToken and Facade.
+          const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
+
+          for (const nextFlowNode of nextFlowNodes) {
+
             const processTokenForBranch = nextFlowNodes.length > 1
               ? processTokenFacade.createProcessToken(currentResult)
               : token;
@@ -191,42 +159,18 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
               ? processTokenFacade.getProcessTokenFacadeForParallelBranch()
               : processTokenFacade;
 
-            const nextFlowNodeInstance = allFlowNodeInstances.find((instance: FlowNodeInstance): boolean => {
+            const nextFlowNodeInstance = this.findNextInstanceOfFlowNode(allFlowNodeInstances, nextFlowNode.id);
 
-              // ParallelJoinGateways always have multiple "previousFlowNodeInstanceIds".
-              // These IDs are separated by ";", i.e.: ID1;ID2;ID3, etc.
-              // We need to account for that fact here.
-              // indexOf will return 0, if the two IDs are exact matches.
-              const instanceFollowedCurrentFlowNode =
-                instance.previousFlowNodeInstanceId &&
-                instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
-
-              const flowNodeIdsMatch = instance.flowNodeId === nextFlowNode.id;
-
-              return instanceFollowedCurrentFlowNode && flowNodeIdsMatch;
-            });
-
-            const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processTokenForBranch);
-
-            processTokenForBranch.flowNodeInstanceId = nextFlowNodeInstance
-              ? nextFlowNodeInstance.id
-              : nextFlowNodeHandler.getInstanceId();
-
-            // An instance for the next FlowNode has already been created. Continue resuming
-            if (nextFlowNodeInstance) {
-              return nextFlowNodeHandler
-                .resume(nextFlowNodeInstance, allFlowNodeInstances, processTokenFacadeForFlowNode, processModelFacade, identity);
-            }
-
-            return nextFlowNodeHandler
-              .execute(processTokenForBranch, processTokenFacadeForFlowNode, processModelFacade, identity, this.flowNodeInstanceId);
-          };
-
-          // We cannot use `Promise.map` or `Promise.each` here, because the branches would not run truly in parallel to each other.
-          // The only way to guarantee that is to create the promises and then use `Promise.all` to await all of them.
-          const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
-          for (const nextFlowNode of nextFlowNodes) {
-            nextFlowNodeExecutionPromises.push(handleNextFlowNode(nextFlowNode));
+            const handleNextFlowNodePromise = this.handleNextFlowNode(
+              nextFlowNode,
+              processTokenFacadeForFlowNode,
+              processModelFacade,
+              processTokenForBranch,
+              identity,
+              nextFlowNodeInstance,
+              allFlowNodeInstances,
+            );
+            nextFlowNodeExecutionPromises.push(handleNextFlowNodePromise);
           }
 
           await Promise.all(nextFlowNodeExecutionPromises);
@@ -234,38 +178,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         return resolve();
       } catch (error) {
-        const allResults = processTokenFacade.getAllResults();
-        // This check is necessary to prevent duplicate entries,
-        // in case the Promise-Chain was broken further down the road.
-        const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
-        if (noResultStoredYet) {
-          processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
-        }
-
-        const token = processTokenFacade.createProcessToken();
-        token.payload = error;
-        token.flowNodeInstanceId = this.flowNodeInstanceId;
-
-        const errorBoundaryEvents = this.findErrorBoundaryEventHandlersForError(error);
-
-        await this.afterExecute(token);
-
-        const terminationRegex = /terminated/i;
-        const isTerminationMessage = terminationRegex.test(error.message);
-
-        const noErrorBoundaryEventsAvailable = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
-
-        if (noErrorBoundaryEventsAvailable || isTerminationMessage) {
-          return reject(error);
-        }
-
-        await Promise.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
-          const flowNodeAfterBoundaryEvent = errorHandler.getNextFlowNode(processModelFacade);
-          const errorHandlerId = errorHandler.getInstanceId();
-          await this.continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
-        });
-
-        return resolve();
+        return this.handleActivityError(token, error, processTokenFacade, processModelFacade, identity, resolve, reject);
       }
     });
   }
@@ -408,6 +321,47 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  private async handleActivityError(
+    token: ProcessToken,
+    error: Error,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    resolveFunc: Function,
+    rejectFunc: Function,
+  ): Promise<void> {
+
+    token.payload = error;
+
+    const allResults = processTokenFacade.getAllResults();
+    // This check is necessary to prevent duplicate entries,
+    // in case the Promise-Chain was broken further down the road.
+    const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+    if (noResultStoredYet) {
+      processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
+    }
+
+    const errorBoundaryEvents = this.findErrorBoundaryEventHandlersForError(error);
+
+    await this.afterExecute(token);
+
+    const terminationRegex = /terminated/i;
+    const isTerminationMessage = terminationRegex.test(error.message);
+
+    const noErrorBoundaryEventsAvailable = !errorBoundaryEvents || errorBoundaryEvents.length === 0;
+    if (noErrorBoundaryEventsAvailable || isTerminationMessage) {
+      return rejectFunc(error);
+    }
+
+    await Promise.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
+      const flowNodeAfterBoundaryEvent = errorHandler.getNextFlowNode(processModelFacade);
+      const errorHandlerId = errorHandler.getInstanceId();
+      await this.continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+    });
+
+    return resolveFunc();
   }
 
   private async resumeWithBoundaryEvents(
