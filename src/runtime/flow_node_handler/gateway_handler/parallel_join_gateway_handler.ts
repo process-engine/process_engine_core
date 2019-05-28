@@ -62,13 +62,14 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     // TODO: Works for now, but there really must be a better solution for this problem.
     //
-    // This ID gets overriden, each time an incoming SequenceFlow arrives.
+    // The base ID gets overwritten, each time an incoming SequenceFlow arrives.
     // So with each execution of this hook, we get an additional ID of one of
     // the preceeding FlowNodeInstances.
     // Since we must store ALL previousFlowNodeInstanceIds for the gateway,
     // we'll add each ID to the `incomingFlowNodeInstanceIds`.
-    // When all Ids have been stored, the "persistOnEnter" gets all IDs as a concatenated string.
-    // This way, we can be sure that the `previousFlowNodeInstanceId` database field has all the relevant IDs.
+    // Each time a new ID is stored, `persistOnEnter` is called with the current amount of received IDs.
+    // This ensures that the FlowNodeInstance for this gateway will always have the most up to date info
+    // about which branches have arrived at the gateway.
     //
     // We must do it like this, or resuming the Join Gateway will have unpredictable results and will most
     // likely crash the ProcessInstance.
