@@ -16,11 +16,6 @@ Bluebird.config({
 
 global.Promise = Bluebird;
 
-const sampleIdentity: IIdentity = {
-  userId: 'sampleUser',
-  token: 'sampleToken',
-};
-
 const sampleResultsForProcessTokenFacade = [{
   flowNodeId: 'StartEvent_1',
   flowNodeInstanceId: 'abcdefg',
@@ -41,11 +36,21 @@ const sampleResultsForProcessTokenFacade = [{
 
 export class TestFixtureProvider {
 
+  // eslint-disable-next-line @typescript-eslint/member-naming
+  private readonly _sampleIdentity: IIdentity = {
+    userId: 'sampleUser',
+    token: 'sampleToken',
+  };
+
   private parser: BpmnModelParser;
 
   public async initialize(): Promise<void> {
     this.parser = new BpmnModelParser();
     await this.parser.initialize();
+  }
+
+  public get sampleIdentity(): IIdentity {
+    return this._sampleIdentity;
   }
 
   public async parseProcessModelFromFile(bpmnFilename: string): Promise<Model.Process> {
@@ -59,8 +64,13 @@ export class TestFixtureProvider {
     return new ProcessModelFacade(processModel);
   }
 
-  public createProcessTokenFacade(): ProcessTokenFacade {
-    return new ProcessTokenFacade('processInstanceId', 'processModelId', 'correlationId', sampleIdentity);
+  public createProcessTokenFacade(processInstanceId?: string, proessModelId?: string, correlationId?: string): ProcessTokenFacade {
+    // Allow for default values, becaue only few tests will require assertions for these properties.
+    const processInstanceIdToUse = processInstanceId || 'processInstanceId';
+    const proessModelIdToUse = proessModelId || 'processModelId';
+    const correlationIdToUse = correlationId || 'correlationId';
+
+    return new ProcessTokenFacade(processInstanceIdToUse, proessModelIdToUse, correlationIdToUse, this.sampleIdentity);
   }
 
   public addSampleResultsToProcessTokenFacade(processTokenFacade: ProcessTokenFacade): void {
