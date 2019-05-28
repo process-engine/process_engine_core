@@ -134,7 +134,10 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
               // These IDs are separated by ";", i.e.: ID1;ID2;ID3, etc.
               // We need to account for that fact here.
               // indexOf will return 0, if the two IDs are exact matches.
-              const instanceFollowedCurrentFlowNode = instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
+              const instanceFollowedCurrentFlowNode =
+                instance.previousFlowNodeInstanceId &&
+                instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
+
               const flowNodeIdsMatch = instance.flowNodeId === nextFlowNode.id;
 
               return instanceFollowedCurrentFlowNode && flowNodeIdsMatch;
