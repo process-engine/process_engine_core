@@ -277,14 +277,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       ? nextFlowNodeInstance.id
       : nextFlowNodeHandler.getInstanceId();
 
-    // An instance for the next FlowNode has already been created. Continue resuming
+    // Providing FlowNodeInstances means that we are resuming a process.
+    // Normal process execution doesn't know about any FlowNodeInstances.
     if (nextFlowNodeInstance) {
       return nextFlowNodeHandler
         .resume(nextFlowNodeInstance, allFlowNodeInstances, processTokenFacade, processModelFacade, identity);
     }
 
-    // No instance for the next FlowNode was found.
-    // We have arrived at the point at which the ProcessInstance was interrupted and can continue normally.
+    // No FlowNodeInstance is given. The Process is executed normally.
     return nextFlowNodeHandler
       .execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
   }
