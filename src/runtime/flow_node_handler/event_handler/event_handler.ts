@@ -97,7 +97,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       this.flowNodeInstanceId = flowNodeInstanceForHandler.id;
 
       // It doesn't really matter which token is used here, since payload-specific operations should
-      // only ever be done during the handlers execution.
+      // only ever be done during the handler's execution.
       // We only require the token here, so that we can pass infos like ProcessInstanceId or CorrelationId to the hook.
       const token = flowNodeInstanceForHandler.tokens[0];
 
@@ -139,8 +139,8 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
             nextFlowNodeExecutionPromises.push(handleNextFlowNodePromise);
 
             // NOTE:
-            // This is a workaround for a Problem with the resumption of multiple parallel branches that were executed right up to the Join-gateway.
-            // When multiple branches arrive at the JoinGateway at the EXACT same moment, it is possible,
+            // This is a workaround for a problem with the resumption of multiple parallel branches that were executed right up to the JoinGateway.
+            // When multiple branches arrive at the JoinGateway at the EXACT same moment, it is possible
             // that multiple instances for that same Gateway are created.
             // Since the Gateway always waits for ALL incoming branches before moving on,
             // this will result in the process instance getting stuck forever.

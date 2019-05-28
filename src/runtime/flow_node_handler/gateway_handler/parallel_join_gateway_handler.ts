@@ -62,7 +62,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     // TODO: Works for now, but there really must be a better solution for this problem.
     //
-    // The base ID gets overwritten, each time an incoming SequenceFlow arrives.
+    // The base ID gets overwritten each time an incoming SequenceFlow arrives.
     // So with each execution of this hook, we get an additional ID of one of
     // the preceeding FlowNodeInstances.
     // Since we must store ALL previousFlowNodeInstanceIds for the gateway,
