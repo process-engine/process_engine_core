@@ -65,7 +65,7 @@ export class TestFixtureProvider {
   }
 
   public createProcessTokenFacade(processInstanceId?: string, proessModelId?: string, correlationId?: string): ProcessTokenFacade {
-    // Allow for default values, becaue only few tests will require assertions for these properties.
+    // Allow for default values, because only few tests will require assertions for these properties.
     const processInstanceIdToUse = processInstanceId || 'processInstanceId';
     const proessModelIdToUse = proessModelId || 'processModelId';
     const correlationIdToUse = correlationId || 'correlationId';
