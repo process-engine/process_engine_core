@@ -175,8 +175,6 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   /**
    * Main hook for executing and resuming FlowNodeHandlers from the start.
    *
-   * Here, the actual execution of the FlowNode takes place.
-   *
    * @async
    * @param   token              The FlowNodeInstances current ProcessToken.
    * @param   processTokenFacade The ProcessTokenFacade to use.
