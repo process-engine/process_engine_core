@@ -9,6 +9,7 @@ import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance
 import {
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
+  IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -190,8 +191,13 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  protected async persistOnEnter(processToken: ProcessToken): Promise<void> {
-    await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, this.previousFlowNodeInstanceId);
+  protected async persistOnEnter(processToken: ProcessToken, previousFlowNodeInstanceIds?: Array<string>): Promise<void> {
+
+    const previousFlowNodeInstanceIdToPersist = previousFlowNodeInstanceIds
+      ? previousFlowNodeInstanceIds.join(';')
+      : this.previousFlowNodeInstanceId;
+
+    await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, previousFlowNodeInstanceIdToPersist);
   }
 
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
@@ -235,6 +241,69 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  protected findNextInstanceOfFlowNode(allFlowNodeInstances: Array<FlowNodeInstance>, nextFlowNodeId: string): FlowNodeInstance {
+
+    return allFlowNodeInstances.find((instance: FlowNodeInstance): boolean => {
+
+      // ParallelJoinGateways always have multiple "previousFlowNodeInstanceIds".
+      // These IDs are separated by ";", i.e.: ID1;ID2;ID3, etc.
+      // We need to account for that fact here.
+      // indexOf will return 0, if the two IDs are exact matches.
+      const instanceFollowedCurrentFlowNode =
+        instance.previousFlowNodeInstanceId &&
+        instance.previousFlowNodeInstanceId.indexOf(this.flowNodeInstanceId) > -1;
+
+      const flowNodeIdsMatch = instance.flowNodeId === nextFlowNodeId;
+
+      return instanceFollowedCurrentFlowNode && flowNodeIdsMatch;
+    });
+  }
+
+  protected async handleNextFlowNode(
+    nextFlowNode: Model.Base.FlowNode,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    processToken: ProcessToken,
+    identity: IIdentity,
+    nextFlowNodeInstance?: FlowNodeInstance,
+    allFlowNodeInstances?: Array<FlowNodeInstance>,
+  ): Promise<void> {
+
+    const nextFlowNodeHandler = await this.flowNodeHandlerFactory.create<Model.Base.FlowNode>(nextFlowNode, processToken);
+
+    processToken.flowNodeInstanceId = nextFlowNodeInstance
+      ? nextFlowNodeInstance.id
+      : nextFlowNodeHandler.getInstanceId();
+
+    // Providing FlowNodeInstances means that we are resuming a process.
+    // Normal process execution doesn't know about any FlowNodeInstances.
+    if (nextFlowNodeInstance) {
+      return nextFlowNodeHandler
+        .resume(nextFlowNodeInstance, allFlowNodeInstances, processTokenFacade, processModelFacade, identity);
+    }
+
+    // No FlowNodeInstance is given. The Process is executed normally.
+    return nextFlowNodeHandler
+      .execute(processToken, processTokenFacade, processModelFacade, identity, this.flowNodeInstanceId);
+  }
+
+  protected async handleError(token: ProcessToken, error: Error, processTokenFacade: IProcessTokenFacade, rejectCallback: Function): Promise<void> {
+
+    token.payload = error;
+
+    // This check is necessary to prevent duplicate entries, in case the Promise-Chain was broken further down the road.
+    const allResults = processTokenFacade.getAllResults();
+
+    const noResultStoredYet = !allResults.some((entry: IFlowNodeInstanceResult): boolean => entry.flowNodeInstanceId === this.flowNodeInstanceId);
+    if (noResultStoredYet) {
+      processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, token);
+    }
+
+    await this.afterExecute(token);
+
+    return rejectCallback(error);
   }
 
 }

@@ -23,9 +23,9 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   private readonly container: IContainer;
 
   private expectedNumberOfResults: number = -1;
+  private incomingFlowNodeInstanceIds: Array<string> = [];
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
-  private onEnterStatePersisted: boolean = false;
   private isInterrupted: boolean = false;
 
   private processTerminationSubscription: Subscription;
@@ -53,23 +53,38 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     identity: IIdentity,
   ): Promise<void> {
 
-    const expectedResultsAlreadySet = this.expectedNumberOfResults > -1;
-
     // Safety check to prevent a handler to be resolved and called after it was already finished.
-    const handlerIsAlreadyFinished = expectedResultsAlreadySet || this.isInterrupted;
-    if (handlerIsAlreadyFinished) {
+    if (this.isInterrupted) {
       return;
     }
 
     await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
+
+    // TODO: Works for now, but there really must be a better solution for this problem.
+    //
+    // The base ID gets overwritten each time an incoming SequenceFlow arrives.
+    // So with each execution of this hook, we get an additional ID of one of
+    // the preceeding FlowNodeInstances.
+    // Since we must store ALL previousFlowNodeInstanceIds for the gateway,
+    // we'll add each ID to the `incomingFlowNodeInstanceIds`.
+    // Each time a new ID is stored, `persistOnEnter` is called with the current amount of received IDs.
+    // This ensures that the FlowNodeInstance for this gateway will always have the most up to date info
+    // about which branches have arrived at the gateway.
+    //
+    // We must do it like this, or resuming the Join Gateway will have unpredictable results and will most
+    // likely crash the ProcessInstance.
+    this.incomingFlowNodeInstanceIds.push(this.previousFlowNodeInstanceId);
 
     const subscriptionForProcessTerminationNeeded = !this.processTerminationSubscription;
     if (subscriptionForProcessTerminationNeeded) {
       this.processTerminationSubscription = this.subscribeToProcessTermination(token);
     }
 
-    const preceedingFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
-    this.expectedNumberOfResults = preceedingFlowNodes.length;
+    const expectedNumerOfResultsNotset = this.expectedNumberOfResults === -1;
+    if (expectedNumerOfResultsNotset) {
+      const preceedingFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
+      this.expectedNumberOfResults = preceedingFlowNodes.length;
+    }
   }
 
   protected async startExecution(
@@ -83,13 +98,9 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       return undefined;
     }
 
-    // We must only store this state change once to prevent duplicate database entries.
-    if (!this.onEnterStatePersisted) {
-      this.onEnterStatePersisted = true;
-      await this.persistOnEnter(token);
-    }
-
     this.logger.verbose(`Executing ParallelJoinGateway instance ${this.flowNodeInstanceId}.`);
+
+    await this.persistOnEnter(token, this.incomingFlowNodeInstanceIds);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
