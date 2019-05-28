@@ -174,11 +174,11 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
             // NOTE:
             // This is a workaround for a Problem with the resumption of multiple parallel branches that were executed right up to the Join-gateway.
-            // When multiple branches arrive at the JoinGateway at EXACT same moment, it is possible, that multiple instances for that same Gateway
-            // are registered at the Ioc container.
+            // When multiple branches arrive at the JoinGateway at the EXACT same moment, it is possible,
+            // that multiple instances for that same Gateway are created.
             // Since the Gateway always waits for ALL incoming branches before moving on,
             // this will result in the process instance getting stuck forever.
-            // This helps us to get around this issue, but it is just a hacky workaround. We need a more permanent solution for this.
+            // Using a timeout helps us to get around this issue, but it is just a hacky workaround. We need a more permanent solution for this.
             if (nextFlowNodes.length > 1) {
               await new Promise((cb): NodeJS.Timeout => setTimeout(cb, 100));
             }
