@@ -84,6 +84,8 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       let callActivityResult: EndEventReachedMessage;
 
+      this.sendCallActivityReachedNotification(identity, onSuspendToken);
+
       const callActivityNotYetExecuted = matchingSubprocess === undefined;
       if (callActivityNotYetExecuted) {
         // Subprocess not yet started. We need to run the handler again.
