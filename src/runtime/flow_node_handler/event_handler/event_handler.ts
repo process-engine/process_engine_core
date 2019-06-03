@@ -8,7 +8,6 @@ import {
   ProcessTokenType,
 } from '@process-engine/flow_node_instance.contracts';
 import {
-  IFlowNodeInstanceResult,
   IProcessModelFacade,
   IProcessTokenFacade,
   IntermediateCatchEventFinishedMessage,
