@@ -12,7 +12,8 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   IntermediateCatchEventFinishedMessage,
-  IntermediateEventTriggeredMessage,
+  IntermediateCatchEventReachedMessage,
+  IntermediateThrowEventTriggeredMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -257,13 +258,13 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
 
   /**
    * Publishes a notification on the EventAggregator, informing about a new
-   * triggered IntermediateEvent.
+   * reached IntermediateCatchEvent.
    *
    * @param token    Contains all infos required for the Notification message.
    */
-  protected sendIntermediateEventTriggeredNotification(token: ProcessToken): void {
+  protected sendIntermediateCatchEventReachedNotification(token: ProcessToken): void {
 
-    const message = new IntermediateEventTriggeredMessage(
+    const message = new IntermediateCatchEventReachedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -273,7 +274,28 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       token.payload,
     );
 
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateEventTriggered, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateCatchEventReached, message);
+  }
+
+  /**
+   * Publishes a notification on the EventAggregator, informing about a new
+   * triggered IntermediateThrowEvent.
+   *
+   * @param token    Contains all infos required for the Notification message.
+   */
+  protected sendIntermediateThrowEventTriggeredNotification(token: ProcessToken): void {
+
+    const message = new IntermediateThrowEventTriggeredMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      undefined,
+      token.payload,
+    );
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateThrowEventTriggered, message);
   }
 
   /**

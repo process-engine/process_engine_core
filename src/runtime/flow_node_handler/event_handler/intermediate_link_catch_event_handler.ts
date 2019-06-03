@@ -37,7 +37,7 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.sendIntermediateEventTriggeredNotification(token);
+    this.sendIntermediateCatchEventReachedNotification(token);
 
     this.logger.verbose(`Executing LinkCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);

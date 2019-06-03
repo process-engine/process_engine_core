@@ -87,7 +87,7 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
 
       processTokenFacade.addResultForFlowNode(this.signalThrowEvent.id, this.flowNodeInstanceId, {});
 
-      this.sendIntermediateEventTriggeredNotification(token);
+      this.sendIntermediateThrowEventTriggeredNotification(token);
 
       await this.persistOnExit(token);
 

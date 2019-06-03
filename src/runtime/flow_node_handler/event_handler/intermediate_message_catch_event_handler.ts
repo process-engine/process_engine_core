@@ -41,7 +41,7 @@ export class IntermediateMessageCatchEventHandler extends EventHandler<Model.Eve
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.sendIntermediateEventTriggeredNotification(token);
+    this.sendIntermediateCatchEventReachedNotification(token);
 
     this.logger.verbose(`Executing MessageCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
