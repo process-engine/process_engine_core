@@ -81,7 +81,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
    * Publishes a notification on the EventAggregator, informing about a new
    * triggered Boundary Event.
    *
-   * @param token    Contains all infos required for the notification message.
+   * @param token    Contains all the information required for the notification message.
    */
   protected sendBoundaryEventTriggeredNotification(token: ProcessToken): void {
 

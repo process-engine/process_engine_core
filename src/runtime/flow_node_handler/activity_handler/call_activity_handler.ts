@@ -295,7 +295,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    * suspended CallActivity.
    *
    * @param identity The identity that owns the CallActivity instance.
-   * @param token    Contains all infos required for the Notification message.
+   * @param token    Contains all the information required for the Notification message.
    */
   private sendCallActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
