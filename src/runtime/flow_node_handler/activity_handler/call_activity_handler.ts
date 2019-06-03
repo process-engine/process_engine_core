@@ -321,7 +321,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    * - A notification specifically for this CallActivity.
    *
    * @param identity The identity that owns the CallActivity instance.
-   * @param token    Contains all infos required for the Notification message.
+   * @param token    Contains all the information required for the notification message.
    */
   private sendCallActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 

@@ -19,7 +19,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
    *
    * @param   error The error to compare against the errorEventDefinition of
    *                the model.
-   * @param token    Contains all infos required for the Notification message.
+   * @param token    Contains all the information required for the notification message.
    * @returns       True, if the BoundaryEvent can handle the given error.
    *                Otherwise false.
    */
