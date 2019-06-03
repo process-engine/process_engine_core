@@ -38,11 +38,12 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
       (!errorDefinition.code || errorDefinition.code === '') ||
       errorDefinition.code === (error as BpmnError).code;
 
-    if (errorNamesMatch && errorCodesMatch) {
+    const boundaryEventCanHandleError = errorNamesMatch && errorCodesMatch;
+    if (boundaryEventCanHandleError) {
       this.sendBoundaryEventTriggeredNotification(token);
     }
 
-    return errorNamesMatch && errorCodesMatch;
+    return boundaryEventCanHandleError;
   }
 
   public async waitForTriggeringEvent(
