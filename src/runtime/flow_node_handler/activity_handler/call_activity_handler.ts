@@ -6,6 +6,8 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  CallActivityFinishedMessage,
+  CallActivityReachedMessage,
   EndEventReachedMessage,
   IExecuteProcessService,
   IFlowNodeHandlerFactory,
@@ -82,6 +84,8 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       let callActivityResult: EndEventReachedMessage;
 
+      this.sendCallActivityReachedNotification(identity, onSuspendToken);
+
       const callActivityNotYetExecuted = matchingSubprocess === undefined;
       if (callActivityNotYetExecuted) {
         // Subprocess not yet started. We need to run the handler again.
@@ -99,6 +103,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       await this.persistOnResume(onSuspendToken);
       processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
+
+      this.sendCallActivityFinishedNotification(identity, onSuspendToken);
+
       await this.persistOnExit(onSuspendToken);
 
       return processModelFacade.getNextFlowNodesFor(this.callActivity);
@@ -134,6 +141,8 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     try {
       const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
 
+      this.sendCallActivityReachedNotification(identity, token);
+
       await this.persistOnSuspend(token);
 
       const callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, token);
@@ -143,6 +152,8 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       await this.persistOnResume(token);
       processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
+
+      this.sendCallActivityFinishedNotification(identity, token);
 
       return processModelFacade.getNextFlowNodesFor(this.callActivity);
     } catch (error) {
@@ -277,6 +288,69 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     this.eventAggregator.publish(eventName, message);
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
+  }
+
+  /**
+   * Publishes a notification on the EventAggregator, informing about a new
+   * suspended CallActivity.
+   *
+   * @param identity The identity that owns the CallActivity instance.
+   * @param token    Contains all the information required for the Notification message.
+   */
+  private sendCallActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
+
+    const message = new CallActivityReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.callActivity.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.callActivityReached, message);
+  }
+
+  /**
+   * Publishes notifications on the EventAggregator, informing that a CallActivity
+   * has finished execution.
+   *
+   * Two notifications will be send:
+   * - A global notification that everybody can receive
+   * - A notification specifically for this CallActivity.
+   *
+   * @param identity The identity that owns the CallActivity instance.
+   * @param token    Contains all the information required for the notification message.
+   */
+  private sendCallActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+
+    const message = new CallActivityFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.callActivity.id,
+      this.flowNodeInstanceId,
+      identity,
+      token.payload,
+    );
+
+    // FlowNode-specific notification
+    const callActivityFinishedEvent = this.getCallActivityFinishedEventName(token.correlationId, token.processInstanceId);
+    this.eventAggregator.publish(callActivityFinishedEvent, message);
+
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.callActivityFinished, message);
+  }
+
+  private getCallActivityFinishedEventName(correlationId: string, processInstanceId: string): string {
+
+    const callActivityFinishedEvent = eventAggregatorSettings.messagePaths.callActivityFinished
+      .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
+      .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
+
+    return callActivityFinishedEvent;
   }
 
 }
