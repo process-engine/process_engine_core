@@ -277,7 +277,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
   }
 
   /**
-   * Publishes a notification on the EventAggregator, informing about a new
+   * Publishes a notification on the EventAggregator, informing about a
    * triggered IntermediateThrowEvent.
    *
    * @param token    Contains all infos required for the Notification message.
