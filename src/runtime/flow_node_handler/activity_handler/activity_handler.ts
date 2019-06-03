@@ -505,12 +505,12 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     this.attachedBoundaryEventHandlers = [];
   }
 
-  private findErrorBoundaryEventHandlersForError(error: Error): Array<ErrorBoundaryEventHandler> {
+  private findErrorBoundaryEventHandlersForError(error: Error, token: ProcessToken): Array<ErrorBoundaryEventHandler> {
     const errorBoundaryEventHandlers = this
       .attachedBoundaryEventHandlers
       .filter((handler: IBoundaryEventHandler): boolean => handler instanceof ErrorBoundaryEventHandler) as Array<ErrorBoundaryEventHandler>;
 
-    const handlersForError = errorBoundaryEventHandlers.filter((handler: ErrorBoundaryEventHandler): boolean => handler.canHandleError(error));
+    const handlersForError = errorBoundaryEventHandlers.filter((handler: ErrorBoundaryEventHandler): boolean => handler.canHandleError(error, token));
 
     return handlersForError;
   }

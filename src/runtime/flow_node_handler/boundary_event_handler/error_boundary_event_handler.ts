@@ -19,10 +19,11 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
    *
    * @param   error The error to compare against the errorEventDefinition of
    *                the model.
+   * @param token    Contains all infos required for the Notification message.
    * @returns       True, if the BoundaryEvent can handle the given error.
    *                Otherwise false.
    */
-  public canHandleError(error: Error): boolean {
+  public canHandleError(error: Error, token: ProcessToken): boolean {
 
     const errorDefinition = this.boundaryEventModel.errorEventDefinition;
 
@@ -37,6 +38,10 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
       (!errorDefinition.code || errorDefinition.code === '') ||
       errorDefinition.code === (error as BpmnError).code;
 
+    if (errorNamesMatch && errorCodesMatch) {
+      this.sendBoundaryEventTriggeredNotification(token);
+    }
+
     return errorNamesMatch && errorCodesMatch;
   }
 
@@ -50,8 +55,6 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     await this.persistOnEnter(token);
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
-
-    this.sendBoundaryEventTriggeredNotification(token);
   }
 
 }
