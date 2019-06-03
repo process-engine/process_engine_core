@@ -354,7 +354,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, error);
     }
 
-    const errorBoundaryEvents = this.findErrorBoundaryEventHandlersForError(error);
+    const errorBoundaryEvents = this.findErrorBoundaryEventHandlersForError(error, token);
 
     await this.afterExecute(token);
 
