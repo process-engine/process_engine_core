@@ -96,7 +96,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive: boolean = this.emptyActivitySubscription !== undefined;
+        const subscriptionIsActive = this.emptyActivitySubscription !== undefined;
         if (subscriptionIsActive) {
           this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
         }

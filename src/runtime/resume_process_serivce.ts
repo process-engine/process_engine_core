@@ -27,7 +27,7 @@ import {ProcessTokenFacade} from './facades/process_token_facade';
 
 import {IProcessInstanceConfig} from './facades/iprocess_instance_config';
 
-const logger: Logger = new Logger('processengine:runtime:resume_process_service');
+const logger = new Logger('processengine:runtime:resume_process_service');
 
 interface IProcessInstanceModelAssociation {
   processModelId: string;
@@ -209,9 +209,14 @@ export class ResumeProcessService implements IResumeProcessService {
 
       const flowNodeHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
+      const flowNodeInstance = flowNodeInstances.find((entry: FlowNodeInstance): boolean => {
+        return entry.flowNodeId === processInstanceConfig.startEvent.id;
+      });
+
       logger.info(`Resuming ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}...`);
 
       await flowNodeHandler.resume(
+        flowNodeInstance,
         flowNodeInstances,
         processInstanceConfig.processTokenFacade,
         processInstanceConfig.processModelFacade,

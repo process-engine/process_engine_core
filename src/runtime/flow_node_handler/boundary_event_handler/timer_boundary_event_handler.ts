@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
@@ -22,11 +22,12 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   private timerSubscription: Subscription;
 
   constructor(
+    eventAggregator: IEventAggregator,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     timerFacade: ITimerFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
-    super(flowNodePersistenceFacade, boundaryEventModel);
+    super(eventAggregator, flowNodePersistenceFacade, boundaryEventModel);
     this.timerFacade = timerFacade;
     this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
   }
@@ -60,6 +61,8 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
         interruptHandler: this.boundaryEventModel.cancelActivity,
         eventPayload: {},
       };
+
+      this.sendBoundaryEventTriggeredNotification(token);
 
       onTriggeredCallback(eventData);
     };

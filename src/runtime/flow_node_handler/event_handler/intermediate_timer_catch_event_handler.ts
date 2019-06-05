@@ -42,6 +42,8 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
+    this.sendIntermediateCatchEventReachedNotification(token);
+
     this.logger.verbose(`Executing TimerCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
 
@@ -73,6 +75,9 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
         processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, token.payload);
 
         await this.persistOnResume(token);
+
+        this.sendIntermediateCatchEventFinishedNotification(token);
+
         await this.persistOnExit(token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);

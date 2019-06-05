@@ -300,7 +300,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     );
 
     // FlowNode-specific notification
-    const userTaskFinishedEvent: string = this.getUserTaskFinishedEventName(token.correlationId, token.processInstanceId);
+    const userTaskFinishedEvent = this.getUserTaskFinishedEventName(token.correlationId, token.processInstanceId);
     this.eventAggregator.publish(userTaskFinishedEvent, message);
 
     // Global notification
@@ -309,7 +309,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
 
   private getFinishUserTaskEventName(correlationId: string, processInstanceId: string): string {
 
-    const finishUserTaskEvent: string = eventAggregatorSettings.messagePaths.finishUserTask
+    const finishUserTaskEvent = eventAggregatorSettings.messagePaths.finishUserTask
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);
@@ -320,7 +320,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
   private getUserTaskFinishedEventName(correlationId: string, processInstanceId: string): string {
 
     // FlowNode-specific notification
-    const userTaskFinishedEvent: string = eventAggregatorSettings.messagePaths.userTaskWithInstanceIdFinished
+    const userTaskFinishedEvent = eventAggregatorSettings.messagePaths.userTaskWithInstanceIdFinished
       .replace(eventAggregatorSettings.messageParams.correlationId, correlationId)
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId)
       .replace(eventAggregatorSettings.messageParams.flowNodeInstanceId, this.flowNodeInstanceId);

@@ -78,7 +78,7 @@ function registerServices(container) {
       'FlowNodeHandlerFactory',
       'IdentityService',
       'ProcessInstanceStateHandlingFacade',
-      'ProcessModelUseCases'
+      'ProcessModelUseCases',
     );
 
   container
@@ -89,7 +89,7 @@ function registerServices(container) {
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
-      'ProcessInstanceStateHandlingFacade'
+      'ProcessInstanceStateHandlingFacade',
     );
 
   container
@@ -103,7 +103,7 @@ function registerServices(container) {
       'EventAggregator',
       'LoggingApiService',
       'MetricsApiService',
-      'ProcessModelUseCases'
+      'ProcessModelUseCases',
     );
 
   container
@@ -154,7 +154,7 @@ function registerFactories(container) {
       'IntermediateCatchEventFactory',
       'IntermediateThrowEventFactory',
       'ParallelGatewayFactory',
-      'ServiceTaskFactory'
+      'ServiceTaskFactory',
     )
     .singleton();
 }
@@ -170,7 +170,7 @@ function registerFlowNodeHandlers(container) {
       'FlowNodeHandlerFactory',
       'FlowNodePersistenceFacade',
       'ProcessModelUseCases',
-      'ResumeProcessService'
+      'ResumeProcessService',
     );
 
   container
@@ -266,19 +266,19 @@ function registerBoundaryEventHandlers(container) {
 
   container
     .register('ErrorBoundaryEventHandler', ErrorBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade');
 
   container
     .register('MessageBoundaryEventHandler', MessageBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade');
 
   container
     .register('SignalBoundaryEventHandler', SignalBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'EventAggregator');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade');
 
   container
     .register('TimerBoundaryEventHandler', TimerBoundaryEventHandler)
-    .dependencies('FlowNodePersistenceFacade', 'TimerFacade');
+    .dependencies('EventAggregator', 'FlowNodePersistenceFacade', 'TimerFacade');
 
 }
 

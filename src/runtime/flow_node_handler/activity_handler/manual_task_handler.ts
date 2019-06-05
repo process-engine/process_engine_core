@@ -59,7 +59,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive: boolean = this.manualTaskSubscription !== undefined;
+        const subscriptionIsActive = this.manualTaskSubscription !== undefined;
         if (subscriptionIsActive) {
           this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         }

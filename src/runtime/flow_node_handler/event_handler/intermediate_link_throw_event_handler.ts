@@ -57,6 +57,9 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
     // the ProcessInstance to another FlowNode.
     // So we can just return the retrieved CatchEvent as a next FlowNode and exit.
     processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, this.flowNodeInstanceId, {});
+
+    this.sendIntermediateThrowEventTriggeredNotification(token);
+
     await this.persistOnExit(token);
 
     return [matchingCatchEvent];

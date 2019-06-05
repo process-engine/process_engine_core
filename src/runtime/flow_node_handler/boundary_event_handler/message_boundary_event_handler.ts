@@ -1,32 +1,19 @@
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
   OnBoundaryEventTriggeredCallback,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
-  private readonly eventAggregator: IEventAggregator;
-
   private subscription: Subscription;
-
-  constructor(
-    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
-    eventAggregator: IEventAggregator,
-    boundaryEventModel: Model.Events.BoundaryEvent,
-  ) {
-    super(flowNodePersistenceFacade, boundaryEventModel);
-    this.eventAggregator = eventAggregator;
-  }
 
   public async waitForTriggeringEvent(
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
@@ -40,7 +27,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
     await this.persistOnEnter(token);
 
-    const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+    const messageBoundaryEventName = eventAggregatorSettings.messagePaths.messageEventReached
       .replace(eventAggregatorSettings.messageParams.messageReference, this.boundaryEventModel.messageEventDefinition.name);
 
     const messageReceivedCallback = async (message: MessageEventReachedMessage): Promise<void> => {
@@ -53,6 +40,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
         interruptHandler: this.boundaryEventModel.cancelActivity,
         eventPayload: message.currentToken,
       };
+
+      this.sendBoundaryEventTriggeredNotification(token);
 
       return onTriggeredCallback(eventData);
     };

@@ -2,13 +2,16 @@ import * as uuid from 'node-uuid';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredCallback,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 
 /**
  * The base implementation for a BoundaryEventHandler.
@@ -17,18 +20,22 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   protected attachedFlowNodeInstanceId: string;
 
+  protected readonly eventAggregator: IEventAggregator;
+
   protected readonly boundaryEventModel: Model.Events.BoundaryEvent;
   protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
   protected readonly boundaryEventInstanceId: string;
 
   constructor(
+    eventAggregator: IEventAggregator,
     flowNodePersistenceFacade: IFlowNodePersistenceFacade,
     boundaryEventModel: Model.Events.BoundaryEvent,
   ) {
     this.flowNodePersistenceFacade = flowNodePersistenceFacade;
     this.boundaryEventModel = boundaryEventModel;
     this.boundaryEventInstanceId = uuid.v4();
+    this.eventAggregator = eventAggregator;
   }
 
   public getInstanceId(): string {
@@ -68,6 +75,27 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
 
   protected async persistOnError(processToken: ProcessToken, error: Error): Promise<void> {
     await this.flowNodePersistenceFacade.persistOnError(this.boundaryEventModel, this.boundaryEventInstanceId, processToken, error);
+  }
+
+  /**
+   * Publishes a notification on the EventAggregator, informing about a new
+   * triggered Boundary Event.
+   *
+   * @param token    Contains all the information required for the notification message.
+   */
+  protected sendBoundaryEventTriggeredNotification(token: ProcessToken): void {
+
+    const message = new BoundaryEventTriggeredMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.boundaryEventModel.id,
+      this.boundaryEventInstanceId,
+      undefined,
+      token.payload,
+    );
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.boundaryEventTriggered, message);
   }
 
 }

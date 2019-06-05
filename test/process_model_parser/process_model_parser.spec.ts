@@ -2,24 +2,23 @@ import * as should from 'should';
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {ProcessModelFacade} from '../../src/runtime/facades/process_model_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-describe('ProcessModelParser ', () => {
+describe('ProcessModelParser ', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
 
-  before(async() => {
+  before(async (): Promise<void> => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
   });
 
-  it('should successfully parse a diagram that contains one lane.', async() => {
+  it('should successfully parse a diagram that contains one lane.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/process_engine_io_release.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/process_engine_io_release.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'ausserordentlicher_start',
       'ExclusiveSplitGateway_1',
       'ExclusiveJoinGateway_1',
@@ -34,12 +33,12 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse a diagram that contains multiple parallel lanes.', async() => {
+  it('should successfully parse a diagram that contains multiple parallel lanes.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/DemoNutztierRiss.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/DemoNutztierRiss.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'StartEvent_1',
       'VorgangErfassen',
       'Task_01xg9lr',
@@ -52,22 +51,22 @@ describe('ProcessModelParser ', () => {
 
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
 
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
-    const vorgangAnlegen: Model.Activities.ServiceTask = processModelFacade.getFlowNodeById('Task_01xg9lr') as Model.Activities.ServiceTask;
-    const invocation: Model.Activities.Invocations.MethodInvocation = vorgangAnlegen.invocation as Model.Activities.Invocations.MethodInvocation;
+    const vorgangAnlegen = processModelFacade.getFlowNodeById('Task_01xg9lr') as Model.Activities.ServiceTask;
+    const invocation = vorgangAnlegen.invocation as Model.Activities.Invocations.MethodInvocation;
 
     should(invocation.module).be.eql('HttpClient');
     should(invocation.method).be.eql('post');
     should(invocation.params).be.eql('[\'http://localhost:5000/api/vorgaenge/anlegen\', token.history.VorgangErfassen]');
   });
 
-  it('should successfully parse a diagram that contains no lanes.', async() => {
+  it('should successfully parse a diagram that contains no lanes.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/generic_sample.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'ProcessInputEvent',
       'ShouldEncryptGateway',
       'ShouldEncryptJoin',
@@ -82,12 +81,12 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse a diagram that contains an empty lane.', async() => {
+  it('should successfully parse a diagram that contains an empty lane.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/empty_lane_test.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/empty_lane_test.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'StartEvent_1mox3jl',
       'EndEvent_0eie6q6',
     ];
@@ -95,12 +94,12 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse a diagram that contains several sublanes.', async() => {
+  it('should successfully parse a diagram that contains several sublanes.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/sublane_test.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/sublane_test.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'StartEvent_1',
       'ExclusiveGateway_1ax0imj',
       'Task_0ukwbko',
@@ -112,12 +111,12 @@ describe('ProcessModelParser ', () => {
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
   });
 
-  it('should successfully parse SignalEndEvents with customized inputValues.', async() => {
+  it('should successfully parse SignalEndEvents with customized inputValues.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/customized_signal_end_event_payload.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/customized_signal_end_event_payload.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'startEvent',
       'ExclusiveGateway_0wu23g7',
       'Task_1',
@@ -130,22 +129,22 @@ describe('ProcessModelParser ', () => {
 
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
 
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
-    const endEvent: Model.Events.EndEvent = processModelFacade.getFlowNodeById('EndEvent_1') as Model.Events.EndEvent;
+    const endEvent = processModelFacade.getFlowNodeById('EndEvent_1') as Model.Events.EndEvent;
 
-    const expectedInputValuesExpression: string = '{tradeId: token.history.startEvent.tradeId}';
+    const expectedInputValuesExpression = '{tradeId: token.history.startEvent.tradeId}';
 
     should(endEvent).have.property('inputValues');
     should(endEvent.inputValues).be.equal(expectedInputValuesExpression);
   });
 
-  it('should correctly interpret a default SequenceFlow for an ExclusiveSplitGateway.', async() => {
+  it('should correctly interpret a default SequenceFlow for an ExclusiveSplitGateway.', async (): Promise<void> => {
 
-    const processModelFilePath: string = './test/bpmns/default_sequence_flow_test.bpmn';
-    const parsedProcessModel: Model.Process = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const processModelFilePath = './test/bpmns/default_sequence_flow_test.bpmn';
+    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
-    const expectedFlowNodeIdList: Array<string> = [
+    const expectedFlowNodeIdList = [
       'StartEvent_1',
       'EndEvent_1',
       'ExclusiveGateway_1',
@@ -154,12 +153,11 @@ describe('ProcessModelParser ', () => {
 
     await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
 
-    const processModelFacade: ProcessModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
-    const exclusiveGateway: Model.Gateways.ExclusiveGateway =
-      processModelFacade.getFlowNodeById('ExclusiveGateway_1') as Model.Gateways.ExclusiveGateway;
+    const exclusiveGateway = processModelFacade.getFlowNodeById('ExclusiveGateway_1') as Model.Gateways.ExclusiveGateway;
 
-    const expectedDefaultSequenceFlowId: string = 'DefaultSequenceFlowAfterGateway';
+    const expectedDefaultSequenceFlowId = 'DefaultSequenceFlowAfterGateway';
 
     should(exclusiveGateway).have.property('defaultOutgoingSequenceFlowId');
     should(exclusiveGateway.defaultOutgoingSequenceFlowId).be.equal(expectedDefaultSequenceFlowId);
