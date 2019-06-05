@@ -22,11 +22,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
   private readonly container: IContainer;
 
-  private expectedNumberOfResults: number = -1;
+  private expectedNumberOfResults = -1;
   private incomingFlowNodeInstanceIds: Array<string> = [];
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
-  private isInterrupted: boolean = false;
+  private isInterrupted = false;
 
   private processTerminationSubscription: Subscription;
 

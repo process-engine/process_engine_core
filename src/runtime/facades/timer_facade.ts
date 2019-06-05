@@ -14,7 +14,7 @@ enum TimerBpmnType {
   Date = 'bpmn:timeDate',
 }
 
-const logger: Logger = Logger.createLogger('processengine:runtime:timer_facade');
+const logger = Logger.createLogger('processengine:runtime:timer_facade');
 
 export class TimerFacade implements ITimerFacade {
 

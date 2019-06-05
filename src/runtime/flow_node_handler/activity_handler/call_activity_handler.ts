@@ -272,7 +272,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
   private terminateProcessInstance(identity: IIdentity, token: ProcessToken): void {
 
-    const eventName: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const eventName = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const message = new ProcessTerminatedMessage(

@@ -32,7 +32,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
       return true;
     }
 
-    const errorNamesMatch: boolean = errorDefinition.name === error.name;
+    const errorNamesMatch = errorDefinition.name === error.name;
     // The error code is optional and must only be evaluated, if the definition contains it.
     const errorCodesMatch =
       (!errorDefinition.code || errorDefinition.code === '') ||

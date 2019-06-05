@@ -25,7 +25,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
   }
 
   public createProcessToken(payload?: any): ProcessToken {
-    const token: ProcessToken = new ProcessToken();
+    const token = new ProcessToken();
     token.processInstanceId = this.processInstanceId;
     token.processModelId = this.processModelId;
     token.correlationId = this.correlationId;

@@ -120,7 +120,7 @@ export class ProcessInstanceStateHandlingFacade {
     const instanceFinishedEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
-    const instanceFinishedMessage: ProcessEndedMessage = new ProcessEndedMessage(
+    const instanceFinishedMessage = new ProcessEndedMessage(
       processInstanceConfig.correlationId,
       processInstanceConfig.processModelId,
       processInstanceConfig.processInstanceId,
@@ -135,11 +135,11 @@ export class ProcessInstanceStateHandlingFacade {
 
   public sendProcessInstanceErrorNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
 
-    // Send notification about the finished ProcessInstance.
-    const instanceFinishedEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+    // Send notification about the errored ProcessInstance.
+    const instanceErrorEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
-    const instanceErroredMessage: ProcessErrorMessage = new ProcessErrorMessage(
+    const instanceErroredMessage = new ProcessErrorMessage(
       processInstanceConfig.correlationId,
       processInstanceConfig.processModelId,
       processInstanceConfig.processInstanceId,
@@ -149,7 +149,7 @@ export class ProcessInstanceStateHandlingFacade {
       error,
     );
 
-    this.eventAggregator.publish(instanceFinishedEventName, instanceErroredMessage);
+    this.eventAggregator.publish(instanceErrorEventName, instanceErroredMessage);
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
   }
 
@@ -170,7 +170,7 @@ export class ProcessInstanceStateHandlingFacade {
         continue;
       }
 
-      const terminateProcessMessage: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      const terminateProcessMessage = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, subprocess.processInstanceId);
 
       const terminationMessage = new ProcessTerminatedMessage(

@@ -27,7 +27,7 @@ import {ProcessTokenFacade} from './facades/process_token_facade';
 
 import {IProcessInstanceConfig} from './facades/iprocess_instance_config';
 
-const logger: Logger = new Logger('processengine:runtime:resume_process_service');
+const logger = new Logger('processengine:runtime:resume_process_service');
 
 interface IProcessInstanceModelAssociation {
   processModelId: string;

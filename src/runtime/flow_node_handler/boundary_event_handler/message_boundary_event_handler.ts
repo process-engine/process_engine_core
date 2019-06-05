@@ -27,7 +27,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
     await this.persistOnEnter(token);
 
-    const messageBoundaryEventName: string = eventAggregatorSettings.messagePaths.messageEventReached
+    const messageBoundaryEventName = eventAggregatorSettings.messagePaths.messageEventReached
       .replace(eventAggregatorSettings.messageParams.messageReference, this.boundaryEventModel.messageEventDefinition.name);
 
     const messageReceivedCallback = async (message: MessageEventReachedMessage): Promise<void> => {

@@ -335,7 +335,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
 
   private subscribeToSubProcessTermination(processInstanceId: string, callback: EventReceivedCallback): void {
 
-    const subProcessTerminatedEvent: string = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+    const subProcessTerminatedEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceId);
 
     this.subProcessTerminatedSubscription =
