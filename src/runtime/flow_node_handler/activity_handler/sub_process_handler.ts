@@ -94,6 +94,8 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
           return undefined;
         };
 
+        this.publishActivityReachedNotification(identity, onSuspendToken);
+
         const subProcessWasNotStarted = flowNodeInstancesForSubprocessInstance.length === 0;
         const subProcessResult = subProcessWasNotStarted
           ? await this.waitForSubProcessExecution(processInstanceConfig, identity)
@@ -104,6 +106,8 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
 
         processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
         await this.persistOnExit(onSuspendToken);
+
+        this.publishActivityFinishedNotification(identity, onSuspendToken);
 
         const nextFlowNodes = processModelFacade.getNextFlowNodesFor(this.subProcess);
 
@@ -153,6 +157,8 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
           return undefined;
         };
 
+        this.publishActivityReachedNotification(identity, token);
+
         await this.persistOnSuspend(token);
         const subProcessResult = await this.waitForSubProcessExecution(processInstanceConfig, identity);
         token.payload = subProcessResult;
@@ -160,6 +166,8 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
 
         processTokenFacade.addResultForFlowNode(this.subProcess.id, this.flowNodeInstanceId, subProcessResult);
         await this.persistOnExit(token);
+
+        this.publishActivityFinishedNotification(identity, token);
 
         const nextFlowNodes = processModelFacade.getNextFlowNodesFor(this.subProcess);
 
