@@ -5,8 +5,8 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
-  EmptyActivityFinishedMessage,
-  EmptyActivityReachedMessage,
+  ActivityFinishedMessage,
+  ActivityReachedMessage,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -75,7 +75,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
       processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
 
-      this.sendEmptyActivityFinishedNotification(identity, token);
+      this.publishEmptyActivityFinishedNotification(identity, token);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.emptyActivity);
 
@@ -107,7 +107,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
 
       const waitForContinueEventPromise = await this.waitForFinishEvent(onSuspendToken);
 
-      this.sendEmptyTaskReachedNotification(identity, onSuspendToken);
+      this.publishEmptyTaskReachedNotification(identity, onSuspendToken);
 
       await waitForContinueEventPromise;
       await this.persistOnResume(onSuspendToken);
@@ -115,7 +115,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
       processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, onSuspendToken.payload);
       await this.persistOnExit(onSuspendToken);
 
-      this.sendEmptyActivityFinishedNotification(identity, onSuspendToken);
+      this.publishEmptyActivityFinishedNotification(identity, onSuspendToken);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.emptyActivity);
 
@@ -138,7 +138,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     const waitForEmptyActivityResultPromise: Promise<any> = this.waitForFinishEvent(token);
     await this.persistOnSuspend(token);
 
-    this.sendEmptyTaskReachedNotification(identity, token);
+    this.publishEmptyTaskReachedNotification(identity, token);
 
     return waitForEmptyActivityResultPromise;
   }
@@ -161,16 +161,9 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     });
   }
 
-  /**
-   * Publishes a notification on the EventAggregator, informing about a new
-   * suspended EmptyActivity.
-   *
-   * @param identity The identity that owns the EmptyActivity instance.
-   * @param token    Contains all infos required for the Notification message.
-   */
-  private sendEmptyTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishEmptyTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message = new EmptyActivityReachedMessage(
+    const message = new ActivityReachedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
@@ -183,20 +176,9 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.emptyActivityReached, message);
   }
 
-  /**
-   * Publishes notifications on the EventAggregator, informing that an EmptyActivity
-   * has finished execution.
-   *
-   * Two notifications will be send:
-   * - A global notification that everybody can receive
-   * - A notification specifically for this EmptyActivity.
-   *
-   * @param identity The identity that owns the EmptyActivity instance.
-   * @param token    Contains all infos required for the Notification message.
-   */
-  private sendEmptyActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishEmptyActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message = new EmptyActivityFinishedMessage(
+    const message = new ActivityFinishedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
