@@ -29,4 +29,24 @@ describe('ProcessTokenFacade.getOldTokenFormat', (): void => {
     should(results.history).have.properties(...expectedHistoryKeys);
     should(results.current).be.eql(expectedCurrentValue);
   });
+
+  it('should only include the latest results for each FlowNode', async (): Promise<void> => {
+
+    const secondResultForServiceTask = {
+      some: 'value',
+    };
+
+    processTokenFacade.addResultForFlowNode('ServiceTask_1', 'abcdefghijkl', secondResultForServiceTask);
+
+    const results = processTokenFacade.getOldTokenFormat();
+
+    const expectedHistoryKeys = ['StartEvent_1', 'ServiceTask_1', 'EndEvent_1'];
+
+    should(results).be.an.Object();
+    should(results).have.properties('current', 'history');
+    should(results.history).have.properties(...expectedHistoryKeys);
+
+    should(results.current).be.eql(secondResultForServiceTask);
+    should(results.history.ServiceTask_1).be.eql(secondResultForServiceTask);
+  });
 });
