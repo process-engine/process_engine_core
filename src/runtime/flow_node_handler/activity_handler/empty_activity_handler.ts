@@ -107,7 +107,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
 
       const waitForContinueEventPromise = await this.waitForFinishEvent(onSuspendToken);
 
-      this.publishEmptyTaskReachedNotification(identity, onSuspendToken);
+      this.publishEmptyActivityReachedNotification(identity, onSuspendToken);
 
       await waitForContinueEventPromise;
       await this.persistOnResume(onSuspendToken);
@@ -138,7 +138,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     const waitForEmptyActivityResultPromise: Promise<any> = this.waitForFinishEvent(token);
     await this.persistOnSuspend(token);
 
-    this.publishEmptyTaskReachedNotification(identity, token);
+    this.publishEmptyActivityReachedNotification(identity, token);
 
     return waitForEmptyActivityResultPromise;
   }
@@ -161,7 +161,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     });
   }
 
-  private publishEmptyTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishEmptyActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message = new ActivityReachedMessage(
       token.correlationId,
