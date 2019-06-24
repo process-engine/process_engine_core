@@ -102,6 +102,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         return undefined;
       };
 
+      this.publishActivityReachedNotification(identity, onSuspendToken);
+
       const externalTask = await this.getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
       const noMatchingExteralTaskExists = !externalTask;
@@ -114,6 +116,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         await this.persistOnExit(onSuspendToken);
 
         const nextFlowNode = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        this.publishActivityFinishedNotification(identity, onSuspendToken);
 
         return resolve(nextFlowNode);
       }
@@ -129,6 +133,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         // We must wait for the notification and pass the result to our customized callback.
         this.waitForExternalTaskResult(processExternalTaskResult);
       }
+
+      this.publishActivityFinishedNotification(identity, onSuspendToken);
     });
 
     return resumerPromise;
@@ -155,6 +161,9 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
           return undefined;
         };
+
+        this.publishActivityReachedNotification(identity, token);
+
         const result = await this.executeExternalServiceTask(token, processTokenFacade, identity);
 
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
@@ -163,6 +172,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         await this.persistOnExit(token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        this.publishActivityFinishedNotification(identity, token);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {

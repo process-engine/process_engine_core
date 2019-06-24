@@ -56,6 +56,8 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
+    this.publishActivityReachedNotification(identity, token);
+
     const serviceTaskHasNoInvocation = this.serviceTask.invocation === undefined;
     if (serviceTaskHasNoInvocation) {
       this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
@@ -66,6 +68,8 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
       await this.persistOnExit(token);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+      this.publishActivityFinishedNotification(identity, token);
 
       return nextFlowNodeInfo;
     }
@@ -91,6 +95,8 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
         await this.persistOnExit(token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        this.publishActivityFinishedNotification(identity, token);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
