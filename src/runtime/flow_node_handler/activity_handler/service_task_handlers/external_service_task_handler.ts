@@ -151,6 +151,17 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
       try {
         this.logger.verbose('Executing external ServiceTask');
+
+        const topicHasTokenExpression = this.serviceTask.topic.indexOf('token.') > -1;
+        if (topicHasTokenExpression) {
+          this.serviceTask.topic = this.getExternalTaskTopic(processTokenFacade);
+        }
+
+        const serviceTaskHasAttachedPayload = this.serviceTask.payload !== undefined;
+        if (serviceTaskHasAttachedPayload) {
+          token.payload = this.getExternalTaskPayload(processTokenFacade, identity);
+        }
+
         await this.persistOnSuspend(token);
 
         this.onInterruptedCallback = async (): Promise<void> => {
@@ -270,27 +281,15 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
   private async createExternalTask(token: ProcessToken, processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<void> {
 
-    const topicHasTokenExpression = this.serviceTask.topic.indexOf('token') > -1;
-
-    const topic = topicHasTokenExpression
-      ? this.getExternalTaskTopic(processTokenFacade)
-      : this.serviceTask.topic;
-
-    const serviceTaskHasAttachedPayload = this.serviceTask.payload !== undefined;
-
-    const payload = serviceTaskHasAttachedPayload
-      ? this.getExternalTaskPayload(processTokenFacade, identity)
-      : token.payload;
-
     this.logger.verbose('Persist ServiceTask as ExternalTask.');
     await this.externalTaskRepository.create(
-      topic,
+      this.serviceTask.topic,
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
       this.flowNodeInstanceId,
       token.identity,
-      payload,
+      token.payload,
     );
   }
 
