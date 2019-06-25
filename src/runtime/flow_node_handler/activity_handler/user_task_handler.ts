@@ -80,7 +80,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
         processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
         await this.persistOnExit(token);
 
-        this.sendUserTaskFinishedNotification(identity, token);
+        this.publishUserTaskFinishedNotification(identity, token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.userTask);
 
@@ -117,7 +117,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
 
       const waitForMessagePromise = this.waitForUserTaskResult(identity, onSuspendToken);
 
-      this.sendUserTaskReachedNotification(identity, onSuspendToken);
+      this.publishUserTaskReachedNotification(identity, onSuspendToken);
 
       const userTaskResult = await waitForMessagePromise;
 
@@ -128,7 +128,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
       processTokenFacade.addResultForFlowNode(this.userTask.id, this.flowNodeInstanceId, userTaskResult);
       await this.persistOnExit(onSuspendToken);
 
-      this.sendUserTaskFinishedNotification(identity, onSuspendToken);
+      this.publishUserTaskFinishedNotification(identity, onSuspendToken);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.userTask);
 
@@ -218,7 +218,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     const waitForUserTaskResultPromise = this.waitForUserTaskResult(identity, token);
     await this.persistOnSuspend(token);
 
-    this.sendUserTaskReachedNotification(identity, token);
+    this.publishUserTaskReachedNotification(identity, token);
 
     return waitForUserTaskResultPromise;
   }
@@ -253,14 +253,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     });
   }
 
-  /**
-   * Publishes a notification on the EventAggregator, informing about a new
-   * suspended UserTask.
-   *
-   * @param identity The identity that owns the UserTask instance.
-   * @param token    Contains all infos required for the Notification message.
-   */
-  private sendUserTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishUserTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message = new UserTaskReachedMessage(
       token.correlationId,
@@ -275,18 +268,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.userTaskReached, message);
   }
 
-  /**
-   * Publishes notifications on the EventAggregator, informing that a UserTask
-   * has received a result and finished execution.
-   *
-   * Two notifications will be send:
-   * - A global notification that everybody can receive
-   * - A notification specifically for this UserTask.
-   *
-   * @param identity The identity that owns the UserTask instance.
-   * @param token    Contains all infos required for the Notification message.
-   */
-  private sendUserTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishUserTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
     const message = new UserTaskFinishedMessage(
       token.payload,

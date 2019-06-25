@@ -5,13 +5,13 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
+  ActivityFinishedMessage,
+  ActivityReachedMessage,
   FinishManualTaskMessage,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  ManualTaskFinishedMessage,
-  ManualTaskReachedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -76,7 +76,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
       processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
       await this.persistOnExit(token);
 
-      this.sendManualTaskFinishedNotification(identity, token);
+      this.publishManualTaskFinishedNotification(identity, token);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.manualTask);
 
@@ -108,7 +108,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
 
       const waitForMessagePromise = await this.waitForManualTaskResult(identity, onSuspendToken);
 
-      this.sendManualTaskReachedNotification(identity, onSuspendToken);
+      this.publishManualTaskReachedNotification(identity, onSuspendToken);
 
       const manualTaskResult = await waitForMessagePromise;
 
@@ -119,7 +119,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
       processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
       await this.persistOnExit(onSuspendToken);
 
-      this.sendManualTaskFinishedNotification(identity, onSuspendToken);
+      this.publishManualTaskFinishedNotification(identity, onSuspendToken);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.manualTask);
 
@@ -144,7 +144,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
     const waitForManualTaskResultPromise = this.waitForManualTaskResult(identity, token);
     await this.persistOnSuspend(token);
 
-    this.sendManualTaskReachedNotification(identity, token);
+    this.publishManualTaskReachedNotification(identity, token);
 
     return waitForManualTaskResultPromise;
   }
@@ -175,21 +175,15 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
     });
   }
 
-  /**
-   * Publishes a notification on the EventAggregator, informing about a new
-   * suspended ManualTask.
-   *
-   * @param identity The identity that owns the ManualTask instance.
-   * @param token    Contains all infos required for the Notification message.
-   */
-  private sendManualTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishManualTaskReachedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message = new ManualTaskReachedMessage(
+    const message = new ActivityReachedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
       this.manualTask.id,
       this.flowNodeInstanceId,
+      this.manualTask.bpmnType,
       identity,
       token.payload,
     );
@@ -197,25 +191,15 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.manualTaskReached, message);
   }
 
-  /**
-   * Publishes notifications on the EventAggregator, informing that a ManualTask
-   * has finished execution.
-   *
-   * Two notifications will be send:
-   * - A global notification that everybody can receive
-   * - A notification specifically for this ManualTask.
-   *
-   * @param identity The identity that owns the ManualTask instance.
-   * @param token    Contains all infos required for the Notification message.
-   */
-  private sendManualTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+  private publishManualTaskFinishedNotification(identity: IIdentity, token: ProcessToken): void {
 
-    const message = new ManualTaskFinishedMessage(
+    const message = new ActivityFinishedMessage(
       token.correlationId,
       token.processModelId,
       token.processInstanceId,
       this.manualTask.id,
       this.flowNodeInstanceId,
+      this.manualTask.bpmnType,
       identity,
       token.payload,
     );

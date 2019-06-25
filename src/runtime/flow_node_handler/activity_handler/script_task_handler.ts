@@ -56,6 +56,8 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
 
         const executionPromise = this.executeScriptTask(processTokenFacade, identity);
 
+        this.publishActivityReachedNotification(identity, token);
+
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
           processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, interruptionToken.payload);
           executionPromise.cancel();
@@ -69,11 +71,15 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
         token.payload = result;
         await this.persistOnExit(token);
 
+        this.publishActivityFinishedNotification(identity, token);
+
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.scriptTask);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
         await this.persistOnError(token, error);
+
+        this.publishActivityFinishedNotification(identity, token);
 
         return reject(error);
       }

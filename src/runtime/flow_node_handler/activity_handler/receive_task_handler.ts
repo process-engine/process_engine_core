@@ -80,15 +80,20 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
         return undefined;
       };
 
+      this.publishActivityReachedNotification(identity, token);
+
       const receivedMessage = await executionPromise;
 
       token.payload = receivedMessage.currentToken;
 
       await this.persistOnResume(token);
+
       this.sendReplyToSender(identity, token);
 
       processTokenFacade.addResultForFlowNode(this.receiveTask.id, this.flowNodeInstanceId, receivedMessage.currentToken);
       await this.persistOnExit(receivedMessage.currentToken);
+
+      this.publishActivityFinishedNotification(identity, token);
 
       const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.receiveTask);
 
