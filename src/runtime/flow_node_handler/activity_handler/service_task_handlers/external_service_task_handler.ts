@@ -154,12 +154,12 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
         const topicHasTokenExpression = this.serviceTask.topic.indexOf('token.') > -1;
         if (topicHasTokenExpression) {
-          this.serviceTask.topic = this.getExternalTaskTopic(processTokenFacade);
+          this.serviceTask.topic = this.parseExternalTaskTopic(processTokenFacade);
         }
 
         const serviceTaskHasAttachedPayload = this.serviceTask.payload !== undefined;
         if (serviceTaskHasAttachedPayload) {
-          token.payload = this.getExternalTaskPayload(processTokenFacade, identity);
+          token.payload = this.parseExternalTaskPayload(processTokenFacade, identity);
         }
 
         await this.persistOnSuspend(token);
@@ -293,7 +293,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     );
   }
 
-  private getExternalTaskTopic(processTokenFacade: IProcessTokenFacade): any {
+  private parseExternalTaskTopic(processTokenFacade: IProcessTokenFacade): any {
 
     try {
       const tokenHistory = processTokenFacade.getOldTokenFormat();
@@ -309,7 +309,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     }
   }
 
-  private getExternalTaskPayload(processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
+  private parseExternalTaskPayload(processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
 
     try {
       const tokenHistory = processTokenFacade.getOldTokenFormat();
