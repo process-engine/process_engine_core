@@ -169,6 +169,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
       token.processInstanceId,
       this.emptyActivity.id,
       this.flowNodeInstanceId,
+      this.emptyActivity.bpmnType,
       identity,
       token.payload,
     );
@@ -184,6 +185,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
       token.processInstanceId,
       this.emptyActivity.id,
       this.flowNodeInstanceId,
+      this.emptyActivity.bpmnType,
       identity,
       token.payload,
     );

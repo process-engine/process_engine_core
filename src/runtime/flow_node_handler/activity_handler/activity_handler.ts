@@ -621,6 +621,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       token.processInstanceId,
       this.flowNode.id,
       this.flowNodeInstanceId,
+      this.flowNode.bpmnType,
       identity,
       token.payload,
     );
@@ -636,6 +637,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       token.processInstanceId,
       this.flowNode.id,
       this.flowNodeInstanceId,
+      this.flowNode.bpmnType,
       identity,
       token.payload,
     );

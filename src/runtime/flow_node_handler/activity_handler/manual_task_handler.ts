@@ -183,6 +183,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
       token.processInstanceId,
       this.manualTask.id,
       this.flowNodeInstanceId,
+      this.manualTask.bpmnType,
       identity,
       token.payload,
     );
@@ -198,6 +199,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
       token.processInstanceId,
       this.manualTask.id,
       this.flowNodeInstanceId,
+      this.manualTask.bpmnType,
       identity,
       token.payload,
     );
