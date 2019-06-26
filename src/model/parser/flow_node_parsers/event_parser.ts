@@ -1,10 +1,14 @@
-import {NotFoundError} from '@essential-projects/errors_ts';
+import {Logger} from 'loggerhythm';
+
+import {NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
 } from '../../type_factory';
+
+const logger = Logger.createLogger('processengine:model_parser:event_parser');
 
 let errors: Array<Model.GlobalElements.Error> = [];
 let eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = [];
@@ -99,6 +103,16 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     boundaryEvent.cancelActivity = cancelActivity;
 
     assignEventDefinitions(boundaryEvent, boundaryEventRaw);
+
+    const isCyclicTimerBoundaryEvent =
+      boundaryEvent.timerEventDefinition &&
+      boundaryEvent.timerEventDefinition.timerType === Model.Events.Definitions.TimerType.timeCycle;
+
+    if (isCyclicTimerBoundaryEvent) {
+      const errorMessage = 'Using cyclic timers for BoundaryEvents is not allowed!';
+      logger.error(errorMessage, boundaryEvent);
+      throw new UnprocessableEntityError(errorMessage);
+    }
 
     events.push(boundaryEvent);
   }
