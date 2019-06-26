@@ -233,17 +233,18 @@ export class TimerFacade implements ITimerFacade {
 
         break;
       case TimerDefinitionType.cycle:
-        if (flowNode.bpmnType !== BpmnType.startEvent) {
-          const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
-          logger.error(errorMessage, flowNode);
 
-          const error = new UnprocessableEntityError(errorMessage);
-          error.additionalInformation = <any> flowNode;
-
-          throw error;
+        if (flowNode.bpmnType === BpmnType.startEvent) {
+          break;
         }
 
-        break;
+        const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
+        logger.error(errorMessage, flowNode);
+
+        const error = new UnprocessableEntityError(errorMessage);
+        error.additionalInformation = <any> flowNode;
+
+        throw error;
       default:
         const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
         logger.error(invalidTimerTypeMessage);
