@@ -6,7 +6,7 @@ import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
 import {IProcessTokenFacade, ITimerFacade, TimerDefinitionType} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 enum TimerBpmnType {
   Duration = 'bpmn:timeDuration',
@@ -47,7 +47,7 @@ export class TimerFacade implements ITimerFacade {
     timerCallback: Function,
   ): Subscription {
 
-    this.validateTimer(timerType, timerValue);
+    this.validateTimer(flowNode, timerType, timerValue);
 
     const callbackEventName = `${flowNode.id}_${uuid.v4()}`;
 
@@ -196,7 +196,7 @@ export class TimerFacade implements ITimerFacade {
     }
   }
 
-  private validateTimer(timerType: TimerDefinitionType, timerValue: string): void {
+  private validateTimer(flowNode: Model.Base.FlowNode, timerType: TimerDefinitionType, timerValue: string): void {
 
     switch (timerType) {
       case TimerDefinitionType.date:
@@ -233,8 +233,17 @@ export class TimerFacade implements ITimerFacade {
 
         break;
       case TimerDefinitionType.cycle:
-        logger.error('Attempted to parse a cyclic timer! this is currently not supported!');
-        throw new UnprocessableEntityError('Cyclic timer definitions are currently not supported!');
+        if (flowNode.bpmnType !== BpmnType.startEvent) {
+          const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
+          logger.error(errorMessage, flowNode);
+
+          const error = new UnprocessableEntityError(errorMessage);
+          error.additionalInformation = <any> flowNode;
+
+          throw error;
+        }
+
+        break;
       default:
         const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
         logger.error(invalidTimerTypeMessage);
