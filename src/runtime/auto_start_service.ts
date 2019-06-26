@@ -99,7 +99,6 @@ export class AutoStartService implements IAutoStartService {
     tokenPayload: any,
   ): Promise<void> {
 
-    // This list contains all ProcessModels that the User that triggered the Event has access to.
     const userAccessibleProcessModels = await this.processModelUseCases.getProcessModels(identity);
 
     logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
@@ -107,7 +106,7 @@ export class AutoStartService implements IAutoStartService {
     const matchingProcessModels =
       this.getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionName, eventName);
 
-    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching SignalStartEvents.`);
+    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching StartEvents.`);
     await this.startProcessInstances(
       matchingProcessModels,
       identity,
