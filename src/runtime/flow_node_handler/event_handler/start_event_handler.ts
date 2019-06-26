@@ -118,10 +118,13 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
         this.sendProcessStartedMessage(identity, token, this.startEvent.id);
 
-        const flowNodeIsTimerStartEvent = this.startEvent.timerEventDefinition !== undefined;
+        const flowNodeIsNonCyclicTimerStartEvent =
+          this.startEvent.timerEventDefinition !== undefined &&
+          this.startEvent.timerEventDefinition.timerType !== Model.Events.Definitions.TimerType.timeCycle;
 
-        // TimerStartEvents cannot be auto-started yet and must be handled manually here.
-        if (flowNodeIsTimerStartEvent) {
+        // Cyclic TimerStartEvents are started automatically through the Cronjob Service.
+        // All other Timer types are started through this handler, since they cannot be automatically scheduled.
+        if (flowNodeIsNonCyclicTimerStartEvent) {
           const newTokenPayload = await this.suspendAndWaitForTimerToElapse(token, processTokenFacade);
           token.payload = newTokenPayload;
           await this.persistOnResume(token);
