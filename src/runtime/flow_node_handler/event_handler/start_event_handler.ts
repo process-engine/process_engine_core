@@ -11,6 +11,7 @@ import {
   IProcessTokenFacade,
   ITimerFacade,
   ProcessStartedMessage,
+  TimerDefinitionType,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -118,16 +119,19 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
         this.sendProcessStartedMessage(identity, token, this.startEvent.id);
 
-        const flowNodeIsNonCyclicTimerStartEvent =
-          this.startEvent.timerEventDefinition !== undefined &&
-          this.startEvent.timerEventDefinition.timerType !== Model.Events.Definitions.TimerType.timeCycle;
+        const flowNodeIsTimerStartEvent = this.startEvent.timerEventDefinition !== undefined;
 
         // Cyclic TimerStartEvents are started automatically through the Cronjob Service.
         // All other Timer types are started through this handler, since they cannot be automatically scheduled.
-        if (flowNodeIsNonCyclicTimerStartEvent) {
-          const newTokenPayload = await this.suspendAndWaitForTimerToElapse(token, processTokenFacade);
-          token.payload = newTokenPayload;
-          await this.persistOnResume(token);
+        if (flowNodeIsTimerStartEvent) {
+
+          const timerType = this.timerFacade.parseTimerDefinitionType(this.startEvent.timerEventDefinition);
+
+          if (timerType !== TimerDefinitionType.cycle) {
+            const newTokenPayload = await this.suspendAndWaitForTimerToElapse(token, processTokenFacade);
+            token.payload = newTokenPayload;
+            await this.persistOnResume(token);
+          }
         }
 
         processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, token.payload);
