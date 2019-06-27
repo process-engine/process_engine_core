@@ -103,6 +103,8 @@ export class CronjobService implements ICronjobService {
 
       cronjobConfig.processModelIds.splice(matchingIndexInConfig, 1);
 
+      logger.verbose(`Remaining processModels in config for cronjob '${job}': `, cronjobConfig.processModelIds);
+
       const configStillContainsProcessModels = cronjobConfig.processModelIds.length > 0;
       if (configStillContainsProcessModels) {
         continue;
