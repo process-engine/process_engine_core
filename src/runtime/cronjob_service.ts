@@ -153,6 +153,7 @@ export class CronjobService implements IAutoStartService {
         continue;
       }
 
+      // Starting the ProcessModel will not be awaited to ensure all ProcessModels are started simultaneously.
       const correlationId = `started_by_cronjob ${cronjob}`;
       this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingStartEvent.id, {});
     }
