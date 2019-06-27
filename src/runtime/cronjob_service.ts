@@ -48,10 +48,13 @@ export class CronjobService implements IAutoStartService {
     this.timerFacade = timerFacade;
   }
 
+  public async initialize(): Promise<void> {
+    const dummyToken = 'ZHVtbXlfdG9rZW4=';
+    this.internalIdentity = await this.identityService.getIdentity(dummyToken);
+  }
+
   public async start(): Promise<void> {
     logger.info('Starting up and creating Cronjobs...');
-
-    await this.createInternalIdentity();
 
     const processModelsWithCronjobs = await this.getProcessModelsWithCronjobs();
 
@@ -87,7 +90,13 @@ export class CronjobService implements IAutoStartService {
       const timerValue = this.timerFacade.parseTimerDefinitionValue(startEvent.timerEventDefinition);
 
       if (this.cronjobDictionary[timerValue] !== undefined) {
-        this.cronjobDictionary[timerValue].processModelIds.push(processModel.id);
+        // Just in case somebody configured the same cronjob on multiple StartEvents
+        const processModelIdNotYetStored =
+          !this.cronjobDictionary[timerValue].processModelIds.some((processModelId): boolean => processModelId === processModel.id);
+
+        if (processModelIdNotYetStored) {
+          this.cronjobDictionary[timerValue].processModelIds.push(processModel.id);
+        }
       } else {
 
         const onCronjobExpired = (expiredCronjob: string): void => {
@@ -170,11 +179,6 @@ export class CronjobService implements IAutoStartService {
     const cyclicTimerStartEvents = startEvents.filter(isCyclicTimerStartEvent);
 
     return cyclicTimerStartEvents;
-  }
-
-  private async createInternalIdentity(): Promise<void> {
-    const dummyToken = 'ZHVtbXlfdG9rZW4=';
-    this.internalIdentity = await this.identityService.getIdentity(dummyToken);
   }
 
 }
