@@ -4,7 +4,7 @@ import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {
-  IAutoStartService,
+  ICronjobService,
   IExecuteProcessService,
   ITimerFacade,
   TimerDefinitionType,
@@ -20,7 +20,7 @@ type CronjobCollectionEntry = {
 
 type CronjobCollection = {[jobDefinition: string]: CronjobCollectionEntry};
 
-export class CronjobService implements IAutoStartService {
+export class CronjobService implements ICronjobService {
 
   private readonly executeProcessService: IExecuteProcessService;
   private readonly identityService: IIdentityService;
@@ -77,6 +77,14 @@ export class CronjobService implements IAutoStartService {
     }
 
     logger.info('Done.');
+  }
+
+  public addOrUpdate(processModel: Model.Process): void {
+    throw new Error('Method not implemented.');
+  }
+
+  public remove(processModelId: string): void {
+    throw new Error('Method not implemented.');
   }
 
   private async getProcessModelsWithCronjobs(): Promise<Array<Model.Process>> {
