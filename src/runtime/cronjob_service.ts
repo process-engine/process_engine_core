@@ -1,20 +1,20 @@
-import {CronJob} from 'cron';
 import {Logger} from 'loggerhythm';
 
-import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {
   IAutoStartService,
   IExecuteProcessService,
   ITimerFacade,
+  TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 const logger = Logger.createLogger('processengine:runtime:auto_start_service');
 
 type CronjobCollectionEntry = {
-  job?: CronJob;
+  subscription?: Subscription;
   processModelIds: Array<string>;
 };
 
@@ -90,21 +90,31 @@ export class CronjobService implements IAutoStartService {
         this.cronjobDictionary[timerValue].processModelIds.push(processModel.id);
       } else {
 
-        // TODO - Enhance TimerFacade with payloads for expired timers
-        // Then Use TimerFacade instead.
-        const cronjob = new CronJob({
-          cronTime: timerValue,
-          onTick: this.onCronjobExpired,
-          context: this,
-        });
+        const onCronjobExpired = (expiredCronjob: string): void => {
+          logger.info('A Cronjob has expired: ', expiredCronjob);
+
+          const matchingCronjobConfig = this.cronjobDictionary[expiredCronjob];
+
+          if (!matchingCronjobConfig) {
+            logger.warn('No matching config was found! The cronjob may be an orphan.');
+            return;
+          }
+
+          logger.verbose('Found a matching config. Executing ProcessModels with Ids: ', matchingCronjobConfig.processModelIds);
+
+          this.executeProcessModelsForExpiredCronjob(expiredCronjob, matchingCronjobConfig);
+        };
+
+        const timerSubscription = this
+          .timerFacade
+          .initializeTimer(startEvent, TimerDefinitionType.cycle, timerValue, onCronjobExpired.bind(this, timerValue));
 
         const newCronJobConfig = {
-          job: {},
+          subscription: timerSubscription,
           processModelIds: [processModel.id],
         };
 
-        Object.assign(newCronJobConfig.job, cronjob);
-        Object.assign(this.cronjobDictionary[timerValue], newCronJobConfig);
+        this.cronjobDictionary[timerValue] = newCronJobConfig;
       }
     }
   }
@@ -113,6 +123,35 @@ export class CronjobService implements IAutoStartService {
     const cyclicTimerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
 
     return cyclicTimerStartEvents.length > 0;
+  }
+
+  private async executeProcessModelsForExpiredCronjob(cronjob: string, config: CronjobCollectionEntry): Promise<void> {
+
+    for (const processModelId of config.processModelIds) {
+
+      const processModel = await this.processModelUseCases.getProcessModelById(this.internalIdentity, processModelId);
+
+      const matchingStartEvent = this.findStartEventWithMatchingCronjob(cronjob, processModel);
+      if (!matchingStartEvent) {
+        logger.warn(`The ProcessModel '${processModelId}' no longer has any StartEvent with the cronjob '${cronjob}' on it.`);
+        continue;
+      }
+
+      const correlationId = `started_by_cronjob ${cronjob}`;
+      this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingStartEvent.id, {});
+    }
+  }
+
+  private findStartEventWithMatchingCronjob(cronjob: string, processModel: Model.Process): Model.Events.StartEvent {
+
+    const timerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
+
+    const matchingStartEvent = timerStartEvents.find((startEvent): boolean => {
+      const timerValue = this.timerFacade.parseTimerDefinitionValue(startEvent.timerEventDefinition);
+      return timerValue === cronjob;
+    });
+
+    return matchingStartEvent;
   }
 
   private getCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
@@ -131,10 +170,6 @@ export class CronjobService implements IAutoStartService {
     const cyclicTimerStartEvents = startEvents.filter(isCyclicTimerStartEvent);
 
     return cyclicTimerStartEvents;
-  }
-
-  private async onCronjobExpired(): Promise<void> {
-    logger.info('A Cronjob has expired: ');
   }
 
   private async createInternalIdentity(): Promise<void> {
