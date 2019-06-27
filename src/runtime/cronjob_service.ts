@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {
@@ -22,7 +22,6 @@ type CronjobCollection = {[jobDefinition: string]: CronjobCollectionEntry};
 
 export class CronjobService implements IAutoStartService {
 
-  private readonly eventAggregator: IEventAggregator;
   private readonly executeProcessService: IExecuteProcessService;
   private readonly identityService: IIdentityService;
   private readonly processModelUseCases: IProcessModelUseCases;
@@ -35,13 +34,11 @@ export class CronjobService implements IAutoStartService {
   private internalIdentity: IIdentity;
 
   constructor(
-    eventAggregator: IEventAggregator,
     executeProcessService: IExecuteProcessService,
     identityService: IIdentityService,
     processModelUseCases: IProcessModelUseCases,
     timerFacade: ITimerFacade,
   ) {
-    this.eventAggregator = eventAggregator;
     this.executeProcessService = executeProcessService;
     this.identityService = identityService;
     this.processModelUseCases = processModelUseCases;
