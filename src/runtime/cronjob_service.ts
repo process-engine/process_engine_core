@@ -181,7 +181,7 @@ export class CronjobService implements ICronjobService {
     return cyclicTimerStartEvents;
   }
 
-  private async executeProcessModelWithCronjob(processModelId: string, cronjob: string): Promise<void> {
+  private executeProcessModelWithCronjob(processModelId: string, cronjob: string): void {
 
     const matchingConfig = this.cronjobDictionary[processModelId].find((config): boolean => config.cronjob === cronjob);
 
