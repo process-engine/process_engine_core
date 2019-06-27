@@ -14,12 +14,17 @@ enum TimerBpmnType {
   Date = 'bpmn:timeDate',
 }
 
+type TimerId = string;
+type TimerIdStorage = {[eventSubscriptionId: string]: TimerId};
+
 const logger = Logger.createLogger('processengine:runtime:timer_facade');
 
 export class TimerFacade implements ITimerFacade {
 
   private eventAggregator: IEventAggregator;
   private timerService: ITimerService;
+
+  private timerStorage: TimerIdStorage = {};
 
   constructor(eventAggregator: IEventAggregator, timerService: ITimerService) {
     this.eventAggregator = eventAggregator;
@@ -104,7 +109,10 @@ export class TimerFacade implements ITimerFacade {
   }
 
   public cancelTimerSubscription(subscription: Subscription): void {
+    const timerId = this.timerStorage[subscription.eventName];
+
     this.eventAggregator.unsubscribe(subscription);
+    this.timerService.cancel(timerId);
   }
 
   private startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
@@ -127,7 +135,9 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    this.timerService.periodic(timingRule, callbackEventName);
+    const timerId = this.timerService.periodic(timingRule, callbackEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
 
     return subscription;
   }
@@ -144,7 +154,9 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    this.timerService.once(date, callbackEventName);
+    const timerId = this.timerService.once(date, callbackEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
 
     return subscription;
   }
@@ -170,7 +182,9 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    this.timerService.once(date, callbackEventName);
+    const timerId = this.timerService.once(date, callbackEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
 
     return subscription;
   }
