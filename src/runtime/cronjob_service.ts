@@ -65,7 +65,17 @@ export class CronjobService implements IAutoStartService {
   }
 
   public async stop(): Promise<void> {
-    logger.info('Stopping...');
+    logger.info('Stopping all currently running cronjobs...');
+
+    const jobs = Object.keys(this.cronjobDictionary);
+
+    for (const job of jobs) {
+      const cronjobConfig = this.cronjobDictionary[job];
+      this.timerFacade.cancelTimerSubscription(cronjobConfig.subscription);
+
+      delete this.cronjobDictionary[job];
+    }
+
     logger.info('Done.');
   }
 
