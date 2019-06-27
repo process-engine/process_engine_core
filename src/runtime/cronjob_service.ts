@@ -77,7 +77,36 @@ export class CronjobService implements ICronjobService {
   }
 
   public addOrUpdate(processModel: Model.Process): void {
-    throw new Error('Method not implemented.');
+
+    const startEventsWithCronjob = this.getCyclicTimerStartEventsForProcessModel(processModel);
+
+    const config = this.cronjobDictionary[processModel.id];
+
+    // If the ProcessModel doesn't have any cronjobs attached to it, we need to cleanup the internal storage,
+    // In case the ProessModel had one or more before.
+    if (startEventsWithCronjob.length === 0) {
+
+      if (!config) {
+        return;
+      }
+
+      logger.info(`ProcessModel ${processModel.id} no longer contains any cronjobs. Removing all active jobs for that ProcessModel...`);
+      this.stopCronjobsForProcessModel(processModel.id);
+      logger.info('Done.');
+
+      return;
+    }
+
+    // If the ProcessModel has cronjobs attached to it, we need to sync them with the internal storage.
+    // Easiest way to do that is to first remove the ProcessModel from the storage and then adding it in its updated form.
+    // This also provides insurance against unintended executions, if a cronjob happens to expire during the update.
+    logger.info(`Creating or updating cronjobs for ProcessModel ${processModel.id}...`);
+    if (config) {
+      this.stopCronjobsForProcessModel(processModel.id);
+    }
+
+    this.createCronjobForProcessModel(processModel);
+    logger.info('Done. New Cronjobs for ProcessModel: ', this.cronjobDictionary[processModel.id]);
   }
 
   public remove(processModelId: string): void {
