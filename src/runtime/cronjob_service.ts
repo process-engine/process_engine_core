@@ -84,7 +84,38 @@ export class CronjobService implements ICronjobService {
   }
 
   public remove(processModelId: string): void {
-    throw new Error('Method not implemented.');
+
+    logger.info(`Removing ProcessModel ${processModelId} from all cronjobs...`);
+
+    const jobs = Object.keys(this.cronjobDictionary);
+    for (const job of jobs) {
+
+      const cronjobConfig = this.cronjobDictionary[job];
+
+      const matchingIndexInConfig = cronjobConfig.processModelIds.findIndex((entry): boolean => entry === processModelId);
+
+      const processModelNotFound = matchingIndexInConfig === -1;
+      if (processModelNotFound) {
+        continue;
+      }
+
+      logger.verbose(`Removing ProcessModel '${processModelId}' from cronjob '${job}'`);
+
+      cronjobConfig.processModelIds.splice(matchingIndexInConfig, 1);
+
+      const configStillContainsProcessModels = cronjobConfig.processModelIds.length > 0;
+      if (configStillContainsProcessModels) {
+        continue;
+      }
+
+      logger.info(`Removing orphaned cronjob '${job}', since it no longer triggers any ProcessModels.`);
+
+      this.timerFacade.cancelTimerSubscription(cronjobConfig.subscription);
+
+      delete this.cronjobDictionary[job];
+    }
+
+    logger.info('Done.');
   }
 
   private async getProcessModelsWithCronjobs(): Promise<Array<Model.Process>> {
