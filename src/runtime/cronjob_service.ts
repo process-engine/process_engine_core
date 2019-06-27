@@ -15,10 +15,11 @@ const logger = Logger.createLogger('processengine:runtime:auto_start_service');
 
 type CronjobCollectionEntry = {
   subscription?: Subscription;
-  processModelIds: Array<string>;
+  startEventId: string;
+  cronjob: string;
 };
 
-type CronjobCollection = {[jobDefinition: string]: CronjobCollectionEntry};
+type CronjobCollection = {[processModelId: string]: Array<CronjobCollectionEntry>};
 
 export class CronjobService implements ICronjobService {
 
@@ -67,15 +68,11 @@ export class CronjobService implements ICronjobService {
   public async stop(): Promise<void> {
     logger.info('Stopping all currently running cronjobs...');
 
-    const jobs = Object.keys(this.cronjobDictionary);
+    const processModelIds = Object.keys(this.cronjobDictionary);
 
-    for (const job of jobs) {
-      const cronjobConfig = this.cronjobDictionary[job];
-      this.timerFacade.cancelTimerSubscription(cronjobConfig.subscription);
-
-      delete this.cronjobDictionary[job];
+    for (const processModelId of processModelIds) {
+      this.stopCronjobsForProcessModel(processModelId);
     }
-
     logger.info('Done.');
   }
 
@@ -84,44 +81,16 @@ export class CronjobService implements ICronjobService {
   }
 
   public remove(processModelId: string): void {
-
-    logger.info(`Removing ProcessModel ${processModelId} from all cronjobs...`);
-
-    const jobs = Object.keys(this.cronjobDictionary);
-    for (const job of jobs) {
-
-      const cronjobConfig = this.cronjobDictionary[job];
-
-      const matchingIndexInConfig = cronjobConfig.processModelIds.findIndex((entry): boolean => entry === processModelId);
-
-      const processModelNotFound = matchingIndexInConfig === -1;
-      if (processModelNotFound) {
-        continue;
-      }
-
-      logger.verbose(`Removing ProcessModel '${processModelId}' from cronjob '${job}'`);
-
-      cronjobConfig.processModelIds.splice(matchingIndexInConfig, 1);
-
-      logger.verbose(`Remaining processModels in config for cronjob '${job}': `, cronjobConfig.processModelIds);
-
-      const configStillContainsProcessModels = cronjobConfig.processModelIds.length > 0;
-      if (configStillContainsProcessModels) {
-        continue;
-      }
-
-      logger.info(`Removing orphaned cronjob '${job}', since it no longer triggers any ProcessModels.`);
-
-      this.timerFacade.cancelTimerSubscription(cronjobConfig.subscription);
-
-      delete this.cronjobDictionary[job];
+    if (!this.cronjobDictionary[processModelId]) {
+      return;
     }
 
+    logger.info(`Removing cronjobs for ProcessModel ${processModelId}...`);
+    this.stopCronjobsForProcessModel(processModelId);
     logger.info('Done.');
   }
 
   private async getProcessModelsWithCronjobs(): Promise<Array<Model.Process>> {
-
     const processModels = await this.processModelUseCases.getProcessModels(this.internalIdentity);
 
     const processModelsWithCronjobs = processModels.filter(this.processModelHasCronjobs);
@@ -133,46 +102,29 @@ export class CronjobService implements ICronjobService {
 
     const startEventsWithCronjob = this.getCyclicTimerStartEventsForProcessModel(processModel);
 
+    this.cronjobDictionary[processModel.id] = [];
+
     for (const startEvent of startEventsWithCronjob) {
 
       const timerValue = this.timerFacade.parseTimerDefinitionValue(startEvent.timerEventDefinition);
 
-      if (this.cronjobDictionary[timerValue] !== undefined) {
-        // Just in case somebody configured the same cronjob on multiple StartEvents
-        const processModelIdNotYetStored =
-          !this.cronjobDictionary[timerValue].processModelIds.some((processModelId): boolean => processModelId === processModel.id);
+      const onCronjobExpired = (expiredCronjob: string, processModelId: string): void => {
+        logger.info(`A Cronjob for ProcessModel ${processModelId} has expired: `, expiredCronjob);
 
-        if (processModelIdNotYetStored) {
-          this.cronjobDictionary[timerValue].processModelIds.push(processModel.id);
-        }
-      } else {
+        this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
+      };
 
-        const onCronjobExpired = (expiredCronjob: string): void => {
-          logger.info('A Cronjob has expired: ', expiredCronjob);
+      const timerSubscription = this
+        .timerFacade
+        .initializeTimer(startEvent, TimerDefinitionType.cycle, timerValue, onCronjobExpired.bind(this, timerValue, processModel.id));
 
-          const matchingCronjobConfig = this.cronjobDictionary[expiredCronjob];
+      const newCronJobConfig = {
+        subscription: timerSubscription,
+        startEventId: startEvent.id,
+        cronjob: timerValue,
+      };
 
-          if (!matchingCronjobConfig) {
-            logger.warn('No matching config was found! The cronjob may be an orphan.');
-            return;
-          }
-
-          logger.verbose('Found a matching config. Executing ProcessModels with Ids: ', matchingCronjobConfig.processModelIds);
-
-          this.executeProcessModelsForExpiredCronjob(expiredCronjob, matchingCronjobConfig);
-        };
-
-        const timerSubscription = this
-          .timerFacade
-          .initializeTimer(startEvent, TimerDefinitionType.cycle, timerValue, onCronjobExpired.bind(this, timerValue));
-
-        const newCronJobConfig = {
-          subscription: timerSubscription,
-          processModelIds: [processModel.id],
-        };
-
-        this.cronjobDictionary[timerValue] = newCronJobConfig;
-      }
+      this.cronjobDictionary[processModel.id].push(newCronJobConfig);
     }
   }
 
@@ -180,36 +132,6 @@ export class CronjobService implements ICronjobService {
     const cyclicTimerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
 
     return cyclicTimerStartEvents.length > 0;
-  }
-
-  private async executeProcessModelsForExpiredCronjob(cronjob: string, config: CronjobCollectionEntry): Promise<void> {
-
-    for (const processModelId of config.processModelIds) {
-
-      const processModel = await this.processModelUseCases.getProcessModelById(this.internalIdentity, processModelId);
-
-      const matchingStartEvent = this.findStartEventWithMatchingCronjob(cronjob, processModel);
-      if (!matchingStartEvent) {
-        logger.warn(`The ProcessModel '${processModelId}' no longer has any StartEvent with the cronjob '${cronjob}' on it.`);
-        continue;
-      }
-
-      // Starting the ProcessModel will not be awaited to ensure all ProcessModels are started simultaneously.
-      const correlationId = `started_by_cronjob ${cronjob}`;
-      this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingStartEvent.id, {});
-    }
-  }
-
-  private findStartEventWithMatchingCronjob(cronjob: string, processModel: Model.Process): Model.Events.StartEvent {
-
-    const timerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
-
-    const matchingStartEvent = timerStartEvents.find((startEvent): boolean => {
-      const timerValue = this.timerFacade.parseTimerDefinitionValue(startEvent.timerEventDefinition);
-      return timerValue === cronjob;
-    });
-
-    return matchingStartEvent;
   }
 
   private getCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
@@ -228,6 +150,26 @@ export class CronjobService implements ICronjobService {
     const cyclicTimerStartEvents = startEvents.filter(isCyclicTimerStartEvent);
 
     return cyclicTimerStartEvents;
+  }
+
+  private async executeProcessModelWithCronjob(processModelId: string, cronjob: string): Promise<void> {
+
+    const matchingConfig = this.cronjobDictionary[processModelId].find((config): boolean => config.cronjob === cronjob);
+
+    // Starting the ProcessModel will not be awaited to ensure all ProcessModels are started simultaneously.
+    const correlationId = `started_by_cronjob ${cronjob}`;
+    this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingConfig.startEventId, {});
+  }
+
+  private stopCronjobsForProcessModel(processModelId: string): void {
+
+    const configForProcessModel = this.cronjobDictionary[processModelId];
+
+    for (const config of configForProcessModel) {
+      this.timerFacade.cancelTimerSubscription(config.subscription);
+    }
+
+    delete this.cronjobDictionary[processModelId];
   }
 
 }
