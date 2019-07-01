@@ -83,10 +83,14 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
         await this.persistOnResume(token);
         await this.persistOnExit(token);
 
+        this.publishActivityFinishedNotification(identity, token);
+
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.sendTask);
 
         return resolve(nextFlowNodeInfo);
       };
+
+      this.publishActivityReachedNotification(identity, token);
 
       this.waitForResponseFromReceiveTask(onResponseReceivedCallback);
       this.sendMessage(identity, token);

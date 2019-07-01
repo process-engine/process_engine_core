@@ -102,6 +102,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         return undefined;
       };
 
+      this.publishActivityReachedNotification(identity, onSuspendToken);
+
       const externalTask = await this.getExternalTaskForFlowNodeInstance(flowNodeInstance);
 
       const noMatchingExteralTaskExists = !externalTask;
@@ -114,6 +116,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         await this.persistOnExit(onSuspendToken);
 
         const nextFlowNode = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        this.publishActivityFinishedNotification(identity, onSuspendToken);
 
         return resolve(nextFlowNode);
       }
@@ -129,6 +133,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         // We must wait for the notification and pass the result to our customized callback.
         this.waitForExternalTaskResult(processExternalTaskResult);
       }
+
+      this.publishActivityFinishedNotification(identity, onSuspendToken);
     });
 
     return resumerPromise;
@@ -145,6 +151,17 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
       try {
         this.logger.verbose('Executing external ServiceTask');
+
+        const topicHasTokenExpression = this.serviceTask.topic.indexOf('token.') > -1;
+        if (topicHasTokenExpression) {
+          this.serviceTask.topic = this.parseExternalTaskTopic(processTokenFacade);
+        }
+
+        const serviceTaskHasAttachedPayload = this.serviceTask.payload !== undefined;
+        if (serviceTaskHasAttachedPayload) {
+          token.payload = this.parseExternalTaskPayload(processTokenFacade, identity);
+        }
+
         await this.persistOnSuspend(token);
 
         this.onInterruptedCallback = async (): Promise<void> => {
@@ -155,6 +172,9 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
           return undefined;
         };
+
+        this.publishActivityReachedNotification(identity, token);
+
         const result = await this.executeExternalServiceTask(token, processTokenFacade, identity);
 
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
@@ -163,6 +183,8 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         await this.persistOnExit(token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        this.publishActivityFinishedNotification(identity, token);
 
         return resolve(nextFlowNodeInfo);
       } catch (error) {
@@ -218,10 +240,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
         this.waitForExternalTaskResult(externalTaskFinishedCallback);
 
-        const tokenHistory = processTokenFacade.getOldTokenFormat();
-        const payload = this.getServiceTaskPayload(token, tokenHistory, identity);
-
-        await this.createExternalTask(token, payload);
+        await this.createExternalTask(token, processTokenFacade, identity);
         this.publishExternalTaskCreatedNotification();
 
         this.logger.verbose('Waiting for external ServiceTask to be finished by an external worker.');
@@ -235,11 +254,6 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     });
   }
 
-  /**
-   * Waits for a message from the EventAggregator about the ExternalTask being finished.
-   *
-   * @param resolveFunc The function to call after the message was received.
-   */
   private waitForExternalTaskResult(resolveFunc: Function): void {
 
     const externalTaskFinishedEventName = `/externaltask/flownodeinstance/${this.flowNodeInstanceId}/finished`;
@@ -250,15 +264,6 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
       });
   }
 
-  /**
-   * Looks for an existing ExternalTask for the given FlowNodeInstance.
-   *
-   * @async
-   * @param   flowNodeInstance The FlowNodeInstance for which to get an
-   *                           ExternalTask.
-   * @returns                  The retrieved ExternalTask, or undefined, if no
-   *                           such ExternalTask exists.
-   */
   private async getExternalTaskForFlowNodeInstance(flowNodeInstance: FlowNodeInstance): Promise<ExternalTask<any>> {
 
     try {
@@ -274,46 +279,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     }
   }
 
-  /**
-   * Retrives the payload to use with the ExternalTask.
-   *
-   * This will either be the "payload" property of the FlowNode, if it exists,
-   * or the current token.
-   *
-   * @param   token        The current ProcessToken.
-   * @param   tokenHistory The full token history.
-   * @param   identity     The requesting users identity.
-   * @returns              The retrieved payload for the ExternalTask.
-   */
-  private getServiceTaskPayload(token: ProcessToken, tokenHistory: any, identity: IIdentity): any {
-
-    try {
-      const serviceTaskHasAttachedPayload = this.serviceTask.payload !== undefined;
-
-      if (serviceTaskHasAttachedPayload) {
-        const evaluatePayloadFunction = new Function('token', 'identity', `return ${this.serviceTask.payload}`);
-
-        return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
-      }
-
-      return token.payload;
-    } catch (error) {
-      const errorMessage = `ExternalTask payload configuration '${this.serviceTask.payload}' is invalid!`;
-      this.logger.error(errorMessage);
-
-      throw new InternalServerError(errorMessage);
-    }
-  }
-
-  /**
-   * Creates a new ExternalTask in the database that an external worker can
-   * retrieve and process.
-   *
-   * @async
-   * @param token              The current ProcessToken.
-   * @param exernalTaskPayload The ExternalTask's payload.
-   */
-  private async createExternalTask(token: ProcessToken, exernalTaskPayload: any): Promise<void> {
+  private async createExternalTask(token: ProcessToken, processTokenFacade: IProcessTokenFacade, identity: IIdentity): Promise<void> {
 
     this.logger.verbose('Persist ServiceTask as ExternalTask.');
     await this.externalTaskRepository.create(
@@ -323,14 +289,42 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
       token.processInstanceId,
       this.flowNodeInstanceId,
       token.identity,
-      exernalTaskPayload,
+      token.payload,
     );
   }
 
-  /**
-   * Sends a notification about a newly created ExternalTask.
-   * This is part of the Long-polling feature of the ExternalTaskAPI.
-   */
+  private parseExternalTaskTopic(processTokenFacade: IProcessTokenFacade): any {
+
+    try {
+      const tokenHistory = processTokenFacade.getOldTokenFormat();
+
+      const evaluatePayloadFunction = new Function('token', `return ${this.serviceTask.topic}`);
+
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory);
+    } catch (error) {
+      const errorMessage = `ExternalTask topic '${this.serviceTask.topic}' is invalid!`;
+      this.logger.error(errorMessage);
+
+      throw new InternalServerError(errorMessage);
+    }
+  }
+
+  private parseExternalTaskPayload(processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
+
+    try {
+      const tokenHistory = processTokenFacade.getOldTokenFormat();
+
+      const evaluatePayloadFunction = new Function('token', 'identity', `return ${this.serviceTask.payload}`);
+
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
+    } catch (error) {
+      const errorMessage = `ExternalTask payload configuration '${this.serviceTask.payload}' is invalid!`;
+      this.logger.error(errorMessage);
+
+      throw new InternalServerError(errorMessage);
+    }
+  }
+
   private publishExternalTaskCreatedNotification(): void {
     const externalTaskCreatedEventName = `/externaltask/topic/${this.serviceTask.topic}/created`;
     this.eventAggregator.publish(externalTaskCreatedEventName);

@@ -9,6 +9,8 @@ import {
   ProcessTokenType,
 } from '@process-engine/flow_node_instance.contracts';
 import {
+  ActivityFinishedMessage,
+  ActivityReachedMessage,
   IBoundaryEventHandler,
   IFlowNodeHandler,
   IFlowNodeInstanceResult,
@@ -609,6 +611,39 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       await this.flowNodeHandlerFactory.create<TNextFlowNode>(nextFlowNode, currentProcessToken);
 
     return handlerForNextFlowNode.execute(currentProcessToken, processTokenFacade, processModelFacade, identity, boundaryInstanceId);
+  }
+
+  protected publishActivityReachedNotification(identity: IIdentity, token: ProcessToken): void {
+
+    const message = new ActivityReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      this.flowNode.bpmnType,
+      identity,
+      token.payload,
+    );
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.activityReached, message);
+  }
+
+  protected publishActivityFinishedNotification(identity: IIdentity, token: ProcessToken): void {
+
+    const message = new ActivityFinishedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      this.flowNode.bpmnType,
+      identity,
+      token.payload,
+    );
+
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.activityFinished, message);
   }
 
 }

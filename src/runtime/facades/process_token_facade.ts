@@ -78,16 +78,14 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
       };
     }
 
-    const copiedResults: Array<IFlowNodeInstanceResult> = [];
-    Array.prototype.push.apply(copiedResults, tokenResults);
-    const currentResult = copiedResults.pop();
+    const currentResult = tokenResults.pop();
 
     const tokenData = {
       history: {},
       current: currentResult ? currentResult.result : undefined,
     };
 
-    for (const tokenResult of copiedResults) {
+    for (const tokenResult of tokenResults) {
       tokenData.history[tokenResult.flowNodeId] = tokenResult.result;
     }
 
