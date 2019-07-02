@@ -122,7 +122,7 @@ export class CronjobService implements ICronjobService {
   private async getProcessModelsWithCronjobs(): Promise<Array<Model.Process>> {
     const processModels = await this.processModelUseCases.getProcessModels(this.internalIdentity);
 
-    const processModelsWithCronjobs = processModels.filter(this.processModelHasCronjobs);
+    const processModelsWithCronjobs = processModels.filter(this.processModelHasCronjobs.bind(this));
 
     return processModelsWithCronjobs;
   }
