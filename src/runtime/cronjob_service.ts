@@ -166,11 +166,14 @@ export class CronjobService implements ICronjobService {
   private getCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
 
     const isCyclicTimerStartEvent = (startEvent: Model.Events.StartEvent): boolean => {
-      const isCyclicTimer =
-        startEvent.timerEventDefinition !== undefined &&
-        startEvent.timerEventDefinition.timerType === Model.Events.Definitions.TimerType.timeCycle;
 
-      return isCyclicTimer;
+      if (!startEvent.timerEventDefinition) {
+        return false;
+      }
+
+      const timerType = this.timerFacade.parseTimerDefinitionType(startEvent.timerEventDefinition);
+
+      return timerType === TimerDefinitionType.cycle;
     };
 
     const startEvents = <Array<Model.Events.StartEvent>>
