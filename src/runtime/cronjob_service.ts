@@ -12,7 +12,7 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
-const logger = Logger.createLogger('processengine:runtime:auto_start_service');
+const logger = Logger.createLogger('processengine:runtime:cronjob_service');
 
 type CronjobCollectionEntry = {
   subscription?: Subscription;
