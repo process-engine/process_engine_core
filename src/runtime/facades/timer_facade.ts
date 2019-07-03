@@ -5,7 +5,7 @@ import * as uuid from 'node-uuid';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
-import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
+import {ITimerService} from '@essential-projects/timing_contracts';
 import {IProcessTokenFacade, ITimerFacade, TimerDefinitionType} from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
@@ -120,23 +120,12 @@ export class TimerFacade implements ITimerFacade {
 
     logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const duration = moment.duration(timerValue);
-
-    const timingRule: TimerRule = {
-      year: duration.years(),
-      month: duration.months(),
-      date: duration.days(),
-      hour: duration.hours(),
-      minute: duration.minutes(),
-      second: duration.seconds(),
-    };
-
     const subscription = this.eventAggregator.subscribe(callbackEventName, (eventPayload, eventName): void => {
       logger.verbose(`Cyclic timer ${eventName} has expired. Executing callback.`);
       timerCallback(eventPayload);
     });
 
-    const timerId = this.timerService.periodic(timingRule, callbackEventName);
+    const timerId = this.timerService.cronjob(timerValue, callbackEventName);
 
     this.timerStorage[subscription.eventName] = timerId;
 
@@ -155,7 +144,7 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    const timerId = this.timerService.once(date, callbackEventName);
+    const timerId = this.timerService.oneShot(date, callbackEventName);
 
     this.timerStorage[subscription.eventName] = timerId;
 
@@ -183,7 +172,7 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    const timerId = this.timerService.once(date, callbackEventName);
+    const timerId = this.timerService.oneShot(date, callbackEventName);
 
     this.timerStorage[subscription.eventName] = timerId;
 
