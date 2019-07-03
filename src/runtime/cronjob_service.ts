@@ -1,3 +1,4 @@
+import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
@@ -137,6 +138,14 @@ export class CronjobService implements ICronjobService {
 
       const timerValue = this.timerFacade.parseTimerDefinitionValue(startEvent.timerEventDefinition);
 
+      const crontabIsInvalid = !this.isValidCrontab(timerValue);
+      if (crontabIsInvalid) {
+        logger.error(`Crontab '${timerValue}' on TimerStartEvent '${startEvent.id}' in ProcessModel '${processModel.id}' is invalid!`);
+
+        // If we were to throw an error here, then none of the cronjobs would get started. So just print the error and move on.
+        continue;
+      }
+
       const onCronjobExpired = (expiredCronjob: string, processModelId: string): void => {
         logger.info(`A Cronjob for ProcessModel ${processModelId} has expired: `, expiredCronjob);
 
@@ -182,6 +191,15 @@ export class CronjobService implements ICronjobService {
     const cyclicTimerStartEvents = startEvents.filter(isCyclicTimerStartEvent);
 
     return cyclicTimerStartEvents;
+  }
+
+  private isValidCrontab(crontab: string): boolean {
+    try {
+      cronparser.parseExpression(crontab);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   private executeProcessModelWithCronjob(cronjob: string, processModelId: string): void {
