@@ -1,3 +1,4 @@
+import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
@@ -248,17 +249,32 @@ export class TimerFacade implements ITimerFacade {
         break;
       case TimerDefinitionType.cycle:
 
-        if (flowNode.bpmnType === BpmnType.startEvent) {
-          break;
+        if (flowNode.bpmnType !== BpmnType.startEvent) {
+          const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
+          logger.error(errorMessage, flowNode);
+
+          const error = new UnprocessableEntityError(errorMessage);
+          error.additionalInformation = <any> flowNode;
+
+          throw error;
         }
 
-        const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
-        logger.error(errorMessage, flowNode);
+        try {
+          cronparser.parseExpression(timerValue);
+        } catch (error) {
+          const errorMessage = `${timerValue} is not a valid crontab!`;
+          logger.error(errorMessage, flowNode);
 
-        const error = new UnprocessableEntityError(errorMessage);
-        error.additionalInformation = <any> flowNode;
+          const invalidCrontabError = new UnprocessableEntityError(errorMessage);
+          error.additionalInformation = <any> {
+            validationError: error.message,
+            flowNode: flowNode,
+          };
 
-        throw error;
+          throw invalidCrontabError;
+        }
+
+        break;
       default:
         const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
         logger.error(invalidTimerTypeMessage);
