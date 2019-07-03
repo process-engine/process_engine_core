@@ -35,6 +35,9 @@ export class CronjobService implements ICronjobService {
   // It needs those in order to be able to correctly start a ProcessModel.
   private internalIdentity: IIdentity;
 
+  // eslint-disable-next-line @typescript-eslint/member-naming
+  private _isRunning = false;
+
   constructor(
     executeProcessService: IExecuteProcessService,
     identityService: IIdentityService,
@@ -47,12 +50,21 @@ export class CronjobService implements ICronjobService {
     this.timerFacade = timerFacade;
   }
 
+  public get isRunning(): boolean {
+    return this._isRunning;
+  }
+
   public async initialize(): Promise<void> {
     const dummyToken = 'ZHVtbXlfdG9rZW4=';
     this.internalIdentity = await this.identityService.getIdentity(dummyToken);
   }
 
   public async start(): Promise<void> {
+
+    if (this.isRunning) {
+      return;
+    }
+
     logger.info('Starting up and creating Cronjobs...');
 
     const processModelsWithCronjobs = await this.getProcessModelsWithCronjobs();
@@ -63,10 +75,17 @@ export class CronjobService implements ICronjobService {
       this.createCronjobForProcessModel(processModel);
     }
 
+    this._isRunning = true;
+
     logger.info('Done.');
   }
 
   public async stop(): Promise<void> {
+
+    if (!this.isRunning) {
+      return;
+    }
+
     logger.info('Stopping all currently running cronjobs...');
 
     const processModelIds = Object.keys(this.cronjobDictionary);
@@ -74,10 +93,17 @@ export class CronjobService implements ICronjobService {
     for (const processModelId of processModelIds) {
       this.stopCronjobsForProcessModel(processModelId);
     }
+
+    this._isRunning = false;
+
     logger.info('Done.');
   }
 
   public addOrUpdate(processModel: Model.Process): void {
+
+    if (!this.isRunning) {
+      return;
+    }
 
     const startEventsWithCronjob = this.getCyclicTimerStartEventsForProcessModel(processModel);
 
@@ -111,7 +137,7 @@ export class CronjobService implements ICronjobService {
   }
 
   public remove(processModelId: string): void {
-    if (!this.cronjobDictionary[processModelId]) {
+    if (!this.isRunning || !this.cronjobDictionary[processModelId]) {
       return;
     }
 
