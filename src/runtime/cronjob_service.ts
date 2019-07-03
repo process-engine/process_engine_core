@@ -123,7 +123,13 @@ export class CronjobService implements ICronjobService {
   private async getProcessModelsWithCronjobs(): Promise<Array<Model.Process>> {
     const processModels = await this.processModelUseCases.getProcessModels(this.internalIdentity);
 
-    const processModelsWithCronjobs = processModels.filter(this.processModelHasCronjobs.bind(this));
+    const filterByCronjobs = (processModel: Model.Process): boolean => {
+      const cyclicTimerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
+
+      return cyclicTimerStartEvents.length > 0;
+    };
+
+    const processModelsWithCronjobs = processModels.filter(filterByCronjobs.bind(this));
 
     return processModelsWithCronjobs;
   }
@@ -164,12 +170,6 @@ export class CronjobService implements ICronjobService {
 
       this.cronjobDictionary[processModel.id].push(newCronJobConfig);
     }
-  }
-
-  private processModelHasCronjobs(processModel: Model.Process): boolean {
-    const cyclicTimerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
-
-    return cyclicTimerStartEvents.length > 0;
   }
 
   private getCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
