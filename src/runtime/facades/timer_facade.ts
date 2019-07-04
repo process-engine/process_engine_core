@@ -1,12 +1,13 @@
+import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
-import {ITimerService, TimerRule} from '@essential-projects/timing_contracts';
+import {ITimerService} from '@essential-projects/timing_contracts';
 import {IProcessTokenFacade, ITimerFacade, TimerDefinitionType} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 enum TimerBpmnType {
   Duration = 'bpmn:timeDuration',
@@ -14,12 +15,17 @@ enum TimerBpmnType {
   Date = 'bpmn:timeDate',
 }
 
+type TimerId = string;
+type TimerIdStorage = {[eventSubscriptionId: string]: TimerId};
+
 const logger = Logger.createLogger('processengine:runtime:timer_facade');
 
 export class TimerFacade implements ITimerFacade {
 
   private eventAggregator: IEventAggregator;
   private timerService: ITimerService;
+
+  private timerStorage: TimerIdStorage = {};
 
   constructor(eventAggregator: IEventAggregator, timerService: ITimerService) {
     this.eventAggregator = eventAggregator;
@@ -47,7 +53,7 @@ export class TimerFacade implements ITimerFacade {
     timerCallback: Function,
   ): Subscription {
 
-    this.validateTimer(timerType, timerValue);
+    this.validateTimer(flowNode, timerType, timerValue);
 
     const callbackEventName = `${flowNode.id}_${uuid.v4()}`;
 
@@ -104,30 +110,24 @@ export class TimerFacade implements ITimerFacade {
   }
 
   public cancelTimerSubscription(subscription: Subscription): void {
+    const timerId = this.timerStorage[subscription.eventName];
+
     this.eventAggregator.unsubscribe(subscription);
+    this.timerService.cancel(timerId);
   }
 
   private startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
 
-    const duration = moment.duration(timerValue);
-
-    const timingRule: TimerRule = {
-      year: duration.years(),
-      month: duration.months(),
-      date: duration.days(),
-      hour: duration.hours(),
-      minute: duration.minutes(),
-      second: duration.seconds(),
-    };
-
     const subscription = this.eventAggregator.subscribe(callbackEventName, (eventPayload, eventName): void => {
       logger.verbose(`Cyclic timer ${eventName} has expired. Executing callback.`);
       timerCallback(eventPayload);
     });
 
-    this.timerService.periodic(timingRule, callbackEventName);
+    const timerId = this.timerService.cronjob(timerValue, callbackEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
 
     return subscription;
   }
@@ -144,7 +144,9 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    this.timerService.once(date, callbackEventName);
+    const timerId = this.timerService.oneShot(date, callbackEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
 
     return subscription;
   }
@@ -170,7 +172,9 @@ export class TimerFacade implements ITimerFacade {
       timerCallback(eventPayload);
     });
 
-    this.timerService.once(date, callbackEventName);
+    const timerId = this.timerService.oneShot(date, callbackEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
 
     return subscription;
   }
@@ -196,7 +200,7 @@ export class TimerFacade implements ITimerFacade {
     }
   }
 
-  private validateTimer(timerType: TimerDefinitionType, timerValue: string): void {
+  private validateTimer(flowNode: Model.Base.FlowNode, timerType: TimerDefinitionType, timerValue: string): void {
 
     switch (timerType) {
       case TimerDefinitionType.date:
@@ -233,8 +237,33 @@ export class TimerFacade implements ITimerFacade {
 
         break;
       case TimerDefinitionType.cycle:
-        logger.error('Attempted to parse a cyclic timer! this is currently not supported!');
-        throw new UnprocessableEntityError('Cyclic timer definitions are currently not supported!');
+
+        if (flowNode.bpmnType !== BpmnType.startEvent) {
+          const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
+          logger.error(errorMessage, flowNode);
+
+          const error = new UnprocessableEntityError(errorMessage);
+          error.additionalInformation = <any> flowNode;
+
+          throw error;
+        }
+
+        try {
+          cronparser.parseExpression(timerValue);
+        } catch (error) {
+          const errorMessage = `${timerValue} is not a valid crontab!`;
+          logger.error(errorMessage, flowNode);
+
+          const invalidCrontabError = new UnprocessableEntityError(errorMessage);
+          error.additionalInformation = <any> {
+            validationError: error.message,
+            flowNode: flowNode,
+          };
+
+          throw invalidCrontabError;
+        }
+
+        break;
       default:
         const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
         logger.error(invalidTimerTypeMessage);
