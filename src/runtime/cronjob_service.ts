@@ -233,7 +233,7 @@ export class CronjobService implements ICronjobService {
     const matchingConfig = this.cronjobDictionary[processModelId].find((config): boolean => config.cronjob === cronjob);
 
     // Starting the ProcessModel will not be awaited to ensure all ProcessModels are started simultaneously.
-    const correlationId = `started_by_cronjob ${cronjob}`;
+    const correlationId = 'started_by_cronjob';
     this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingConfig.startEventId, {});
   }
 
