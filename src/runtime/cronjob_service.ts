@@ -105,7 +105,7 @@ export class CronjobService implements ICronjobService {
       return;
     }
 
-    const startEventsWithCronjob = this.getCyclicTimerStartEventsForProcessModel(processModel);
+    const startEventsWithCronjob = this.getActiveCyclicTimerStartEventsForProcessModel(processModel);
 
     const config = this.cronjobDictionary[processModel.id];
 
@@ -150,7 +150,7 @@ export class CronjobService implements ICronjobService {
     const processModels = await this.processModelUseCases.getProcessModels(this.internalIdentity);
 
     const filterByCronjobs = (processModel: Model.Process): boolean => {
-      const cyclicTimerStartEvents = this.getCyclicTimerStartEventsForProcessModel(processModel);
+      const cyclicTimerStartEvents = this.getActiveCyclicTimerStartEventsForProcessModel(processModel);
 
       return cyclicTimerStartEvents.length > 0;
     };
@@ -162,7 +162,7 @@ export class CronjobService implements ICronjobService {
 
   private createCronjobForProcessModel(processModel: Model.Process): void {
 
-    const startEventsWithCronjob = this.getCyclicTimerStartEventsForProcessModel(processModel);
+    const startEventsWithCronjob = this.getActiveCyclicTimerStartEventsForProcessModel(processModel);
 
     this.cronjobDictionary[processModel.id] = [];
 
@@ -198,9 +198,9 @@ export class CronjobService implements ICronjobService {
     }
   }
 
-  private getCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
+  private getActiveCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
 
-    const isCyclicTimerStartEvent = (startEvent: Model.Events.StartEvent): boolean => {
+    const isActiveCyclicTimerStartEvent = (startEvent: Model.Events.StartEvent): boolean => {
 
       if (!startEvent.timerEventDefinition) {
         return false;
@@ -208,13 +208,16 @@ export class CronjobService implements ICronjobService {
 
       const timerType = this.timerFacade.parseTimerDefinitionType(startEvent.timerEventDefinition);
 
-      return timerType === TimerDefinitionType.cycle;
+      const isCyclicTimer = timerType === TimerDefinitionType.cycle;
+      const isActive = startEvent.timerEventDefinition.enabled;
+
+      return isCyclicTimer && isActive;
     };
 
     const startEvents = <Array<Model.Events.StartEvent>>
       processModel.flowNodes.filter((flowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
 
-    const cyclicTimerStartEvents = startEvents.filter(isCyclicTimerStartEvent);
+    const cyclicTimerStartEvents = startEvents.filter(isActiveCyclicTimerStartEvent);
 
     return cyclicTimerStartEvents;
   }
