@@ -34,7 +34,7 @@
   "homepage": "https://github.com/process-engine/process_engine_core#readme",
   "dependencies": {
     "@essential-projects/errors_ts": "^1.5.0",
-    "@essential-projects/timing_contracts": "feature~fix_cycle_timer_rule_parameter",
+    "@essential-projects/timing_contracts": "^5.0.0",
     "@process-engine/external_task_api_contracts": "^1.0.0",
     "@process-engine/correlation.contracts": "^2.0.0",
     "@process-engine/flow_node_instance.contracts": "^2.0.0",
