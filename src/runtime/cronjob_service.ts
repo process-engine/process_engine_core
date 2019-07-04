@@ -105,19 +105,19 @@ export class CronjobService implements ICronjobService {
       return;
     }
 
-    const startEventsWithCronjob = this.getActiveCyclicTimerStartEventsForProcessModel(processModel);
+    const startEventsWithActiveCronjob = this.getActiveCyclicTimerStartEventsForProcessModel(processModel);
 
     const config = this.cronjobDictionary[processModel.id];
 
     // If the ProcessModel doesn't have any cronjobs attached to it, we need to cleanup the internal storage,
     // In case the ProessModel had one or more before.
-    if (startEventsWithCronjob.length === 0) {
+    if (startEventsWithActiveCronjob.length === 0) {
 
       if (!config) {
         return;
       }
 
-      logger.info(`ProcessModel ${processModel.id} no longer contains any cronjobs. Removing all active jobs for that ProcessModel...`);
+      logger.info(`ProcessModel ${processModel.id} no longer contains any active cronjobs. Removing all active jobs for that ProcessModel...`);
       this.stopCronjobsForProcessModel(processModel.id);
       logger.info('Done.');
 
