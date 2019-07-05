@@ -117,7 +117,7 @@ export class CronjobService implements ICronjobService {
         return {
           processModelId: processModelId,
           startEventId: entry.startEventId,
-          cronjob: entry.cronjob,
+          crontab: entry.cronjob,
         };
       });
       cronjobs = cronjobs.concat(...cronjobConfigs);
