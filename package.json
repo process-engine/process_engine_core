@@ -37,6 +37,7 @@
     "@essential-projects/timing_contracts": "^5.0.0",
     "@process-engine/external_task_api_contracts": "^1.0.0",
     "@process-engine/correlation.contracts": "^2.0.0",
+    "@process-engine/cronjob_history.contracts": "feature~initial_implementation",
     "@process-engine/flow_node_instance.contracts": "^2.0.0",
     "@process-engine/logging_api_contracts": "^1.0.0",
     "@process-engine/metrics_api_contracts": "^1.0.0",
