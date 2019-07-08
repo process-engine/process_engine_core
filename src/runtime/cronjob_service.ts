@@ -1,10 +1,11 @@
 import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
+import * as moment from 'moment';
 
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
-import {ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
+import {Cronjob, ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
 import {
   CronjobConfiguration,
   ICronjobService,
@@ -268,13 +269,22 @@ export class CronjobService implements ICronjobService {
     }
   }
 
-  private executeProcessModelWithCronjob(cronjob: string, processModelId: string): void {
+  private executeProcessModelWithCronjob(crontab: string, processModelId: string): void {
 
-    const matchingConfig = this.cronjobDictionary[processModelId].find((config): boolean => config.cronjob === cronjob);
+    const matchingConfig = this.cronjobDictionary[processModelId].find((config): boolean => config.cronjob === crontab);
 
     // Starting the ProcessModel will not be awaited to ensure all ProcessModels are started simultaneously.
     const correlationId = 'started_by_cronjob';
     this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingConfig.startEventId, {});
+
+    const cronjobHistoryEntry: Cronjob = {
+      processModelId: processModelId,
+      startEventId: matchingConfig.startEventId,
+      crontab: crontab,
+      executedAt: moment().toDate(),
+    };
+
+    this.cronjobHistoryService.create(this.internalIdentity, cronjobHistoryEntry);
   }
 
   private stopCronjobsForProcessModel(processModelId: string): void {
