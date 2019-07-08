@@ -5,6 +5,7 @@ import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {
+  CronjobConfiguration,
   ICronjobService,
   IExecuteProcessService,
   ITimerFacade,
@@ -97,6 +98,38 @@ export class CronjobService implements ICronjobService {
     this._isRunning = false;
 
     logger.info('Done.');
+  }
+
+  public getActive(): Array<CronjobConfiguration> {
+
+    const processModelsInStorage = Object.keys(this.cronjobDictionary);
+
+    if (processModelsInStorage.length === 0) {
+      return [];
+    }
+
+    let cronjobs: Array<CronjobConfiguration> = [];
+
+    for (const processModelId of processModelsInStorage) {
+      const cronjobsForProcessModel = this.cronjobDictionary[processModelId];
+
+      const cronjobConfigs = cronjobsForProcessModel.map((entry): CronjobConfiguration => {
+        const nextExecution = cronparser
+          .parseExpression(entry.cronjob)
+          .next()
+          .toDate();
+
+        return {
+          processModelId: processModelId,
+          startEventId: entry.startEventId,
+          crontab: entry.cronjob,
+          nextExecution: nextExecution,
+        };
+      });
+      cronjobs = cronjobs.concat(...cronjobConfigs);
+    }
+
+    return cronjobs;
   }
 
   public addOrUpdate(processModel: Model.Process): void {
