@@ -114,10 +114,16 @@ export class CronjobService implements ICronjobService {
       const cronjobsForProcessModel = this.cronjobDictionary[processModelId];
 
       const cronjobConfigs = cronjobsForProcessModel.map((entry): CronjobConfiguration => {
+        const nextExecution = cronparser
+          .parseExpression(entry.cronjob)
+          .next()
+          .toDate();
+
         return {
           processModelId: processModelId,
           startEventId: entry.startEventId,
           crontab: entry.cronjob,
+          nextExecution: nextExecution,
         };
       });
       cronjobs = cronjobs.concat(...cronjobConfigs);
