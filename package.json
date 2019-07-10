@@ -40,7 +40,7 @@
     "@process-engine/cronjob_history.contracts": "1.0.0-218e9991-b5",
     "@process-engine/flow_node_instance.contracts": "^2.0.0",
     "@process-engine/logging_api_contracts": "^1.0.0",
-    "@process-engine/metrics_api_contracts": "^1.0.0",
+    "@process-engine/metrics_api_contracts": "feature~add_process_instance_id",
     "@process-engine/process_engine_contracts": "45.1.0-9e636160-b14",
     "@process-engine/process_model.contracts": "^2.3.0",
     "@types/clone": "^0.1.30",
