@@ -198,7 +198,7 @@ export class ProcessInstanceStateHandlingFacade {
 
     const startTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
+    this.metricsApiService.writeOnProcessStarted(correlationId, processInstanceId, processModelId, startTime);
 
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
@@ -222,7 +222,7 @@ export class ProcessInstanceStateHandlingFacade {
 
     const startTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessStarted(correlationId, processModelId, startTime);
+    this.metricsApiService.writeOnProcessStarted(correlationId, processInstanceId, processModelId, startTime);
 
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
@@ -245,7 +245,7 @@ export class ProcessInstanceStateHandlingFacade {
 
     const endTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessFinished(correlationId, processModelId, endTime);
+    this.metricsApiService.writeOnProcessFinished(correlationId, processInstanceId, processModelId, endTime);
 
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
@@ -268,7 +268,7 @@ export class ProcessInstanceStateHandlingFacade {
 
     const errorTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessError(correlationId, processModelId, error, errorTime);
+    this.metricsApiService.writeOnProcessError(correlationId, processInstanceId, processModelId, error, errorTime);
 
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
