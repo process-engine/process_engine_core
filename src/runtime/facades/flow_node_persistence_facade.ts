@@ -35,10 +35,11 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     this.metricsApiService.writeOnFlowNodeInstanceEnter(
       processToken.correlationId,
+      processToken.processInstanceId,
       processToken.processModelId,
       flowNodeInstanceId,
       flowNode.id,
-      processToken,
+      processToken.payload,
       now,
     );
 
@@ -65,10 +66,11 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     this.metricsApiService.writeOnFlowNodeInstanceExit(
       processToken.correlationId,
+      processToken.processInstanceId,
       processToken.processModelId,
       flowNodeInstanceId,
       flowNode.id,
-      processToken,
+      processToken.payload,
       now,
     );
 
@@ -95,10 +97,11 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     this.metricsApiService.writeOnFlowNodeInstanceExit(
       processToken.correlationId,
+      processToken.processInstanceId,
       processToken.processModelId,
       flowNodeInstanceId,
       flowNode.id,
-      processToken,
+      processToken.payload,
       now,
     );
 
@@ -126,10 +129,11 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     this.metricsApiService.writeOnFlowNodeInstanceError(
       processToken.correlationId,
+      processToken.processInstanceId,
       processToken.processModelId,
       flowNodeInstanceId,
       flowNode.id,
-      processToken,
+      processToken.payload,
       error,
       now,
     );
@@ -157,10 +161,11 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     this.metricsApiService.writeOnFlowNodeInstanceSuspend(
       processToken.correlationId,
+      processToken.processInstanceId,
       processToken.processModelId,
       flowNodeInstanceId,
       flowNode.id,
-      processToken,
+      processToken.payload,
       now,
     );
 
@@ -187,10 +192,11 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     this.metricsApiService.writeOnFlowNodeInstanceResume(
       processToken.correlationId,
+      processToken.processInstanceId,
       processToken.processModelId,
       flowNodeInstanceId,
       flowNode.id,
-      processToken,
+      processToken.payload,
       now,
     );
 
