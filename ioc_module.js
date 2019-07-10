@@ -37,6 +37,7 @@ const {
 
 const {
   AutoStartService,
+  CronjobService,
   ExecuteProcessService,
   FlowNodePersistenceFacade,
   ProcessInstanceStateHandlingFacade,
@@ -69,6 +70,11 @@ function registerServices(container) {
   container
     .register('AutoStartService', AutoStartService)
     .dependencies('EventAggregator', 'ExecuteProcessService', 'ProcessModelUseCases')
+    .singleton();
+
+  container
+    .register('CronjobService', CronjobService)
+    .dependencies('CronjobHistoryService', 'ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases', 'TimerFacade')
     .singleton();
 
   container

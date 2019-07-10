@@ -53,14 +53,6 @@ export class AutoStartService implements IAutoStartService {
     this.eventSubscriptions.push(subscription);
   }
 
-  /**
-   * Callback function for handling Messages.
-   * Finds and starts all ProcessModels that contain StartEvents with a
-   * matching MessageDefinition.
-   *
-   * @async
-   * @param eventData The payload received with the MessageEvent.
-   */
   private async onMessageReceived(eventData: MessageEventReachedMessage): Promise<void> {
     logger.info('Received a message: ', eventData);
 
@@ -71,34 +63,15 @@ export class AutoStartService implements IAutoStartService {
       return;
     }
 
-    // This list contains all ProcessModels that the User that triggered the Event has access to.
-    const userAccessibleProcessModels = await this.processModelUseCases.getProcessModels(eventData.processInstanceOwner);
-
-    logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
-
-    const eventDefinitionPropertyName = 'messageEventDefinition';
-    const matchingProcessModels =
-      this.getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.messageReference);
-
-    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching MessageStartEvents.`);
-    await this.startProcessInstances(
-      matchingProcessModels,
-      eventData.processInstanceOwner,
-      eventDefinitionPropertyName,
+    await this.findAndStartProcessModels(
+      'messageEventDefinition',
       eventData.messageReference,
+      eventData.processInstanceOwner,
       eventData.correlationId,
       eventData.currentToken,
     );
   }
 
-  /**
-   * Callback function for handling Signals.
-   * Finds and starts all ProcessModels that contain StartEvents with a
-   * matching SignalDefinition.
-   *
-   * @async
-   * @param eventData The payload received with the SignalEvent.
-   */
   private async onSignalReceived(eventData: SignalEventReachedMessage): Promise<void> {
     logger.info('Received a signal: ', eventData);
 
@@ -108,39 +81,42 @@ export class AutoStartService implements IAutoStartService {
 
       return;
     }
-    // This list contains all ProcessModels that the User that triggered the Event has access to.
-    const userAccessibleProcessModels = await this.processModelUseCases.getProcessModels(eventData.processInstanceOwner);
 
-    logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
-
-    const eventDefinitionPropertyName = 'signalEventDefinition';
-    const matchingProcessModels =
-      this.getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionPropertyName, eventData.signalReference);
-
-    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching SignalStartEvents.`);
-    await this.startProcessInstances(
-      matchingProcessModels,
-      eventData.processInstanceOwner,
-      eventDefinitionPropertyName,
+    await this.findAndStartProcessModels(
+      'signalEventDefinition',
       eventData.signalReference,
+      eventData.processInstanceOwner,
       eventData.correlationId,
       eventData.currentToken,
     );
   }
 
-  /**
-   * Filters a given list of ProcessModels by a given event definition and
-   * event name.
-   *
-   * Only ProcessModels that are executable and have at least one matching
-   * StartEvent are returned.
-   *
-   * @param   processModels               The ProcessModels to filter.
-   * @param   expectedEventDefinitionName The name of the EventDefinition to
-   *                                      look for.
-   * @param   eventName                   The event name to look for.
-   * @returns                             The filtered ProcessModels.
-   */
+  private async findAndStartProcessModels(
+    eventDefinitionName: string,
+    eventName: string,
+    identity: IIdentity,
+    correlationId: string,
+    tokenPayload: any,
+  ): Promise<void> {
+
+    const userAccessibleProcessModels = await this.processModelUseCases.getProcessModels(identity);
+
+    logger.verbose(`Found ${userAccessibleProcessModels.length} ProcessModels the user can access.`);
+
+    const matchingProcessModels =
+      this.getProcessModelsWithMatchingStartEvents(userAccessibleProcessModels, eventDefinitionName, eventName);
+
+    logger.verbose(`Found ${matchingProcessModels.length} ProcessModels with matching StartEvents.`);
+    await this.startProcessInstances(
+      matchingProcessModels,
+      identity,
+      eventDefinitionName,
+      eventName,
+      correlationId,
+      tokenPayload,
+    );
+  }
+
   private getProcessModelsWithMatchingStartEvents(
     processModels: Array<Model.Process>,
     expectedEventDefinitionName: string,
@@ -189,12 +165,7 @@ export class AutoStartService implements IAutoStartService {
   ): Promise<void> {
 
     logger.verbose(`Starting ${processModels.length} new ProcessInstances.`);
-    /**
-     * Takes a Process model and returns the ID of the StartEvent that has a
-     * matching event definition attached to it.
-     *
-     * @param processModel The ProcessModel for which to get the StartEventId.
-     */
+
     const findMatchingStartEventId = (processModel: Model.Process): string => {
 
       const matchingFlowNode = processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
