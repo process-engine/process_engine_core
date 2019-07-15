@@ -211,8 +211,13 @@ function assignEventDefinition(
       event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
       break;
     case 'timerEventDefinition':
-      const isEnabled = event.extensionElements && event.extensionElements.camundaExtensionProperties
-        ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties).value === 'true'
+
+      const isEnabledCamundaProperty = event.extensionElements && event.extensionElements.camundaExtensionProperties
+        ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
+        : undefined;
+
+      const isEnabled = isEnabledCamundaProperty !== undefined
+        ? isEnabledCamundaProperty.value === 'true'
         : true;
 
       event[targetPropertyName] = eventDefinitonValue;
