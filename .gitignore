@@ -27,8 +27,6 @@ node_modules
 # OSX-finder info-files
 *.DS_Store
 
-coverage/
-
 # IDE configs
 .vscode
 .idea/
