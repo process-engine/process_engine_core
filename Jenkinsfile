@@ -55,6 +55,12 @@ pipeline {
         sh('npm run test')
       }
     }
+    stage('evaluate test coverage') {
+      steps {
+        sh('npm run report-test-coverage');
+        sh('npm run check-test-coverage');
+      }
+    }
     stage('publish') {
       steps {
         script {
