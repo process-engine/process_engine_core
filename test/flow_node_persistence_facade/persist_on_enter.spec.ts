@@ -98,8 +98,8 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
         timeStamp: moment.Moment,
       ): any => {
 
-        const receivedTimeStamp = timeStamp.toISOString(false);
-        const now = moment.utc().toISOString(false);
+        const receivedTimeStamp = timeStamp.format('DD.MM.YYYY HH:mm:ss');
+        const now = moment.utc().format('DD.MM.YYYY HH:mm:ss');
 
         should(correlationId).be.eql(sampleToken.correlationId);
         should(processInstanceId).be.eql(sampleToken.processInstanceId);
