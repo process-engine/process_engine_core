@@ -8,7 +8,8 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../src/model/bpmn_model_parser';
-import {ProcessModelFacade, ProcessTokenFacade} from '../src/runtime';
+import {FlowNodePersistenceFacade, ProcessModelFacade, ProcessTokenFacade} from '../src/runtime';
+import {FlowNodeInstanceServiceMock, LoggingServiceMock, MetricsServiceMock} from './mocks';
 
 Bluebird.config({
   cancellation: true,
@@ -58,6 +59,14 @@ export class TestFixtureProvider {
     const definitions = await this.parser.parseXmlToObjectModel(bpmnXml);
 
     return definitions.processes[0];
+  }
+
+  public createFlowNodePersistenceFacade(): FlowNodePersistenceFacade {
+    return new FlowNodePersistenceFacade(
+      new FlowNodeInstanceServiceMock(),
+      new LoggingServiceMock(),
+      new MetricsServiceMock(),
+    );
   }
 
   public createProcessModelFacade(processModel: Model.Process): ProcessModelFacade {
