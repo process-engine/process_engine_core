@@ -8,8 +8,20 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../src/model/bpmn_model_parser';
-import {FlowNodePersistenceFacade, ProcessModelFacade, ProcessTokenFacade} from '../src/runtime';
-import {FlowNodeInstanceServiceMock, LoggingServiceMock, MetricsServiceMock} from './mocks';
+import {
+  FlowNodePersistenceFacade,
+  ProcessInstanceStateHandlingFacade,
+  ProcessModelFacade,
+  ProcessTokenFacade,
+} from '../src/runtime';
+import {
+  CorrelationServiceMock,
+  EventAggregatorMock,
+  FlowNodeInstanceServiceMock,
+  LoggingServiceMock,
+  MetricsServiceMock,
+  ProcessModelUseCasesMock,
+} from './mocks';
 
 Bluebird.config({
   cancellation: true,
@@ -66,6 +78,16 @@ export class TestFixtureProvider {
       new FlowNodeInstanceServiceMock(),
       new LoggingServiceMock(),
       new MetricsServiceMock(),
+    );
+  }
+
+  public createProcessInstanceStateHandlingFacade(): ProcessInstanceStateHandlingFacade {
+    return new ProcessInstanceStateHandlingFacade(
+      new CorrelationServiceMock(),
+      new EventAggregatorMock(),
+      new LoggingServiceMock(),
+      new MetricsServiceMock(),
+      new ProcessModelUseCasesMock(),
     );
   }
 
