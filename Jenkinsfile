@@ -57,8 +57,7 @@ pipeline {
     }
     stage('evaluate test coverage') {
       steps {
-        sh('npm run report-test-coverage');
-        sh('npm run report-test-coverage > coverage/test-coverage.txt');
+        sh('npm run report-test-coverage | tee coverage/test-coverage.txt');
 
         archiveArtifacts('coverage/test-coverage.txt');
 
