@@ -13,8 +13,6 @@ def cleanup_workspace() {
   }
 }
 
-def npm_install_command = 'npm install --ignore-scripts'
-
 pipeline {
   agent any
   tools {
@@ -32,15 +30,10 @@ pipeline {
           raw_package_version = sh(script: 'node --print --eval "require(\'./package.json\').version"', returnStdout: true).trim()
           package_version = raw_package_version.trim()
           echo("Package version is '${package_version}'")
-
-          def run_clean_install = env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'develop';
-          if (run_clean_install) {
-            npm_install_command = 'npm ci --ignore-scripts'
-          }
         }
         nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
           sh('node --version')
-          sh(npm_install_command)
+          sh('npm install --ignore-scripts')
         }
       }
     }
