@@ -55,6 +55,15 @@ pipeline {
         sh('npm run test')
       }
     }
+    stage('evaluate test coverage') {
+      steps {
+        sh('npm run report-test-coverage | tee coverage/test-coverage.txt');
+
+        archiveArtifacts('coverage/test-coverage.txt');
+
+        sh('npm run check-test-coverage');
+      }
+    }
     stage('publish') {
       steps {
         script {
