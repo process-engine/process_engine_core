@@ -127,7 +127,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
       }
     });
 
-    it('Should not throw an error, if no Identity is given (not the responsibility of this function)', async (): Promise<void> => {
+    it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
       try {
         await processInstanceStateHandlingFacade.saveCorrelation(undefined, sampleProcessInstanceConfig);
       } catch (error) {
@@ -135,8 +135,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
       }
     });
 
-    // eslint-disable-next-line max-len
-    it('Should not throw an error, if the ProcessInstanceConfig is missing some properties (not the responsibility of this function)', async (): Promise<void> => {
+    it('Should not throw an error, if the ProcessInstanceConfig is missing some properties', async (): Promise<void> => {
 
       const faultyProcessInstanceConfig = clone(sampleProcessInstanceConfig);
 

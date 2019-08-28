@@ -1,4 +1,5 @@
 /* eslint-disable dot-notation */
+import * as clone from 'clone';
 import * as should from 'should';
 
 import {ProcessErrorMessage} from '@process-engine/process_engine_contracts';
@@ -25,8 +26,6 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotificatio
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-
     sampleProcessInstanceConfig = {
       correlationId: 'correlationId',
       processModelId: 'processModelId',
@@ -40,37 +39,93 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotificatio
     };
   });
 
-  it('should publish the correct events on the event aggregator', async (): Promise<void> => {
+  describe('Execution', (): void => {
 
-    let globalEventReceived = false;
-    let globalEventPayload: ProcessErrorMessage;
+    before((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+    });
 
-    let instanceEventReceived = false;
-    let instanceEventPayload: ProcessErrorMessage;
+    it('should publish the correct events on the event aggregator', async (): Promise<void> => {
 
-    const callback = (eventName: string, payload: ProcessErrorMessage): void => {
-      const expectedGlobalEventName = 'process_error';
-      const expectedInstanceEventName = `/processengine/process/${sampleProcessInstanceConfig.processInstanceId}/error`;
+      let globalEventReceived = false;
+      let globalEventPayload: ProcessErrorMessage;
 
-      if (eventName === expectedGlobalEventName) {
-        globalEventReceived = true;
-        globalEventPayload = payload;
-      } else if (eventName === expectedInstanceEventName) {
-        instanceEventReceived = true;
-        instanceEventPayload = payload;
+      let instanceEventReceived = false;
+      let instanceEventPayload: ProcessErrorMessage;
+
+      const callback = (eventName: string, payload: ProcessErrorMessage): void => {
+        const expectedGlobalEventName = 'process_error';
+        const expectedInstanceEventName = `/processengine/process/${sampleProcessInstanceConfig.processInstanceId}/error`;
+
+        if (eventName === expectedGlobalEventName) {
+          globalEventReceived = true;
+          globalEventPayload = payload;
+        } else if (eventName === expectedInstanceEventName) {
+          instanceEventReceived = true;
+          instanceEventPayload = payload;
+        }
+      };
+
+      processInstanceStateHandlingFacade['eventAggregator'].publish = callback;
+
+      processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+
+      await new Promise((resolve): any => setTimeout(resolve, 100));
+
+      should(globalEventReceived).be.true();
+      should(instanceEventReceived).be.true();
+      assertPayload(globalEventPayload);
+      assertPayload(instanceEventPayload);
+    });
+
+  });
+
+  describe('Sanity Checks', (): void => {
+
+    before((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+    });
+
+    it('Should throw an error, if no ProcessInstanceConfig is provided', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification(sampleIdentity, undefined, sampleError);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
       }
-    };
+    });
 
-    processInstanceStateHandlingFacade['eventAggregator'].publish = callback;
+    it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification(undefined, sampleProcessInstanceConfig, sampleError);
+      } catch (error) {
+        should.fail(error, undefined, 'Did not expect an error here!');
+      }
+    });
 
-    processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+    it('Should not throw an error, if no error object is given', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification(sampleIdentity, sampleProcessInstanceConfig, undefined);
+      } catch (error) {
+        should.fail(error, undefined, 'Did not expect an error here!');
+      }
+    });
 
-    await new Promise((resolve): any => setTimeout(resolve, 100));
+    it('Should not throw an error, if the ProcessInstanceConfig is missing some properties', async (): Promise<void> => {
 
-    should(globalEventReceived).be.true();
-    should(instanceEventReceived).be.true();
-    assertPayload(globalEventPayload);
-    assertPayload(instanceEventPayload);
+      const faultyProcessInstanceConfig = clone(sampleProcessInstanceConfig);
+
+      delete faultyProcessInstanceConfig.correlationId;
+      delete faultyProcessInstanceConfig.processModelId;
+      delete faultyProcessInstanceConfig.processInstanceId;
+
+      try {
+        await processInstanceStateHandlingFacade
+          .sendProcessInstanceErrorNotification(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      } catch (error) {
+        should.fail('received result', undefined, 'Did not expect an error here!');
+      }
+    });
   });
 
   function assertPayload(message: ProcessErrorMessage): void {

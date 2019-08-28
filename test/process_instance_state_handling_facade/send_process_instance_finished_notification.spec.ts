@@ -1,4 +1,5 @@
 /* eslint-disable dot-notation */
+import * as clone from 'clone';
 import * as should from 'should';
 
 import {IFlowNodeInstanceResult, ProcessEndedMessage} from '@process-engine/process_engine_contracts';
@@ -29,8 +30,6 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceFinishedNotifica
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-
     sampleProcessInstanceConfig = {
       correlationId: 'correlationId',
       processModelId: 'processModelId',
@@ -44,28 +43,85 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceFinishedNotifica
     };
   });
 
-  it('should publish the correct event on the event aggregator', async (): Promise<void> => {
+  describe('Execution', (): void => {
 
-    return new Promise(async (resolve): Promise<void> => {
+    before((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+    });
 
-      const callback = (eventName: string, payload: ProcessEndedMessage): void => {
-        const expectedEventName = `/processengine/process/${sampleProcessInstanceConfig.processInstanceId}/ended`;
+    it('should publish the correct event on the event aggregator', async (): Promise<void> => {
 
-        should(eventName).be.eql(expectedEventName);
-        should(payload.correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
-        should(payload.currentToken).be.eql(sampleResultToken.result);
-        should(payload.flowNodeId).be.eql(sampleResultToken.flowNodeId);
-        should(payload.flowNodeInstanceId).be.eql(sampleResultToken.flowNodeInstanceId);
-        should(payload.processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
-        should(payload.processInstanceOwner).be.eql(sampleIdentity);
-        should(payload.processModelId).be.eql(sampleProcessInstanceConfig.processModelId);
-        resolve();
-      };
+      return new Promise(async (resolve): Promise<void> => {
 
-      processInstanceStateHandlingFacade['eventAggregator'].publish = callback;
+        const callback = (eventName: string, payload: ProcessEndedMessage): void => {
+          const expectedEventName = `/processengine/process/${sampleProcessInstanceConfig.processInstanceId}/ended`;
 
-      await processInstanceStateHandlingFacade
-        .sendProcessInstanceFinishedNotification(sampleIdentity, sampleProcessInstanceConfig, sampleResultToken);
+          should(eventName).be.eql(expectedEventName);
+          should(payload.correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
+          should(payload.currentToken).be.eql(sampleResultToken.result);
+          should(payload.flowNodeId).be.eql(sampleResultToken.flowNodeId);
+          should(payload.flowNodeInstanceId).be.eql(sampleResultToken.flowNodeInstanceId);
+          should(payload.processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
+          should(payload.processInstanceOwner).be.eql(sampleIdentity);
+          should(payload.processModelId).be.eql(sampleProcessInstanceConfig.processModelId);
+          resolve();
+        };
+
+        processInstanceStateHandlingFacade['eventAggregator'].publish = callback;
+
+        await processInstanceStateHandlingFacade
+          .sendProcessInstanceFinishedNotification(sampleIdentity, sampleProcessInstanceConfig, sampleResultToken);
+      });
+    });
+
+  });
+
+  describe('Sanity Checks', (): void => {
+
+    before((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+    });
+
+    it('Should throw an error, if no ProcessInstanceConfig is provided', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.sendProcessInstanceFinishedNotification(sampleIdentity, undefined, sampleResultToken);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
+      }
+    });
+
+    it('Should throw an error, if no result is given', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.sendProcessInstanceFinishedNotification(sampleIdentity, sampleProcessInstanceConfig, undefined);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
+      }
+    });
+
+    it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.sendProcessInstanceFinishedNotification(undefined, sampleProcessInstanceConfig, sampleResultToken);
+      } catch (error) {
+        should.fail(error, undefined, 'Did not expect an error here!');
+      }
+    });
+
+    it('Should not throw an error, if the ProcessInstanceConfig is missing some properties', async (): Promise<void> => {
+
+      const faultyProcessInstanceConfig = clone(sampleProcessInstanceConfig);
+
+      delete faultyProcessInstanceConfig.correlationId;
+      delete faultyProcessInstanceConfig.processModelId;
+      delete faultyProcessInstanceConfig.processInstanceId;
+
+      try {
+        await processInstanceStateHandlingFacade
+          .sendProcessInstanceFinishedNotification(sampleIdentity, sampleProcessInstanceConfig, sampleResultToken);
+      } catch (error) {
+        should.fail('received result', undefined, 'Did not expect an error here!');
+      }
     });
   });
 });

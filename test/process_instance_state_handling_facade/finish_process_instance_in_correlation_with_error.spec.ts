@@ -1,4 +1,5 @@
 /* eslint-disable dot-notation */
+import * as clone from 'clone';
 import * as should from 'should';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -25,8 +26,6 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-
     sampleProcessInstanceConfig = {
       correlationId: 'correlationId',
       processModelId: 'processModelId',
@@ -40,55 +39,124 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
     };
   });
 
-  it('should pass all information to the CorrelationService.', async (): Promise<void> => {
+  describe('Execution', (): void => {
 
-    return new Promise(async (resolve): Promise<void> => {
+    beforeEach((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+    });
 
-      const callback = (identity: IIdentity, correlationId: string, processInstanceId: string): any => {
-        should(identity).be.eql(sampleIdentity);
-        should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
-        should(processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
-        resolve();
-      };
+    it('should pass all information to the CorrelationService.', async (): Promise<void> => {
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      processInstanceStateHandlingFacade['correlationService'].finishProcessInstanceInCorrelationWithError = callback;
+      processInstanceStateHandlingFacade.logProcessError = (): void => {};
+      processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification = (): void => {};
 
-      await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      return new Promise(async (resolve): Promise<void> => {
+
+        const callback = (identity: IIdentity, correlationId: string, processInstanceId: string): any => {
+          should(identity).be.eql(sampleIdentity);
+          should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
+          should(processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
+          resolve();
+        };
+
+        // This property is private and must be accessed with this type of notation to avoid transpliation errors.
+        processInstanceStateHandlingFacade['correlationService'].finishProcessInstanceInCorrelationWithError = callback;
+
+        await processInstanceStateHandlingFacade
+          .finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      });
+    });
+
+    it('should log that a new ProcessInstance was finished', async (): Promise<void> => {
+
+      processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification = (): void => {};
+
+      return new Promise(async (resolve): Promise<void> => {
+
+        const callback = (correlationId: string, processModelId: string, processInstanceId: string): void => {
+          should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
+          should(processModelId).be.eql(sampleProcessInstanceConfig.processModelId);
+          should(processInstanceId).be.equal(sampleProcessInstanceConfig.processInstanceId);
+          resolve();
+        };
+
+        processInstanceStateHandlingFacade.logProcessError = callback;
+
+        await processInstanceStateHandlingFacade
+          .finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      });
+    });
+
+    it('should send the notification about finishing the ProcessInstance', async (): Promise<void> => {
+
+      processInstanceStateHandlingFacade.logProcessError = (): void => {};
+
+      return new Promise(async (resolve): Promise<void> => {
+
+        const callback = (identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void => {
+          should(identity).be.eql(sampleIdentity);
+          should(processInstanceConfig).be.eql(sampleProcessInstanceConfig);
+          should(error).be.equal(sampleError);
+          resolve();
+        };
+
+        processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification = callback;
+
+        await processInstanceStateHandlingFacade
+          .finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      });
+    });
+
+  });
+
+  describe('Sanity Checks', (): void => {
+
+    before((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+      processInstanceStateHandlingFacade.logProcessError = (): void => {};
+      processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification = (): void => {};
+    });
+
+    it('Should throw an error, if no ProcessInstanceConfig is provided', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, undefined, sampleError);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
+      }
+    });
+
+    it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(undefined, sampleProcessInstanceConfig, sampleError);
+      } catch (error) {
+        should.fail(error, undefined, 'Did not expect an error here!');
+      }
+    });
+
+    it('Should not throw an error, if no error object is given', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, undefined);
+      } catch (error) {
+        should.fail(error, undefined, 'Did not expect an error here!');
+      }
+    });
+
+    it('Should not throw an error, if the ProcessInstanceConfig is missing some properties', async (): Promise<void> => {
+
+      const faultyProcessInstanceConfig = clone(sampleProcessInstanceConfig);
+
+      delete faultyProcessInstanceConfig.correlationId;
+      delete faultyProcessInstanceConfig.processModelId;
+      delete faultyProcessInstanceConfig.processInstanceId;
+
+      try {
+        await processInstanceStateHandlingFacade
+          .finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      } catch (error) {
+        should.fail('received result', undefined, 'Did not expect an error here!');
+      }
     });
   });
 
-  it('should log that a new ProcessInstance was finished', async (): Promise<void> => {
-
-    return new Promise(async (resolve): Promise<void> => {
-
-      const callback = (correlationId: string, processModelId: string, processInstanceId: string): void => {
-        should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
-        should(processModelId).be.eql(sampleProcessInstanceConfig.processModelId);
-        should(processInstanceId).be.equal(sampleProcessInstanceConfig.processInstanceId);
-        resolve();
-      };
-
-      processInstanceStateHandlingFacade.logProcessError = callback;
-
-      await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
-    });
-  });
-
-  it('should send the notification about finishing the ProcessInstance', async (): Promise<void> => {
-
-    return new Promise(async (resolve): Promise<void> => {
-
-      const callback = (identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void => {
-        should(identity).be.eql(sampleIdentity);
-        should(processInstanceConfig).be.eql(sampleProcessInstanceConfig);
-        should(error).be.equal(sampleError);
-        resolve();
-      };
-
-      processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification = callback;
-
-      await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
-    });
-  });
 });
