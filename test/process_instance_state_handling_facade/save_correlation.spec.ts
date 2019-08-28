@@ -1,4 +1,5 @@
 /* eslint-disable dot-notation */
+import * as clone from 'clone';
 import * as should from 'should';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
@@ -29,12 +30,6 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-
-    processInstanceStateHandlingFacade['processModelUseCases'].getProcessDefinitionAsXmlByName = (): Promise<any> => {
-      return Promise.resolve(sampleProcessDefinition);
-    };
-
     sampleProcessInstanceConfig = {
       correlationId: 'correlationId',
       processModelId: 'processModelId',
@@ -48,48 +43,113 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
     };
   });
 
-  it('should pass all information to the CorrelationService.', async (): Promise<void> => {
+  describe('Execution', (): void => {
 
-    return new Promise(async (resolve): Promise<void> => {
-
-      const callback = (
-        identity: IIdentity,
-        correlationId: string,
-        processInstanceId: string,
-        name: string,
-        hash: string,
-        parentProcessInstanceId: string,
-      ): any => {
-        should(identity).be.eql(sampleIdentity);
-        should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
-        should(processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
-        should(name).be.eql(sampleProcessDefinition.name);
-        should(hash).be.eql(sampleProcessDefinition.hash);
-        should(parentProcessInstanceId).be.equal(sampleProcessInstanceConfig.parentProcessInstanceId);
-        resolve();
+    before((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+      processInstanceStateHandlingFacade['processModelUseCases'].getProcessDefinitionAsXmlByName = (): Promise<any> => {
+        return Promise.resolve(sampleProcessDefinition);
       };
+    });
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      processInstanceStateHandlingFacade['correlationService'].createEntry = callback;
+    it('should pass all information to the CorrelationService.', async (): Promise<void> => {
 
-      await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
+      return new Promise(async (resolve): Promise<void> => {
+
+        const callback = (
+          identity: IIdentity,
+          correlationId: string,
+          processInstanceId: string,
+          name: string,
+          hash: string,
+          parentProcessInstanceId: string,
+        ): any => {
+          should(identity).be.eql(sampleIdentity);
+          should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
+          should(processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
+          should(name).be.eql(sampleProcessDefinition.name);
+          should(hash).be.eql(sampleProcessDefinition.hash);
+          should(parentProcessInstanceId).be.equal(sampleProcessInstanceConfig.parentProcessInstanceId);
+          resolve();
+        };
+
+        // This property is private and must be accessed with this type of notation to avoid transpliation errors.
+        processInstanceStateHandlingFacade['correlationService'].createEntry = callback;
+
+        await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
+      });
+    });
+
+    it('should log that a new ProcessInstance was started', async (): Promise<void> => {
+
+      return new Promise(async (resolve): Promise<void> => {
+
+        const callback = (correlationId: string, processModelId: string, processInstanceId: string): void => {
+          should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
+          should(processModelId).be.eql(sampleProcessInstanceConfig.processModelId);
+          should(processInstanceId).be.equal(sampleProcessInstanceConfig.processInstanceId);
+          resolve();
+        };
+
+        processInstanceStateHandlingFacade.logProcessStarted = callback;
+
+        await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
+      });
     });
   });
 
-  it('should log that a new ProcessInstance was started', async (): Promise<void> => {
+  describe('Sanity Checks', (): void => {
 
-    return new Promise(async (resolve): Promise<void> => {
+    beforeEach((): void => {
+      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+    });
 
-      const callback = (correlationId: string, processModelId: string, processInstanceId: string): void => {
-        should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
-        should(processModelId).be.eql(sampleProcessInstanceConfig.processModelId);
-        should(processInstanceId).be.equal(sampleProcessInstanceConfig.processInstanceId);
-        resolve();
+    it('Should throw an error, if the retrieved ProcessModel is missing essential data', async (): Promise<void> => {
+
+      processInstanceStateHandlingFacade['processModelUseCases'].getProcessDefinitionAsXmlByName = (): Promise<any> => {
+        return Promise.resolve(undefined);
       };
 
-      processInstanceStateHandlingFacade.logProcessStarted = callback;
-
-      await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
+      try {
+        await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
+      }
     });
+
+    it('Should throw an error, if no ProcessInstanceConfig is provided', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, undefined);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
+      }
+    });
+
+    it('Should not throw an error, if no Identity is given (not the responsibility of this function)', async (): Promise<void> => {
+      try {
+        await processInstanceStateHandlingFacade.saveCorrelation(undefined, sampleProcessInstanceConfig);
+      } catch (error) {
+        should.fail('received result', undefined, 'Did not expect an error here!');
+      }
+    });
+
+    // eslint-disable-next-line max-len
+    it('Should not throw an error, if the ProcessInstanceConfig is missing some properties (not the responsibility of this function)', async (): Promise<void> => {
+
+      const faultyProcessInstanceConfig = clone(sampleProcessInstanceConfig);
+
+      delete faultyProcessInstanceConfig.correlationId;
+      delete faultyProcessInstanceConfig.processModelId;
+      delete faultyProcessInstanceConfig.processInstanceId;
+
+      try {
+        await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
+      } catch (error) {
+        should.fail('received result', undefined, 'Did not expect an error here!');
+      }
+    });
+
   });
 });
