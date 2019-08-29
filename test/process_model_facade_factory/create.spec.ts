@@ -16,22 +16,24 @@ describe('ProcessModelFacadeFactory.create', (): void => {
     processModelFacadeFactory = new ProcessModelFacadeFactory();
   });
 
-  it('Should create a new instance of a ProcessModelFacade, using the provided ProcessModel as a baseline', (): void => {
+  it('Should create a new instance of a ProcessModelFacade, using the provided ProcessModel as a baseline', async (): Promise<void> => {
 
-    const sampleProcessModel = {
-      id: 'ProcessModelId',
-      name: 'SampleProcessModel',
-      isExecutable: true,
-      flowNodes: [],
-      sequenceFlows: [],
-    };
+    const sampleProcessModel = await fixtureProvider.parseProcessModelFromFile('user_task_test.bpmn');
 
     const processModelFacade = processModelFacadeFactory.create(sampleProcessModel);
 
     should(processModelFacade).be.instanceOf(ProcessModelFacade);
-    // The property is only used internally, so we must use this type of notation to assert that it was passed to the facade correctly.
-    // eslint-disable-next-line dot-notation
-    should(processModelFacade['processModel']).be.eql(sampleProcessModel);
+
+    // Make some queries against the created the Facade ot check if it behaves as expected.
+    const startEvents = processModelFacade.getStartEvents();
+    const processModelHasLanes = processModelFacade.getProcessModelHasLanes();
+    const processModelIsExecutable = processModelFacade.getIsExecutable();
+
+    should(processModelHasLanes).be.true();
+    should(processModelIsExecutable).be.true();
+    should(startEvents).be.an.Array();
+    should(startEvents.length).be.equal(1);
+    should(startEvents[0].id).be.equal('StartEvent_1');
   });
 
   it('Should throw an error, if no ProcessModel is provided', (): void => {

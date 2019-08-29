@@ -15,7 +15,7 @@ describe('ProcessModelFacade.getSingleStartEvent', (): void => {
 
   it('Should return the single StartEvent for a ProcessModel that only has one.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const processModelFilePath = 'generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
@@ -29,7 +29,7 @@ describe('ProcessModelFacade.getSingleStartEvent', (): void => {
 
   it('Should pick the first StartEvent from a ProcessModel with multiple StartEvents.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/intermediate_event_link_test.bpmn';
+    const processModelFilePath = 'intermediate_event_link_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 

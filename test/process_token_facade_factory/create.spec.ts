@@ -32,11 +32,13 @@ describe('processTokenFacadeFactory.create', (): void => {
     const processTokenFacade = processTokenFacadeFactory.create(processInstanceId, processModelId, correlationId, identity);
 
     should(processTokenFacade).be.instanceOf(ProcessTokenFacade);
-    // These properties are only used internally, so we must use this type of notation to assert that they was passed to the facade correctly.
-    should(processTokenFacade['processInstanceId']).be.equal(processInstanceId);
-    should(processTokenFacade['processModelId']).be.equal(processModelId);
-    should(processTokenFacade['correlationId']).be.equal(correlationId);
-    should(processTokenFacade['identity']).be.eql(identity);
+
+    // Create a new ProcessToken to verify that all paramters have been parsed to the facade in the expected order.
+    const token = processTokenFacade.createProcessToken();
+    should(token.processInstanceId).be.equal(processInstanceId);
+    should(token.processModelId).be.equal(processModelId);
+    should(token.correlationId).be.equal(correlationId);
+    should(token.identity).be.eql(identity);
   });
 
   it('Should not throw an error, if no processInstanceId is provided', (): void => {

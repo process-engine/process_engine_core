@@ -15,7 +15,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should successfully parse a diagram that contains one lane.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/process_engine_io_release.bpmn';
+    const processModelFilePath = 'process_engine_io_release.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [
@@ -35,7 +35,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should successfully parse a diagram that contains multiple parallel lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/DemoNutztierRiss.bpmn';
+    const processModelFilePath = 'DemoNutztierRiss.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [
@@ -63,7 +63,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should successfully parse a diagram that contains no lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const processModelFilePath = 'generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [
@@ -83,7 +83,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should successfully parse a diagram that contains an empty lane.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/empty_lane_test.bpmn';
+    const processModelFilePath = 'empty_lane_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [
@@ -96,7 +96,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should successfully parse a diagram that contains several sublanes.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/sublane_test.bpmn';
+    const processModelFilePath = 'sublane_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [
@@ -113,7 +113,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should successfully parse SignalEndEvents with customized inputValues.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/customized_signal_end_event_payload.bpmn';
+    const processModelFilePath = 'customized_signal_end_event_payload.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [
@@ -141,7 +141,7 @@ describe('ProcessModelParser ', (): void => {
 
   it('Should correctly interpret a default SequenceFlow for an ExclusiveSplitGateway.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/default_sequence_flow_test.bpmn';
+    const processModelFilePath = 'default_sequence_flow_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     const expectedFlowNodeIdList = [

@@ -13,7 +13,7 @@ describe('ProcessModelFacade.getLinkCatchEventsByLinkName', (): void => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    const processModelFilePath = './test/bpmns/intermediate_event_link_test.bpmn';
+    const processModelFilePath = 'intermediate_event_link_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);

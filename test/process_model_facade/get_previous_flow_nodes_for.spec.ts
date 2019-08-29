@@ -13,7 +13,7 @@ describe('ProcessModelFacade.getPreviousFlowNodesFor', (): void => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    const processModelFilePath = './test/bpmns/process_with_boundary_events.bpmn';
+    const processModelFilePath = 'process_with_boundary_events.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);

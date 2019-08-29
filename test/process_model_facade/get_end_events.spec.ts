@@ -15,7 +15,7 @@ describe('ProcessModelFacade.getEndEvents', (): void => {
 
   it('Should return all EndEvents of the given ProcessModel.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/process_with_boundary_events.bpmn';
+    const processModelFilePath = 'process_with_boundary_events.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
@@ -38,7 +38,7 @@ describe('ProcessModelFacade.getEndEvents', (): void => {
 
   it('Should return all EndEvents of the given ProcessModel, if the EndEvents are spread across multiple lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/sublane_test.bpmn';
+    const processModelFilePath = 'sublane_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 

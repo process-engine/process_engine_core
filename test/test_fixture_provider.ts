@@ -67,7 +67,8 @@ export class TestFixtureProvider {
   }
 
   public async parseProcessModelFromFile(bpmnFilename: string): Promise<Model.Process> {
-    const bpmnXml = fs.readFileSync(bpmnFilename, 'utf8');
+    const fullPath = `./test/bpmns/${bpmnFilename}`;
+    const bpmnXml = fs.readFileSync(fullPath, 'utf8');
     const definitions = await this.parser.parseXmlToObjectModel(bpmnXml);
 
     return definitions.processes[0];

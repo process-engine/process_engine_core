@@ -13,7 +13,7 @@ describe('ProcessModelFacade.getUserTasks', (): void => {
 
   it('Should return one UserTask for a ProcessModel that only has one.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/user_task_test.bpmn';
+    const processModelFilePath = 'user_task_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
@@ -28,7 +28,7 @@ describe('ProcessModelFacade.getUserTasks', (): void => {
 
   it('Should return all UserTasks from a ProcessModel with multiple UserTasks.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/user_task_multiple.bpmn';
+    const processModelFilePath = 'user_task_multiple.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
@@ -49,7 +49,7 @@ describe('ProcessModelFacade.getUserTasks', (): void => {
 
   it('Should return an empty Array for a ProcessModel that has no UserTasks.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const processModelFilePath = 'generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
