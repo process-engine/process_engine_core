@@ -2,7 +2,7 @@ import * as should from 'should';
 
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-describe('SubProcessModelFacade.getStartEvents', (): void => {
+describe('SubSubProcessModelFacade.getStartEvents', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
 
@@ -38,8 +38,9 @@ describe('SubProcessModelFacade.getStartEvents', (): void => {
     should(startEvents).be.instanceOf(Array);
     should(startEvents.length).be.equal(2);
 
-    for (const startEvent of startEvents) {
-      should(expectedStartEventIds).containEql(startEvent.id);
+    for (const expectedId of expectedStartEventIds) {
+      const startEventExists = startEvents.some((startEvent): boolean => startEvent.id === expectedId);
+      should(startEventExists).be.true(`The StartEventList should have contained an event with ID '${expectedId}', but none was found!`);
     }
   });
 });

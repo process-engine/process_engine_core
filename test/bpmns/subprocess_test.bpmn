@@ -86,7 +86,10 @@
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="SequenceFlow_0hf53tf" sourceRef="ErrorBoundaryEvent_1" targetRef="EndEvent_2" />
     </bpmn:subProcess>
-    <bpmn:startEvent id="StartEvent_1" name="Start Event">
+    <bpmn:startEvent id="StartEvent_1" name="Start Event" camunda:formKey="Form Key">
+      <bpmn:extensionElements>
+        <camunda:formData />
+      </bpmn:extensionElements>
       <bpmn:outgoing>SequenceFlow_1jdocur</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:endEvent id="EndEvent_1" name="End Event">
