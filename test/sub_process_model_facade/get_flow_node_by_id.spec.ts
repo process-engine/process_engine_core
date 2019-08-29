@@ -46,12 +46,12 @@ describe('SubProcessModelFacade.getFlowNodeById', (): void => {
 
     for (const inaccessibleId of expectedFlowNodeIds) {
       const flowNode = subProcessModelFacade.getFlowNodeById(inaccessibleId);
-      should.not.exist(flowNode, `The SubprocessModelFacade could access the FlowNode '${inaccessibleId}', which lies outside of the Subprocess!`);
+      should.not.exist(flowNode, `The SubProcessModelFacade could access the FlowNode '${inaccessibleId}', which lies outside of the Subprocess!`);
     }
   });
 
   it('Should return undefined, if the FlowNode does not exist.', async (): Promise<void> => {
     const flowNode = subProcessModelFacade.getFlowNodeById('randomInvalidId');
-    should.not.exist(flowNode, 'The SubprocessModelFacade did not return undefined upon querying an invalid ID!');
+    should.not.exist(flowNode, 'The SubProcessModelFacade did not return undefined upon querying an invalid ID!');
   });
 });
