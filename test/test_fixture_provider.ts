@@ -4,8 +4,7 @@ import * as should from 'should';
 import * as Bluebird from 'bluebird';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-
-import {Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../src/model/bpmn_model_parser';
 import {
@@ -13,6 +12,7 @@ import {
   ProcessInstanceStateHandlingFacade,
   ProcessModelFacade,
   ProcessTokenFacade,
+  SubProcessModelFacade,
 } from '../src/runtime';
 import {
   CorrelationServiceMock,
@@ -106,6 +106,14 @@ export class TestFixtureProvider {
 
   public createProcessModelFacade(processModel: Model.Process): ProcessModelFacade {
     return new ProcessModelFacade(processModel);
+  }
+
+  public async createSubProcessModelFacade(bpmnFileName?: string): Promise<SubProcessModelFacade> {
+
+    const processModel = await this.parseProcessModelFromFile(bpmnFileName || 'subprocess_test.bpmn');
+    const subProcess = processModel.flowNodes.find((flowNode): boolean => flowNode.bpmnType === BpmnType.subProcess);
+
+    return new SubProcessModelFacade(processModel, subProcess as Model.Activities.SubProcess);
   }
 
   public createProcessTokenFacade(processInstanceId?: string, proessModelId?: string, correlationId?: string): ProcessTokenFacade {
