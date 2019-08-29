@@ -1,4 +1,3 @@
-/* eslint-disable dot-notation */
 import * as should from 'should';
 
 import {ProcessModelFacadeFactory} from '../../src/runtime/facades/process_model_facade_factory';
@@ -30,6 +29,8 @@ describe('ProcessModelFacadeFactory.create', (): void => {
     const processModelFacade = processModelFacadeFactory.create(sampleProcessModel);
 
     should(processModelFacade).be.instanceOf(ProcessModelFacade);
+    // The property is only used internally, so we must use this type of notation to assert that it was passed to the facade correctly.
+    // eslint-disable-next-line dot-notation
     should(processModelFacade['processModel']).be.eql(sampleProcessModel);
   });
 
