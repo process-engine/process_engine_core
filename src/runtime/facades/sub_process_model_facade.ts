@@ -12,6 +12,10 @@ export class SubProcessModelFacade extends ProcessModelFacade {
     this.subProcessDefinition = subProcessDefinition;
   }
 
+  public getFlowNodeById(flowNodeId: string): Model.Base.FlowNode {
+    return this.subProcessDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === flowNodeId);
+  }
+
   public getStartEvents(): Array<Model.Events.StartEvent> {
 
     // The SubProcess-StartEvent is not contained in the processDefinition, but in the subProcessDefinition
