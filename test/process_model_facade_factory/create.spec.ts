@@ -24,7 +24,7 @@ describe('ProcessModelFacadeFactory.create', (): void => {
 
     should(processModelFacade).be.instanceOf(ProcessModelFacade);
 
-    // Make some queries against the created the Facade ot check if it behaves as expected.
+    // Make some queries against the created facade, to check if it behaves as expected.
     const startEvents = processModelFacade.getStartEvents();
     const processModelHasLanes = processModelFacade.getProcessModelHasLanes();
     const processModelIsExecutable = processModelFacade.getIsExecutable();

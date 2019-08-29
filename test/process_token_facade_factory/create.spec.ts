@@ -33,7 +33,7 @@ describe('processTokenFacadeFactory.create', (): void => {
 
     should(processTokenFacade).be.instanceOf(ProcessTokenFacade);
 
-    // Create a new ProcessToken to verify that all paramters have been parsed to the facade in the expected order.
+    // Create a new ProcessToken, to verify that all parameters have been passed to the facade in the expected order.
     const token = processTokenFacade.createProcessToken();
     should(token.processInstanceId).be.equal(processInstanceId);
     should(token.processModelId).be.equal(processModelId);
