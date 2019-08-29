@@ -30,7 +30,7 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
       processModelId: 'processModelId',
       processInstanceId: 'processInstanceId',
       parentProcessInstanceId: 'parentProcessInstanceId',
-      processModelFacade: fixtureProvider.createProcessModelFacade(undefined),
+      processModelFacade: fixtureProvider.createProcessModelFacade({id: 'someId'} as any),
       startEvent: {id: 'startevent'} as any,
       startEventInstance: {id: 'flowNodeInstanceId'} as any,
       processToken: {payload: {some: 'value'}} as any,
