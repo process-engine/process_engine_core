@@ -221,7 +221,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return matchingIntermediateCatchEvents as Array<Model.Events.IntermediateCatchEvent>;
   }
 
-  private filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
+  protected filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
     const flowNodes = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
       return flowNode instanceof type;
     });
@@ -241,7 +241,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
    * @returns            Either the lane containing the FlowNodeId,
    *                     or undefined, if not matching lane was found.
    */
-  private findLaneForFlowNodeIdFromLaneSet(flowNodeId: string, laneSet: Model.ProcessElements.LaneSet): Model.ProcessElements.Lane {
+  protected findLaneForFlowNodeIdFromLaneSet(flowNodeId: string, laneSet: Model.ProcessElements.LaneSet): Model.ProcessElements.Lane {
 
     for (const lane of laneSet.lanes) {
 
