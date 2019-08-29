@@ -3,6 +3,7 @@
   "rules": {
     "@typescript-eslint/no-explicit-any": ["off"],
     "no-case-declarations": ["off"],
-    "no-param-reassign": ["off"]
+    "no-param-reassign": ["off"],
+    "no-plusplus": ["off"]
   }
 }
