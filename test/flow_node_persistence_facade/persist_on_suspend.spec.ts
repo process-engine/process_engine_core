@@ -1,16 +1,14 @@
-/* eslint-disable dot-notation */
 import * as moment from 'moment';
 import * as should from 'should';
 
 import {LogLevel} from '@process-engine/logging_api_contracts';
 
-import {FlowNodePersistenceFacade} from '../../src/runtime/facades/flow_node_persistence_facade';
+import {FlowNodeInstanceServiceMock, LoggingServiceMock, MetricsServiceMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let flowNodePersistenceFacade: FlowNodePersistenceFacade;
 
   const sampleFlowNode = {
     id: 'asdasd',
@@ -26,16 +24,14 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
   before(async (): Promise<void> => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
-
-    flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade();
   });
 
   it('Should pass all information to the FlowNodeInstanceService.', async (): Promise<void> => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      flowNodePersistenceFacade['flowNodeInstanceService'].suspend =
+      const flowNodeInstanceServiceMock = new FlowNodeInstanceServiceMock();
+      flowNodeInstanceServiceMock.suspend =
         (flowNodeId: any, flowNodeInstanceId: string, processToken: any): any => {
 
           should(flowNodeId).be.eql(sampleFlowNode.id);
@@ -43,6 +39,8 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
           should(processToken).be.eql(sampleToken);
           resolve();
         };
+
+      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(flowNodeInstanceServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnSuspend(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any);
@@ -53,7 +51,8 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
-      const callback = (
+      const loggingServiceMock = new LoggingServiceMock();
+      loggingServiceMock.writeLogForFlowNode = (
         correlationId: string,
         processModelId: string,
         processInstanceId: string,
@@ -73,8 +72,7 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
         resolve();
       };
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      flowNodePersistenceFacade['loggingApiService'].writeLogForFlowNode = callback;
+      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(undefined, loggingServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnSuspend(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any);
@@ -86,7 +84,8 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
-      const callback = (
+      const metricsServiceMock = new MetricsServiceMock();
+      metricsServiceMock.writeOnFlowNodeInstanceSuspend = (
         correlationId: string,
         processInstanceId: string,
         processModelId: string,
@@ -109,8 +108,7 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
         resolve();
       };
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      flowNodePersistenceFacade['metricsApiService'].writeOnFlowNodeInstanceSuspend = callback;
+      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(undefined, undefined, metricsServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnSuspend(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any);

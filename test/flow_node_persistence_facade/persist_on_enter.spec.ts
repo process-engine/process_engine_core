@@ -1,16 +1,14 @@
-/* eslint-disable dot-notation */
 import * as moment from 'moment';
 import * as should from 'should';
 
 import {LogLevel} from '@process-engine/logging_api_contracts';
 
-import {FlowNodePersistenceFacade} from '../../src/runtime/facades/flow_node_persistence_facade';
+import {FlowNodeInstanceServiceMock, LoggingServiceMock, MetricsServiceMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let flowNodePersistenceFacade: FlowNodePersistenceFacade;
 
   const sampleFlowNode = {
     id: 'asdasd',
@@ -27,16 +25,14 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
   before(async (): Promise<void> => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
-
-    flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade();
   });
 
   it('Should pass all information to the FlowNodeInstanceService.', async (): Promise<void> => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      flowNodePersistenceFacade['flowNodeInstanceService'].persistOnEnter =
+      const flowNodeInstanceServiceMock = new FlowNodeInstanceServiceMock();
+      flowNodeInstanceServiceMock.persistOnEnter =
         (flowNode: any, flowNodeInstanceId: string, processToken: any, previousFlowNodeInstanceId: string): any => {
 
           should(flowNode).be.eql(sampleFlowNode);
@@ -45,6 +41,8 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
           should(previousFlowNodeInstanceId).be.equal(samplePreviousFlowNodeInstanceId);
           resolve();
         };
+
+      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(flowNodeInstanceServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnEnter(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any, samplePreviousFlowNodeInstanceId);
@@ -55,7 +53,8 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
-      const callback = (
+      const loggingServiceMock = new LoggingServiceMock();
+      loggingServiceMock.writeLogForFlowNode = (
         correlationId: string,
         processModelId: string,
         processInstanceId: string,
@@ -75,8 +74,7 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
         resolve();
       };
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      flowNodePersistenceFacade['loggingApiService'].writeLogForFlowNode = callback;
+      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(undefined, loggingServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnEnter(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any, samplePreviousFlowNodeInstanceId);
@@ -88,7 +86,8 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
-      const callback = (
+      const metricsServiceMock = new MetricsServiceMock();
+      metricsServiceMock.writeOnFlowNodeInstanceEnter = (
         correlationId: string,
         processInstanceId: string,
         processModelId: string,
@@ -111,8 +110,7 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
         resolve();
       };
 
-      // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-      flowNodePersistenceFacade['metricsApiService'].writeOnFlowNodeInstanceEnter = callback;
+      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(undefined, undefined, metricsServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnEnter(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any, samplePreviousFlowNodeInstanceId);
