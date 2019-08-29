@@ -16,7 +16,7 @@ describe('ProcessTokenFacade.importResults', (): void => {
     fixtureProvider.addSampleResultsToProcessTokenFacade(processTokenFacade);
   });
 
-  it('should successfully add a number of results to the existing result set.', async (): Promise<void> => {
+  it('Should successfully add a number of results to the existing result set.', async (): Promise<void> => {
 
     const firstResultSet = processTokenFacade.getAllResults();
 

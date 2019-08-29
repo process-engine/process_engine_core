@@ -19,7 +19,7 @@ describe('ProcessModelFacade.getLinkCatchEventsByLinkName', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should correctly return a single matching LinkCatchEvent for testlink1.', async (): Promise<void> => {
+  it('Should correctly return a single matching LinkCatchEvent for testlink1.', async (): Promise<void> => {
 
     const linkNameToFind = 'testlink1';
 
@@ -30,7 +30,7 @@ describe('ProcessModelFacade.getLinkCatchEventsByLinkName', (): void => {
     should(linkEvents[0].linkEventDefinition.name).be.equal(linkNameToFind);
   });
 
-  it('should return multiple matching LinkCatchEvent for testlink2.', async (): Promise<void> => {
+  it('Should return multiple matching LinkCatchEvent for testlink2.', async (): Promise<void> => {
 
     const linkNameToFind = 'testlink2';
 
@@ -43,7 +43,7 @@ describe('ProcessModelFacade.getLinkCatchEventsByLinkName', (): void => {
     }
   });
 
-  it('should return an empty Array for testlink3.', async (): Promise<void> => {
+  it('Should return an empty Array for testlink3.', async (): Promise<void> => {
 
     const linkNameToFind = 'testlink3';
 

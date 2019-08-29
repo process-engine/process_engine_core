@@ -19,7 +19,7 @@ describe('ProcessModelFacade.getBoundaryEventsFor', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should return all BoundaryEvents of the given decorated ManualTask.', async (): Promise<void> => {
+  it('Should return all BoundaryEvents of the given decorated ManualTask.', async (): Promise<void> => {
 
     const flowNodeWithOutBoundaryEvents = processModelFacade.getFlowNodeById('ManualTask123');
 
@@ -39,7 +39,7 @@ describe('ProcessModelFacade.getBoundaryEventsFor', (): void => {
     }
   });
 
-  it('should return an empty list for FlowNodes that have no BoundaryEvents.', async (): Promise<void> => {
+  it('Should return an empty list for FlowNodes that have no BoundaryEvents.', async (): Promise<void> => {
 
     const flowNodeWithOutBoundaryEvents = processModelFacade.getFlowNodeById('StartEvent_1');
 
@@ -48,7 +48,7 @@ describe('ProcessModelFacade.getBoundaryEventsFor', (): void => {
     should(boundaryEvents.length).be.equal(0, 'The BoundaryEvent list should have been empty, because the FlowNode doesn\'t have any!');
   });
 
-  it('should return an empty list, when the ID of a non-existing FlowNode is used.', async (): Promise<void> => {
+  it('Should return an empty list, when the ID of a non-existing FlowNode is used.', async (): Promise<void> => {
 
     const dummyData: any = {
       id: 'some non-existing flow node',

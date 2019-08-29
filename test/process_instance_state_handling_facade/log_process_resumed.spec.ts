@@ -1,16 +1,14 @@
-/* eslint-disable dot-notation */
 import * as moment from 'moment';
 import * as should from 'should';
 
 import {LogLevel} from '@process-engine/logging_api_contracts';
 
-import {ProcessInstanceStateHandlingFacade} from '../../src/runtime/facades/process_instance_state_handling_facade';
+import {LoggingServiceMock, MetricsServiceMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.logProcessResumed', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   const sampleCorrelationId = 'correlationId';
   const sampleProcessModelId = 'processModelId';
@@ -23,15 +21,12 @@ describe('ProcessInstanceStateHandlingFacade.logProcessResumed', (): void => {
 
   describe('Execution', (): void => {
 
-    beforeEach((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
-    it('should pass all information to the LoggingService', async (): Promise<void> => {
+    it('Should pass all information to the LoggingService', async (): Promise<void> => {
 
       return new Promise(async (resolve, reject): Promise<void> => {
 
-        const callback = (
+        const loggingApiServiceMock = new LoggingServiceMock();
+        loggingApiServiceMock.writeLogForProcessModel = (
           correlationId: string,
           processModelId: string,
           processInstanceId: string,
@@ -47,19 +42,20 @@ describe('ProcessInstanceStateHandlingFacade.logProcessResumed', (): void => {
           resolve();
         };
 
-        // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-        processInstanceStateHandlingFacade['loggingApiService'].writeLogForProcessModel = callback;
+        const processInstanceStateHandlingFacade =
+          fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, undefined, loggingApiServiceMock);
 
         await processInstanceStateHandlingFacade
           .logProcessResumed(sampleCorrelationId, sampleProcessModelId, sampleProcessInstanceId);
       });
     });
 
-    it('should pass all information to the MetricsService', async (): Promise<void> => {
+    it('Should pass all information to the MetricsService', async (): Promise<void> => {
 
       return new Promise(async (resolve, reject): Promise<void> => {
 
-        const callback = (
+        const metricsApiServiceMock = new MetricsServiceMock();
+        metricsApiServiceMock.writeOnProcessStarted = (
           correlationId: string,
           processInstanceId: string,
           processModelId: string,
@@ -76,8 +72,8 @@ describe('ProcessInstanceStateHandlingFacade.logProcessResumed', (): void => {
           resolve();
         };
 
-        // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-        processInstanceStateHandlingFacade['metricsApiService'].writeOnProcessStarted = callback;
+        const processInstanceStateHandlingFacade =
+          fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, undefined, undefined, metricsApiServiceMock);
 
         await processInstanceStateHandlingFacade
           .logProcessResumed(sampleCorrelationId, sampleProcessModelId, sampleProcessInstanceId);

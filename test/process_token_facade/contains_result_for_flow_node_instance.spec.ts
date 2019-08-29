@@ -16,7 +16,7 @@ describe('ProcessTokenFacade.containsResultForFlowNodeInstance', (): void => {
     fixtureProvider.addSampleResultsToProcessTokenFacade(processTokenFacade);
   });
 
-  it('should return true, when the facade has currently stored a matching result.', async (): Promise<void> => {
+  it('Should return true, when the facade has currently stored a matching result.', async (): Promise<void> => {
 
     const sampleFlowNodeInstanceId = '132112341233124';
     const result = processTokenFacade.containsResultForFlowNodeInstance(sampleFlowNodeInstanceId);
@@ -24,7 +24,7 @@ describe('ProcessTokenFacade.containsResultForFlowNodeInstance', (): void => {
     should(result).be.true();
   });
 
-  it('should return false, when the facade does not contain a matching result.', async (): Promise<void> => {
+  it('Should return false, when the facade does not contain a matching result.', async (): Promise<void> => {
 
     const sampleFlowNodeInstanceId = 'idonotexist';
     const result = processTokenFacade.containsResultForFlowNodeInstance(sampleFlowNodeInstanceId);

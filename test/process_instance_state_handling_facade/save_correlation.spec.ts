@@ -1,4 +1,3 @@
-/* eslint-disable dot-notation */
 import * as clone from 'clone';
 import * as should from 'should';
 
@@ -6,12 +5,12 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {IProcessInstanceConfig} from '../../src/runtime/facades/iprocess_instance_config';
 import {ProcessInstanceStateHandlingFacade} from '../../src/runtime/facades/process_instance_state_handling_facade';
+import {CorrelationServiceMock, ProcessModelUseCasesMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   const sampleIdentity = {
     userId: 'userId',
@@ -45,18 +44,23 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
 
   describe('Execution', (): void => {
 
-    before((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-      processInstanceStateHandlingFacade['processModelUseCases'].getProcessDefinitionAsXmlByName = (): Promise<any> => {
+    function createProcessInstanceStateHandlingFacade(correlationServiceMock?: CorrelationServiceMock): ProcessInstanceStateHandlingFacade {
+
+      const processModelUseCaseMock = new ProcessModelUseCasesMock();
+      processModelUseCaseMock.getProcessDefinitionAsXmlByName = (): Promise<any> => {
         return Promise.resolve(sampleProcessDefinition);
       };
-    });
 
-    it('should pass all information to the CorrelationService.', async (): Promise<void> => {
+      return fixtureProvider
+        .createProcessInstanceStateHandlingFacade(correlationServiceMock, undefined, undefined, undefined, processModelUseCaseMock);
+    }
+
+    it('Should pass all information to the CorrelationService.', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
-        const callback = (
+        const correlationServiceMock = new CorrelationServiceMock();
+        correlationServiceMock.createEntry = (
           identity: IIdentity,
           correlationId: string,
           processInstanceId: string,
@@ -73,16 +77,17 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
           resolve();
         };
 
-        // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-        processInstanceStateHandlingFacade['correlationService'].createEntry = callback;
+        const processInstanceStateHandlingFacade = createProcessInstanceStateHandlingFacade(correlationServiceMock);
 
         await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
       });
     });
 
-    it('should log that a new ProcessInstance was started', async (): Promise<void> => {
+    it('Should log that a new ProcessInstance was started', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
+
+        const processInstanceStateHandlingFacade = createProcessInstanceStateHandlingFacade();
 
         const callback = (correlationId: string, processModelId: string, processInstanceId: string): void => {
           should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
@@ -100,15 +105,15 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
 
   describe('Sanity Checks', (): void => {
 
-    beforeEach((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
     it('Should throw an error, if the retrieved ProcessModel is missing essential data', async (): Promise<void> => {
 
-      processInstanceStateHandlingFacade['processModelUseCases'].getProcessDefinitionAsXmlByName = (): Promise<any> => {
+      const processModelUseCaseMock = new ProcessModelUseCasesMock();
+      processModelUseCaseMock.getProcessDefinitionAsXmlByName = (): Promise<any> => {
         return Promise.resolve(undefined);
       };
+
+      const processInstanceStateHandlingFacade =
+        fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, undefined, undefined, undefined, processModelUseCaseMock);
 
       try {
         await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
@@ -120,6 +125,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
 
     it('Should throw an error, if no ProcessInstanceConfig is provided', async (): Promise<void> => {
       try {
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, undefined);
         should.fail('received result', undefined, 'Expected this test to cause an error!');
       } catch (error) {
@@ -129,6 +135,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
 
     it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
       try {
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         await processInstanceStateHandlingFacade.saveCorrelation(undefined, sampleProcessInstanceConfig);
       } catch (error) {
         should.fail('received result', undefined, 'Did not expect an error here!');
@@ -144,6 +151,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
       delete faultyProcessInstanceConfig.processInstanceId;
 
       try {
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
       } catch (error) {
         should.fail('received result', undefined, 'Did not expect an error here!');

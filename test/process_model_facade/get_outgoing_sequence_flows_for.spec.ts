@@ -18,7 +18,7 @@ describe('ProcessModelFacade.getOutgoingSequenceFlowsFor', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should correctly return the outgoing SequenceFlows for a FlowNode with a single outgoing SequenceFlow.', async (): Promise<void> => {
+  it('Should correctly return the outgoing SequenceFlows for a FlowNode with a single outgoing SequenceFlow.', async (): Promise<void> => {
 
     const flowNodeId = 'Task_1tfjjzx';
     const expectedSequenceFlowId = 'SequenceFlow_0uaexrv';
@@ -30,7 +30,7 @@ describe('ProcessModelFacade.getOutgoingSequenceFlowsFor', (): void => {
     should(sequenceFlows[0].id).be.equal(expectedSequenceFlowId);
   });
 
-  it('should correctly return the outgoing SequenceFlows for a FlowNode with multiple outgoing SequenceFlows.', async (): Promise<void> => {
+  it('Should correctly return the outgoing SequenceFlows for a FlowNode with multiple outgoing SequenceFlows.', async (): Promise<void> => {
 
     const flowNodeId = 'ParallelSplitGateway_1';
 
@@ -50,7 +50,7 @@ describe('ProcessModelFacade.getOutgoingSequenceFlowsFor', (): void => {
     }
   });
 
-  it('should return an empty Array for a FlowNode that doesn\'t have any outgoing SequenceFlows.', async (): Promise<void> => {
+  it('Should return an empty Array for a FlowNode that doesn\'t have any outgoing SequenceFlows.', async (): Promise<void> => {
 
     const flowNodeId = 'EndEvent_0y6uwzm';
 

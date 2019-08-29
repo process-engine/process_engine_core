@@ -1,4 +1,3 @@
-/* eslint-disable dot-notation */
 import * as clone from 'clone';
 import * as should from 'should';
 
@@ -6,12 +5,12 @@ import {ProcessErrorMessage} from '@process-engine/process_engine_contracts';
 
 import {IProcessInstanceConfig} from '../../src/runtime/facades/iprocess_instance_config';
 import {ProcessInstanceStateHandlingFacade} from '../../src/runtime/facades/process_instance_state_handling_facade';
+import {EventAggregatorMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotification', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   const sampleIdentity = {
     userId: 'userId',
@@ -20,7 +19,7 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotificatio
 
   let sampleProcessInstanceConfig: IProcessInstanceConfig;
 
-  const sampleError = new Error('Hello, I am an error and I am here to screw you.');
+  const sampleError = new Error('I am an error');
 
   before(async (): Promise<void> => {
     fixtureProvider = new TestFixtureProvider();
@@ -41,11 +40,7 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotificatio
 
   describe('Execution', (): void => {
 
-    before((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
-    it('should publish the correct events on the event aggregator', async (): Promise<void> => {
+    it('Should publish the correct events on the event aggregator', async (): Promise<void> => {
 
       let globalEventReceived = false;
       let globalEventPayload: ProcessErrorMessage;
@@ -66,8 +61,10 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotificatio
         }
       };
 
-      processInstanceStateHandlingFacade['eventAggregator'].publish = callback;
+      const eventAggregatorMock = new EventAggregatorMock();
+      eventAggregatorMock.publish = callback;
 
+      const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, eventAggregatorMock);
       processInstanceStateHandlingFacade.sendProcessInstanceErrorNotification(sampleIdentity, sampleProcessInstanceConfig, sampleError);
 
       await new Promise((resolve): any => setTimeout(resolve, 100));
@@ -81,6 +78,8 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceErrorNotificatio
   });
 
   describe('Sanity Checks', (): void => {
+
+    let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
     before((): void => {
       processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();

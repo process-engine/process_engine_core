@@ -19,7 +19,7 @@ describe('ProcessModelFacade.getPreviousFlowNodesFor', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should return a single preceeding FlowNode for a FlowNode that has one incoming SequenceFlow.', async (): Promise<void> => {
+  it('Should return a single preceeding FlowNode for a FlowNode that has one incoming SequenceFlow.', async (): Promise<void> => {
 
     const endEventId = 'EndEvent_Regular';
     const endEvent = processModelFacade.getFlowNodeById(endEventId);
@@ -33,7 +33,7 @@ describe('ProcessModelFacade.getPreviousFlowNodesFor', (): void => {
     should(nextFlowNodes[0].id).be.equal(expectedPreviousFlowNodeId);
   });
 
-  it('should return a single preceeding FlowNode for a FlowNode that is connected to a BoundaryEvent.', async (): Promise<void> => {
+  it('Should return a single preceeding FlowNode for a FlowNode that is connected to a BoundaryEvent.', async (): Promise<void> => {
 
     const endEventId = 'ThrowMessageConfirmSignalReceived';
     const endEvent = processModelFacade.getFlowNodeById(endEventId);
@@ -47,7 +47,7 @@ describe('ProcessModelFacade.getPreviousFlowNodesFor', (): void => {
     should(nextFlowNodes[0].id).be.equal(expectedPreviousFlowNodeId);
   });
 
-  it('should return undefined for a FlowNode that has no incoming SequenceFlow.', async (): Promise<void> => {
+  it('Should return undefined for a FlowNode that has no incoming SequenceFlow.', async (): Promise<void> => {
 
     const startEventId = 'StartEvent_1';
     const startEvent = processModelFacade.getFlowNodeById(startEventId);

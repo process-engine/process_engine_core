@@ -21,7 +21,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should correctly return the SequenceFlow between FlowNode A and FlowNode B, when they are connected directly.', async (): Promise<void> => {
+  it('Should correctly return the SequenceFlow between FlowNode A and FlowNode B, when they are connected directly.', async (): Promise<void> => {
 
     const flowNode1 = processModelFacade.getFlowNodeById('ExclusiveSplitGateway_1');
     const flowNode2 = processModelFacade.getFlowNodeById('EndEvent_0y6uwzm');
@@ -34,7 +34,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
   });
 
   // eslint-disable-next-line max-len
-  it('should correctly return the SequenceFlow between FlowNode A and FlowNode B, when they are connected through a BoundaryEvent.', async (): Promise<void> => {
+  it('Should correctly return the SequenceFlow between FlowNode A and FlowNode B, when they are connected through a BoundaryEvent.', async (): Promise<void> => {
 
     const processModelFilePath2 = './test/bpmns/process_with_boundary_events.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath2);
@@ -50,7 +50,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     should(sequenceFlow.id).be.equal(expectedSequenceFlowId);
   });
 
-  it('should return undefined, if the FlowNodes are passed in the wrong order.', async (): Promise<void> => {
+  it('Should return undefined, if the FlowNodes are passed in the wrong order.', async (): Promise<void> => {
 
     const flowNode1 = processModelFacade.getFlowNodeById('ExclusiveSplitGateway_1');
     const flowNode2 = processModelFacade.getFlowNodeById('EndEvent_0y6uwzm');
@@ -60,7 +60,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     should(sequenceFlow).be.undefined();
   });
 
-  it('should return undefined, if both FlowNodes are identical.', async (): Promise<void> => {
+  it('Should return undefined, if both FlowNodes are identical.', async (): Promise<void> => {
 
     const flowNode1 = processModelFacade.getFlowNodeById('ExclusiveSplitGateway_1');
 
@@ -69,7 +69,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     should(sequenceFlow).be.undefined();
   });
 
-  it('should return undefined, if FlowNode A is undefined.', async (): Promise<void> => {
+  it('Should return undefined, if FlowNode A is undefined.', async (): Promise<void> => {
 
     const flowNode2 = processModelFacade.getFlowNodeById('EndEvent_0y6uwzm');
 
@@ -78,7 +78,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     should(sequenceFlow).be.undefined();
   });
 
-  it('should return undefined, if FlowNode B is undefined.', async (): Promise<void> => {
+  it('Should return undefined, if FlowNode B is undefined.', async (): Promise<void> => {
 
     const flowNode1 = processModelFacade.getFlowNodeById('ExclusiveSplitGateway_1');
 
@@ -87,7 +87,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     should(sequenceFlow).be.undefined();
   });
 
-  it('should return undefined, if FlowNode A is does not exist on the ProcessModel.', async (): Promise<void> => {
+  it('Should return undefined, if FlowNode A is does not exist on the ProcessModel.', async (): Promise<void> => {
 
     const flowNode1 = {id: 'some non-existing flownode'};
     const flowNode2 = processModelFacade.getFlowNodeById('EndEvent_0y6uwzm');
@@ -97,7 +97,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     should(sequenceFlow).be.undefined();
   });
 
-  it('should return undefined, if FlowNode B does not exist on the ProcessModel.', async (): Promise<void> => {
+  it('Should return undefined, if FlowNode B does not exist on the ProcessModel.', async (): Promise<void> => {
 
     const flowNode1 = processModelFacade.getFlowNodeById('ExclusiveSplitGateway_1');
     const flowNode2 = {id: 'some non-existing flownode'};

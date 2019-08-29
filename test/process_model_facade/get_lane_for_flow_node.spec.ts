@@ -13,7 +13,7 @@ describe('ProcessModelFacade.getLaneForFlowNode', (): void => {
   });
 
   // eslint-disable-next-line max-len
-  it('should successfully get the lane for each FlowNode of the DemoNutztierRiss Diagram, which contains multiple parallel lanes', async (): Promise<void> => {
+  it('Should successfully get the lane for each FlowNode of the DemoNutztierRiss Diagram, which contains multiple parallel lanes', async (): Promise<void> => {
 
     const processModelFilePath = './test/bpmns/DemoNutztierRiss.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -41,7 +41,7 @@ describe('ProcessModelFacade.getLaneForFlowNode', (): void => {
     }
   });
 
-  it('should successfully return undefined for each FlowNode of the generic_sample Diagram, which contains no lanes', async (): Promise<void> => {
+  it('Should successfully return undefined for each FlowNode of the generic_sample Diagram, which contains no lanes', async (): Promise<void> => {
 
     const processModelFilePath = './test/bpmns/generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -55,7 +55,7 @@ describe('ProcessModelFacade.getLaneForFlowNode', (): void => {
     }
   });
 
-  it('should successfully get the lane for each FlowNode of the sublane_test Diagram, which contains multiple sublanes', async (): Promise<void> => {
+  it('Should successfully get the lane for each FlowNode of the sublane_test Diagram, which contains multiple sublanes', async (): Promise<void> => {
 
     const processModelFilePath = './test/bpmns/sublane_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);

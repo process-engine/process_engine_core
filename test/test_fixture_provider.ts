@@ -73,21 +73,33 @@ export class TestFixtureProvider {
     return definitions.processes[0];
   }
 
-  public createFlowNodePersistenceFacade(): FlowNodePersistenceFacade {
+  public createFlowNodePersistenceFacade(
+    flowNodeInstanceServiceMock?: FlowNodeInstanceServiceMock,
+    loggingServiceMock?: LoggingServiceMock,
+    metricsServiceMock?: MetricsServiceMock,
+  ): FlowNodePersistenceFacade {
+
     return new FlowNodePersistenceFacade(
-      new FlowNodeInstanceServiceMock(),
-      new LoggingServiceMock(),
-      new MetricsServiceMock(),
+      flowNodeInstanceServiceMock || new FlowNodeInstanceServiceMock(),
+      loggingServiceMock || new LoggingServiceMock(),
+      metricsServiceMock || new MetricsServiceMock(),
     );
   }
 
-  public createProcessInstanceStateHandlingFacade(): ProcessInstanceStateHandlingFacade {
+  public createProcessInstanceStateHandlingFacade(
+    correlationServiceMock?: CorrelationServiceMock,
+    eventAggregatorMock?: EventAggregatorMock,
+    loggingServiceMock?: LoggingServiceMock,
+    metricsServiceMock?: MetricsServiceMock,
+    processModelUseCasesMock?: ProcessModelUseCasesMock,
+  ): ProcessInstanceStateHandlingFacade {
+
     return new ProcessInstanceStateHandlingFacade(
-      new CorrelationServiceMock(),
-      new EventAggregatorMock(),
-      new LoggingServiceMock(),
-      new MetricsServiceMock(),
-      new ProcessModelUseCasesMock(),
+      correlationServiceMock || new CorrelationServiceMock(),
+      eventAggregatorMock || new EventAggregatorMock(),
+      loggingServiceMock || new LoggingServiceMock(),
+      metricsServiceMock || new MetricsServiceMock(),
+      processModelUseCasesMock || new ProcessModelUseCasesMock(),
     );
   }
 

@@ -17,7 +17,7 @@ describe('ProcessTokenFacade.getOldTokenFormat', (): void => {
   });
 
   // eslint-disable-next-line max-len
-  it('should return all the stored results in a format the represents the old "token: {current: {}, history: {}}" format.', async (): Promise<void> => {
+  it('Should return all the stored results in a format the represents the old "token: {current: {}, history: {}}" format.', async (): Promise<void> => {
 
     const results = processTokenFacade.getOldTokenFormat();
 
@@ -30,7 +30,7 @@ describe('ProcessTokenFacade.getOldTokenFormat', (): void => {
     should(results.current).be.eql(expectedCurrentValue);
   });
 
-  it('should only include the latest results for each FlowNode', async (): Promise<void> => {
+  it('Should only include the latest results for each FlowNode', async (): Promise<void> => {
 
     const secondResultForServiceTask = {
       some: 'value',

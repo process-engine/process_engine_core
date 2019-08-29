@@ -1,4 +1,3 @@
-/* eslint-disable dot-notation */
 import * as clone from 'clone';
 import * as should from 'should';
 
@@ -7,12 +6,12 @@ import {IFlowNodeInstanceResult} from '@process-engine/process_engine_contracts'
 
 import {IProcessInstanceConfig} from '../../src/runtime/facades/iprocess_instance_config';
 import {ProcessInstanceStateHandlingFacade} from '../../src/runtime/facades/process_instance_state_handling_facade';
+import {CorrelationServiceMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelation', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   const sampleIdentity = {
     userId: 'userId',
@@ -46,35 +45,32 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelation'
 
   describe('Execution', (): void => {
 
-    beforeEach((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
-    it('should pass all information to the CorrelationService.', async (): Promise<void> => {
+    it('Should pass all information to the CorrelationService.', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
+        const correlationServiceMock = new CorrelationServiceMock();
+        correlationServiceMock.finishProcessInstanceInCorrelation =
+          (identity: IIdentity, correlationId: string, processInstanceId: string): any => {
+            should(identity).be.eql(sampleIdentity);
+            should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
+            should(processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
+            resolve();
+          };
+
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade(correlationServiceMock);
         processInstanceStateHandlingFacade.logProcessFinished = (): void => {};
         processInstanceStateHandlingFacade.sendProcessInstanceFinishedNotification = (): void => {};
-
-        const callback = (identity: IIdentity, correlationId: string, processInstanceId: string): any => {
-          should(identity).be.eql(sampleIdentity);
-          should(correlationId).be.eql(sampleProcessInstanceConfig.correlationId);
-          should(processInstanceId).be.eql(sampleProcessInstanceConfig.processInstanceId);
-          resolve();
-        };
-
-        // This property is private and must be accessed with this type of notation to avoid transpliation errors.
-        processInstanceStateHandlingFacade['correlationService'].finishProcessInstanceInCorrelation = callback;
 
         await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(sampleIdentity, sampleProcessInstanceConfig, sampleResultToken);
       });
     });
 
-    it('should log that a new ProcessInstance was finished', async (): Promise<void> => {
+    it('Should log that a new ProcessInstance was finished', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         processInstanceStateHandlingFacade.sendProcessInstanceFinishedNotification = (): void => {};
 
         const callback = (correlationId: string, processModelId: string, processInstanceId: string): void => {
@@ -90,10 +86,11 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelation'
       });
     });
 
-    it('should send the notification about finishing the ProcessInstance', async (): Promise<void> => {
+    it('Should send the notification about finishing the ProcessInstance', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         processInstanceStateHandlingFacade.logProcessFinished = (): void => {};
 
         const callback = (identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, resultToken: IFlowNodeInstanceResult): void => {
@@ -111,6 +108,8 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelation'
   });
 
   describe('Sanity Checks', (): void => {
+
+    let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
     before((): void => {
       processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();

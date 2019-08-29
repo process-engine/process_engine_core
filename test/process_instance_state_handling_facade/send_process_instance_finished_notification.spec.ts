@@ -1,4 +1,3 @@
-/* eslint-disable dot-notation */
 import * as clone from 'clone';
 import * as should from 'should';
 
@@ -6,12 +5,12 @@ import {IFlowNodeInstanceResult, ProcessEndedMessage} from '@process-engine/proc
 
 import {IProcessInstanceConfig} from '../../src/runtime/facades/iprocess_instance_config';
 import {ProcessInstanceStateHandlingFacade} from '../../src/runtime/facades/process_instance_state_handling_facade';
+import {EventAggregatorMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceFinishedNotification', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   const sampleIdentity = {
     userId: 'userId',
@@ -45,11 +44,7 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceFinishedNotifica
 
   describe('Execution', (): void => {
 
-    before((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
-    it('should publish the correct event on the event aggregator', async (): Promise<void> => {
+    it('Should publish the correct event on the event aggregator', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
@@ -67,7 +62,10 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceFinishedNotifica
           resolve();
         };
 
-        processInstanceStateHandlingFacade['eventAggregator'].publish = callback;
+        const eventAggregatorMock = new EventAggregatorMock();
+        eventAggregatorMock.publish = callback;
+
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, eventAggregatorMock);
 
         await processInstanceStateHandlingFacade
           .sendProcessInstanceFinishedNotification(sampleIdentity, sampleProcessInstanceConfig, sampleResultToken);
@@ -77,6 +75,8 @@ describe('ProcessInstanceStateHandlingFacade.sendProcessInstanceFinishedNotifica
   });
 
   describe('Sanity Checks', (): void => {
+
+    let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
     before((): void => {
       processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();

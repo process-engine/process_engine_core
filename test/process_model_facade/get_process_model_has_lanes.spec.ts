@@ -11,7 +11,7 @@ describe('ProcessModelFacade.getProcessModelHasLanes', (): void => {
     await fixtureProvider.initialize();
   });
 
-  it('should return true for a ProcessModel with at least one lane.', async (): Promise<void> => {
+  it('Should return true for a ProcessModel with at least one lane.', async (): Promise<void> => {
 
     const processModelFilePath = './test/bpmns/DemoNutztierRiss.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -22,7 +22,7 @@ describe('ProcessModelFacade.getProcessModelHasLanes', (): void => {
     should(processModelHasLanes).be.true();
   });
 
-  it('should return true for a ProcessModel whose FlowNodes are all located in sublanes.', async (): Promise<void> => {
+  it('Should return true for a ProcessModel whose FlowNodes are all located in sublanes.', async (): Promise<void> => {
 
     const processModelFilePath = './test/bpmns/sublane_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
@@ -33,7 +33,7 @@ describe('ProcessModelFacade.getProcessModelHasLanes', (): void => {
     should(processModelHasLanes).be.true();
   });
 
-  it('should return false for a ProcessModel with no lanes.', async (): Promise<void> => {
+  it('Should return false for a ProcessModel with no lanes.', async (): Promise<void> => {
 
     const processModelFilePath = './test/bpmns/generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);

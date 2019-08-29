@@ -17,7 +17,7 @@ describe('ProcessTokenFacade.getProcessTokenFacadeForParallelBranch', (): void =
     fixtureProvider.addSampleResultsToProcessTokenFacade(processTokenFacade);
   });
 
-  it('should return an exact copy of the ProcessTokenFacade.', async (): Promise<void> => {
+  it('Should return an exact copy of the ProcessTokenFacade.', async (): Promise<void> => {
 
     const firstResultSet = processTokenFacade.getAllResults();
 
@@ -39,7 +39,7 @@ describe('ProcessTokenFacade.getProcessTokenFacadeForParallelBranch', (): void =
     should(clonedFacade['processModelId']).be.equal(processTokenFacade['processModelId']);
   });
 
-  it('should not affect the original facade, when values on the cloned facade are changed.', async (): Promise<void> => {
+  it('Should not affect the original facade, when values on the cloned facade are changed.', async (): Promise<void> => {
 
     const clonedFacade = processTokenFacade.getProcessTokenFacadeForParallelBranch();
     clonedFacade.addResultForFlowNode('sampleFlowNodeId', 'flowNodeInstanceId', 'sampleResult');
@@ -55,7 +55,7 @@ describe('ProcessTokenFacade.getProcessTokenFacadeForParallelBranch', (): void =
     should(firstResultSet).be.length(3, 'Something went wrong while cloning the stored results of the facade!');
   });
 
-  it('should not affect the cloned facade, when values on the original facade are changed.', async (): Promise<void> => {
+  it('Should not affect the cloned facade, when values on the original facade are changed.', async (): Promise<void> => {
 
     const clonedFacade = processTokenFacade.getProcessTokenFacadeForParallelBranch();
 

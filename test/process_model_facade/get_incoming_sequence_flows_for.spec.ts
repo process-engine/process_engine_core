@@ -19,7 +19,7 @@ describe('ProcessModelFacade.getIncomingSequenceFlowsFor', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should correctly return the incoming SequenceFlows for a FlowNode with a single incoming SequenceFlow.', async (): Promise<void> => {
+  it('Should correctly return the incoming SequenceFlows for a FlowNode with a single incoming SequenceFlow.', async (): Promise<void> => {
 
     const flowNodeId = 'Task_1tfjjzx';
     const expectedSequenceFlowId = 'SequenceFlow_1nt9fw9';
@@ -31,7 +31,7 @@ describe('ProcessModelFacade.getIncomingSequenceFlowsFor', (): void => {
     should(sequenceFlows[0].id).be.equal(expectedSequenceFlowId);
   });
 
-  it('should correctly return the incoming SequenceFlows for a FlowNode with multiple incoming SequenceFlows.', async (): Promise<void> => {
+  it('Should correctly return the incoming SequenceFlows for a FlowNode with multiple incoming SequenceFlows.', async (): Promise<void> => {
 
     const flowNodeId = 'ExclusiveJoinGateway_1';
 
@@ -50,7 +50,7 @@ describe('ProcessModelFacade.getIncomingSequenceFlowsFor', (): void => {
     }
   });
 
-  it('should return an empty Array for a FlowNode that doesn\'t have any incoming SequenceFlows.', async (): Promise<void> => {
+  it('Should return an empty Array for a FlowNode that doesn\'t have any incoming SequenceFlows.', async (): Promise<void> => {
 
     const flowNodeId = 'ausserordentlicher_start';
 

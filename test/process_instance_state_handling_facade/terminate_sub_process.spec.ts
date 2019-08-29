@@ -1,17 +1,15 @@
-/* eslint-disable dot-notation */
 import * as moment from 'moment';
 import * as should from 'should';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {Correlation, CorrelationState} from '@process-engine/correlation.contracts';
 
-import {ProcessInstanceStateHandlingFacade} from '../../src/runtime/facades/process_instance_state_handling_facade';
+import {CorrelationServiceMock, EventAggregatorMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
-  let processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
 
   const sampleIdentity = {
     userId: 'userId',
@@ -25,11 +23,9 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
   describe('Execution', (): void => {
 
-    beforeEach((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
     it('Should send a termination signal to every found subprocess', async (): Promise<void> => {
+
+      let subProcessesTerminated = 0;
 
       const sampleCorrelation: Correlation = {
         id: 'sdfasdfdsf',
@@ -49,16 +45,19 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
         }],
       };
 
-      processInstanceStateHandlingFacade['correlationService'].getSubprocessesForProcessInstance =
+      const correlationServiceMock = new CorrelationServiceMock();
+      correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
           return Promise.resolve(sampleCorrelation);
         };
 
-      let subProcessesTerminated = 0;
-
-      processInstanceStateHandlingFacade['eventAggregator'].publish = (): void => {
+      const eventAggregatorMock = new EventAggregatorMock();
+      eventAggregatorMock.publish = (): void => {
         subProcessesTerminated++;
       };
+
+      const processInstanceStateHandlingFacade =
+        fixtureProvider.createProcessInstanceStateHandlingFacade(correlationServiceMock, eventAggregatorMock);
 
       await processInstanceStateHandlingFacade.terminateSubprocesses(sampleIdentity, 'processInstanceId');
 
@@ -66,6 +65,8 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
     });
 
     it('Should not send a termination signal to subprocesses that are already finished', async (): Promise<void> => {
+
+      let subProcessesTerminated = 0;
 
       const sampleCorrelation: Correlation = {
         id: 'sdfasdfdsf',
@@ -95,16 +96,19 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
         }],
       };
 
-      processInstanceStateHandlingFacade['correlationService'].getSubprocessesForProcessInstance =
+      const correlationServiceMock = new CorrelationServiceMock();
+      correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
           return Promise.resolve(sampleCorrelation);
         };
 
-      let subProcessesTerminated = 0;
-
-      processInstanceStateHandlingFacade['eventAggregator'].publish = (): void => {
+      const eventAggregatorMock = new EventAggregatorMock();
+      eventAggregatorMock.publish = (): void => {
         subProcessesTerminated++;
       };
+
+      const processInstanceStateHandlingFacade =
+        fixtureProvider.createProcessInstanceStateHandlingFacade(correlationServiceMock, eventAggregatorMock);
 
       await processInstanceStateHandlingFacade.terminateSubprocesses(sampleIdentity, 'processInstanceId');
 
@@ -112,6 +116,8 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
     });
 
     it('Should not send a termination signal to subprocesses that are already finished with an error', async (): Promise<void> => {
+
+      let subProcessesTerminated = 0;
 
       const sampleCorrelation: Correlation = {
         id: 'sdfasdfdsf',
@@ -141,16 +147,19 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
         }],
       };
 
-      processInstanceStateHandlingFacade['correlationService'].getSubprocessesForProcessInstance =
+      const correlationServiceMock = new CorrelationServiceMock();
+      correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
           return Promise.resolve(sampleCorrelation);
         };
 
-      let subProcessesTerminated = 0;
-
-      processInstanceStateHandlingFacade['eventAggregator'].publish = (): void => {
+      const eventAggregatorMock = new EventAggregatorMock();
+      eventAggregatorMock.publish = (): void => {
         subProcessesTerminated++;
       };
+
+      const processInstanceStateHandlingFacade =
+        fixtureProvider.createProcessInstanceStateHandlingFacade(correlationServiceMock, eventAggregatorMock);
 
       await processInstanceStateHandlingFacade.terminateSubprocesses(sampleIdentity, 'processInstanceId');
 
@@ -160,12 +169,9 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
   describe('Sanity Checks', (): void => {
 
-    beforeEach((): void => {
-      processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
-    });
-
     it('Should throw an error, if no processInstanceId is passed', async (): Promise<void> => {
       try {
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         await processInstanceStateHandlingFacade.terminateSubprocesses(sampleIdentity, undefined);
         should.fail('received result', undefined, 'Expected this test to cause an error!');
       } catch (error) {
@@ -175,6 +181,7 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
     it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
       try {
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
         await processInstanceStateHandlingFacade.terminateSubprocesses(undefined, 'sampleProcessInstanceId');
       } catch (error) {
         should.fail('received result', undefined, 'Did not expect an error here!');
@@ -183,16 +190,21 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
     it('Should not be doing anything, if no correlation is returned by the CorrelationService', async (): Promise<void> => {
 
-      processInstanceStateHandlingFacade['correlationService'].getSubprocessesForProcessInstance =
+      let subProcessesTerminated = 0;
+
+      const correlationServiceMock = new CorrelationServiceMock();
+      correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
           return Promise.resolve(undefined);
         };
 
-      let subProcessesTerminated = 0;
-
-      processInstanceStateHandlingFacade['eventAggregator'].publish = (): void => {
+      const eventAggregatorMock = new EventAggregatorMock();
+      eventAggregatorMock.publish = (): void => {
         subProcessesTerminated++;
       };
+
+      const processInstanceStateHandlingFacade =
+        fixtureProvider.createProcessInstanceStateHandlingFacade(correlationServiceMock, eventAggregatorMock);
 
       await processInstanceStateHandlingFacade.terminateSubprocesses(sampleIdentity, 'processInstanceId');
 
@@ -200,6 +212,8 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
     });
 
     it('Should not be doing anything, if the correlation returned by the CorrelationService has no entries', async (): Promise<void> => {
+
+      let subProcessesTerminated = 0;
 
       const sampleCorrelation: Correlation = {
         id: 'sdfasdfdsf',
@@ -209,16 +223,19 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
         processInstances: [],
       };
 
-      processInstanceStateHandlingFacade['correlationService'].getSubprocessesForProcessInstance =
+      const correlationServiceMock = new CorrelationServiceMock();
+      correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
           return Promise.resolve(sampleCorrelation);
         };
 
-      let subProcessesTerminated = 0;
-
-      processInstanceStateHandlingFacade['eventAggregator'].publish = (): void => {
+      const eventAggregatorMock = new EventAggregatorMock();
+      eventAggregatorMock.publish = (): void => {
         subProcessesTerminated++;
       };
+
+      const processInstanceStateHandlingFacade =
+        fixtureProvider.createProcessInstanceStateHandlingFacade(correlationServiceMock, eventAggregatorMock);
 
       await processInstanceStateHandlingFacade.terminateSubprocesses(sampleIdentity, 'processInstanceId');
 

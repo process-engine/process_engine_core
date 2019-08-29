@@ -15,7 +15,7 @@ describe('ProcessTokenFacade.createProcessToken', (): void => {
     await fixtureProvider.initialize();
   });
 
-  it('should return a new ProcessToken that has all the correct values assigned to it.', async (): Promise<void> => {
+  it('Should return a new ProcessToken that has all the correct values assigned to it.', async (): Promise<void> => {
 
     const sampleProcessInstanceId = '12346845641452343245254234';
     const sampleProcessModelId = 'IamAProcess';
