@@ -79,6 +79,6 @@
     "lint-fix": "eslint --fix  src/**/**/**/*.ts src/**/**/*.ts src/**/*.ts src/*.ts test/**/*.ts test/*.ts",
     "test": "c8 ts-mocha -p ./tsconfig.json ./test/**/*.spec.ts",
     "report-test-coverage": "c8 report",
-    "check-test-coverage": "c8 check-coverage --lines 40 --functions 25 --branches 75"
+    "check-test-coverage": "c8 check-coverage --lines 40 --functions 25 --branches 50"
   }
 }
