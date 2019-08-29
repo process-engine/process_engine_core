@@ -20,7 +20,7 @@ describe('ProcessModelFacade.getStartEventById', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should return one StartEvent for a ProcessModel that only has one.', async (): Promise<void> => {
+  it('Should return one StartEvent for a ProcessModel that only has one.', async (): Promise<void> => {
 
     const startEventId = 'ProcessInputEvent';
 
@@ -30,7 +30,7 @@ describe('ProcessModelFacade.getStartEventById', (): void => {
     should(startEvent.id).be.equal(startEventId);
   });
 
-  it('should throw an error when attempting to retrieve a non-existing StartEvent.', async (): Promise<void> => {
+  it('Should throw an error when attempting to retrieve a non-existing StartEvent.', async (): Promise<void> => {
 
     const startEventId = 'SomeNonExistingStartEvent';
 

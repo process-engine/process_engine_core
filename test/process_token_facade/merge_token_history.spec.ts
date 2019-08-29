@@ -16,7 +16,7 @@ describe('ProcessTokenFacade.mergeTokenHistory', (): void => {
     fixtureProvider.addSampleResultsToProcessTokenFacade(processTokenFacade);
   });
 
-  it('should successfully merge the token history of the first facade into the second.', async (): Promise<void> => {
+  it('Should successfully merge the token history of the first facade into the second.', async (): Promise<void> => {
 
     const resultsToImport = [{
       flowNodeId: 'hello',

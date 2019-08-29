@@ -19,7 +19,7 @@ describe('ProcessModelFacade.getNextFlowNodesFor', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should return a single succeeding FlowNode for a FlowNode that has one outgoing SequenceFlow.', async (): Promise<void> => {
+  it('Should return a single succeeding FlowNode for a FlowNode that has one outgoing SequenceFlow.', async (): Promise<void> => {
 
     const startEventId = 'StartEvent_1';
     const startEvent = processModelFacade.getFlowNodeById(startEventId);
@@ -33,7 +33,7 @@ describe('ProcessModelFacade.getNextFlowNodesFor', (): void => {
     should(nextFlowNodes[0].id).be.equal(expectedNextFlowNodeId);
   });
 
-  it('should return a list of succeeding FlowNodes for a Gateway with multiple outgoing SequenceFlows.', async (): Promise<void> => {
+  it('Should return a list of succeeding FlowNodes for a Gateway with multiple outgoing SequenceFlows.', async (): Promise<void> => {
 
     const flowNodeId = 'ExclusiveGateway_0a4jn5v';
     const flowNode = processModelFacade.getFlowNodeById(flowNodeId);
@@ -53,7 +53,7 @@ describe('ProcessModelFacade.getNextFlowNodesFor', (): void => {
     }
   });
 
-  it('should return undefined for a FlowNode that has no outgoing SequenceFlow.', async (): Promise<void> => {
+  it('Should return undefined for a FlowNode that has no outgoing SequenceFlow.', async (): Promise<void> => {
 
     const endEventId = 'EndEvent_1';
     const endEvent = processModelFacade.getFlowNodeById(endEventId);
@@ -63,7 +63,7 @@ describe('ProcessModelFacade.getNextFlowNodesFor', (): void => {
     should(flowNodes).be.undefined();
   });
 
-  it('should throw an error for a FlowNode that has multiple outgoing SequenceFlows, but is not a gateway.', async (): Promise<void> => {
+  it('Should throw an error for a FlowNode that has multiple outgoing SequenceFlows, but is not a gateway.', async (): Promise<void> => {
 
     const invalidTaskId = 'InvalidTask';
     const invalidTask = processModelFacade.getFlowNodeById(invalidTaskId);

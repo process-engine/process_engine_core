@@ -31,7 +31,7 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
     flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade();
   });
 
-  it('should pass all information to the FlowNodeInstanceService.', async (): Promise<void> => {
+  it('Should pass all information to the FlowNodeInstanceService.', async (): Promise<void> => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
@@ -51,7 +51,7 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
     });
   });
 
-  it('should pass all information to the LoggingService', async (): Promise<void> => {
+  it('Should pass all information to the LoggingService', async (): Promise<void> => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 
@@ -84,7 +84,7 @@ describe('FlowNodePersistenceFacade.persistOnEnter', (): void => {
 
   });
 
-  it('should pass all information to the MetricsService', async (): Promise<void> => {
+  it('Should pass all information to the MetricsService', async (): Promise<void> => {
 
     return new Promise(async (resolve, reject): Promise<void> => {
 

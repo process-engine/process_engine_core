@@ -19,7 +19,7 @@ describe('ProcessModelFacade.getIsExecutable', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('should correctly return the isExecutable flag of the ProcessModel.', async (): Promise<void> => {
+  it('Should correctly return the isExecutable flag of the ProcessModel.', async (): Promise<void> => {
 
     const isExecutable = processModelFacade.getIsExecutable();
 

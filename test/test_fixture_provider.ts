@@ -8,8 +8,20 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {Model} from '@process-engine/process_model.contracts';
 
 import {BpmnModelParser} from '../src/model/bpmn_model_parser';
-import {FlowNodePersistenceFacade, ProcessModelFacade, ProcessTokenFacade} from '../src/runtime';
-import {FlowNodeInstanceServiceMock, LoggingServiceMock, MetricsServiceMock} from './mocks';
+import {
+  FlowNodePersistenceFacade,
+  ProcessInstanceStateHandlingFacade,
+  ProcessModelFacade,
+  ProcessTokenFacade,
+} from '../src/runtime';
+import {
+  CorrelationServiceMock,
+  EventAggregatorMock,
+  FlowNodeInstanceServiceMock,
+  LoggingServiceMock,
+  MetricsServiceMock,
+  ProcessModelUseCasesMock,
+} from './mocks';
 
 Bluebird.config({
   cancellation: true,
@@ -61,11 +73,33 @@ export class TestFixtureProvider {
     return definitions.processes[0];
   }
 
-  public createFlowNodePersistenceFacade(): FlowNodePersistenceFacade {
+  public createFlowNodePersistenceFacade(
+    flowNodeInstanceServiceMock?: FlowNodeInstanceServiceMock,
+    loggingServiceMock?: LoggingServiceMock,
+    metricsServiceMock?: MetricsServiceMock,
+  ): FlowNodePersistenceFacade {
+
     return new FlowNodePersistenceFacade(
-      new FlowNodeInstanceServiceMock(),
-      new LoggingServiceMock(),
-      new MetricsServiceMock(),
+      flowNodeInstanceServiceMock || new FlowNodeInstanceServiceMock(),
+      loggingServiceMock || new LoggingServiceMock(),
+      metricsServiceMock || new MetricsServiceMock(),
+    );
+  }
+
+  public createProcessInstanceStateHandlingFacade(
+    correlationServiceMock?: CorrelationServiceMock,
+    eventAggregatorMock?: EventAggregatorMock,
+    loggingServiceMock?: LoggingServiceMock,
+    metricsServiceMock?: MetricsServiceMock,
+    processModelUseCasesMock?: ProcessModelUseCasesMock,
+  ): ProcessInstanceStateHandlingFacade {
+
+    return new ProcessInstanceStateHandlingFacade(
+      correlationServiceMock || new CorrelationServiceMock(),
+      eventAggregatorMock || new EventAggregatorMock(),
+      loggingServiceMock || new LoggingServiceMock(),
+      metricsServiceMock || new MetricsServiceMock(),
+      processModelUseCasesMock || new ProcessModelUseCasesMock(),
     );
   }
 

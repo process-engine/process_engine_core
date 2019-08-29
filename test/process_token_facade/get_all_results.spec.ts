@@ -16,7 +16,7 @@ describe('ProcessTokenFacade.containsResultForFlowNodeInstance', (): void => {
     fixtureProvider.addSampleResultsToProcessTokenFacade(processTokenFacade);
   });
 
-  it('should return all results that are currently stored in the facade.', async (): Promise<void> => {
+  it('Should return all results that are currently stored in the facade.', async (): Promise<void> => {
 
     const results = processTokenFacade.getAllResults();
 
@@ -24,7 +24,7 @@ describe('ProcessTokenFacade.containsResultForFlowNodeInstance', (): void => {
     should(results).be.length(3, 'Something went wrong while adding the sample results to the ProcessTokenFacade!');
   });
 
-  it('should return a copy of the results to prevent manipulation of the internal result storage.', async (): Promise<void> => {
+  it('Should return a copy of the results to prevent manipulation of the internal result storage.', async (): Promise<void> => {
 
     const firstResultSet = processTokenFacade.getAllResults();
 
