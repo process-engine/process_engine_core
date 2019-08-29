@@ -1,4 +1,4 @@
-import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
+import {BadRequestError, InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
 import {IProcessModelFacade} from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
@@ -9,6 +9,9 @@ export class ProcessModelFacade implements IProcessModelFacade {
   protected processModel: Model.Process;
 
   constructor(processModel: Model.Process) {
+    if (!processModel) {
+      throw new BadRequestError('Must provide a ProcessModel in order to use the ProcessModelFacade!');
+    }
     this.processModel = processModel;
   }
 

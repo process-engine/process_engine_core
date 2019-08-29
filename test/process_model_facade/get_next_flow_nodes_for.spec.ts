@@ -13,7 +13,7 @@ describe('ProcessModelFacade.getNextFlowNodesFor', (): void => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    const processModelFilePath = './test/bpmns/diagram_with_invalid_task_configs.bpmn';
+    const processModelFilePath = 'diagram_with_invalid_task_configs.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);

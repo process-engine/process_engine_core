@@ -15,7 +15,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    const processModelFilePath = './test/bpmns/process_engine_io_release.bpmn';
+    const processModelFilePath = 'process_engine_io_release.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
 
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
@@ -36,7 +36,7 @@ describe('ProcessModelFacade.getSequenceFlowBetween', (): void => {
   // eslint-disable-next-line max-len
   it('Should correctly return the SequenceFlow between FlowNode A and FlowNode B, when they are connected through a BoundaryEvent.', async (): Promise<void> => {
 
-    const processModelFilePath2 = './test/bpmns/process_with_boundary_events.bpmn';
+    const processModelFilePath2 = 'process_with_boundary_events.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath2);
     const processModelFacade2 = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 

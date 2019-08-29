@@ -15,7 +15,7 @@ describe('ProcessModelFacade.getFlowNodeById', (): void => {
 
   it('Should be able to return each FlowNode of the given ProcessModel.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/process_engine_io_release.bpmn';
+    const processModelFilePath = 'process_engine_io_release.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
@@ -39,7 +39,7 @@ describe('ProcessModelFacade.getFlowNodeById', (): void => {
 
   it('Should be able to return each FlowNode of the given ProcessModel, even it has no lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const processModelFilePath = 'generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 
@@ -63,7 +63,7 @@ describe('ProcessModelFacade.getFlowNodeById', (): void => {
 
   it('Should be able to return each FlowNode of the given ProcessModel, if they are spread across multiple lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = './test/bpmns/sublane_test.bpmn';
+    const processModelFilePath = 'sublane_test.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
 

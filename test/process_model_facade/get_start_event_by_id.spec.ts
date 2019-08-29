@@ -15,7 +15,7 @@ describe('ProcessModelFacade.getStartEventById', (): void => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
 
-    const processModelFilePath = './test/bpmns/generic_sample.bpmn';
+    const processModelFilePath = 'generic_sample.bpmn';
     const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
