@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 
-import {InternalServerError, BadRequestError} from '@essential-projects/errors_ts';
+import {BadRequestError, InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
