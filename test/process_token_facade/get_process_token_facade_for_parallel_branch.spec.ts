@@ -31,8 +31,7 @@ describe('ProcessTokenFacade.getProcessTokenFacadeForParallelBranch', (): void =
     should(clonedResultSet).be.an.Array();
     should(clonedResultSet).be.length(3, 'Something went wrong while cloning the stored results of the facade!');
 
-    // Since we are accessing private fields here, we need to get around the compiler errors that would occur.
-    // See here https://stackoverflow.com/questions/35987055/how-to-write-unit-testing-for-angular-2-typescript-for-private-methods-with-ja
+    // We are comparing private properties here, therefore we must use this type of notation.
     should(clonedFacade['correlationId']).be.equal(processTokenFacade['correlationId']);
     should(clonedFacade['identity']).be.equal(processTokenFacade['identity']);
     should(clonedFacade['processInstanceId']).be.equal(processTokenFacade['processInstanceId']);

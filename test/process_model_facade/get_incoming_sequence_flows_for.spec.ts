@@ -3,7 +3,6 @@ import * as should from 'should';
 import {ProcessModelFacade} from '../../src/runtime/facades/process_model_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-// tslint:disable:no-magic-numbers
 describe('ProcessModelFacade.getIncomingSequenceFlowsFor', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
