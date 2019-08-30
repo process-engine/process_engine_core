@@ -194,14 +194,13 @@ export class TimerFacade implements ITimerFacade {
   // TODO: Add function to the public interface
   public executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
     const tokenVariableName = 'token';
-    const isConstantTimerExpression = !timerExpression.includes(tokenVariableName);
+    const isConstantTimerExpression = !timerExpression || !timerExpression.includes(tokenVariableName);
 
     if (isConstantTimerExpression) {
       return timerExpression;
     }
 
     const tokenData = processTokenFacade.getOldTokenFormat();
-
     try {
       const functionString = `return ${timerExpression}`;
       const evaluateFunction = new Function(tokenVariableName, functionString);
