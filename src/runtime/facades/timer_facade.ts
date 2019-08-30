@@ -116,7 +116,7 @@ export class TimerFacade implements ITimerFacade {
     this.timerService.cancel(timerId);
   }
 
-  private startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
+  public startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
 
@@ -132,7 +132,7 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private startDurationTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
+  public startDurationTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${callbackEventName}`);
 
@@ -151,7 +151,7 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private startDateTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
+  public startDateTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${callbackEventName}`);
 
@@ -179,7 +179,7 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  private executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
+  public executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
     const tokenVariableName = 'token';
     const isConstantTimerExpression = !timerExpression.includes(tokenVariableName);
 
@@ -200,7 +200,7 @@ export class TimerFacade implements ITimerFacade {
     }
   }
 
-  private validateTimer(flowNode: Model.Base.FlowNode, timerType: TimerDefinitionType, timerValue: string): void {
+  public validateTimer(flowNode: Model.Base.FlowNode, timerType: TimerDefinitionType, timerValue: string): void {
 
     switch (timerType) {
       case TimerDefinitionType.date:
