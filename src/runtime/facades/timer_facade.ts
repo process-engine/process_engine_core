@@ -59,15 +59,15 @@ export class TimerFacade implements ITimerFacade {
 
     this.validateTimer(flowNode, timerType, timerValue);
 
-    const callbackEventName = `${flowNode.id}_${uuid.v4()}`;
+    const timerExpiredEventName = `${flowNode.id}_${uuid.v4()}`;
 
     switch (timerType) {
       case TimerDefinitionType.cycle:
-        return this.startCycleTimer(timerValue, timerCallback, callbackEventName);
+        return this.startCycleTimer(timerValue, timerCallback, timerExpiredEventName);
       case TimerDefinitionType.date:
-        return this.startDateTimer(timerValue, timerCallback, callbackEventName);
+        return this.startDateTimer(timerValue, timerCallback, timerExpiredEventName);
       case TimerDefinitionType.duration:
-        return this.startDurationTimer(timerValue, timerCallback, callbackEventName);
+        return this.startDurationTimer(timerValue, timerCallback, timerExpiredEventName);
       default:
         return undefined;
     }
@@ -122,16 +122,16 @@ export class TimerFacade implements ITimerFacade {
 
   // TODO: Add function to the public interface
   // TODO: Add flowNode to the signature, so we can call validation.
-  public startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
+  public startCycleTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
-    logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
+    logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
 
-    const subscription = this.eventAggregator.subscribe(callbackEventName, (eventPayload, eventName): void => {
+    const subscription = this.eventAggregator.subscribe(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Cyclic timer ${eventName} has expired. Executing callback.`);
       timerCallback(eventPayload);
     });
 
-    const timerId = this.timerService.cronjob(timerValue, callbackEventName);
+    const timerId = this.timerService.cronjob(timerValue, timerExpiredEventName);
 
     this.timerStorage[subscription.eventName] = timerId;
 
@@ -139,21 +139,21 @@ export class TimerFacade implements ITimerFacade {
   }
 
   // TODO: Add function to the public interface
-  public startDurationTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
+  public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
-    logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${callbackEventName}`);
+    logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
 
     this.validateDurationTimer(timerValue);
 
     const duration = moment.duration(timerValue);
     const date = moment().add(duration);
 
-    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
+    const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);
       timerCallback(eventPayload);
     });
 
-    const timerId = this.timerService.oneShot(date, callbackEventName);
+    const timerId = this.timerService.oneShot(date, timerExpiredEventName);
 
     this.timerStorage[subscription.eventName] = timerId;
 
@@ -161,9 +161,9 @@ export class TimerFacade implements ITimerFacade {
   }
 
   // TODO: Add function to the public interface
-  public startDateTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
+  public startDateTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
-    logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${callbackEventName}`);
+    logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
 
     this.validateDateTimer(timerValue);
 
@@ -176,15 +176,15 @@ export class TimerFacade implements ITimerFacade {
       const dateIsInThePast = `The given date definition ${date} is in the past and will be executed immediately.`;
       logger.warn(dateIsInThePast);
 
-      return timerCallback({}, callbackEventName);
+      return timerCallback({}, timerExpiredEventName);
     }
 
-    const subscription = this.eventAggregator.subscribeOnce(callbackEventName, (eventPayload, eventName): void => {
+    const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Date timer ${eventName} has expired. Executing callback.`);
       timerCallback(eventPayload);
     });
 
-    const timerId = this.timerService.oneShot(date, callbackEventName);
+    const timerId = this.timerService.oneShot(date, timerExpiredEventName);
 
     this.timerStorage[subscription.eventName] = timerId;
 
