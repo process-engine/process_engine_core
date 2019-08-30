@@ -204,70 +204,78 @@ export class TimerFacade implements ITimerFacade {
 
     switch (timerType) {
       case TimerDefinitionType.date:
-        const dateIsInvalid = !moment(timerValue, moment.ISO_8601, true).isValid();
-        if (dateIsInvalid) {
-          const invalidDateMessage = `The given date definition ${timerValue} is not in ISO8601 format!`;
-          logger.error(invalidDateMessage);
-          throw new UnprocessableEntityError(invalidDateMessage);
-        }
-
+        this.validateDateTimer(timerValue);
         break;
       case TimerDefinitionType.duration:
-        /**
-         * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
-         * we can't really use momentjs to validate durations against the
-         * ISO8601 duration syntax.
-         *
-         * There is an isValid() method on moment.Duration objects but its
-         * useless since it always returns true.
-         */
-
-        /**
-         * Taken from: https://stackoverflow.com/a/32045167
-         */
-        // eslint-disable-next-line max-len
-        const durationRegex = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
-        const durationIsInvalid = !durationRegex.test(timerValue);
-
-        if (durationIsInvalid) {
-          const invalidDurationMessage = `The given duration definition ${timerValue} is not in ISO8601 format`;
-          logger.error(invalidDurationMessage);
-          throw new UnprocessableEntityError(invalidDurationMessage);
-        }
-
+        this.validateDurationTimer(timerValue);
         break;
       case TimerDefinitionType.cycle:
-
-        if (flowNode.bpmnType !== BpmnType.startEvent) {
-          const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
-          logger.error(errorMessage, flowNode);
-
-          const error = new UnprocessableEntityError(errorMessage);
-          error.additionalInformation = <any> flowNode;
-
-          throw error;
-        }
-
-        try {
-          cronparser.parseExpression(timerValue);
-        } catch (error) {
-          const errorMessage = `${timerValue} is not a valid crontab!`;
-          logger.error(errorMessage, flowNode);
-
-          const invalidCrontabError = new UnprocessableEntityError(errorMessage);
-          error.additionalInformation = <any> {
-            validationError: error.message,
-            flowNode: flowNode,
-          };
-
-          throw invalidCrontabError;
-        }
-
+        this.validateCyclicTimer(flowNode, timerValue);
         break;
       default:
         const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
         logger.error(invalidTimerTypeMessage);
         throw new UnprocessableEntityError(invalidTimerTypeMessage);
+    }
+  }
+
+  private validateDateTimer(timerValue: string): void {
+    const dateIsInvalid = !moment(timerValue, moment.ISO_8601, true).isValid();
+    if (dateIsInvalid) {
+      const invalidDateMessage = `The given date definition ${timerValue} is not in ISO8601 format!`;
+      logger.error(invalidDateMessage);
+      throw new UnprocessableEntityError(invalidDateMessage);
+    }
+  }
+
+  private validateDurationTimer(timerValue: string): void {
+    /**
+     * Note: Because of this Issue: https://github.com/moment/moment/issues/1805
+     * we can't use moment to validate durations against the ISO8601 duration syntax.
+     *
+     * There is an isValid() method on moment.Duration objects but its
+     * useless since it always returns true.
+     */
+
+    /**
+     * Taken from: https://stackoverflow.com/a/32045167
+     */
+    // eslint-disable-next-line max-len
+    const durationRegex = /^P(?!$)(\d+(?:\.\d+)?Y)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?W)?(\d+(?:\.\d+)?D)?(T(?=\d)(\d+(?:\.\d+)?H)?(\d+(?:\.\d+)?M)?(\d+(?:\.\d+)?S)?)?$/gm;
+    const durationIsInvalid = !durationRegex.test(timerValue);
+
+    if (durationIsInvalid) {
+      const invalidDurationMessage = `The given duration definition ${timerValue} is not in ISO8601 format`;
+      logger.error(invalidDurationMessage);
+      throw new UnprocessableEntityError(invalidDurationMessage);
+    }
+  }
+
+  private validateCyclicTimer(flowNode: Model.Base.FlowNode, timerValue: string): void {
+
+    if (flowNode.bpmnType !== BpmnType.startEvent) {
+      const errorMessage = 'Cyclic timers are only allowed for TimerStartEvents!';
+      logger.error(errorMessage, flowNode);
+
+      const error = new UnprocessableEntityError(errorMessage);
+      error.additionalInformation = <any> flowNode;
+
+      throw error;
+    }
+
+    try {
+      cronparser.parseExpression(timerValue);
+    } catch (error) {
+      const errorMessage = `${timerValue} is not a valid crontab!`;
+      logger.error(errorMessage, flowNode);
+
+      const invalidCrontabError = new UnprocessableEntityError(errorMessage);
+      error.additionalInformation = <any> {
+        validationError: error.message,
+        flowNode: flowNode,
+      };
+
+      throw invalidCrontabError;
     }
   }
 
