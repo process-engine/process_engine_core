@@ -75,11 +75,6 @@ export class TimerFacade implements ITimerFacade {
 
   public parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
 
-    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
-    if (timerIsDuration) {
-      return TimerDefinitionType.duration;
-    }
-
     const timerIsCyclic = eventDefinition[TimerBpmnType.Cycle] !== undefined;
     if (timerIsCyclic) {
       return TimerDefinitionType.cycle;
@@ -90,15 +85,15 @@ export class TimerFacade implements ITimerFacade {
       return TimerDefinitionType.date;
     }
 
+    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    if (timerIsDuration) {
+      return TimerDefinitionType.duration;
+    }
+
     return undefined;
   }
 
   public parseTimerDefinitionValue(eventDefinition: any): string {
-
-    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
-    if (timerIsDuration) {
-      return eventDefinition[TimerBpmnType.Duration]._;
-    }
 
     const timerIsCyclic = eventDefinition[TimerBpmnType.Cycle] !== undefined;
     if (timerIsCyclic) {
@@ -108,6 +103,11 @@ export class TimerFacade implements ITimerFacade {
     const timerIsDate = eventDefinition[TimerBpmnType.Date] !== undefined;
     if (timerIsDate) {
       return eventDefinition[TimerBpmnType.Date]._;
+    }
+
+    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
+    if (timerIsDuration) {
+      return eventDefinition[TimerBpmnType.Duration]._;
     }
 
     return undefined;
