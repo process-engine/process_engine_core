@@ -32,6 +32,8 @@ export class TimerFacade implements ITimerFacade {
     this.timerService = timerService;
   }
 
+  // TODO: Too much abstraction - this function should be removed.
+  // This will constitute a breaking change for the contracts though.
   public initializeTimerFromDefinition(
     flowNode: Model.Base.FlowNode,
     timerDefinition: Model.Events.Definitions.TimerEventDefinition,
@@ -46,6 +48,8 @@ export class TimerFacade implements ITimerFacade {
     return this.initializeTimer(flowNode, timerType, timerValue, callback);
   }
 
+  // TODO: Too much abstraction - this function should be removed.
+  // This will constitute a breaking change for the contracts though.
   public initializeTimer(
     flowNode: Model.Base.FlowNode,
     timerType: TimerDefinitionType,
@@ -116,6 +120,8 @@ export class TimerFacade implements ITimerFacade {
     this.timerService.cancel(timerId);
   }
 
+  // TODO: Add function to the public interface
+  // TODO: Add flowNode to the signature, so we can call validation.
   public startCycleTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${callbackEventName}`);
@@ -132,9 +138,12 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
+  // TODO: Add function to the public interface
   public startDurationTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${callbackEventName}`);
+
+    this.validateDurationTimer(timerValue);
 
     const duration = moment.duration(timerValue);
     const date = moment().add(duration);
@@ -151,9 +160,12 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
+  // TODO: Add function to the public interface
   public startDateTimer(timerValue: string, timerCallback: Function, callbackEventName: string): Subscription {
 
     logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${callbackEventName}`);
+
+    this.validateDateTimer(timerValue);
 
     const date = moment(timerValue);
 
@@ -179,6 +191,7 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
+  // TODO: Add function to the public interface
   public executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
     const tokenVariableName = 'token';
     const isConstantTimerExpression = !timerExpression.includes(tokenVariableName);
@@ -200,6 +213,7 @@ export class TimerFacade implements ITimerFacade {
     }
   }
 
+  // TODO: Add function to the public interface
   public validateTimer(flowNode: Model.Base.FlowNode, timerType: TimerDefinitionType, timerValue: string): void {
 
     switch (timerType) {
