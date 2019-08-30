@@ -13,6 +13,7 @@ import {
   ProcessModelFacade,
   ProcessTokenFacade,
   SubProcessModelFacade,
+  TimerFacade,
 } from '../src/runtime';
 import {
   CorrelationServiceMock,
@@ -21,6 +22,7 @@ import {
   LoggingServiceMock,
   MetricsServiceMock,
   ProcessModelUseCasesMock,
+  TimerServiceMock,
 } from './mocks';
 
 Bluebird.config({
@@ -101,6 +103,17 @@ export class TestFixtureProvider {
       loggingServiceMock || new LoggingServiceMock(),
       metricsServiceMock || new MetricsServiceMock(),
       processModelUseCasesMock || new ProcessModelUseCasesMock(),
+    );
+  }
+
+  public createTimerFacade(
+    eventAggregatorMock?: EventAggregatorMock,
+    timerServiceMock?: TimerServiceMock,
+  ): TimerFacade {
+
+    return new TimerFacade(
+      eventAggregatorMock || new EventAggregatorMock(),
+      timerServiceMock || new TimerServiceMock(),
     );
   }
 
