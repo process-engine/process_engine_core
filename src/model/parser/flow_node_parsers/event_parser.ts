@@ -220,6 +220,8 @@ function assignEventDefinition(
         ? isEnabledCamundaProperty.value === 'true'
         : true;
 
+      // TODO: Add "value" property to TimerEventDefinition model and refactor this.
+      // This should be using the actual model, not some random generated object that looks completeley different.
       event[targetPropertyName] = eventDefinitonValue;
       event[targetPropertyName].enabled = isEnabled;
       break;
