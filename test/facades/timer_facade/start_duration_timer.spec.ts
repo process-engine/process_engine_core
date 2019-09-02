@@ -92,7 +92,7 @@ describe('TimerFacade.startDurationTimer', (): void => {
       const expectedDate = moment().add(sampleTimerValueAsDuration);
 
       should(receivedTimerName).be.equal(sampleEventName);
-      should(receivedMomentObj.toISOString()).be.equal(expectedDate.toISOString());
+      should(receivedMomentObj.format('YYYY-MM-DD HH:mm:ss')).be.equal(expectedDate.format('YYYY-MM-DD HH:mm:ss'));
     });
   });
 
