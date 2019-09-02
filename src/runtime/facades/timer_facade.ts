@@ -3,7 +3,7 @@ import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 import * as uuid from 'node-uuid';
 
-import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimerService} from '@essential-projects/timing_contracts';
 import {IProcessTokenFacade, ITimerFacade, TimerDefinitionType} from '@process-engine/process_engine_contracts';
@@ -56,6 +56,11 @@ export class TimerFacade implements ITimerFacade {
     timerValue: string,
     timerCallback: Function,
   ): Subscription {
+
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
 
     this.validateTimer(flowNode, timerType, timerValue);
 
