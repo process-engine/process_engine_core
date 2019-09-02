@@ -60,12 +60,12 @@ export class TimerFacade implements ITimerFacade {
       throw new BadRequestError('Must provide a callback when initializing a new timer!');
     }
 
-    this.validateTimer(flowNode, timerType, timerValue);
-
     const timerExpiredEventName = `${flowNode.id}_${uuid.v4()}`;
 
     switch (timerType) {
       case TimerDefinitionType.cycle:
+        // TODO: startCycleTimer needs to accept FlowNodes, before we can remove this call entirely.
+        this.validateTimer(flowNode, timerType, timerValue);
         return this.startCycleTimer(timerValue, timerCallback, timerExpiredEventName);
       case TimerDefinitionType.date:
         return this.startDateTimer(timerValue, timerCallback, timerExpiredEventName);
@@ -171,7 +171,6 @@ export class TimerFacade implements ITimerFacade {
     this.validateDateTimer(timerValue);
 
     const date = moment(timerValue);
-
     const now = moment();
 
     const dateIsPast = date.isBefore(now);
