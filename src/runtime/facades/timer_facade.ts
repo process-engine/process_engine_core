@@ -142,28 +142,6 @@ export class TimerFacade implements ITimerFacade {
   }
 
   // TODO: Add function to the public interface
-  public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
-
-    logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
-
-    this.validateDurationTimer(timerValue);
-
-    const duration = moment.duration(timerValue);
-    const date = moment().add(duration);
-
-    const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
-      logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);
-      timerCallback(eventPayload);
-    });
-
-    const timerId = this.timerService.oneShot(date, timerExpiredEventName);
-
-    this.timerStorage[subscription.eventName] = timerId;
-
-    return subscription;
-  }
-
-  // TODO: Add function to the public interface
   public startDateTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
     logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
@@ -183,6 +161,28 @@ export class TimerFacade implements ITimerFacade {
 
     const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Date timer ${eventName} has expired. Executing callback.`);
+      timerCallback(eventPayload);
+    });
+
+    const timerId = this.timerService.oneShot(date, timerExpiredEventName);
+
+    this.timerStorage[subscription.eventName] = timerId;
+
+    return subscription;
+  }
+
+  // TODO: Add function to the public interface
+  public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
+
+    logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
+
+    this.validateDurationTimer(timerValue);
+
+    const duration = moment.duration(timerValue);
+    const date = moment().add(duration);
+
+    const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
+      logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);
       timerCallback(eventPayload);
     });
 
