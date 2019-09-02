@@ -55,7 +55,7 @@ describe('TimerFacade.executeTimerExpressionIfNeeded', (): void => {
       should(result).be.equal('hello world');
     });
 
-    it('Should return the expected result, if a valid nested token expression with "token.history" is used.', (): void => {
+    it('Should return the expected result, when accessing a partial result subset of a FlowNode.', (): void => {
 
       const timerExpression = 'token.history.FlowNode2.someValue + \' world\'';
       const result = timerFacade.executeTimerExpressionIfNeeded(timerExpression, processTokenFacadeMock as any);
