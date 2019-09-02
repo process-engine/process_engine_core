@@ -1,15 +1,17 @@
+import * as moment from 'moment';
 import * as should from 'should';
 
 import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
 
+import {TimerFacade} from '../../src/runtime/facades/timer_facade';
 import {EventAggregatorMock, TimerServiceMock} from '../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-describe('TimerFacade.startCycleTimer', (): void => {
+describe('TimerFacade.startDateTimer', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
 
-  const sampleTimerValue = '* 2 * * *';
+  const sampleTimerValue = '2100-08-30T11:30:00.000Z';
   const sampleEventName = 'TimerExpiredEventName';
   const sampleCallback = (payload: any): any => {};
 
@@ -22,11 +24,11 @@ describe('TimerFacade.startCycleTimer', (): void => {
 
     it('Should create a subscription on the EventAggregator', (): void => {
 
-      let receivedEventName;
-      let receivedCallback;
+      let receivedEventName: string;
+      let receivedCallback: EventReceivedCallback;
 
       const eventAggregatorMock = new EventAggregatorMock();
-      eventAggregatorMock.subscribe = (eventName: string, callback: EventReceivedCallback): Subscription => {
+      eventAggregatorMock.subscribeOnce = (eventName: string, callback: EventReceivedCallback): Subscription => {
         receivedEventName = eventName;
         receivedCallback = callback;
 
@@ -34,7 +36,7 @@ describe('TimerFacade.startCycleTimer', (): void => {
       };
 
       const timerFacade = fixtureProvider.createTimerFacade(eventAggregatorMock);
-      timerFacade.startCycleTimer(sampleTimerValue, sampleCallback, sampleEventName);
+      timerFacade.startDateTimer(sampleTimerValue, sampleCallback, sampleEventName);
 
       should(receivedEventName).be.equal(sampleEventName);
       should(receivedCallback).be.a.Function();
@@ -42,7 +44,7 @@ describe('TimerFacade.startCycleTimer', (): void => {
 
     it('Should make use of the provided callback, when subscribing to the EventAggregator', (): void => {
 
-      let payloadReceivedThroughCallback: any;
+      let payloadReceivedThroughCallback;
       const sampleCallback2 = (payload: any): any => {
         payloadReceivedThroughCallback = payload;
       };
@@ -50,13 +52,13 @@ describe('TimerFacade.startCycleTimer', (): void => {
       let receivedCallback: EventReceivedCallback;
 
       const eventAggregatorMock = new EventAggregatorMock();
-      eventAggregatorMock.subscribe = (eventName: string, callback: EventReceivedCallback): Subscription => {
+      eventAggregatorMock.subscribeOnce = (eventName: string, callback: EventReceivedCallback): Subscription => {
         receivedCallback = callback;
         return new Subscription('hello', eventName);
       };
 
       const timerFacade = fixtureProvider.createTimerFacade(eventAggregatorMock);
-      timerFacade.startCycleTimer(sampleTimerValue, sampleCallback2, sampleEventName);
+      timerFacade.startDateTimer(sampleTimerValue, sampleCallback2, sampleEventName);
 
       const sampleEventTriggerPayload = {
         hello: 'world',
@@ -70,29 +72,58 @@ describe('TimerFacade.startCycleTimer', (): void => {
     it('Should create a job on the TimerService', (): void => {
 
       let receivedTimerName: string;
-      let receivedTimerValue: string;
+      let receivedMomentObj: moment.Moment;
 
       const eventAggregatorMock = new EventAggregatorMock();
-      eventAggregatorMock.subscribe = (eventName: string, callback: EventReceivedCallback): Subscription => {
+      eventAggregatorMock.subscribeOnce = (eventName: string, callback: EventReceivedCallback): Subscription => {
         return new Subscription('hello', eventName);
       };
 
       const timerServiceMock = new TimerServiceMock();
-      timerServiceMock.cronjob = (crontab: string, timerName: string): any => {
+      timerServiceMock.oneShot = (momentObj: moment.Moment, timerName: string): any => {
         receivedTimerName = timerName;
-        receivedTimerValue = crontab;
+        receivedMomentObj = momentObj;
       };
 
       const timerFacade = fixtureProvider.createTimerFacade(eventAggregatorMock, timerServiceMock);
-      timerFacade.startCycleTimer(sampleTimerValue, sampleCallback, sampleEventName);
+      timerFacade.startDateTimer(sampleTimerValue, sampleCallback, sampleEventName);
 
       should(receivedTimerName).be.equal(sampleEventName);
-      should(receivedTimerValue).be.equal(sampleTimerValue);
+      should(receivedMomentObj.toISOString()).be.equal(sampleTimerValue);
     });
   });
 
-  // TODO: Validation isn't available yet for this UseCase, so for now, Sanity Checks would serve no purpose.
-  // See TODO in TimerFacade at Line #126.
   describe('Sanity Checks', (): void => {
+
+    let timerFacade: TimerFacade;
+
+    before((): void => {
+      timerFacade = fixtureProvider.createTimerFacade();
+    });
+
+    it('Should throw an error, if the provided timer value is invalid', (): void => {
+      try {
+        timerFacade.startDateTimer('dsfgdfsdfsgd', (): void => {}, 'eventName');
+      } catch (error) {
+        should(error.message).be.match(/not in ISO8601 format/i);
+      }
+    });
+
+    it('Should run the provided callback immediately, if the provided value is in the past', (): void => {
+
+      let callbackTriggered = false;
+
+      const timerValue = moment()
+        .subtract(1, 'day')
+        .toISOString();
+
+      const sampleCallback2 = (): any => {
+        callbackTriggered = true;
+      };
+
+      timerFacade.startDateTimer(timerValue, sampleCallback2, 'eventName');
+
+      should(callbackTriggered).be.true();
+    });
   });
 });
