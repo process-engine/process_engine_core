@@ -5,6 +5,7 @@ import {TimerDefinitionType} from '@process-engine/process_engine_contracts';
 import {TimerFacade} from '../../src/runtime/facades/timer_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
+// NOTE: This UseCase will be made obsolete in the near future.
 describe('TimerFacade.initializeTimerFromDefinition', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
@@ -189,6 +190,7 @@ describe('TimerFacade.initializeTimerFromDefinition', (): void => {
     });
 
     it('Should throw an error, if the timer definition contains an invalid type', (): void => {
+
       try {
         const sampleDefinition = {
           'bpmn:timeInvalid': {
@@ -204,6 +206,7 @@ describe('TimerFacade.initializeTimerFromDefinition', (): void => {
     });
 
     it('Should throw an error, if the timer definition contains an invalid value', (): void => {
+
       try {
         const sampleDefinition = {
           'bpmn:timeCycle': {

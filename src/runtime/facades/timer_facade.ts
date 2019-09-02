@@ -48,8 +48,6 @@ export class TimerFacade implements ITimerFacade {
     return this.initializeTimer(flowNode, timerType, timerValue, callback);
   }
 
-  // TODO: Too much abstraction - this function should be removed.
-  // This will constitute a breaking change for the contracts though.
   public initializeTimer(
     flowNode: Model.Base.FlowNode,
     timerType: TimerDefinitionType,
