@@ -317,7 +317,7 @@ function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definition
 
   const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] !== undefined;
   if (timerIsDate) {
-    return Model.Events.Definitions.TimerType.timeCycle;
+    return Model.Events.Definitions.TimerType.timeDate;
   }
 
   const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] !== undefined;
