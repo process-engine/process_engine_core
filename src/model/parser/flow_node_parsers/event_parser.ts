@@ -13,6 +13,12 @@ const logger = Logger.createLogger('processengine:model_parser:event_parser');
 let errors: Array<Model.GlobalElements.Error> = [];
 let eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = [];
 
+enum TimerEventDefinitionBpmnTag {
+  Duration = 'bpmn:timeDuration',
+  Cycle = 'bpmn:timeCycle',
+  Date = 'bpmn:timeDate',
+}
+
 export function parseEventsFromProcessData(
   processData: any,
   parsedErrors: Array<Model.GlobalElements.Error>,
@@ -220,10 +226,15 @@ function assignEventDefinition(
         ? isEnabledCamundaProperty.value === 'true'
         : true;
 
-      // TODO: Add "value" property to TimerEventDefinition model and refactor this.
-      // This should be using the actual model, not some random generated object that looks completeley different.
-      event[targetPropertyName] = eventDefinitonValue;
-      event[targetPropertyName].enabled = isEnabled;
+      const timerType = parseTimerDefinitionType(eventDefinitonValue);
+      const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
+
+      const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      timerDefinition.enabled = isEnabled;
+      timerDefinition.timerType = timerType;
+      timerDefinition.value = timerValue;
+
+      event[targetPropertyName] = timerDefinition;
       break;
     default:
       event[targetPropertyName] = {};
@@ -295,4 +306,44 @@ function findExtensionPropertyByName(
   return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
     return property.name === propertyName;
   });
+}
+
+function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definitions.TimerType {
+
+  const timerIsCyclic = eventDefinition[TimerEventDefinitionBpmnTag.Cycle] !== undefined;
+  if (timerIsCyclic) {
+    return Model.Events.Definitions.TimerType.timeCycle;
+  }
+
+  const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] !== undefined;
+  if (timerIsDate) {
+    return Model.Events.Definitions.TimerType.timeDate;
+  }
+
+  const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] !== undefined;
+  if (timerIsDuration) {
+    return Model.Events.Definitions.TimerType.timeDuration;
+  }
+
+  return undefined;
+}
+
+function parseTimerDefinitionValue(eventDefinition: any): string {
+
+  const timerIsCyclic = eventDefinition[TimerEventDefinitionBpmnTag.Cycle] !== undefined;
+  if (timerIsCyclic) {
+    return eventDefinition[TimerEventDefinitionBpmnTag.Cycle]._;
+  }
+
+  const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] !== undefined;
+  if (timerIsDate) {
+    return eventDefinition[TimerEventDefinitionBpmnTag.Date]._;
+  }
+
+  const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] !== undefined;
+  if (timerIsDuration) {
+    return eventDefinition[TimerEventDefinitionBpmnTag.Duration]._;
+  }
+
+  return undefined;
 }

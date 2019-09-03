@@ -152,7 +152,7 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
 
         this.timerSubscription = this
           .timerFacade
-          .initializeTimerFromDefinition(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed);
+          .initializeTimer(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed);
       } catch (error) {
         reject(error);
       }

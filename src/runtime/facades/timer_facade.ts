@@ -6,14 +6,8 @@ import * as uuid from 'node-uuid';
 import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimerService} from '@essential-projects/timing_contracts';
-import {IProcessTokenFacade, ITimerFacade, TimerDefinitionType} from '@process-engine/process_engine_contracts';
+import {IProcessTokenFacade, ITimerFacade} from '@process-engine/process_engine_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
-
-enum TimerBpmnType {
-  Duration = 'bpmn:timeDuration',
-  Cycle = 'bpmn:timeCycle',
-  Date = 'bpmn:timeDate',
-}
 
 type TimerId = string;
 type TimerIdStorage = {[eventSubscriptionId: string]: TimerId};
@@ -32,88 +26,27 @@ export class TimerFacade implements ITimerFacade {
     this.timerService = timerService;
   }
 
-  // TODO: Too much abstraction - this function should be removed.
-  // This will constitute a breaking change for the contracts though.
-  public initializeTimerFromDefinition(
-    flowNode: Model.Base.FlowNode,
-    timerDefinition: Model.Events.Definitions.TimerEventDefinition,
-    processTokenFacade: IProcessTokenFacade,
-    callback: Function,
-  ): Subscription {
-
-    const timerType = this.parseTimerDefinitionType(timerDefinition);
-    const timerValueFromDefinition = this.parseTimerDefinitionValue(timerDefinition);
-    const timerValue = this.executeTimerExpressionIfNeeded(timerValueFromDefinition, processTokenFacade);
-
-    return this.initializeTimer(flowNode, timerType, timerValue, callback);
-  }
-
   public initializeTimer(
     flowNode: Model.Base.FlowNode,
-    timerType: TimerDefinitionType,
-    timerValue: string,
+    timerEventDefinition: Model.Events.Definitions.TimerEventDefinition,
+    processTokenFacade: IProcessTokenFacade,
     timerCallback: Function,
   ): Subscription {
 
-    if (!timerCallback) {
-      logger.error('Must provide a callback when initializing a new timer!');
-      throw new BadRequestError('Must provide a callback when initializing a new timer!');
-    }
+    const timerValue = this.executeTimerExpressionIfNeeded(timerEventDefinition.value, processTokenFacade);
 
     const timerExpiredEventName = `${flowNode.id}_${uuid.v4()}`;
 
-    switch (timerType) {
-      case TimerDefinitionType.cycle:
-        // TODO: startCycleTimer needs to accept FlowNodes, before we can remove this call entirely.
-        this.validateTimer(flowNode, timerType, timerValue);
-        return this.startCycleTimer(timerValue, timerCallback, timerExpiredEventName);
-      case TimerDefinitionType.date:
+    switch (timerEventDefinition.timerType) {
+      case Model.Events.Definitions.TimerType.timeCycle:
+        return this.startCycleTimer(timerValue, flowNode, timerCallback, timerExpiredEventName);
+      case Model.Events.Definitions.TimerType.timeDate:
         return this.startDateTimer(timerValue, timerCallback, timerExpiredEventName);
-      case TimerDefinitionType.duration:
+      case Model.Events.Definitions.TimerType.timeDuration:
         return this.startDurationTimer(timerValue, timerCallback, timerExpiredEventName);
       default:
         return undefined;
     }
-  }
-
-  public parseTimerDefinitionType(eventDefinition: any): TimerDefinitionType {
-
-    const timerIsCyclic = eventDefinition[TimerBpmnType.Cycle] !== undefined;
-    if (timerIsCyclic) {
-      return TimerDefinitionType.cycle;
-    }
-
-    const timerIsDate = eventDefinition[TimerBpmnType.Date] !== undefined;
-    if (timerIsDate) {
-      return TimerDefinitionType.date;
-    }
-
-    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
-    if (timerIsDuration) {
-      return TimerDefinitionType.duration;
-    }
-
-    return undefined;
-  }
-
-  public parseTimerDefinitionValue(eventDefinition: any): string {
-
-    const timerIsCyclic = eventDefinition[TimerBpmnType.Cycle] !== undefined;
-    if (timerIsCyclic) {
-      return eventDefinition[TimerBpmnType.Cycle]._;
-    }
-
-    const timerIsDate = eventDefinition[TimerBpmnType.Date] !== undefined;
-    if (timerIsDate) {
-      return eventDefinition[TimerBpmnType.Date]._;
-    }
-
-    const timerIsDuration = eventDefinition[TimerBpmnType.Duration] !== undefined;
-    if (timerIsDuration) {
-      return eventDefinition[TimerBpmnType.Duration]._;
-    }
-
-    return undefined;
   }
 
   public cancelTimerSubscription(subscription: Subscription): void {
@@ -123,11 +56,16 @@ export class TimerFacade implements ITimerFacade {
     this.timerService.cancel(timerId);
   }
 
-  // TODO: Add function to the public interface
-  // TODO: Add flowNode to the signature, so we can call validation.
-  public startCycleTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
+  public startCycleTimer(timerValue: string, flowNode: Model.Base.FlowNode, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
     logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
+
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
+
+    this.validateCyclicTimer(flowNode, timerValue);
 
     const subscription = this.eventAggregator.subscribe(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Cyclic timer ${eventName} has expired. Executing callback.`);
@@ -141,10 +79,14 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  // TODO: Add function to the public interface
   public startDateTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
     logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
+
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
 
     this.validateDateTimer(timerValue);
 
@@ -171,10 +113,14 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  // TODO: Add function to the public interface
   public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
     logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
+
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
 
     this.validateDurationTimer(timerValue);
 
@@ -193,7 +139,6 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  // TODO: Add function to the public interface
   public executeTimerExpressionIfNeeded(timerExpression: string, processTokenFacade: IProcessTokenFacade): string {
     const tokenVariableName = 'token';
     const isConstantTimerExpression = !timerExpression || !timerExpression.includes(tokenVariableName);
@@ -214,21 +159,20 @@ export class TimerFacade implements ITimerFacade {
     }
   }
 
-  // TODO: Add function to the public interface
-  public validateTimer(flowNode: Model.Base.FlowNode, timerType: TimerDefinitionType, timerValue: string): void {
+  public validateTimer(timerDefinition: Model.Events.Definitions.TimerEventDefinition, flowNode: Model.Base.FlowNode): void {
 
-    switch (timerType) {
-      case TimerDefinitionType.date:
-        this.validateDateTimer(timerValue);
+    switch (timerDefinition.timerType) {
+      case Model.Events.Definitions.TimerType.timeDate:
+        this.validateDateTimer(timerDefinition.value);
         break;
-      case TimerDefinitionType.duration:
-        this.validateDurationTimer(timerValue);
+      case Model.Events.Definitions.TimerType.timeDuration:
+        this.validateDurationTimer(timerDefinition.value);
         break;
-      case TimerDefinitionType.cycle:
-        this.validateCyclicTimer(flowNode, timerValue);
+      case Model.Events.Definitions.TimerType.timeCycle:
+        this.validateCyclicTimer(flowNode, timerDefinition.value);
         break;
       default:
-        const invalidTimerTypeMessage = `Unknown Timer definition type '${timerType}'`;
+        const invalidTimerTypeMessage = `Unknown Timer definition type '${timerDefinition}'`;
         logger.error(invalidTimerTypeMessage);
         throw new UnprocessableEntityError(invalidTimerTypeMessage);
     }

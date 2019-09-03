@@ -69,7 +69,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
     this.timerSubscription = this
       .timerFacade
-      .initializeTimerFromDefinition(this.boundaryEventModel, this.boundaryEventModel.timerEventDefinition, processTokenFacade, timerElapsed);
+      .initializeTimer(this.boundaryEventModel, this.boundaryEventModel.timerEventDefinition, processTokenFacade, timerElapsed);
   }
 
   public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {

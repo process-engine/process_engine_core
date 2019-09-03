@@ -1,6 +1,6 @@
 import * as should from 'should';
 
-import {BpmnType, TimerDefinitionType} from '@process-engine/process_engine_contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
@@ -22,27 +22,29 @@ describe('TimerFacade.validateTimer', (): void => {
 
     it('Should successfully validate the given valid cyclic timer on a StartEvent.', (): void => {
 
-      const timerType = TimerDefinitionType.cycle;
-      const timerValue = '* 5 * * * *';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+      sampleTimerDefinition.value = '* 5 * * * *';
 
       const sampleFlowNode = {
         bpmnType: BpmnType.startEvent,
       };
 
-      timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+      timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
     });
 
     it('Should throw an error for an invalid cyclic timer value on a StartEvent.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = 'asdf';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = 'asdf';
 
         const sampleFlowNode = {
           bpmnType: BpmnType.startEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not a valid crontab/i);
@@ -52,14 +54,15 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error for a valid cyclic timer on an IntermediateTimerEvent.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = '* 5 * * * *';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = '* 5 * * * *';
 
         const sampleFlowNode = {
           bpmnType: BpmnType.intermediateCatchEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/only allowed for TimerStartEvents/i);
@@ -69,14 +72,15 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error for a valid cyclic timer on a BoundaryEvent.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = '* 5 * * * *';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = '* 5 * * * *';
 
         const sampleFlowNode = {
           bpmnType: BpmnType.boundaryEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/only allowed for TimerStartEvents/i);
@@ -86,14 +90,15 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error for a malformed crontab.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = '* * * 1';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = '* 5 * * *';
 
         const sampleFlowNode = {
           bpmnType: BpmnType.startEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not a valid crontab/i);
@@ -103,14 +108,15 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error when providing a date value.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = '2022-08-30T11:33:33.000Z';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = '2022-08-30T11:33:33.000Z';
 
         const sampleFlowNode = {
           bpmnType: BpmnType.startEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not a valid crontab/i);
@@ -120,14 +126,15 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error when providing a duration.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = 'P0Y0M0DT0H0M2S';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
         const sampleFlowNode = {
           bpmnType: BpmnType.startEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not a valid crontab/i);
@@ -139,23 +146,25 @@ describe('TimerFacade.validateTimer', (): void => {
 
     it('Should successfully validate the given valid date timer, regardless of the supplied FlowNode.', (): void => {
 
-      const timerType = TimerDefinitionType.date;
-      const timerValue = '2019-08-30T11:30:00.000Z';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+      sampleTimerDefinition.value = '2019-08-30T11:30:00.000Z';
 
       const sampleFlowNode = {};
 
-      timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+      timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
     });
 
     it('Should throw an error, when providing a crontab.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.date;
-        const timerValue = '* 5 * * * *';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+        sampleTimerDefinition.value = '* 5 * * * *';
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -165,12 +174,13 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing a duration.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.date;
-        const timerValue = 'P0Y0M0DT0H0M2S';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+        sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -180,12 +190,13 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing a completely invalid value.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.date;
-        const timerValue = 'asdf';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+        sampleTimerDefinition.value = 'asdf';
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -197,23 +208,25 @@ describe('TimerFacade.validateTimer', (): void => {
 
     it('Should successfully validate the given valid duration timer, regardless of the supplied FlowNode.', (): void => {
 
-      const timerType = TimerDefinitionType.duration;
-      const timerValue = 'P0Y0M0DT0H0M2S';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+      sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
       const sampleFlowNode = {};
 
-      timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+      timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
     });
 
     it('Should throw an error, when providing a crontab.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.duration;
-        const timerValue = '* 5 * * * *';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+        sampleTimerDefinition.value = '* 5 * * * *';
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -223,12 +236,13 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing a date.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.duration;
-        const timerValue = '2019-08-30T11:30:00.000Z';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+        sampleTimerDefinition.value = '2019-08-30T11:30:00.000Z';
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -238,12 +252,13 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing a completely invalid value.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.duration;
-        const timerValue = 'asdf';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+        sampleTimerDefinition.value = 'asdf';
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -256,27 +271,30 @@ describe('TimerFacade.validateTimer', (): void => {
 
     it('Should succeed, when not providing a FlowNode to a date check.', (): void => {
 
-      const timerType = TimerDefinitionType.date;
-      const timerValue = '2019-08-30T11:30:00.000Z';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+      sampleTimerDefinition.value = '2019-08-30T11:30:00.000Z';
 
-      timerFacade.validateTimer(undefined, timerType, timerValue);
+      timerFacade.validateTimer(sampleTimerDefinition, undefined);
     });
 
     it('Should succeed, when not providing a FlowNode to a duration check.', (): void => {
 
-      const timerType = TimerDefinitionType.duration;
-      const timerValue = 'P0Y0M0DT0H0M2S';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+      sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
-      timerFacade.validateTimer(undefined, timerType, timerValue);
+      timerFacade.validateTimer(sampleTimerDefinition, undefined);
     });
 
     it('Should throw an error, when not providing a FlowNode with a cyclic timer check.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
-        const timerValue = '* 5 * * * *';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = '* 5 * * * *';
 
-        timerFacade.validateTimer(undefined, timerType, timerValue);
+        timerFacade.validateTimer(sampleTimerDefinition, undefined);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
@@ -285,13 +303,14 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing no value to a cyclic timer check.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.cycle;
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
 
         const sampleFlowNode = {
           bpmnType: BpmnType.startEvent,
         };
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, undefined);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not a valid crontab/i);
@@ -301,11 +320,12 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing no value to a date timer check.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.date;
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, undefined);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -315,11 +335,12 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when providing no value to a duration timer check.', (): void => {
 
       try {
-        const timerType = TimerDefinitionType.duration;
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
 
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, timerType, undefined);
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/not in ISO8601 format/i);
@@ -329,9 +350,12 @@ describe('TimerFacade.validateTimer', (): void => {
     it('Should throw an error, when not providing a Timer Type for any check.', (): void => {
 
       try {
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.value = '* * * * 2';
+
         const sampleFlowNode = {};
 
-        timerFacade.validateTimer(sampleFlowNode as any, undefined, '* * * * 1');
+        timerFacade.validateTimer(sampleTimerDefinition, sampleFlowNode as any);
       } catch (error) {
         should(error).be.instanceOf(UnprocessableEntityError);
         should(error.message).be.match(/unknown timer definition type/i);

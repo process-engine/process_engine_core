@@ -11,7 +11,6 @@ import {
   IProcessTokenFacade,
   ITimerFacade,
   ProcessStartedMessage,
-  TimerDefinitionType,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {Model} from '@process-engine/process_model.contracts';
@@ -125,9 +124,7 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
         // All other Timer types are started through this handler, since they cannot be automatically scheduled.
         if (flowNodeIsTimerStartEvent) {
 
-          const timerType = this.timerFacade.parseTimerDefinitionType(this.startEvent.timerEventDefinition);
-
-          if (timerType !== TimerDefinitionType.cycle) {
+          if (this.startEvent.timerEventDefinition.timerType !== Model.Events.Definitions.TimerType.timeCycle) {
             const newTokenPayload = await this.suspendAndWaitForTimerToElapse(token, processTokenFacade);
             token.payload = newTokenPayload;
             await this.persistOnResume(token);
@@ -195,7 +192,7 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
       resolveFunc(currentToken.payload);
     };
 
-    this.timerSubscription = this.timerFacade.initializeTimerFromDefinition(this.startEvent, timerDefinition, processTokenFacade, timerElapsed);
+    this.timerSubscription = this.timerFacade.initializeTimer(this.startEvent, timerDefinition, processTokenFacade, timerElapsed);
   }
 
 }

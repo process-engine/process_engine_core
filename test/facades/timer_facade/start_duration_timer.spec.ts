@@ -111,5 +111,13 @@ describe('TimerFacade.startDurationTimer', (): void => {
         should(error.message).be.match(/not in ISO8601 format/i);
       }
     });
+
+    it('Should throw an error, if no callback is provided', (): void => {
+      try {
+        timerFacade.startDurationTimer(sampleTimerValue, undefined, 'eventName');
+      } catch (error) {
+        should(error.message).be.match(/must provide a callback/i);
+      }
+    });
   });
 });

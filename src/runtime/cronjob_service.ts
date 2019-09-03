@@ -11,9 +11,10 @@ import {
   ICronjobService,
   IExecuteProcessService,
   ITimerFacade,
-  TimerDefinitionType,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
+
+import {ProcessTokenFacade} from './facades/process_token_facade';
 
 const logger = Logger.createLogger('processengine:runtime:cronjob_service');
 
@@ -206,7 +207,7 @@ export class CronjobService implements ICronjobService {
 
     for (const startEvent of startEventsWithCronjob) {
 
-      const timerValue = this.timerFacade.parseTimerDefinitionValue(startEvent.timerEventDefinition);
+      const timerValue = startEvent.timerEventDefinition.value;
 
       const crontabIsInvalid = !this.isValidCrontab(timerValue);
       if (crontabIsInvalid) {
@@ -222,9 +223,14 @@ export class CronjobService implements ICronjobService {
         this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
       };
 
-      const timerSubscription = this
-        .timerFacade
-        .initializeTimer(startEvent, TimerDefinitionType.cycle, timerValue, onCronjobExpired.bind(this, timerValue, processModel.id));
+      const dummyProcessTokenFacade = new ProcessTokenFacade(undefined, processModel.id, undefined, this.internalIdentity);
+
+      const timerSubscription = this.timerFacade.initializeTimer(
+        startEvent,
+        startEvent.timerEventDefinition,
+        dummyProcessTokenFacade,
+        onCronjobExpired.bind(this, timerValue, processModel.id),
+      );
 
       const newCronJobConfig = {
         subscription: timerSubscription,
@@ -244,9 +250,9 @@ export class CronjobService implements ICronjobService {
         return false;
       }
 
-      const timerType = this.timerFacade.parseTimerDefinitionType(startEvent.timerEventDefinition);
+      const timerType = startEvent.timerEventDefinition.timerType;
 
-      const isCyclicTimer = timerType === TimerDefinitionType.cycle;
+      const isCyclicTimer = timerType === Model.Events.Definitions.TimerType.timeCycle;
       const isActive = startEvent.timerEventDefinition.enabled;
 
       return isCyclicTimer && isActive;

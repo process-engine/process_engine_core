@@ -1,7 +1,6 @@
 import * as should from 'should';
 
-import {TimerDefinitionType} from '@process-engine/process_engine_contracts';
-import {BpmnType} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
@@ -13,6 +12,20 @@ describe('TimerFacade.initializeTimer', (): void => {
   const sampleFlowNode = {
     id: 'hellohello',
     bpmnType: BpmnType.startEvent,
+  };
+
+  const processTokenFacadeMock = {
+    getOldTokenFormat: (): any => {
+      return {
+        current: 'hello',
+        history: {
+          FlowNode1: 'hello',
+          FlowNode2: {
+            someValue: 'world',
+          },
+        },
+      };
+    },
   };
 
   const sampleCallback = (payload: any): any => {
@@ -28,31 +41,34 @@ describe('TimerFacade.initializeTimer', (): void => {
 
     it('Should successfully initialize a cyclic timer', (): void => {
 
-      const sampleTimerType = TimerDefinitionType.cycle;
-      const sampleValue = '*/2 * * * * *';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+      sampleTimerDefinition.value = '*/2 * * * * *';
 
       let receivedTimerValue: string;
       let receivedCallback: Function;
       let receivedEventName: string;
 
       const timerFacade = fixtureProvider.createTimerFacade();
-      timerFacade.startCycleTimer = (timerValue: string, timerCallback: Function, timerExpiredEventName: string): any => {
-        receivedTimerValue = timerValue;
-        receivedCallback = timerCallback;
-        receivedEventName = timerExpiredEventName;
-      };
+      timerFacade.startCycleTimer =
+        (timerValue: string, flowNode: Model.Base.FlowNode, timerCallback: Function, timerExpiredEventName: string): any => {
+          receivedTimerValue = timerValue;
+          receivedCallback = timerCallback;
+          receivedEventName = timerExpiredEventName;
+        };
 
-      timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerType, sampleValue, sampleCallback);
+      timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
 
-      should(receivedTimerValue).be.eql(sampleValue);
+      should(receivedTimerValue).be.eql(sampleTimerDefinition.value);
       should(receivedCallback).be.eql(sampleCallback);
       should(receivedEventName).containEql(sampleFlowNode.id);
     });
 
     it('Should successfully initialize a date timer', (): void => {
 
-      const sampleTimerType = TimerDefinitionType.date;
-      const sampleValue = '2019-08-30T11:30:00.000Z';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+      sampleTimerDefinition.value = '2019-08-30T11:30:00.000Z';
 
       let receivedTimerValue: string;
       let receivedCallback: Function;
@@ -65,17 +81,18 @@ describe('TimerFacade.initializeTimer', (): void => {
         receivedEventName = timerExpiredEventName;
       };
 
-      timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerType, sampleValue, sampleCallback);
+      timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
 
-      should(receivedTimerValue).be.eql(sampleValue);
+      should(receivedTimerValue).be.eql(sampleTimerDefinition.value);
       should(receivedCallback).be.eql(sampleCallback);
       should(receivedEventName).containEql(sampleFlowNode.id);
     });
 
     it('Should successfully initialize a duration timer', (): void => {
 
-      const sampleTimerType = TimerDefinitionType.duration;
-      const sampleValue = 'P0Y0M0DT0H0M2S';
+      const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+      sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+      sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
       let receivedTimerValue: string;
       let receivedCallback: Function;
@@ -88,9 +105,9 @@ describe('TimerFacade.initializeTimer', (): void => {
         receivedEventName = timerExpiredEventName;
       };
 
-      timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerType, sampleValue, sampleCallback);
+      timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
 
-      should(receivedTimerValue).be.eql(sampleValue);
+      should(receivedTimerValue).be.eql(sampleTimerDefinition.value);
       should(receivedCallback).be.eql(sampleCallback);
       should(receivedEventName).containEql(sampleFlowNode.id);
     });
@@ -107,10 +124,11 @@ describe('TimerFacade.initializeTimer', (): void => {
     it('Should throw an error, if no FlowNode is provided with a cyclic timer', (): void => {
 
       try {
-        const sampleTimerType = TimerDefinitionType.cycle;
-        const sampleValue = '*/2 * * * * *';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeCycle;
+        sampleTimerDefinition.value = '*/2 * * * * *';
 
-        timerFacade.initializeTimer(undefined, sampleTimerType, sampleValue, sampleCallback);
+        timerFacade.initializeTimer(undefined, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
@@ -119,10 +137,11 @@ describe('TimerFacade.initializeTimer', (): void => {
     it('Should throw an error, if no FlowNode is provided with a date timer', (): void => {
 
       try {
-        const sampleTimerType = TimerDefinitionType.date;
-        const sampleValue = '2019-08-30T11:30:00.000Z';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+        sampleTimerDefinition.value = '2019-08-30T11:30:00.000Z';
 
-        timerFacade.initializeTimer(undefined, sampleTimerType, sampleValue, sampleCallback);
+        timerFacade.initializeTimer(undefined, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
@@ -131,10 +150,11 @@ describe('TimerFacade.initializeTimer', (): void => {
     it('Should throw an error, if no FlowNode is provided with a duration timer', (): void => {
 
       try {
-        const sampleTimerType = TimerDefinitionType.duration;
-        const sampleValue = 'P0Y0M0DT0H0M2S';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+        sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
-        timerFacade.initializeTimer(undefined, sampleTimerType, sampleValue, sampleCallback);
+        timerFacade.initializeTimer(undefined, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
@@ -143,10 +163,11 @@ describe('TimerFacade.initializeTimer', (): void => {
     it('Should throw an error, if the timer definition contains an invalid type', (): void => {
 
       try {
-        const sampleTimerType = 'somethingInvalid';
-        const sampleValue = 'P0Y0M0DT0H0M2S';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = 'somethingInvalid' as any;
+        sampleTimerDefinition.value = 'P0Y0M0DT0H0M2S';
 
-        timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerType as any, sampleValue, sampleCallback);
+        timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
@@ -155,10 +176,11 @@ describe('TimerFacade.initializeTimer', (): void => {
     it('Should throw an error, if the timer definition contains an invalid value', (): void => {
 
       try {
-        const sampleTimerType = TimerDefinitionType.duration;
-        const sampleValue = 'sfasfadsfdsfasdfadsf';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDuration;
+        sampleTimerDefinition.value = 'sfasfadsfdsfasdfadsf';
 
-        timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerType, sampleValue, sampleCallback);
+        timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
@@ -167,10 +189,11 @@ describe('TimerFacade.initializeTimer', (): void => {
     it('Should throw an error, if no callback is provided', (): void => {
 
       try {
-        const sampleTimerType = TimerDefinitionType.date;
-        const sampleValue = '2019-08-30T11:30:00.000Z';
+        const sampleTimerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+        sampleTimerDefinition.timerType = Model.Events.Definitions.TimerType.timeDate;
+        sampleTimerDefinition.value = '2019-08-30T11:30:00.000Z';
 
-        timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerType, sampleValue, undefined);
+        timerFacade.initializeTimer(sampleFlowNode as any, sampleTimerDefinition, processTokenFacadeMock as any, sampleCallback);
       } catch (error) {
         should(error).be.instanceOf(Error);
       }
