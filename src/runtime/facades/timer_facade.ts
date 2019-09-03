@@ -29,6 +29,7 @@ export class TimerFacade implements ITimerFacade {
   public initializeTimer(
     flowNode: Model.Base.FlowNode,
     timerEventDefinition: Model.Events.Definitions.TimerEventDefinition,
+    processTokenFacade: IProcessTokenFacade,
     timerCallback: Function,
   ): Subscription {
 
@@ -37,17 +38,17 @@ export class TimerFacade implements ITimerFacade {
       throw new BadRequestError('Must provide a callback when initializing a new timer!');
     }
 
+    const timerValue = this.executeTimerExpressionIfNeeded(timerEventDefinition.value, processTokenFacade);
+
     const timerExpiredEventName = `${flowNode.id}_${uuid.v4()}`;
 
     switch (timerEventDefinition.timerType) {
       case Model.Events.Definitions.TimerType.timeCycle:
-        // TODO: startCycleTimer needs to accept FlowNodes, before we can remove this call entirely.
-        this.validateTimer(timerEventDefinition, flowNode);
-        return this.startCycleTimer(timerEventDefinition.value, flowNode, timerCallback, timerExpiredEventName);
+        return this.startCycleTimer(timerValue, flowNode, timerCallback, timerExpiredEventName);
       case Model.Events.Definitions.TimerType.timeDate:
-        return this.startDateTimer(timerEventDefinition.value, timerCallback, timerExpiredEventName);
+        return this.startDateTimer(timerValue, timerCallback, timerExpiredEventName);
       case Model.Events.Definitions.TimerType.timeDuration:
-        return this.startDurationTimer(timerEventDefinition.value, timerCallback, timerExpiredEventName);
+        return this.startDurationTimer(timerValue, timerCallback, timerExpiredEventName);
       default:
         return undefined;
     }
