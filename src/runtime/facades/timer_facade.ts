@@ -33,11 +33,6 @@ export class TimerFacade implements ITimerFacade {
     timerCallback: Function,
   ): Subscription {
 
-    if (!timerCallback) {
-      logger.error('Must provide a callback when initializing a new timer!');
-      throw new BadRequestError('Must provide a callback when initializing a new timer!');
-    }
-
     const timerValue = this.executeTimerExpressionIfNeeded(timerEventDefinition.value, processTokenFacade);
 
     const timerExpiredEventName = `${flowNode.id}_${uuid.v4()}`;
@@ -65,6 +60,11 @@ export class TimerFacade implements ITimerFacade {
 
     logger.verbose(`Starting new cyclic timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
 
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
+
     this.validateCyclicTimer(flowNode, timerValue);
 
     const subscription = this.eventAggregator.subscribe(timerExpiredEventName, (eventPayload, eventName): void => {
@@ -82,6 +82,11 @@ export class TimerFacade implements ITimerFacade {
   public startDateTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
     logger.verbose(`Starting new date timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
+
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
 
     this.validateDateTimer(timerValue);
 
@@ -111,6 +116,11 @@ export class TimerFacade implements ITimerFacade {
   public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
 
     logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
+
+    if (!timerCallback) {
+      logger.error('Must provide a callback when initializing a new timer!');
+      throw new BadRequestError('Must provide a callback when initializing a new timer!');
+    }
 
     this.validateDurationTimer(timerValue);
 
