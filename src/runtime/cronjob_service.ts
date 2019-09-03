@@ -14,6 +14,8 @@ import {
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
+import {ProcessTokenFacade} from './facades/process_token_facade';
+
 const logger = Logger.createLogger('processengine:runtime:cronjob_service');
 
 type CronjobCollectionEntry = {
@@ -221,9 +223,14 @@ export class CronjobService implements ICronjobService {
         this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
       };
 
-      const timerSubscription = this
-        .timerFacade
-        .initializeTimer(startEvent, startEvent.timerEventDefinition, onCronjobExpired.bind(this, timerValue, processModel.id));
+      const dummyProcessTokenFacade = new ProcessTokenFacade(undefined, processModel.id, undefined, this.internalIdentity);
+
+      const timerSubscription = this.timerFacade.initializeTimer(
+        startEvent,
+        startEvent.timerEventDefinition,
+        dummyProcessTokenFacade,
+        onCronjobExpired.bind(this, timerValue, processModel.id),
+      );
 
       const newCronJobConfig = {
         subscription: timerSubscription,
