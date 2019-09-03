@@ -1,6 +1,9 @@
 import * as should from 'should';
 
+import {BpmnType} from '@process-engine/process_engine_contracts';
 import {EventReceivedCallback, Subscription} from '@essential-projects/event_aggregator_contracts';
+
+import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
 
 import {EventAggregatorMock, TimerServiceMock} from '../../mocks';
 import {TestFixtureProvider} from '../test_fixture_provider';
@@ -9,6 +12,9 @@ describe('TimerFacade.startCycleTimer', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
 
+  const sampleFlowNode = {
+    bpmnType: BpmnType.startEvent,
+  };
   const sampleTimerValue = '* 2 * * *';
   const sampleEventName = 'TimerExpiredEventName';
   const sampleCallback = (payload: any): any => {};
@@ -34,7 +40,7 @@ describe('TimerFacade.startCycleTimer', (): void => {
       };
 
       const timerFacade = fixtureProvider.createTimerFacade(eventAggregatorMock);
-      timerFacade.startCycleTimer(sampleTimerValue, sampleCallback, sampleEventName);
+      timerFacade.startCycleTimer(sampleTimerValue, sampleFlowNode as any, sampleCallback, sampleEventName);
 
       should(receivedEventName).be.equal(sampleEventName);
       should(receivedCallback).be.a.Function();
@@ -56,7 +62,7 @@ describe('TimerFacade.startCycleTimer', (): void => {
       };
 
       const timerFacade = fixtureProvider.createTimerFacade(eventAggregatorMock);
-      timerFacade.startCycleTimer(sampleTimerValue, sampleCallback2, sampleEventName);
+      timerFacade.startCycleTimer(sampleTimerValue, sampleFlowNode as any, sampleCallback2, sampleEventName);
 
       const sampleEventTriggerPayload = {
         hello: 'world',
@@ -84,15 +90,56 @@ describe('TimerFacade.startCycleTimer', (): void => {
       };
 
       const timerFacade = fixtureProvider.createTimerFacade(eventAggregatorMock, timerServiceMock);
-      timerFacade.startCycleTimer(sampleTimerValue, sampleCallback, sampleEventName);
+      timerFacade.startCycleTimer(sampleTimerValue, sampleFlowNode as any, sampleCallback, sampleEventName);
 
       should(receivedTimerName).be.equal(sampleEventName);
       should(receivedTimerValue).be.equal(sampleTimerValue);
     });
   });
 
-  // TODO: Validation isn't available yet for this UseCase, so for now, Sanity Checks would serve no purpose.
-  // See TODO in TimerFacade at Line #126.
   describe('Sanity Checks', (): void => {
+
+    let timerFacade: TimerFacade;
+
+    before((): void => {
+      timerFacade = fixtureProvider.createTimerFacade();
+    });
+
+    it('Should throw an error, if the provided crontab is invalid', (): void => {
+      try {
+        timerFacade.startCycleTimer('dsfgdfsdfsgd', sampleFlowNode as any, (): void => {}, 'eventName');
+      } catch (error) {
+        should(error.message).be.match(/ not a valid crontab/i);
+      }
+    });
+
+    it('Should throw an error, if no FlowNode is provided', (): void => {
+      try {
+        timerFacade.startCycleTimer('* * 2 * *', undefined, (): void => {}, 'eventName');
+      } catch (error) {
+        should(error).be.instanceOf(Error);
+      }
+    });
+
+    it('Should throw an error, if the FlowNode is not a StartEvent', (): void => {
+      try {
+        const invalidFlowNode = {
+          bpmnType: BpmnType.intermediateCatchEvent,
+        };
+
+        timerFacade.startCycleTimer('* * 2 * *', invalidFlowNode as any, (): void => {}, 'eventName');
+      } catch (error) {
+        should(error.message).be.match(/only allowed for TimerStartEvents/i);
+      }
+    });
+
+    it('Should throw an error, if no callback is provided', (): void => {
+      try {
+        timerFacade.startCycleTimer('* * 2 * *', sampleFlowNode as any, undefined, 'eventName');
+      } catch (error) {
+        should(error.message).be.match(/must provide a callback/i);
+      }
+    });
+
   });
 });

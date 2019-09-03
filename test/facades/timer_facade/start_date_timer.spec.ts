@@ -125,5 +125,13 @@ describe('TimerFacade.startDateTimer', (): void => {
 
       should(callbackTriggered).be.true();
     });
+
+    it('Should throw an error, if no callback is provided', (): void => {
+      try {
+        timerFacade.startDateTimer(sampleTimerValue, undefined, 'eventName');
+      } catch (error) {
+        should(error.message).be.match(/must provide a callback/i);
+      }
+    });
   });
 });

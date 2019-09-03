@@ -3,7 +3,9 @@ import * as should from 'should';
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-describe('TimerFacade.parseTimerDefinitionValue', (): void => {
+// NOTE: This function is now located in the EventParser.
+// So these tests might still prove useful, when writing tests for that parser.
+describe.skip('TimerFacade.parseTimerDefinitionValue', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
   let timerFacade: TimerFacade;
