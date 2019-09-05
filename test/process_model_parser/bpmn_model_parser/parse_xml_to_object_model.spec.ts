@@ -1,22 +1,30 @@
+import * as fs from 'fs';
 import * as should from 'should';
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {BpmnModelParser} from '../../../src/model/bpmn_model_parser';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
+  let parser: BpmnModelParser;
   let fixtureProvider: TestFixtureProvider;
 
   before(async (): Promise<void> => {
     fixtureProvider = new TestFixtureProvider();
     await fixtureProvider.initialize();
+
+    parser = new BpmnModelParser();
+    await parser.initialize();
   });
 
   it('Should successfully parse a diagram that contains one lane.', async (): Promise<void> => {
 
-    const processModelFilePath = 'process_engine_io_release.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('process_engine_io_release.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'ausserordentlicher_start',
@@ -35,8 +43,10 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   it('Should successfully parse a diagram that contains multiple parallel lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = 'DemoNutztierRiss.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('DemoNutztierRiss.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'StartEvent_1',
@@ -63,8 +73,10 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   it('Should successfully parse a diagram that contains no lanes.', async (): Promise<void> => {
 
-    const processModelFilePath = 'generic_sample.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('generic_sample.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'ProcessInputEvent',
@@ -83,8 +95,10 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   it('Should successfully parse a diagram that contains an empty lane.', async (): Promise<void> => {
 
-    const processModelFilePath = 'empty_lane_test.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('empty_lane_test.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'StartEvent_1mox3jl',
@@ -96,8 +110,10 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   it('Should successfully parse a diagram that contains several sublanes.', async (): Promise<void> => {
 
-    const processModelFilePath = 'sublane_test.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('sublane_test.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'StartEvent_1',
@@ -113,8 +129,10 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   it('Should successfully parse SignalEndEvents with customized inputValues.', async (): Promise<void> => {
 
-    const processModelFilePath = 'customized_signal_end_event_payload.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('customized_signal_end_event_payload.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'startEvent',
@@ -141,8 +159,10 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   it('Should correctly interpret a default SequenceFlow for an ExclusiveSplitGateway.', async (): Promise<void> => {
 
-    const processModelFilePath = 'default_sequence_flow_test.bpmn';
-    const parsedProcessModel = await fixtureProvider.parseProcessModelFromFile(processModelFilePath);
+    const xml = readBpmnFile('default_sequence_flow_test.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
 
     const expectedFlowNodeIdList = [
       'StartEvent_1',
@@ -162,4 +182,22 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
     should(exclusiveGateway).have.property('defaultOutgoingSequenceFlowId');
     should(exclusiveGateway.defaultOutgoingSequenceFlowId).be.equal(expectedDefaultSequenceFlowId);
   });
+
+  function readBpmnFile(bpmnFilename: string): string {
+    const fullPath = `./test/bpmns/${bpmnFilename}`;
+    const bpmnXml = fs.readFileSync(fullPath, 'utf8');
+
+    return bpmnXml;
+  }
+
+  function assertProcessDefinitionAndReturnProcessmodel(definiiton: Model.Definitions): Model.Process {
+
+    should(definiiton).be.instanceOf(Model.Definitions);
+    should(definiiton.processes).be.an.Array();
+    should(definiiton.processes).have.length(1);
+
+    const process = definiiton.processes[0];
+
+    return process;
+  }
 });
