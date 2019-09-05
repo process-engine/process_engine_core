@@ -83,7 +83,7 @@ function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectMo
   return Array.prototype.concat(messageDefinitions, signalDefinitions);
 }
 
-function parseEventDefinitionTypeFromObjectModel<TEventDefinition>(
+function parseEventDefinitionTypeFromObjectModel<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
   parsedObjectModel: IParsedObjectModel,
   tagName: BpmnTags.CommonElement,
   typeFactory: Model.Base.IConstructor<TEventDefinition>,
@@ -102,7 +102,7 @@ function parseEventDefinitionTypeFromObjectModel<TEventDefinition>(
     // eslint-disable-next-line 6river/new-cap
     const newDefinition = new typeFactory();
 
-    (newDefinition as any).id = rawDefinition.id;
+    newDefinition.id = rawDefinition.id;
     (newDefinition as any).name = rawDefinition.name;
 
     eventDefinitions.push(newDefinition);

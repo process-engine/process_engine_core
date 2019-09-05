@@ -4,7 +4,7 @@ import {BaseError, InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ExternalTask, ExternalTaskState, IExternalTaskRepository} from '@process-engine/external_task_api_contracts';
+import {DataModels as ConsumerApiTypes, IExternalTaskRepository} from '@process-engine/consumer_api_contracts';
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   IFlowNodeHandlerFactory,
@@ -122,7 +122,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         return resolve(nextFlowNode);
       }
 
-      const externalTaskIsAlreadyFinished = externalTask.state === ExternalTaskState.finished;
+      const externalTaskIsAlreadyFinished = externalTask.state === ConsumerApiTypes.ExternalTask.ExternalTaskState.finished;
       if (externalTaskIsAlreadyFinished) {
         // The external worker has already finished processing the ExternalTask
         // and we only missed the notification.
@@ -264,7 +264,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
       });
   }
 
-  private async getExternalTaskForFlowNodeInstance(flowNodeInstance: FlowNodeInstance): Promise<ExternalTask<any>> {
+  private async getExternalTaskForFlowNodeInstance(flowNodeInstance: FlowNodeInstance): Promise<ConsumerApiTypes.ExternalTask.ExternalTask<any>> {
 
     try {
       const matchingExternalTask = await this
@@ -335,7 +335,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     const matchingExternalTask =
       await this.externalTaskRepository.getByInstanceIds(token.correlationId, token.processInstanceId, this.flowNodeInstanceId);
 
-    const taskIsAlreadyFinished = matchingExternalTask.state === ExternalTaskState.finished;
+    const taskIsAlreadyFinished = matchingExternalTask.state === ConsumerApiTypes.ExternalTask.ExternalTaskState.finished;
     if (taskIsAlreadyFinished) {
       return;
     }
