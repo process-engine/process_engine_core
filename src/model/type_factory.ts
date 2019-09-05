@@ -1,5 +1,5 @@
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/process_model.contracts';
-import { UnprocessableEntityError } from '@essential-projects/errors_ts';
 
 /**
  * Retrieves an element from the given raw ProcessModel data.
