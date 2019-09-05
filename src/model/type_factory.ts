@@ -1,4 +1,5 @@
 import {BpmnTags, Model} from '@process-engine/process_model.contracts';
+import { UnprocessableEntityError } from '@essential-projects/errors_ts';
 
 /**
  * Retrieves an element from the given raw ProcessModel data.
@@ -57,6 +58,17 @@ export function createObjectWithCommonProperties<TTargetType extends Model.Base.
  */
 export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.Base.BaseElement): Model.Base.BaseElement {
 
+  if (!rawData.id) {
+    const additionalInfo = {
+      rawDataToParse: rawData,
+      elementInstance: instance,
+    };
+    const error = new UnprocessableEntityError('The given element has no ID!');
+    error.additionalInformation = additionalInfo as any;
+
+    throw error;
+  }
+
   instance.id = rawData.id;
 
   if (rawData[BpmnTags.FlowElementProperty.Documentation]) {
@@ -82,14 +94,13 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
       instance.extensionElements.camundaExtensionProperties =
         getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
     }
-
   }
 
   return instance;
 }
 
 /**
- * This is supposed to address the issue, where empty camunda:property tags will cause
+ * This is supposed to address the issue, where empty camunda:properties tags will cause
  * unexpected behavior when executing a process model.
  * For instance, a service task's invocation would not be usable, or a UserTask's FormFields could
  * not be addressed.
@@ -101,8 +112,11 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
  */
 function filterOutEmptyProperties(camundaProperties: any): any {
 
+  // Filter out strings etc, because these are not valid for the 'camunda:properties' tag.
   if (!Array.isArray(camundaProperties)) {
-    return camundaProperties;
+    return typeof camundaProperties === 'object'
+      ? camundaProperties
+      : undefined;
   }
 
   const filteredProperties = camundaProperties.filter((property: any): boolean => {
@@ -114,16 +128,10 @@ function filterOutEmptyProperties(camundaProperties: any): any {
 
     let hasValue = false;
 
-    if (typeof property === 'string') {
-      hasValue = property.trim().length > 0;
-    } else if (typeof property === 'object') {
+    if (typeof property === 'object') {
       hasValue = Object.keys(property).length > 0;
     } else if (Array.isArray(property)) {
       hasValue = property.length > 0;
-    } else if (typeof property === 'number' || typeof property === 'boolean') {
-      // "Numbers" and "Booleans" use default values of 0.
-      // So if we have such types here, we can always assume a value to be present.
-      hasValue = true;
     }
 
     return hasValue;
@@ -138,7 +146,10 @@ function filterOutEmptyProperties(camundaProperties: any): any {
     // Usually, when only a single property is declared on an element,
     // the parsed result would look something like this:
     //
-    // { 'camunda:properties': 'someValue' }
+    // { 'camunda:properties': {
+    //     name: 'random',
+    //     value: 'value',
+    // } }
     //
     // Since we have an Array here, we need to return that value specifically,
     // in order to keep the ProcessModel's structure intact.
