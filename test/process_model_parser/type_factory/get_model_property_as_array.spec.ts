@@ -40,11 +40,6 @@ describe('TypeFactory.getModelPropertyAsArray', (): void => {
     should.not.exist(parsedProperty);
   });
 
-  it('Should return undefined, if the given property does not exist on the dataset', (): void => {
-    const parsedProperty = TypeFactory.getModelPropertyAsArray(sampleData, 'nonExistentProperty');
-    should.not.exist(parsedProperty);
-  });
-
   it('Should return undefined, if the given property has a null value', (): void => {
     const parsedProperty = TypeFactory.getModelPropertyAsArray(sampleData, 'nullProperty');
     should.not.exist(parsedProperty);
