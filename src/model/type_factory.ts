@@ -106,16 +106,25 @@ function filterOutEmptyProperties(camundaProperties: any): any {
   }
 
   const filteredProperties = camundaProperties.filter((property: any): boolean => {
-    const isNotEmpty = property !== undefined;
+    // eslint-disable-next-line no-null/no-null
+    const propertyIsEmpty = property === null || property === undefined;
+
+    if (propertyIsEmpty) {
+      return false;
+    }
 
     let hasValue = false;
 
     if (typeof property === 'string') {
-      hasValue = isNotEmpty && property.length > 0;
+      hasValue = property.trim().length > 0;
     } else if (typeof property === 'object') {
-      hasValue = isNotEmpty && Object.keys(property).length > 0;
+      hasValue = Object.keys(property).length > 0;
     } else if (Array.isArray(property)) {
-      hasValue = isNotEmpty && property.length > 0;
+      hasValue = property.length > 0;
+    } else if (typeof property === 'number' || typeof property === 'boolean') {
+      // "Numbers" and "Booleans" use default values of 0.
+      // So if we have such types here, we can always assume a value to be present.
+      hasValue = true;
     }
 
     return hasValue;
