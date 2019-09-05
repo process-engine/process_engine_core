@@ -4,7 +4,7 @@ import {
   Model,
 } from '@process-engine/process_model.contracts';
 
-import {Parsers} from './index';
+import {parseCollaboration, parseProcesses} from './index';
 
 export function parseDefinitions(parsedObjectModel: IParsedObjectModel): Model.Definitions {
 
@@ -17,8 +17,8 @@ function convertToInternalObjectModel(parsedXml: any): Model.Definitions {
 
   const definitions = createDefinitionBaseObject(parsedXml);
 
-  definitions.collaboration = Parsers.CollaborationParser.parseCollaboration(parsedXml);
-  definitions.processes = Parsers.ProcessParser.parseProcesses(parsedXml);
+  definitions.collaboration = parseCollaboration(parsedXml);
+  definitions.processes = parseProcesses(parsedXml);
 
   return definitions;
 }

@@ -10,7 +10,7 @@ import {
   getModelPropertyAsArray,
 } from '../type_factory';
 
-import {Parsers} from './index';
+import {parseProcessFlowNodes, parseProcessLaneSet, parseProcessSequenceFlows} from './index';
 
 // TODO: The following elements are not supported yet:
 // - Text annotations
@@ -31,9 +31,9 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
     const bpmnErrors = parseErrorsFromProcessModel(parsedObjectModel);
     const eventDefinitions = parseEventDefinitionsFromObjectModel(parsedObjectModel);
 
-    process.laneSet = Parsers.ProcessLaneSetParser.parseProcessLaneSet(processRaw);
-    process.sequenceFlows = Parsers.SequenceFlowParser.parseProcessSequenceFlows(processRaw);
-    process.flowNodes = Parsers.FlowNodeParser.parseProcessFlowNodes(processRaw, bpmnErrors, eventDefinitions);
+    process.laneSet = parseProcessLaneSet(processRaw);
+    process.sequenceFlows = parseProcessSequenceFlows(processRaw);
+    process.flowNodes = parseProcessFlowNodes(processRaw, bpmnErrors, eventDefinitions);
 
     processes.push(process);
   }
