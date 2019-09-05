@@ -143,16 +143,8 @@ function filterOutEmptyProperties(camundaProperties: any): any {
   }
 
   if (filteredProperties.length === 1) {
-    // Usually, when only a single property is declared on an element,
-    // the parsed result would look something like this:
-    //
-    // { 'camunda:properties': {
-    //     name: 'random',
-    //     value: 'value',
-    // } }
-    //
-    // Since we have an Array here, we need to return that value specifically,
-    // in order to keep the ProcessModel's structure intact.
+    // Return only the one property that actually had a value.
+    // In the original XML, that property would not have been contained in an Array anyway.
     return filteredProperties[0];
   }
 
