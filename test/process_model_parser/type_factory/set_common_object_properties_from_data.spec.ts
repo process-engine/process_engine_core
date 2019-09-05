@@ -304,13 +304,45 @@ describe('TypeFactory.setCommonObjectPropertiesFromData', (): void => {
     should(result.extensionElements.camundaExtensionProperties).be.empty();
   });
 
+  it('Should throw an error, if the properties are spread across multiple collections', (): void => {
+
+    const sampleData = {
+      id: 'HelloWorldId',
+      'bpmn:extensionElements': {
+        'camunda:properties': [
+          {
+            'camunda:property': [
+              {name: 'hello', value: 'world'},
+              {name: 'random', value: 'value'},
+            ],
+          },
+          {
+            'camunda:property': [
+              {name: 'hello', value: 'world'},
+              {name: 'random', value: 'value'},
+            ],
+          },
+        ],
+      },
+    };
+
+    const sampleBaseElement: Model.Base.BaseElement = {id: ''};
+
+    try {
+      const result = TypeFactory.setCommonObjectPropertiesFromData(sampleData, sampleBaseElement);
+      should.fail(result, undefined, 'This should have failed, because the property collection is invalid, indicating a broken ProcessModel!');
+    } catch (error) {
+      should(error).be.an.instanceOf(UnprocessableEntityError);
+      should(error.message).be.match(/xml contains more than one camunda:properties collection/i);
+      should.exist(error.additionalInformation);
+      should(error.additionalInformation.propertyCollection).be.eql(sampleData['bpmn:extensionElements']['camunda:properties']);
+    }
+  });
+
   it('Should throw an error, if the given dataset contains no ID', (): void => {
     const sampleData = {
       'bpmn:extensionElements': {
-        'camunda:properties': [
-          '',
-          '',
-        ],
+        'camunda:properties': [],
       },
     };
 

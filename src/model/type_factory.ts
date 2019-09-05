@@ -142,12 +142,15 @@ function filterOutEmptyProperties(camundaProperties: any): any {
     return undefined;
   }
 
-  if (filteredProperties.length === 1) {
-    // Return only the one property that actually had a value.
-    // In the original XML, that property would not have been contained in an Array anyway.
-    return filteredProperties[0];
+  // Only one collection of properties should remain after filtering. Otherwise, the XML is broken.
+  if (filteredProperties.length > 1) {
+    const error = new UnprocessableEntityError('The XML contains more than one camunda:properties collection! This is not allowed!');
+    error.additionalInformation = {
+      propertyCollection: filteredProperties,
+    } as any;
+
+    throw error;
   }
 
-  // More than one property was declared, so return the Array as it is.
-  return filteredProperties;
+  return filteredProperties[0];
 }
