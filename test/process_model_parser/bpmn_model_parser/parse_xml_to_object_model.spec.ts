@@ -190,13 +190,13 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
     return bpmnXml;
   }
 
-  function assertProcessDefinitionAndReturnProcessmodel(definiiton: Model.Definitions): Model.Process {
+  function assertProcessDefinitionAndReturnProcessmodel(definition: Model.Definitions): Model.Process {
 
-    should(definiiton).be.instanceOf(Model.Definitions);
-    should(definiiton.processes).be.an.Array();
-    should(definiiton.processes).have.length(1);
+    should(definition).be.instanceOf(Model.Definitions);
+    should(definition.processes).be.an.Array();
+    should(definition.processes).have.length(1);
 
-    const process = definiiton.processes[0];
+    const process = definition.processes[0];
 
     return process;
   }

@@ -24,7 +24,6 @@ export class BpmnModelParser implements IModelParser {
   }
 
   public async parseXmlToObjectModel(xml: string): Promise<Model.Definitions> {
-
     const parsedObjectModel = await this.xmlParserFunc(xml);
 
     const definitions = parseDefinitions(parsedObjectModel);
