@@ -106,7 +106,6 @@ function filterOutEmptyProperties(camundaProperties: any): any {
   }
 
   const filteredProperties = camundaProperties.filter((property: any): boolean => {
-    // eslint-disable-next-line no-null/no-null
     const propertyIsEmpty = property === null || property === undefined;
 
     if (propertyIsEmpty) {
