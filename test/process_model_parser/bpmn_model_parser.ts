@@ -4,7 +4,7 @@ import {Model} from '@process-engine/process_model.contracts';
 
 import {TestFixtureProvider} from '../test_fixture_provider';
 
-describe('ProcessModelParser ', (): void => {
+describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
 
