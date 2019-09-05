@@ -6,7 +6,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {IProcessInstanceConfig} from '../../../src/runtime/facades/iprocess_instance_config';
 import {ProcessInstanceStateHandlingFacade} from '../../../src/runtime/facades/process_instance_state_handling_facade';
 import {CorrelationServiceMock, ProcessModelUseCasesMock} from '../../mocks';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
 

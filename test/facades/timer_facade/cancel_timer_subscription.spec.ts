@@ -3,7 +3,7 @@ import * as should from 'should';
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
 
 import {EventAggregatorMock, TimerServiceMock} from '../../mocks';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('TimerFacade.cancel', (): void => {
 

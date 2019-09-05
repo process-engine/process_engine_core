@@ -1,7 +1,7 @@
 /* eslint-disable dot-notation */
 import * as should from 'should';
 
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 import {ProcessTokenFacade} from '../../../src/runtime/facades';
 
 describe('ProcessTokenFacade.getProcessTokenFacadeForParallelBranch', (): void => {

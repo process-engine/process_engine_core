@@ -6,7 +6,7 @@ import * as Bluebird from 'bluebird';
 import {IIdentity} from '@essential-projects/iam_contracts';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
-import {BpmnModelParser} from '../../src/model/bpmn_model_parser';
+import {BpmnModelParser} from '../src/model/bpmn_model_parser';
 import {
   FlowNodePersistenceFacade,
   ProcessInstanceStateHandlingFacade,
@@ -14,7 +14,7 @@ import {
   ProcessTokenFacade,
   SubProcessModelFacade,
   TimerFacade,
-} from '../../src/runtime';
+} from '../src/runtime';
 import {
   CorrelationServiceMock,
   EventAggregatorMock,
@@ -23,7 +23,7 @@ import {
   MetricsServiceMock,
   ProcessModelUseCasesMock,
   TimerServiceMock,
-} from '../mocks';
+} from './mocks';
 
 Bluebird.config({
   cancellation: true,

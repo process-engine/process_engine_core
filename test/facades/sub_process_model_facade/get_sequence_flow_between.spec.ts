@@ -3,7 +3,7 @@ import * as should from 'should';
 import {Model} from '@process-engine/process_model.contracts';
 
 import {SubProcessModelFacade} from '../../../src/runtime/facades/sub_process_model_facade';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('SubProcessModelFacade.getSequenceFlowBetween', (): void => {
 

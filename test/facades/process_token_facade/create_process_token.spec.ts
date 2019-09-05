@@ -2,7 +2,7 @@ import * as should from 'should';
 
 import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 import {ProcessTokenFacade} from '../../../src/runtime/facades';
 
 describe('ProcessTokenFacade.createProcessToken', (): void => {

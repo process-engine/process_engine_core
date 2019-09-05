@@ -5,7 +5,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ProcessTokenFacadeFactory} from '../../../src/runtime/facades/process_token_facade_factory';
 import {ProcessTokenFacade} from '../../../src/runtime/facades/process_token_facade';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('processTokenFacadeFactory.create', (): void => {
 

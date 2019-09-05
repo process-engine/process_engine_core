@@ -1,3 +1,4 @@
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/process_model.contracts';
 
 /**
@@ -57,6 +58,17 @@ export function createObjectWithCommonProperties<TTargetType extends Model.Base.
  */
 export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.Base.BaseElement): Model.Base.BaseElement {
 
+  if (!rawData.id) {
+    const additionalInfo = {
+      rawDataToParse: rawData,
+      elementInstance: instance,
+    };
+    const error = new UnprocessableEntityError('The given element has no ID!');
+    error.additionalInformation = additionalInfo as any;
+
+    throw error;
+  }
+
   instance.id = rawData.id;
 
   if (rawData[BpmnTags.FlowElementProperty.Documentation]) {
@@ -82,14 +94,13 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
       instance.extensionElements.camundaExtensionProperties =
         getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
     }
-
   }
 
   return instance;
 }
 
 /**
- * This is supposed to address the issue, where empty camunda:property tags will cause
+ * This is supposed to address the issue, where empty camunda:properties tags will cause
  * unexpected behavior when executing a process model.
  * For instance, a service task's invocation would not be usable, or a UserTask's FormFields could
  * not be addressed.
@@ -101,21 +112,26 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
  */
 function filterOutEmptyProperties(camundaProperties: any): any {
 
+  // Filter out strings etc, because these are not valid for the 'camunda:properties' tag.
   if (!Array.isArray(camundaProperties)) {
-    return camundaProperties;
+    return typeof camundaProperties === 'object'
+      ? camundaProperties
+      : undefined;
   }
 
   const filteredProperties = camundaProperties.filter((property: any): boolean => {
-    const isNotEmpty = property !== undefined;
+    const propertyIsEmpty = property === null || property === undefined;
+
+    if (propertyIsEmpty) {
+      return false;
+    }
 
     let hasValue = false;
 
-    if (typeof property === 'string') {
-      hasValue = isNotEmpty && property.length > 0;
-    } else if (typeof property === 'object') {
-      hasValue = isNotEmpty && Object.keys(property).length > 0;
+    if (typeof property === 'object') {
+      hasValue = Object.keys(property).length > 0;
     } else if (Array.isArray(property)) {
-      hasValue = isNotEmpty && property.length > 0;
+      hasValue = property.length > 0;
     }
 
     return hasValue;
@@ -126,17 +142,15 @@ function filterOutEmptyProperties(camundaProperties: any): any {
     return undefined;
   }
 
-  if (filteredProperties.length === 1) {
-    // Usually, when only a single property is declared on an element,
-    // the parsed result would look something like this:
-    //
-    // { 'camunda:properties': 'someValue' }
-    //
-    // Since we have an Array here, we need to return that value specifically,
-    // in order to keep the ProcessModel's structure intact.
-    return filteredProperties[0];
+  // Only one collection of properties should remain after filtering. Otherwise, the XML is broken.
+  if (filteredProperties.length > 1) {
+    const error = new UnprocessableEntityError('The XML contains more than one camunda:properties collection! This is not allowed!');
+    error.additionalInformation = {
+      propertyCollection: filteredProperties,
+    } as any;
+
+    throw error;
   }
 
-  // More than one property was declared, so return the Array as it is.
-  return filteredProperties;
+  return filteredProperties[0];
 }

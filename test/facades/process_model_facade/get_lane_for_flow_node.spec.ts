@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import * as should from 'should';
 
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('ProcessModelFacade.getLaneForFlowNode', (): void => {
 

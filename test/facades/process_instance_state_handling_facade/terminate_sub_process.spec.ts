@@ -5,7 +5,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {Correlation, CorrelationState} from '@process-engine/correlation.contracts';
 
 import {CorrelationServiceMock, EventAggregatorMock} from '../../mocks';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void => {
 

@@ -3,7 +3,7 @@ import * as should from 'should';
 
 import {IFlowNodeInstanceResult} from '@process-engine/process_engine_contracts';
 
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('ProcessTokenFacade.addResultForFlowNode', (): void => {
 
