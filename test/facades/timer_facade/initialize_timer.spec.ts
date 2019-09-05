@@ -3,7 +3,7 @@ import * as should from 'should';
 import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('TimerFacade.initializeTimer', (): void => {
 

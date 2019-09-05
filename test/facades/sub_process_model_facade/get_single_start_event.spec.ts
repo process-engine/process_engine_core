@@ -2,7 +2,7 @@ import * as should from 'should';
 
 import {Model} from '@process-engine/process_model.contracts';
 
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('SubProcessModelFacade.getSingleStartEvent', (): void => {
 

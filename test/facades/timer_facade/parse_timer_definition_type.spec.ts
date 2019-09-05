@@ -3,7 +3,7 @@ import * as should from 'should';
 import {TimerDefinitionType} from '@process-engine/process_engine_contracts';
 
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 // NOTE: This function is now located in the EventParser.
 // So these tests might still prove useful, when writing tests for that parser.

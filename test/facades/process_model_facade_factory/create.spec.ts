@@ -2,7 +2,7 @@ import * as should from 'should';
 
 import {ProcessModelFacadeFactory} from '../../../src/runtime/facades/process_model_facade_factory';
 import {ProcessModelFacade} from '../../../src/runtime/facades/process_model_facade';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('ProcessModelFacadeFactory.create', (): void => {
 

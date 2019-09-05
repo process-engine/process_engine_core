@@ -5,7 +5,7 @@ import {EventReceivedCallback, Subscription} from '@essential-projects/event_agg
 
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';
 import {EventAggregatorMock, TimerServiceMock} from '../../mocks';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('TimerFacade.startDurationTimer', (): void => {
 

@@ -4,7 +4,7 @@ import * as should from 'should';
 import {LogLevel} from '@process-engine/logging_api_contracts';
 
 import {LoggingServiceMock, MetricsServiceMock} from '../../mocks';
-import {TestFixtureProvider} from '../test_fixture_provider';
+import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('ProcessInstanceStateHandlingFacade.logProcessFinished', (): void => {
 
