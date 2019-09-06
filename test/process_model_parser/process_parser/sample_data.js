@@ -24,7 +24,24 @@ module.exports.DefinitionWithSingleProcess = {
       id: 'EndEvent_0eie6q6',
       name: 'End Event',
       'bpmn:incoming': 'SequenceFlow_1jdocur'
-    }
+    },
+    'bpmn:message': [{
+        id: 'Message_1415hon',
+        name: '1234'
+      }, {
+        id: 'Message_1vwrcug',
+        name: 'TestMessage1234'
+      },
+    ],
+    'bpmn:error': {
+      id: 'Error_0agxpau',
+      name: 'no_message_received',
+      errorCode: '666'
+    },
+    'bpmn:signal': {
+      id: 'Signal_0il1yzu',
+      name: 'TestSignal1234'
+    },
   },
 
 };
