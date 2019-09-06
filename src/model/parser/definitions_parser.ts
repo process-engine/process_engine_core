@@ -4,6 +4,7 @@ import {
   Model,
 } from '@process-engine/process_model.contracts';
 
+import {createObjectWithCommonProperties} from '../type_factory';
 import {parseCollaboration, parseProcesses} from './index';
 
 export function parseDefinitions(parsedObjectModel: IParsedObjectModel): Model.Definitions {
@@ -25,9 +26,8 @@ function convertToInternalObjectModel(parsedXml: any): Model.Definitions {
 
 function createDefinitionBaseObject(parsedXml: any): Model.Definitions {
 
-  const basicDefinition = new Model.Definitions();
+  const basicDefinition = createObjectWithCommonProperties(parsedXml, Model.Definitions);
 
-  basicDefinition.id = parsedXml.id;
   basicDefinition.xmlns = {
     bpmn: parsedXml[BpmnTags.XmlnsProperty.bpmn],
     bpmndi: parsedXml[BpmnTags.XmlnsProperty.bpmndi],
