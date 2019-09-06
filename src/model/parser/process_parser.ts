@@ -19,6 +19,10 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
 
   const processData = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
 
+  if (!processData) {
+    return [];
+  }
+
   const processes: Array<Model.Process> = [];
 
   for (const processRaw of processData) {
