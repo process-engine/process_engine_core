@@ -8,7 +8,9 @@ export function parseCollaboration(parsedObjectModel: IParsedObjectModel): Model
 
   const collaborationData = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
 
-  const collaboration = createObjectWithCommonProperties(parsedObjectModel, Model.Collaboration);
+  const collaboration = createObjectWithCommonProperties(collaborationData, Model.Collaboration);
+
+  collaboration.name = collaborationData.name;
 
   collaboration.participants = getCollaborationParticipants(collaborationData);
 

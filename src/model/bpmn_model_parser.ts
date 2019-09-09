@@ -1,12 +1,8 @@
 import * as xml2js from 'xml2js';
 
-import {
-  IModelParser,
-  IParsedObjectModel,
-  Model,
-} from '@process-engine/process_model.contracts';
+import {IModelParser, Model} from '@process-engine/process_model.contracts';
 
-import {Parsers} from './parser';
+import {parseDefinitions} from './parser';
 
 export class BpmnModelParser implements IModelParser {
 
@@ -28,17 +24,10 @@ export class BpmnModelParser implements IModelParser {
   }
 
   public async parseXmlToObjectModel(xml: string): Promise<Model.Definitions> {
-
-    const parsedObjectModel = await this.parseObjectModel(xml);
-    const definitions = Parsers.DefinitionParser.parseDefinitions(parsedObjectModel);
+    const parsedObjectModel = await this.xmlParserFunc(xml);
+    const definitions = parseDefinitions(parsedObjectModel);
 
     return definitions;
-  }
-
-  private async parseObjectModel(xml: string): Promise<IParsedObjectModel> {
-    const parsedXml = await this.xmlParserFunc(xml);
-
-    return parsedXml;
   }
 
 }
