@@ -1,4 +1,3 @@
-'use strict';
 
 const BpmnModelParser = require('./dist/commonjs/index').BpmnModelParser;
 
@@ -74,7 +73,7 @@ function registerServices(container) {
 
   container
     .register('CronjobService', CronjobService)
-    .dependencies('CronjobHistoryService', 'ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases', 'TimerFacade')
+    .dependencies('EventAggregator', 'CronjobHistoryService', 'ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases', 'TimerFacade')
     .singleton();
 
   container
