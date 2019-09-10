@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
@@ -86,7 +85,6 @@ export class CronjobService implements ICronjobService {
     for (const processModel of processModelsWithCronjobs) {
       this.createCronjobForProcessModel(processModel);
       this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobCreated, this.cronjobDictionary[processModel.id]);
-      logger.info('CRONJOB CREATED');
     }
 
     this._isRunning = true;
@@ -105,11 +103,8 @@ export class CronjobService implements ICronjobService {
     const processModelIds = Object.keys(this.cronjobDictionary);
 
     for (const processModelId of processModelIds) {
-      console.log('stoppped from stop method in for of');
       this.stopCronjobsForProcessModel(processModelId);
-      console.log('stop this cronjob now', this.cronjobDictionary[processModelId]);
       this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.cronjobDictionary[processModelId]);
-      logger.info('CRONJOB STOPPED');
     }
 
     this._isRunning = false;
@@ -168,12 +163,9 @@ export class CronjobService implements ICronjobService {
       }
 
       logger.info(`ProcessModel ${processModel.id} no longer contains any active cronjobs. Removing all active jobs for that ProcessModel...`);
-      console.log('stopped from addorUpdate in update case');
       this.stopCronjobsForProcessModel(processModel.id);
       logger.info('Done.');
 
-      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobUpdated, this.cronjobDictionary[processModel.id]);
-      logger.info('CRONJOB UPDATED');
       return;
     }
 
@@ -182,13 +174,14 @@ export class CronjobService implements ICronjobService {
     // This also provides insurance against unintended executions, if a cronjob happens to expire during the update.
     logger.info(`Creating or updating cronjobs for ProcessModel ${processModel.id}...`);
     if (config) {
-      console.log('stopped from addOrUpdate in case to sync internal storage');
       this.stopCronjobsForProcessModel(processModel.id);
     }
 
     this.createCronjobForProcessModel(processModel);
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobCreated, this.cronjobDictionary[processModel.id]);
-    logger.info('CRONJOB CREATED');
+
+    const eventToPublish = config ? eventAggregatorSettings.messagePaths.cronjobUpdated : eventAggregatorSettings.messagePaths.cronjobCreated;
+    this.eventAggregator.publish(eventToPublish, this.cronjobDictionary[processModel.id]);
+
     logger.info('Done. New Cronjobs for ProcessModel: ', this.cronjobDictionary[processModel.id]);
   }
 
@@ -199,6 +192,7 @@ export class CronjobService implements ICronjobService {
 
     logger.info(`Removing cronjobs for ProcessModel ${processModelId}...`);
     this.stopCronjobsForProcessModel(processModelId);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.cronjobDictionary[processModelId]);
     logger.info('Done.');
   }
 
@@ -239,7 +233,6 @@ export class CronjobService implements ICronjobService {
 
         this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
         this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobExecuted, this.cronjobDictionary[processModelId]);
-        logger.info('CRONJOB EXECUTED');
       };
 
       const dummyProcessTokenFacade = new ProcessTokenFacade(undefined, processModel.id, undefined, this.internalIdentity);
