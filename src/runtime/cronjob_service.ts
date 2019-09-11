@@ -164,6 +164,7 @@ export class CronjobService implements ICronjobService {
 
       logger.info(`ProcessModel ${processModel.id} no longer contains any active cronjobs. Removing all active jobs for that ProcessModel...`);
       this.stopCronjobsForProcessModel(processModel.id);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.cronjobDictionary[processModel.id]);
       logger.info('Done.');
 
       return;
@@ -192,7 +193,7 @@ export class CronjobService implements ICronjobService {
 
     logger.info(`Removing cronjobs for ProcessModel ${processModelId}...`);
     this.stopCronjobsForProcessModel(processModelId);
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.cronjobDictionary[processModelId]);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobRemoved, this.cronjobDictionary[processModelId]);
     logger.info('Done.');
   }
 
