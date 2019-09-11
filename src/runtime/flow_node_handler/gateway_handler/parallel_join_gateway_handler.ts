@@ -22,7 +22,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
   private readonly container: IContainer;
 
-  private expectedNumberOfResults = -1;
   private incomingFlowNodeInstanceIds: Array<string> = [];
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
@@ -79,12 +78,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     if (subscriptionForProcessTerminationNeeded) {
       this.processTerminationSubscription = this.subscribeToProcessTermination(token);
     }
-
-    const expectedNumerOfResultsNotset = this.expectedNumberOfResults === -1;
-    if (expectedNumerOfResultsNotset) {
-      const preceedingFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
-      this.expectedNumberOfResults = preceedingFlowNodes.length;
-    }
   }
 
   protected async startExecution(
@@ -115,7 +108,13 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     const latestResult = this.getLatestFlowNodeResultFromFacade(processTokenFacade);
     this.receivedResults.push(latestResult);
 
-    const notAllBranchesHaveFinished = this.receivedResults.length < this.expectedNumberOfResults;
+    const previousFlowNodes = processModelFacade.getPreviousFlowNodesFor(this.parallelGateway);
+
+    const notAllBranchesHaveFinished = !previousFlowNodes.every((previousFlowNode): boolean => {
+      return this.receivedResults.some((result): boolean => {
+        return result.flowNodeId === previousFlowNode.id;
+      });
+    });
     if (notAllBranchesHaveFinished) {
       return undefined;
     }
