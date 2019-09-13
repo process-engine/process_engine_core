@@ -7,6 +7,8 @@ import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {Cronjob, ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
 import {
+  CronjobBaseEvent,
+  CronjobBaseEventMessage,
   CronjobConfiguration,
   ICronjobService,
   IExecuteProcessService,
@@ -19,13 +21,7 @@ import {ProcessTokenFacade} from './facades/process_token_facade';
 
 const logger = Logger.createLogger('processengine:runtime:cronjob_service');
 
-type CronjobCollectionEntry = {
-  subscription?: Subscription;
-  startEventId: string;
-  cronjob: string;
-};
-
-type CronjobCollection = {[processModelId: string]: Array<CronjobCollectionEntry>};
+type CronjobCollection = {[processModelId: string]: Array<CronjobBaseEvent>};
 
 export class CronjobService implements ICronjobService {
 
@@ -84,7 +80,7 @@ export class CronjobService implements ICronjobService {
 
     for (const processModel of processModelsWithCronjobs) {
       this.createCronjobForProcessModel(processModel);
-      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobCreated, this.cronjobDictionary[processModel.id]);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobCreated, this.getEventMessage(processModel.id));
     }
 
     this._isRunning = true;
@@ -104,7 +100,7 @@ export class CronjobService implements ICronjobService {
 
     for (const processModelId of processModelIds) {
       this.stopCronjobsForProcessModel(processModelId);
-      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.cronjobDictionary[processModelId]);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.getEventMessage(processModelId));
     }
 
     this._isRunning = false;
@@ -164,7 +160,7 @@ export class CronjobService implements ICronjobService {
 
       logger.info(`ProcessModel ${processModel.id} no longer contains any active cronjobs. Removing all active jobs for that ProcessModel...`);
       this.stopCronjobsForProcessModel(processModel.id);
-      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.cronjobDictionary[processModel.id]);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.getEventMessage(processModel.id));
       logger.info('Done.');
 
       return;
@@ -181,7 +177,7 @@ export class CronjobService implements ICronjobService {
     this.createCronjobForProcessModel(processModel);
 
     const eventToPublish = config ? eventAggregatorSettings.messagePaths.cronjobUpdated : eventAggregatorSettings.messagePaths.cronjobCreated;
-    this.eventAggregator.publish(eventToPublish, this.cronjobDictionary[processModel.id]);
+    this.eventAggregator.publish(eventToPublish, this.getEventMessage(processModel.id));
 
     logger.info('Done. New Cronjobs for ProcessModel: ', this.cronjobDictionary[processModel.id]);
   }
@@ -193,7 +189,7 @@ export class CronjobService implements ICronjobService {
 
     logger.info(`Removing cronjobs for ProcessModel ${processModelId}...`);
     this.stopCronjobsForProcessModel(processModelId);
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobRemoved, this.cronjobDictionary[processModelId]);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobRemoved, this.getEventMessage(processModelId));
     logger.info('Done.');
   }
 
@@ -233,7 +229,7 @@ export class CronjobService implements ICronjobService {
         logger.info(`A Cronjob for ProcessModel ${processModelId} has expired: `, expiredCronjob);
 
         this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
-        this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobExecuted, this.cronjobDictionary[processModelId]);
+        this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobExecuted, this.getEventMessage(processModelId));
       };
 
       const dummyProcessTokenFacade = new ProcessTokenFacade(undefined, processModel.id, undefined, this.internalIdentity);
@@ -316,6 +312,16 @@ export class CronjobService implements ICronjobService {
     }
 
     delete this.cronjobDictionary[processModelId];
+  }
+
+  private getEventMessage(processModelId: string): CronjobBaseEventMessage {
+
+    const eventMessage: CronjobBaseEventMessage = {
+      processModelId: processModelId,
+      cronjobs: this.cronjobDictionary[processModelId] as Array<CronjobBaseEvent>,
+    };
+
+    return eventMessage;
   }
 
 }
