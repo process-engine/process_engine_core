@@ -99,8 +99,9 @@ export class CronjobService implements ICronjobService {
     const processModelIds = Object.keys(this.cronjobDictionary);
 
     for (const processModelId of processModelIds) {
+      const eventMessage = this.getEventMessage(processModelId);
       this.stopCronjobsForProcessModel(processModelId);
-      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.getEventMessage(processModelId));
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, eventMessage);
     }
 
     this._isRunning = false;
@@ -159,8 +160,9 @@ export class CronjobService implements ICronjobService {
       }
 
       logger.info(`ProcessModel ${processModel.id} no longer contains any active cronjobs. Removing all active jobs for that ProcessModel...`);
+      const eventMessage = this.getEventMessage(processModel.id);
       this.stopCronjobsForProcessModel(processModel.id);
-      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, this.getEventMessage(processModel.id));
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, eventMessage);
       logger.info('Done.');
 
       return;
@@ -188,8 +190,9 @@ export class CronjobService implements ICronjobService {
     }
 
     logger.info(`Removing cronjobs for ProcessModel ${processModelId}...`);
+    const eventMessage = this.getEventMessage(processModelId);
     this.stopCronjobsForProcessModel(processModelId);
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobRemoved, this.getEventMessage(processModelId));
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobRemoved, eventMessage);
     logger.info('Done.');
   }
 
