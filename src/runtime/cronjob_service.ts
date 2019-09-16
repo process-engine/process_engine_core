@@ -2,12 +2,11 @@ import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {Cronjob, ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
 import {
-  CronjobBaseEvent,
   CronjobBaseEventMessage,
   CronjobConfiguration,
   ICronjobService,
@@ -21,7 +20,13 @@ import {ProcessTokenFacade} from './facades/process_token_facade';
 
 const logger = Logger.createLogger('processengine:runtime:cronjob_service');
 
-type CronjobCollection = {[processModelId: string]: Array<CronjobBaseEvent>};
+type CronjobCollectionEntry = {
+  subscription?: Subscription;
+  startEventId: string;
+  cronjob: string;
+};
+
+type CronjobCollection = {[processModelId: string]: Array<CronjobCollectionEntry>};
 
 export class CronjobService implements ICronjobService {
 
@@ -322,7 +327,7 @@ export class CronjobService implements ICronjobService {
     const cronjobWithStartEvent = [];
 
     if (startEventId) {
-      const cronjobForProcessModel = this.cronjobDictionary[processModelId].find((cronjob: CronjobBaseEvent): boolean => {
+      const cronjobForProcessModel = this.cronjobDictionary[processModelId].find((cronjob: CronjobCollectionEntry): boolean => {
         return cronjob.startEventId === startEventId;
       });
 
