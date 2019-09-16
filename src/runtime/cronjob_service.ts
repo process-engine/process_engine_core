@@ -2,15 +2,17 @@ import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {Cronjob, ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
 import {
+  CronjobBaseEventMessage,
   CronjobConfiguration,
   ICronjobService,
   IExecuteProcessService,
   ITimerFacade,
+  eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
@@ -29,6 +31,7 @@ type CronjobCollection = {[processModelId: string]: Array<CronjobCollectionEntry
 export class CronjobService implements ICronjobService {
 
   private readonly cronjobHistoryService: ICronjobHistoryService;
+  private readonly eventAggregator: IEventAggregator;
   private readonly executeProcessService: IExecuteProcessService;
   private readonly identityService: IIdentityService;
   private readonly processModelUseCases: IProcessModelUseCases;
@@ -45,12 +48,14 @@ export class CronjobService implements ICronjobService {
 
   constructor(
     cronjobHistoryService: ICronjobHistoryService,
+    eventAggregator: IEventAggregator,
     executeProcessService: IExecuteProcessService,
     identityService: IIdentityService,
     processModelUseCases: IProcessModelUseCases,
     timerFacade: ITimerFacade,
   ) {
     this.cronjobHistoryService = cronjobHistoryService;
+    this.eventAggregator = eventAggregator;
     this.executeProcessService = executeProcessService;
     this.identityService = identityService;
     this.processModelUseCases = processModelUseCases;
@@ -80,6 +85,7 @@ export class CronjobService implements ICronjobService {
 
     for (const processModel of processModelsWithCronjobs) {
       this.createCronjobForProcessModel(processModel);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobCreated, this.getEventMessage(processModel.id));
     }
 
     this._isRunning = true;
@@ -98,7 +104,9 @@ export class CronjobService implements ICronjobService {
     const processModelIds = Object.keys(this.cronjobDictionary);
 
     for (const processModelId of processModelIds) {
+      const eventMessage = this.getEventMessage(processModelId);
       this.stopCronjobsForProcessModel(processModelId);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, eventMessage);
     }
 
     this._isRunning = false;
@@ -157,7 +165,9 @@ export class CronjobService implements ICronjobService {
       }
 
       logger.info(`ProcessModel ${processModel.id} no longer contains any active cronjobs. Removing all active jobs for that ProcessModel...`);
+      const eventMessage = this.getEventMessage(processModel.id);
       this.stopCronjobsForProcessModel(processModel.id);
+      this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobStopped, eventMessage);
       logger.info('Done.');
 
       return;
@@ -172,6 +182,10 @@ export class CronjobService implements ICronjobService {
     }
 
     this.createCronjobForProcessModel(processModel);
+
+    const eventToPublish = config ? eventAggregatorSettings.messagePaths.cronjobUpdated : eventAggregatorSettings.messagePaths.cronjobCreated;
+    this.eventAggregator.publish(eventToPublish, this.getEventMessage(processModel.id));
+
     logger.info('Done. New Cronjobs for ProcessModel: ', this.cronjobDictionary[processModel.id]);
   }
 
@@ -181,7 +195,9 @@ export class CronjobService implements ICronjobService {
     }
 
     logger.info(`Removing cronjobs for ProcessModel ${processModelId}...`);
+    const eventMessage = this.getEventMessage(processModelId);
     this.stopCronjobsForProcessModel(processModelId);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobRemoved, eventMessage);
     logger.info('Done.');
   }
 
@@ -217,10 +233,11 @@ export class CronjobService implements ICronjobService {
         continue;
       }
 
-      const onCronjobExpired = (expiredCronjob: string, processModelId: string): void => {
+      const onCronjobExpired = (expiredCronjob: string, processModelId: string, startEventId: string): void => {
         logger.info(`A Cronjob for ProcessModel ${processModelId} has expired: `, expiredCronjob);
 
         this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
+        this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobExecuted, this.getEventMessage(processModelId, startEventId));
       };
 
       const dummyProcessTokenFacade = new ProcessTokenFacade(undefined, processModel.id, undefined, this.internalIdentity);
@@ -229,7 +246,7 @@ export class CronjobService implements ICronjobService {
         startEvent,
         startEvent.timerEventDefinition,
         dummyProcessTokenFacade,
-        onCronjobExpired.bind(this, timerValue, processModel.id),
+        onCronjobExpired.bind(this, timerValue, processModel.id, startEvent.id),
       );
 
       const newCronJobConfig = {
@@ -239,6 +256,7 @@ export class CronjobService implements ICronjobService {
       };
 
       this.cronjobDictionary[processModel.id].push(newCronJobConfig);
+
     }
   }
 
@@ -302,6 +320,26 @@ export class CronjobService implements ICronjobService {
     }
 
     delete this.cronjobDictionary[processModelId];
+  }
+
+  private getEventMessage(processModelId: string, startEventId?: string): CronjobBaseEventMessage {
+    const cronjobsForProcessModel = this.cronjobDictionary[processModelId];
+    const cronjobWithStartEvent = [];
+
+    if (startEventId) {
+      const cronjobForProcessModel = this.cronjobDictionary[processModelId].find((cronjob: CronjobCollectionEntry): boolean => {
+        return cronjob.startEventId === startEventId;
+      });
+
+      cronjobWithStartEvent.push(cronjobForProcessModel);
+    }
+
+    const eventMessage: CronjobBaseEventMessage = {
+      processModelId: processModelId,
+      cronjobs: startEventId ? cronjobWithStartEvent : cronjobsForProcessModel,
+    };
+
+    return eventMessage;
   }
 
 }
