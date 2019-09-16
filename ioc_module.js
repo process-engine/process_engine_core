@@ -73,7 +73,7 @@ function registerServices(container) {
 
   container
     .register('CronjobService', CronjobService)
-    .dependencies('EventAggregator', 'CronjobHistoryService', 'ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases', 'TimerFacade')
+    .dependencies('CronjobHistoryService', 'EventAggregator', 'ExecuteProcessService', 'IdentityService', 'ProcessModelUseCases', 'TimerFacade')
     .singleton();
 
   container

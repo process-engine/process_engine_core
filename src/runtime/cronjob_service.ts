@@ -2,7 +2,7 @@ import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {Cronjob, ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
@@ -25,8 +25,8 @@ type CronjobCollection = {[processModelId: string]: Array<CronjobBaseEvent>};
 
 export class CronjobService implements ICronjobService {
 
-  private readonly eventAggregator: IEventAggregator;
   private readonly cronjobHistoryService: ICronjobHistoryService;
+  private readonly eventAggregator: IEventAggregator;
   private readonly executeProcessService: IExecuteProcessService;
   private readonly identityService: IIdentityService;
   private readonly processModelUseCases: IProcessModelUseCases;
@@ -42,15 +42,15 @@ export class CronjobService implements ICronjobService {
   private _isRunning = false;
 
   constructor(
-    eventAggregator: IEventAggregator,
     cronjobHistoryService: ICronjobHistoryService,
+    eventAggregator: IEventAggregator,
     executeProcessService: IExecuteProcessService,
     identityService: IIdentityService,
     processModelUseCases: IProcessModelUseCases,
     timerFacade: ITimerFacade,
   ) {
-    this.eventAggregator = eventAggregator;
     this.cronjobHistoryService = cronjobHistoryService;
+    this.eventAggregator = eventAggregator;
     this.executeProcessService = executeProcessService;
     this.identityService = identityService;
     this.processModelUseCases = processModelUseCases;
@@ -228,11 +228,11 @@ export class CronjobService implements ICronjobService {
         continue;
       }
 
-      const onCronjobExpired = (expiredCronjob: string, processModelId: string): void => {
+      const onCronjobExpired = (expiredCronjob: string, processModelId: string, startEventId: string): void => {
         logger.info(`A Cronjob for ProcessModel ${processModelId} has expired: `, expiredCronjob);
 
         this.executeProcessModelWithCronjob(expiredCronjob, processModelId);
-        this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobExecuted, this.getEventMessage(processModelId));
+        this.eventAggregator.publish(eventAggregatorSettings.messagePaths.cronjobExecuted, this.getEventMessage(processModelId, startEventId));
       };
 
       const dummyProcessTokenFacade = new ProcessTokenFacade(undefined, processModel.id, undefined, this.internalIdentity);
@@ -241,7 +241,7 @@ export class CronjobService implements ICronjobService {
         startEvent,
         startEvent.timerEventDefinition,
         dummyProcessTokenFacade,
-        onCronjobExpired.bind(this, timerValue, processModel.id),
+        onCronjobExpired.bind(this, timerValue, processModel.id, startEvent.id),
       );
 
       const newCronJobConfig = {
@@ -317,11 +317,21 @@ export class CronjobService implements ICronjobService {
     delete this.cronjobDictionary[processModelId];
   }
 
-  private getEventMessage(processModelId: string): CronjobBaseEventMessage {
+  private getEventMessage(processModelId: string, startEventId?: string): CronjobBaseEventMessage {
+    const cronjobsForProcessModel = this.cronjobDictionary[processModelId];
+    const cronjobWithStartEvent = [];
+
+    if (startEventId) {
+      const cronjobForProcessModel = this.cronjobDictionary[processModelId].find((cronjob: CronjobBaseEvent): boolean => {
+        return cronjob.startEventId === startEventId;
+      });
+
+      cronjobWithStartEvent.push(cronjobForProcessModel);
+    }
 
     const eventMessage: CronjobBaseEventMessage = {
       processModelId: processModelId,
-      cronjobs: this.cronjobDictionary[processModelId] as Array<CronjobBaseEvent>,
+      cronjobs: startEventId ? cronjobWithStartEvent : cronjobsForProcessModel,
     };
 
     return eventMessage;
