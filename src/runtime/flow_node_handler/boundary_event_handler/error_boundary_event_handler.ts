@@ -23,22 +23,16 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
    * @returns       True, if the BoundaryEvent can handle the given error.
    *                Otherwise false.
    */
-  public canHandleError(error: Error, token: ProcessToken): boolean {
+  public canHandleError(error: BpmnError, token: ProcessToken): boolean {
 
     const errorDefinition = this.boundaryEventModel.errorEventDefinition;
 
-    const modelHasNoErrorDefinition = !errorDefinition || !errorDefinition.name || errorDefinition.name === '';
+    const modelHasNoErrorDefinition = !errorDefinition;
     if (modelHasNoErrorDefinition) {
       return true;
     }
 
-    const errorNamesMatch = errorDefinition.name === error.name;
-    // The error code is optional and must only be evaluated, if the definition contains it.
-    const errorCodesMatch =
-      (!errorDefinition.code || errorDefinition.code === '') ||
-      errorDefinition.code === (error as BpmnError).code;
-
-    const boundaryEventCanHandleError = errorNamesMatch && errorCodesMatch;
+    const boundaryEventCanHandleError = this.checkIfErrorMatches(error);
     if (boundaryEventCanHandleError) {
       this.sendBoundaryEventTriggeredNotification(token);
     }
@@ -56,6 +50,25 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     await this.persistOnEnter(token);
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+  }
+
+  private checkIfErrorMatches(error: BpmnError): boolean {
+
+    const errorDefinition = this.boundaryEventModel.errorEventDefinition;
+
+    const errorDefinitionHasNoName = !errorDefinition.name || errorDefinition.name === '';
+    const nameMatches = errorDefinitionHasNoName || errorDefinition.name === error.name;
+
+    const errorDefinitionHasNoCode = !errorDefinition.code || errorDefinition.code === '';
+    const codeMatches = errorDefinitionHasNoCode || `${errorDefinition.code}` === `${error.code}`;
+
+    // TODO: Add "message" to the ErrorEventDefinition type
+    const errorDefinitionHasNoMessage = !(errorDefinition as any).message || (errorDefinition as any).message === '';
+    const messageMatches = errorDefinitionHasNoMessage || (errorDefinition as any).message === error.message;
+
+    const isMatch = nameMatches && codeMatches && messageMatches;
+
+    return isMatch;
   }
 
 }

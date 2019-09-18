@@ -11,6 +11,7 @@ import {
 import {
   ActivityFinishedMessage,
   ActivityReachedMessage,
+  BpmnError,
   IBoundaryEventHandler,
   IFlowNodeHandler,
   IFlowNodeInstanceResult,
@@ -512,7 +513,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       .attachedBoundaryEventHandlers
       .filter((handler: IBoundaryEventHandler): boolean => handler instanceof ErrorBoundaryEventHandler) as Array<ErrorBoundaryEventHandler>;
 
-    const handlersForError = errorBoundaryEventHandlers.filter((handler: ErrorBoundaryEventHandler): boolean => handler.canHandleError(error, token));
+    const handlersForError =
+      errorBoundaryEventHandlers.filter((handler: ErrorBoundaryEventHandler): boolean => handler.canHandleError(error as BpmnError, token));
 
     return handlersForError;
   }
