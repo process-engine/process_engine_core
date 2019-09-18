@@ -35,7 +35,7 @@
   "dependencies": {
     "@essential-projects/errors_ts": "^1.5.0",
     "@essential-projects/timing_contracts": "^5.0.0",
-    "@process-engine/consumer_api_contracts": "8.1.0-c1903190-b30",
+    "@process-engine/consumer_api_contracts": "8.1.0-381a51b8-b32",
     "@process-engine/correlation.contracts": "2.2.0-cf63a55e-b11",
     "@process-engine/cronjob_history.contracts": "1.1.0-b5e4a478-b7",
     "@process-engine/flow_node_instance.contracts": "2.1.0-2db7098c-b4",
