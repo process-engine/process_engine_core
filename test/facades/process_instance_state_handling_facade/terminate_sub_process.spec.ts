@@ -1,8 +1,7 @@
-import * as moment from 'moment';
 import * as should from 'should';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {Correlation, CorrelationState} from '@process-engine/correlation.contracts';
+import {CorrelationState, ProcessInstance} from '@process-engine/correlation.contracts';
 
 import {CorrelationServiceMock, EventAggregatorMock} from '../../mocks';
 import {TestFixtureProvider} from '../../test_fixture_provider';
@@ -27,28 +26,23 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
       let subProcessesTerminated = 0;
 
-      const sampleCorrelation: Correlation = {
-        id: 'sdfasdfdsf',
+      const sampleProcessInstance: Array<ProcessInstance> = [{
+        correlationId: 'sdfasdfdsf',
+        processDefinitionName: 'processDefName',
+        hash: 'sfhasfghsjghsdfgfdsg',
+        xml: '<>',
+        processModelId: 'processModelId',
+        processInstanceId: 'processInstanceId',
+        parentProcessInstanceId: 'parent',
         state: CorrelationState.running,
         error: undefined,
-        createdAt: moment().toDate(),
-        processInstances: [{
-          processDefinitionName: 'processDefName',
-          hash: 'sfhasfghsjghsdfgfdsg',
-          xml: '<>',
-          processModelId: 'processModelId',
-          processInstanceId: 'processInstanceId',
-          parentProcessInstanceId: 'parent',
-          state: CorrelationState.running,
-          error: undefined,
-          identity: {userId: 'hello', token: 'sdfsdfsdsf'},
-        }],
-      };
+        identity: {userId: 'hello', token: 'sdfsdfsdsf'},
+      }];
 
       const correlationServiceMock = new CorrelationServiceMock();
       correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
-          return Promise.resolve(sampleCorrelation);
+          return Promise.resolve(sampleProcessInstance);
         };
 
       const eventAggregatorMock = new EventAggregatorMock();
@@ -68,38 +62,34 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
       let subProcessesTerminated = 0;
 
-      const sampleCorrelation: Correlation = {
-        id: 'sdfasdfdsf',
+      const sampleProcessInstances: Array<ProcessInstance> = [{
+        correlationId: 'sdfasdfdsf',
+        processDefinitionName: 'processDefName',
+        hash: 'sfhasfghsjghsdfgfdsg',
+        xml: '<>',
+        processModelId: 'processModelId',
+        processInstanceId: 'processInstanceId',
+        parentProcessInstanceId: 'parent',
         state: CorrelationState.running,
         error: undefined,
-        createdAt: moment().toDate(),
-        processInstances: [{
-          processDefinitionName: 'processDefName',
-          hash: 'sfhasfghsjghsdfgfdsg',
-          xml: '<>',
-          processModelId: 'processModelId',
-          processInstanceId: 'processInstanceId',
-          parentProcessInstanceId: 'parent',
-          state: CorrelationState.running,
-          error: undefined,
-          identity: {userId: 'hello', token: 'sdfsdfsdsf'},
-        }, {
-          processDefinitionName: 'processDefName2',
-          hash: 'sfhasfghsjghsdfgfdsg123123',
-          xml: '<>',
-          processModelId: 'processModelId2',
-          processInstanceId: 'processInstanceId222',
-          parentProcessInstanceId: 'parent',
-          state: CorrelationState.finished,
-          error: undefined,
-          identity: {userId: 'hello', token: 'sdfsdfsdsf'},
-        }],
-      };
+        identity: {userId: 'hello', token: 'sdfsdfsdsf'},
+      }, {
+        correlationId: 'sdfasdfdsf',
+        processDefinitionName: 'processDefName2',
+        hash: 'sfhasfghsjghsdfgfdsg123123',
+        xml: '<>',
+        processModelId: 'processModelId2',
+        processInstanceId: 'processInstanceId222',
+        parentProcessInstanceId: 'parent',
+        state: CorrelationState.finished,
+        error: undefined,
+        identity: {userId: 'hello', token: 'sdfsdfsdsf'},
+      }];
 
       const correlationServiceMock = new CorrelationServiceMock();
       correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
-          return Promise.resolve(sampleCorrelation);
+          return Promise.resolve(sampleProcessInstances);
         };
 
       const eventAggregatorMock = new EventAggregatorMock();
@@ -119,38 +109,34 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
       let subProcessesTerminated = 0;
 
-      const sampleCorrelation: Correlation = {
-        id: 'sdfasdfdsf',
+      const sampleProcessInstances: Array<ProcessInstance> = [{
+        correlationId: 'sdfasdfdsf',
+        processDefinitionName: 'processDefName',
+        hash: 'sfhasfghsjghsdfgfdsg',
+        xml: '<>',
+        processModelId: 'processModelId',
+        processInstanceId: 'processInstanceId',
+        parentProcessInstanceId: 'parent',
         state: CorrelationState.running,
         error: undefined,
-        createdAt: moment().toDate(),
-        processInstances: [{
-          processDefinitionName: 'processDefName',
-          hash: 'sfhasfghsjghsdfgfdsg',
-          xml: '<>',
-          processModelId: 'processModelId',
-          processInstanceId: 'processInstanceId',
-          parentProcessInstanceId: 'parent',
-          state: CorrelationState.running,
-          error: undefined,
-          identity: {userId: 'hello', token: 'sdfsdfsdsf'},
-        }, {
-          processDefinitionName: 'processDefName2',
-          hash: 'sfhasfghsjghsdfgfdsg123123',
-          xml: '<>',
-          processModelId: 'processModelId2',
-          processInstanceId: 'processInstanceId222',
-          parentProcessInstanceId: 'parent',
-          state: CorrelationState.error,
-          error: undefined,
-          identity: {userId: 'hello', token: 'sdfsdfsdsf'},
-        }],
-      };
+        identity: {userId: 'hello', token: 'sdfsdfsdsf'},
+      }, {
+        correlationId: 'sdfasdfdsf',
+        processDefinitionName: 'processDefName2',
+        hash: 'sfhasfghsjghsdfgfdsg123123',
+        xml: '<>',
+        processModelId: 'processModelId2',
+        processInstanceId: 'processInstanceId222',
+        parentProcessInstanceId: 'parent',
+        state: CorrelationState.error,
+        error: undefined,
+        identity: {userId: 'hello', token: 'sdfsdfsdsf'},
+      }];
 
       const correlationServiceMock = new CorrelationServiceMock();
       correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
-          return Promise.resolve(sampleCorrelation);
+          return Promise.resolve(sampleProcessInstances);
         };
 
       const eventAggregatorMock = new EventAggregatorMock();
@@ -188,7 +174,7 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
       }
     });
 
-    it('Should not be doing anything, if no correlation is returned by the CorrelationService', async (): Promise<void> => {
+    it('Should not be doing anything, if the CorrelationService doesn\'t return anything', async (): Promise<void> => {
 
       let subProcessesTerminated = 0;
 
@@ -215,18 +201,10 @@ describe('ProcessInstanceStateHandlingFacade.terminateSubprocesses', (): void =>
 
       let subProcessesTerminated = 0;
 
-      const sampleCorrelation: Correlation = {
-        id: 'sdfasdfdsf',
-        state: CorrelationState.running,
-        error: undefined,
-        createdAt: moment().toDate(),
-        processInstances: [],
-      };
-
       const correlationServiceMock = new CorrelationServiceMock();
       correlationServiceMock.getSubprocessesForProcessInstance =
         (identity: IIdentity, processInstanceId: string): Promise<any> => {
-          return Promise.resolve(sampleCorrelation);
+          return Promise.resolve([]);
         };
 
       const eventAggregatorMock = new EventAggregatorMock();
