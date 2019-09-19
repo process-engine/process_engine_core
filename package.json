@@ -36,7 +36,7 @@
     "@essential-projects/errors_ts": "^1.5.0",
     "@essential-projects/timing_contracts": "^5.0.0",
     "@process-engine/consumer_api_contracts": "8.1.0-9b902a18-b33",
-    "@process-engine/correlation.contracts": "2.2.0-cf63a55e-b11",
+    "@process-engine/correlation.contracts": "feature~flatten_correlation_types",
     "@process-engine/cronjob_history.contracts": "1.1.0-b5e4a478-b7",
     "@process-engine/flow_node_instance.contracts": "2.1.0-2db7098c-b4",
     "@process-engine/logging_api_contracts": "^1.0.0",
