@@ -150,11 +150,9 @@ export class ResumeProcessService implements IResumeProcessService {
     flowNodeInstances: Array<FlowNodeInstance>,
   ): Promise<IProcessInstanceConfig> {
 
-    const correlation = await this.correlationService.getByProcessInstanceId(identity, processInstanceId);
+    const processInstance = await this.correlationService.getByProcessInstanceId(identity, processInstanceId);
 
-    const processModelCorrelation = correlation.processInstances[0];
-
-    const processModelDefinitions = await this.bpmnModelParser.parseXmlToObjectModel(processModelCorrelation.xml);
+    const processModelDefinitions = await this.bpmnModelParser.parseXmlToObjectModel(processInstance.xml);
     const processModel = processModelDefinitions.processes[0];
     const processModelFacade = new ProcessModelFacade(processModel);
 
