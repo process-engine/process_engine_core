@@ -58,6 +58,7 @@
   },
   "devDependencies": {
     "@essential-projects/eslint-config": "^1.0.0",
+    "@process-engine/ci_tools": "^2.0.0",
     "@types/bluebird-global": "^3.5.9",
     "@types/express": "^4.16.0",
     "@types/mocha": "^5.2.6",
