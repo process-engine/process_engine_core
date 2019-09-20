@@ -24,96 +24,71 @@ pipeline {
   }
 
   stages {
-    stage('prepare') {
+    stage('Install dependencies') {
       steps {
-        script {
-          raw_package_version = sh(script: 'node --print --eval "require(\'./package.json\').version"', returnStdout: true).trim()
-          package_version = raw_package_version.trim()
-          echo("Package version is '${package_version}'")
-        }
         nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
           sh('node --version')
           sh('npm install --ignore-scripts')
         }
       }
     }
-    stage('lint') {
-      steps {
-        sh('node --version')
-        sh('npm run lint')
-      }
-    }
-    stage('build') {
+    stage('Build Sources') {
       steps {
         sh('node --version')
         sh('npm run build')
       }
     }
-    stage('test') {
+    stage('Test') {
+      parallel {
+        stage('Lint sources') {
+          steps {
+            sh('node --version')
+            sh('npm run lint')
+          }
+        }
+        stage('Execute tests') {
+          steps {
+            sh('node --version')
+            sh('npm run test')
+          }
+        }
+      }
+    }
+    stage('Set package version') {
       steps {
         sh('node --version')
-        sh('npm run test')
+        sh('node ./node_modules/.bin/ci_tools prepare-version --allow-dirty-workdir');
       }
     }
-    stage('evaluate test coverage') {
-      steps {
-        sh('npm run report-test-coverage | tee coverage/test-coverage.txt');
-
-        archiveArtifacts('coverage/test-coverage.txt');
-
-        sh('npm run check-test-coverage');
-      }
-    }
-    stage('publish') {
-      steps {
-        script {
-          def branch = env.BRANCH_NAME;
-          def branch_is_master = branch == 'master';
-          def new_commit = env.GIT_PREVIOUS_COMMIT != env.GIT_COMMIT;
-
-          if (branch_is_master) {
-            if (new_commit) {
-              script {
-                // let the build fail if the version does not match normal semver
-                def semver_matcher = package_version =~ /\d+\.\d+\.\d+/;
-                def is_version_not_semver = semver_matcher.matches() == false;
-                if (is_version_not_semver) {
-                  error('Only non RC Versions are allowed in master')
-                }
-              }
-
-              def raw_package_name = sh(script: 'node --print --eval "require(\'./package.json\').name"', returnStdout: true).trim()
-              def current_published_version = sh(script: "npm show ${raw_package_name} version", returnStdout: true).trim();
-              def version_has_changed = current_published_version != raw_package_version;
-
-              if (version_has_changed) {
-                nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
-                  sh('node --version')
-                  sh('npm publish --ignore-scripts')
-                }
-              } else {
-                println 'Skipping publish for this version. Version unchanged.'
-              }
-            }
-
-          } else {
-            // when not on master, publish a prerelease based on the package version, the
-            // current git commit and the build number.
-            // the published version gets tagged as the branch name.
-            def first_seven_digits_of_git_hash = env.GIT_COMMIT.substring(0, 8);
-            def publish_version = "${package_version}-${first_seven_digits_of_git_hash}-b${env.BUILD_NUMBER}";
-            def publish_tag = branch.replace("/", "~");
-
+    stage('Publish') {
+      parallel {
+        stage('npm') {
+          steps {
             nodejs(configId: env.NPM_RC_FILE, nodeJSInstallationName: env.NODE_JS_VERSION) {
-              sh('node --version')
-              sh("npm version ${publish_version} --no-git-tag-version --force")
-              sh("npm publish --tag ${publish_tag} --ignore-scripts")
+              sh('node ./node_modules/.bin/ci_tools publish-npm-package --create-tag-from-branch-name')
+            }
+          }
+        }
+        stage('GitHub') {
+          when {
+            anyOf {
+              branch "beta"
+              branch "develop"
+              branch "master"
+            }
+          }
+          steps {
+            withCredentials([
+              usernamePassword(credentialsId: 'process-engine-ci_github-token', passwordVariable: 'GH_TOKEN', usernameVariable: 'GH_USER')
+            ]) {
+              sh('node ./node_modules/.bin/ci_tools commit-and-tag-version --only-on-primary-branches')
+              sh('node ./node_modules/.bin/ci_tools update-github-release --only-on-primary-branches --use-title-and-text-from-git-tag');
             }
           }
         }
       }
     }
-    stage('cleanup') {
+    stage('Cleanup') {
       steps {
         script {
           // this stage just exists, so the cleanup-work that happens in the post-script
