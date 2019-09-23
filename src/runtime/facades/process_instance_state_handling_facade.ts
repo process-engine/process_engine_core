@@ -159,15 +159,15 @@ export class ProcessInstanceStateHandlingFacade {
       throw new BadRequestError('Must provide a value for processInstanceId to "terminateSubprocesses"!');
     }
 
-    const correlation =
+    const processInstances =
       await this.correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
 
-    const noSubprocessesFound = !correlation || !correlation.processInstances || correlation.processInstances.length === 0;
+    const noSubprocessesFound = !processInstances || processInstances.length === 0;
     if (noSubprocessesFound) {
       return;
     }
 
-    for (const subprocess of correlation.processInstances) {
+    for (const subprocess of processInstances) {
 
       const subprocessIsAlreadyFinished = subprocess.state !== CorrelationState.running;
       if (subprocessIsAlreadyFinished) {
@@ -178,7 +178,7 @@ export class ProcessInstanceStateHandlingFacade {
         .replace(eventAggregatorSettings.messageParams.processInstanceId, subprocess.processInstanceId);
 
       const terminationMessage = new ProcessTerminatedMessage(
-        correlation.id,
+        subprocess.correlationId,
         subprocess.processModelId,
         subprocess.processInstanceId,
         undefined,
