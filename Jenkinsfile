@@ -36,12 +36,13 @@ pipeline {
           sh 'git --no-pager show -s --format=\'%an\' > commit-author.txt'
           def commitAuthorName = readFile('commit-author.txt').trim()
 
-          def ciUserName = "admin"
+          def ciAdminName = "admin" // jenkins will set this name after every restart, so we need to look out for this.
+          def ciUserName = "process-engine-ci"
 
           echo(commitAuthorName)
-          echo("Commiter is process-engine-ci: ${commitAuthorName == ciUserName}")
+          echo("Commiter is process-engine-ci: ${commitAuthorName == ciUserName || commitAuthorName == ciAdminName}")
 
-          buildIsRequired = commitAuthorName != ciUserName
+          buildIsRequired = commitAuthorName != ciAdminName && commitAuthorName != ciUserName
 
           if (!buildIsRequired) {
             echo("Commit was made by process-engine-ci. Skipping build.")
