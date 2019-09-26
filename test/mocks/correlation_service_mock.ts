@@ -1,5 +1,5 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {Correlation} from '@process-engine/correlation.contracts';
+import {Correlation, ProcessInstance} from '@process-engine/correlation.contracts';
 
 export class CorrelationServiceMock {
 
@@ -30,12 +30,12 @@ export class CorrelationServiceMock {
     return Promise.resolve([]);
   }
 
-  public async getByProcessInstanceId(identity: IIdentity, processInstanceId: string): Promise<Correlation> {
+  public async getByProcessInstanceId(identity: IIdentity, processInstanceId: string): Promise<ProcessInstance> {
     return Promise.resolve({} as any);
   }
 
-  public async getSubprocessesForProcessInstance(identity: IIdentity, processInstanceId: string): Promise<Correlation> {
-    return Promise.resolve({} as any);
+  public async getSubprocessesForProcessInstance(identity: IIdentity, processInstanceId: string): Promise<Array<ProcessInstance>> {
+    return Promise.resolve([]);
   }
 
   public async deleteCorrelationByProcessModelId(identity: IIdentity, processModelId: string): Promise<void> {

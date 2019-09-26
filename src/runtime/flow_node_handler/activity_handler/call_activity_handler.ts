@@ -3,7 +3,7 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {CorrelationProcessInstance, ICorrelationService} from '@process-engine/correlation.contracts';
+import {ICorrelationService, ProcessInstance} from '@process-engine/correlation.contracts';
 import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import {
   EndEventReachedMessage,
@@ -72,13 +72,13 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
     try {
       // First we need to find out if the Subprocess was already started.
-      const correlation = await this.correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
+      const processInstances = await this.correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
-      const noSubprocessesFound = correlation === undefined;
+      const noSubprocessesFound = !processInstances || processInstances.length === 0;
 
-      const matchingSubprocess = noSubprocessesFound ? undefined : correlation
-        .processInstances
-        .find((entry: CorrelationProcessInstance): boolean => entry.processModelId === this.callActivity.calledReference);
+      const matchingSubprocess = noSubprocessesFound
+        ? undefined
+        : processInstances.find((entry: ProcessInstance): boolean => entry.processModelId === this.callActivity.calledReference);
 
       let callActivityResult: EndEventReachedMessage;
 
