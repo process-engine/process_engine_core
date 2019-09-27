@@ -67,8 +67,8 @@ export class CronjobService implements ICronjobService {
   }
 
   public async initialize(): Promise<void> {
-    const dummyToken = 'ZHVtbXlfdG9rZW4=';
-    this.internalIdentity = await this.identityService.getIdentity(dummyToken);
+    const internalToken = 'UHJvY2Vzc0VuZ2luZUludGVybmFsVXNlcg==';
+    this.internalIdentity = await this.identityService.getIdentity(internalToken);
   }
 
   public async start(): Promise<void> {
