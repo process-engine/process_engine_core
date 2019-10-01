@@ -5,7 +5,13 @@ import * as moment from 'moment';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
-import {Cronjob, ICronjobHistoryService} from '@process-engine/cronjob_history.contracts';
+import {
+  BpmnType,
+  Cronjob,
+  ICronjobHistoryService,
+  IProcessModelUseCases,
+  Model,
+} from '@process-engine/persistence_api.contracts';
 import {
   CronjobBaseEventMessage,
   CronjobConfiguration,
@@ -14,7 +20,6 @@ import {
   ITimerFacade,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 import {ProcessTokenFacade} from './facades/process_token_facade';
 

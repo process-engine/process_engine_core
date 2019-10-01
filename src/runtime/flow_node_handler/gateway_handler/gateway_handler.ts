@@ -4,14 +4,14 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 import {
   FlowNodeInstance,
   FlowNodeInstanceState,
+  Model,
   ProcessToken,
   ProcessTokenType,
-} from '@process-engine/flow_node_instance.contracts';
+} from '@process-engine/persistence_api.contracts';
 import {
   IProcessModelFacade,
   IProcessTokenFacade,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
 

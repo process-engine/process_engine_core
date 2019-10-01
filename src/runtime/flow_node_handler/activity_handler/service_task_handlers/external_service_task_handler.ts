@@ -4,15 +4,20 @@ import {BaseError, InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {DataModels as ConsumerApiTypes, IExternalTaskRepository} from '@process-engine/consumer_api_contracts';
-import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {
+  ExternalTask,
+  ExternalTaskState,
+  FlowNodeInstance,
+  IExternalTaskRepository,
+  Model,
+  ProcessToken,
+} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {ActivityHandler} from '../activity_handler';
 
@@ -122,7 +127,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         return resolve(nextFlowNode);
       }
 
-      const externalTaskIsAlreadyFinished = externalTask.state === ConsumerApiTypes.ExternalTask.ExternalTaskState.finished;
+      const externalTaskIsAlreadyFinished = externalTask.state === ExternalTaskState.finished;
       if (externalTaskIsAlreadyFinished) {
         // The external worker has already finished processing the ExternalTask
         // and we only missed the notification.
@@ -264,7 +269,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
       });
   }
 
-  private async getExternalTaskForFlowNodeInstance(flowNodeInstance: FlowNodeInstance): Promise<ConsumerApiTypes.ExternalTask.ExternalTask<any>> {
+  private async getExternalTaskForFlowNodeInstance(flowNodeInstance: FlowNodeInstance): Promise<ExternalTask<any>> {
 
     try {
       const matchingExternalTask = await this
@@ -335,7 +340,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     const matchingExternalTask =
       await this.externalTaskRepository.getByInstanceIds(token.correlationId, token.processInstanceId, this.flowNodeInstanceId);
 
-    const taskIsAlreadyFinished = matchingExternalTask.state === ConsumerApiTypes.ExternalTask.ExternalTaskState.finished;
+    const taskIsAlreadyFinished = matchingExternalTask.state === ExternalTaskState.finished;
     if (taskIsAlreadyFinished) {
       return;
     }

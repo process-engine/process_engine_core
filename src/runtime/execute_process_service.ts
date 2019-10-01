@@ -4,6 +4,7 @@ import {BadRequestError, InternalServerError, NotFoundError} from '@essential-pr
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
+import {IProcessModelUseCases, Model} from '@process-engine/persistence_api.contracts';
 import {
   EndEventReachedMessage,
   IExecuteProcessService,
@@ -11,7 +12,6 @@ import {
   ProcessStartedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 import {ProcessInstanceStateHandlingFacade} from './facades/process_instance_state_handling_facade';
 import {ProcessModelFacade} from './facades/process_model_facade';

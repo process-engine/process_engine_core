@@ -1,7 +1,7 @@
 import {IContainer} from 'addict-ioc';
 
+import {Model} from '@process-engine/persistence_api.contracts';
 import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {ActivityHandler} from '../activity_handler';
 

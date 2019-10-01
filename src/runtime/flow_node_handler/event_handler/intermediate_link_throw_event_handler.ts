@@ -4,14 +4,13 @@ import {BadRequestError, NotFoundError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {EventHandler} from './index';
 

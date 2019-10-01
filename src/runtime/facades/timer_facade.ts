@@ -6,8 +6,8 @@ import * as uuid from 'node-uuid';
 import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {ITimerService} from '@essential-projects/timing_contracts';
+import {BpmnType, Model} from '@process-engine/persistence_api.contracts';
 import {IProcessTokenFacade, ITimerFacade} from '@process-engine/process_engine_contracts';
-import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 type TimerId = string;
 type TimerIdStorage = {[eventSubscriptionId: string]: TimerId};

@@ -1,9 +1,9 @@
+import {IContainer} from 'addict-ioc';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
 
+import {Model} from '@process-engine/persistence_api.contracts';
 import {IBoundaryEventHandler, IBoundaryEventHandlerFactory} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
-
-import {IContainer} from 'addict-ioc';
 
 enum BoundaryEventType {
   Error = 'ErrorBoundaryEvent',

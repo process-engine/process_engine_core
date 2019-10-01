@@ -1,4 +1,4 @@
-import {BpmnTags, Model} from '@process-engine/process_model.contracts';
+import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';

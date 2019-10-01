@@ -3,8 +3,16 @@ import {Logger} from 'loggerhythm';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ICorrelationService, ProcessInstance} from '@process-engine/correlation.contracts';
-import {FlowNodeInstance, ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {
+  BpmnType,
+  FlowNodeInstance,
+  ICorrelationService,
+  IProcessModelUseCases,
+  Model,
+  ProcessInstance,
+  ProcessToken,
+} from '@process-engine/persistence_api.contracts';
+
 import {
   EndEventReachedMessage,
   IExecuteProcessService,
@@ -16,7 +24,6 @@ import {
   ProcessTerminatedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 import {ActivityHandler} from './activity_handler';
 

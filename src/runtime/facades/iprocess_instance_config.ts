@@ -1,6 +1,5 @@
-import {FlowNodeInstance} from '@process-engine/flow_node_instance.contracts';
+import {FlowNodeInstance, Model} from '@process-engine/persistence_api.contracts';
 import {IProcessModelFacade, IProcessTokenFacade, ProcessToken} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 /**
  * Internal type for storing a config for a new ProcessInstance.
