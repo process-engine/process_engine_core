@@ -1,5 +1,5 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {Model, ProcessDefinitionFromRepository} from '@process-engine/process_model.contracts';
+import {Model, ProcessDefinitionFromRepository} from '@process-engine/persistence_api.contracts';
 
 export class ProcessModelUseCasesMock {
 

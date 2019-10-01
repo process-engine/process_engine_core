@@ -1,7 +1,7 @@
 import * as should from 'should';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {CorrelationState, ProcessInstance} from '@process-engine/correlation.contracts';
+import {CorrelationState, ProcessInstance} from '@process-engine/persistence_api.contracts';
 
 import {CorrelationServiceMock, EventAggregatorMock} from '../../mocks';
 import {TestFixtureProvider} from '../../test_fixture_provider';

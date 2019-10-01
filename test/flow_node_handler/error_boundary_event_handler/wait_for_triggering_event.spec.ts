@@ -1,6 +1,6 @@
 import * as should from 'should';
 
-import {Model} from '@process-engine/process_model.contracts';
+import {Model} from '@process-engine/persistence_api.contracts';
 
 import {ErrorBoundaryEventHandler} from '../../../src/runtime/flow_node_handler/boundary_event_handler/error_boundary_event_handler';
 import {TestFixtureProvider} from '../../test_fixture_provider';

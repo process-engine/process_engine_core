@@ -2,7 +2,7 @@ import * as should from 'should';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 
-import {BpmnType} from '@process-engine/process_model.contracts';
+import {BpmnType} from '@process-engine/persistence_api.contracts';
 
 import {parseProcessFlowNodes} from '../../../src/model/parser/flow_node_parser';
 

@@ -1,6 +1,6 @@
 import * as should from 'should';
 
-import {Model} from '@process-engine/process_model.contracts';
+import {Model} from '@process-engine/persistence_api.contracts';
 
 import {ProcessModelFacade} from '../../../src/runtime/facades/process_model_facade';
 import {TestFixtureProvider} from '../../test_fixture_provider';

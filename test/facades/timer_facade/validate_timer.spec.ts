@@ -1,6 +1,6 @@
 import * as should from 'should';
 
-import {BpmnType, Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/persistence_api.contracts';
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 
 import {TimerFacade} from '../../../src/runtime/facades/timer_facade';

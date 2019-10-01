@@ -4,7 +4,7 @@ import * as should from 'should';
 import * as Bluebird from 'bluebird';
 
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {BpmnType, Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/persistence_api.contracts';
 
 import {BpmnModelParser} from '../src/model/bpmn_model_parser';
 import {
