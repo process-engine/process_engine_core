@@ -2,7 +2,7 @@ import {
   BpmnTags,
   IParsedObjectModel,
   Model,
-} from '@process-engine/process_model.contracts';
+} from '@process-engine/persistence_api.contracts';
 
 import {createObjectWithCommonProperties} from '../type_factory';
 import {parseCollaboration, parseProcesses} from './index';

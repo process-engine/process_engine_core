@@ -4,7 +4,12 @@ import * as uuid from 'node-uuid';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {FlowNodeInstance, IFlowNodeInstanceService, ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {
+  FlowNodeInstance,
+  IFlowNodeInstanceService,
+  Model,
+  ProcessToken,
+} from '@process-engine/persistence_api.contracts';
 import {
   EndEventReachedMessage,
   IFlowNodeHandlerFactory,
@@ -14,7 +19,6 @@ import {
   ProcessTerminatedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {ProcessTokenFacade} from '../../facades/process_token_facade';
 

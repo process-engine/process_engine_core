@@ -1,6 +1,6 @@
 import * as should from 'should';
 
-import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {ProcessToken} from '@process-engine/persistence_api.contracts';
 
 import {TestFixtureProvider} from '../../test_fixture_provider';
 import {ProcessTokenFacade} from '../../../src/runtime/facades';

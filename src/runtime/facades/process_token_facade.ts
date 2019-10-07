@@ -1,7 +1,7 @@
-import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
 import * as clone from 'clone';
 
 import {IFlowNodeInstanceResult, IProcessTokenFacade} from '@process-engine/process_engine_contracts';
+import {ProcessToken} from '@process-engine/persistence_api.contracts';
 
 export class ProcessTokenFacade implements IProcessTokenFacade {
 

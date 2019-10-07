@@ -2,14 +2,13 @@ import {IContainer} from 'addict-ioc';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 
-import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {BpmnType, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   IBoundaryEventHandler,
   IBoundaryEventHandlerFactory,
   IFlowNodeHandler,
   IFlowNodeHandlerFactory,
 } from '@process-engine/process_engine_contracts';
-import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 export class FlowNodeHandlerFactory implements IFlowNodeHandlerFactory {
 

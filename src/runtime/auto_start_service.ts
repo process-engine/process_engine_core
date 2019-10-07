@@ -3,6 +3,7 @@ import {Logger} from 'loggerhythm';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
+import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/persistence_api.contracts';
 import {
   IAutoStartService,
   IExecuteProcessService,
@@ -10,7 +11,6 @@ import {
   SignalEventReachedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {BpmnType, IProcessModelUseCases, Model} from '@process-engine/process_model.contracts';
 
 const logger = Logger.createLogger('processengine:runtime:auto_start_service');
 

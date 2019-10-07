@@ -4,14 +4,16 @@ import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ICorrelationService} from '@process-engine/correlation.contracts';
 import {
+  BpmnType,
   FlowNodeInstance,
   FlowNodeInstanceState,
+  ICorrelationService,
   IFlowNodeInstanceService,
   ProcessToken,
   ProcessTokenType,
-} from '@process-engine/flow_node_instance.contracts';
+} from '@process-engine/persistence_api.contracts';
+
 import {
   EndEventReachedMessage,
   IFlowNodeHandlerFactory,
@@ -19,7 +21,6 @@ import {
   IResumeProcessService,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {BpmnType} from '@process-engine/process_model.contracts';
 
 import {ProcessInstanceStateHandlingFacade} from './facades/process_instance_state_handling_facade';
 import {ProcessModelFacade} from './facades/process_model_facade';

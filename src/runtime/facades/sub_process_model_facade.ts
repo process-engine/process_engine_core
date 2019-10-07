@@ -1,5 +1,5 @@
 import {InternalServerError, NotFoundError, NotImplementedError} from '@essential-projects/errors_ts';
-import {BpmnType, Model} from '@process-engine/process_model.contracts';
+import {BpmnType, Model} from '@process-engine/persistence_api.contracts';
 
 import {ProcessModelFacade} from './process_model_facade';
 

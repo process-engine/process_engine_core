@@ -2,9 +2,8 @@ import {IContainer} from 'addict-ioc';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 
-import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {IFlowNodeHandler, IFlowNodeHandlerDedicatedFactory} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
 

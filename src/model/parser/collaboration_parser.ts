@@ -1,4 +1,4 @@
-import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/process_model.contracts';
+import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/persistence_api.contracts';
 import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,

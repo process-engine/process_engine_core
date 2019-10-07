@@ -1,6 +1,6 @@
 import {BadRequestError, InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
+import {BpmnType, Model} from '@process-engine/persistence_api.contracts';
 import {IProcessModelFacade} from '@process-engine/process_engine_contracts';
-import {BpmnType, Model} from '@process-engine/process_model.contracts';
 
 import {SubProcessModelFacade} from './index';
 

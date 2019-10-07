@@ -4,9 +4,9 @@ import {BadRequestError, InternalServerError} from '@essential-projects/errors_t
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {CorrelationState, ICorrelationService} from '@process-engine/correlation.contracts';
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
 import {IMetricsApi} from '@process-engine/metrics_api_contracts';
+import {CorrelationState, ICorrelationService, IProcessModelUseCases} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodeInstanceResult,
   ProcessEndedMessage,
@@ -14,7 +14,6 @@ import {
   ProcessTerminatedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
-import {IProcessModelUseCases} from '@process-engine/process_model.contracts';
 
 import {IProcessInstanceConfig} from './iprocess_instance_config';
 

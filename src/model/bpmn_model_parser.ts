@@ -1,6 +1,6 @@
 import * as xml2js from 'xml2js';
 
-import {IModelParser, Model} from '@process-engine/process_model.contracts';
+import {IModelParser, Model} from '@process-engine/persistence_api.contracts';
 
 import {parseDefinitions} from './parser';
 

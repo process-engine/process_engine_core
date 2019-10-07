@@ -1,7 +1,7 @@
 import * as should from 'should';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
-import {Model} from '@process-engine/process_model.contracts';
+import {Model} from '@process-engine/persistence_api.contracts';
 
 import * as TypeFactory from '../../../src/model/type_factory';
 

@@ -1,5 +1,5 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {Correlation, ProcessInstance} from '@process-engine/correlation.contracts';
+import {Correlation, ProcessInstance} from '@process-engine/persistence_api.contracts';
 
 export class CorrelationServiceMock {
 

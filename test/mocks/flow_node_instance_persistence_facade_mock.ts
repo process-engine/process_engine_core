@@ -1,6 +1,5 @@
-import {ProcessToken} from '@process-engine/flow_node_instance.contracts';
+import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {IFlowNodePersistenceFacade} from '@process-engine/process_engine_contracts';
-import {Model} from '@process-engine/process_model.contracts';
 
 export class FlowNodePersistenceFacadeMock implements IFlowNodePersistenceFacade {
 
