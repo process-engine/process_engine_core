@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -26,7 +27,6 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {ActivityHandler} from './activity_handler';
-import { NotFoundError } from '@essential-projects/errors_ts';
 
 export class CallActivityHandler extends ActivityHandler<Model.Activities.CallActivity> {
 
@@ -92,12 +92,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       this.publishActivityReachedNotification(identity, onSuspendToken);
 
-      const callActivityNotYetExecuted = matchingSubprocess === undefined;
-      if (callActivityNotYetExecuted) {
+      if (matchingSubprocess === undefined) {
         // Subprocess not yet started. We need to run the handler again.
-        const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
-
-        callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
+        callActivityResult = await this.executeSubprocess(identity, processTokenFacade, onSuspendToken);
       } else {
         // Subprocess was already started. Resume it and wait for the result:
         callActivityResult = await this
@@ -145,13 +142,11 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   ): Promise<Array<Model.Base.FlowNode>> {
 
     try {
-      const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
-
       this.publishActivityReachedNotification(identity, token);
 
       await this.persistOnSuspend(token);
 
-      const callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, token);
+      const callActivityResult = await this.executeSubprocess(identity, processTokenFacade, token);
 
       token.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
@@ -186,6 +181,39 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   }
 
   /**
+   * Executes the Subprocess.
+   *
+   * @async
+   * @param   identity           The users identity.
+   * @param   startEventId       The StartEvent by which to start the Subprocess.
+   * @param   processTokenFacade The Facade for accessing the current process' tokens.
+   * @param   token              The current ProcessToken.
+   * @returns                    The CallActivities result.
+   */
+  private async executeSubprocess(
+    identity: IIdentity,
+    processTokenFacade: IProcessTokenFacade,
+    token: ProcessToken,
+  ): Promise<EndEventReachedMessage> {
+
+    const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
+    const initialPayload = this.getInitialPayload(processTokenFacade, token, identity);
+
+    const correlationId = token.correlationId;
+    const parentProcessInstanceId = token.processInstanceId;
+
+    const payload = initialPayload || {};
+
+    const processModelId = this.callActivity.calledReference;
+
+    const result = await this
+      .executeProcessService
+      .startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, parentProcessInstanceId);
+
+    return result;
+  }
+
+  /**
    * Retrieves the first accessible StartEvent for the ProcessModel with the
    * given ID.
    *
@@ -215,37 +243,24 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     return startEventToUse.id;
   }
 
-  /**
-   * Executes the Subprocess.
-   *
-   * @async
-   * @param   identity           The users identity.
-   * @param   startEventId       The StartEvent by which to start the Subprocess.
-   * @param   processTokenFacade The Facade for accessing the current process' tokens.
-   * @param   token              The current ProcessToken.
-   * @returns                    The CallActivities result.
-   */
-  private async executeSubprocess(
-    identity: IIdentity,
-    startEventId: string,
-    processTokenFacade: IProcessTokenFacade,
-    token: ProcessToken,
-  ): Promise<EndEventReachedMessage> {
+  private getInitialPayload(processTokenFacade: IProcessTokenFacade, token: ProcessToken, identity: IIdentity): any {
 
-    const tokenData = processTokenFacade.getOldTokenFormat();
+    if (this.callActivity.payload === undefined) {
+      return token.payload;
+    }
 
-    const processInstanceId = token.processInstanceId;
-    const correlationId = token.correlationId;
+    try {
+      const tokenHistory = processTokenFacade.getOldTokenFormat();
 
-    const payload = tokenData.current || {};
+      const evaluatePayloadFunction = new Function('token', 'identity', `return ${this.callActivity.payload}`);
 
-    const processModelId = this.callActivity.calledReference;
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
+    } catch (error) {
+      const errorMessage = `CallActivity payload configuration '${this.callActivity.payload}' is invalid!`;
+      this.logger.error(errorMessage);
 
-    const result = await this
-      .executeProcessService
-      .startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, processInstanceId);
-
-    return result;
+      throw new InternalServerError(errorMessage);
+    }
   }
 
   private createResultTokenPayloadFromCallActivityResult(result: EndEventReachedMessage): any {
