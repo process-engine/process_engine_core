@@ -26,6 +26,7 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {ActivityHandler} from './activity_handler';
+import { NotFoundError } from '@essential-projects/errors_ts';
 
 export class CallActivityHandler extends ActivityHandler<Model.Activities.CallActivity> {
 
@@ -196,16 +197,22 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
     const processModel = await this.processModelUseCases.getProcessModelById(identity, this.callActivity.calledReference);
 
-    /*
-     * Since we cannot specify StartEventIds with a CallActivity, we just pick the first available StartEvent we find.
-     *
-     * Note: If the user cannot access the process model and/or its StartEvents,
-     * the ProcessModelService will already have thrown an Unauthorized error,
-     * so we do not need to handle those cases here.
-     */
-    const startEvent = processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
+    const startEvents = processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
 
-    return startEvent.id;
+    const startEventToUse = this.callActivity.startEventId !== undefined
+      ? startEvents.find((startEvent): boolean => startEvent.id === this.callActivity.startEventId)
+      : startEvents[0];
+
+    if (!startEventToUse) {
+      const error = new NotFoundError('The referenced ProcessModel has no matching StartEvent!');
+      error.additionalInformation = {
+        selectedStartEventId: this.callActivity.startEventId,
+      } as any;
+
+      throw error;
+    }
+
+    return startEventToUse.id;
   }
 
   /**
