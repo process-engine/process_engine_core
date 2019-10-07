@@ -63,8 +63,8 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     const codeMatches = errorDefinitionHasNoCode || `${errorDefinition.code}` === `${error.code}`;
 
     // TODO: Add "message" to the ErrorEventDefinition type
-    const errorDefinitionHasNoMessage = !(errorDefinition as any).message || (errorDefinition as any).message === '';
-    const messageMatches = errorDefinitionHasNoMessage || (errorDefinition as any).message === error.message;
+    const errorDefinitionHasNoMessage = !errorDefinition.message || errorDefinition.message === '';
+    const messageMatches = errorDefinitionHasNoMessage || errorDefinition.message === error.message;
 
     const isMatch = nameMatches && codeMatches && messageMatches;
 

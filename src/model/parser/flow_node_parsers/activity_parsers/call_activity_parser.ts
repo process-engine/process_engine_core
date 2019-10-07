@@ -2,6 +2,7 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
+import {getValueFromExtensionProperty} from './extension_property_parser';
 
 export function parseCallActivities(processData: any): Array<Model.Activities.CallActivity> {
 
@@ -17,10 +18,12 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
     let callActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
 
     if (callActivityRaw.calledElement) {
+      callActivity.startEventId = getStartEventId(callActivityRaw);
+      callActivity.payload = getPayload(callActivityRaw);
+      callActivity.calledReference = callActivityRaw.calledElement;
       // NOTE: There is also a CMMN type, which is not supported yet.
       callActivity.type = Model.Activities.CallActivityType.BPMN;
-      callActivity.calledReference = callActivityRaw.calledElement;
-      callActivity.bindingType = <Model.Activities.CallActivityBindingType> callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
+      callActivity.bindingType = callActivityRaw[BpmnTags.CamundaProperty.CalledElementBinding];
 
       if (callActivity.bindingType === Model.Activities.CallActivityBindingType.version) {
         callActivity.calledElementVersion = callActivityRaw[BpmnTags.CamundaProperty.CalledElementVersion];
@@ -34,6 +37,14 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
   }
 
   return callActivities;
+}
+
+function getStartEventId(rawData: any): string {
+  return getValueFromExtensionProperty('startEventId', rawData);
+}
+
+function getPayload(rawData: any): string {
+  return getValueFromExtensionProperty('payload', rawData);
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {

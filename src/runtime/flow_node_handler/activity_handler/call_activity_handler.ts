@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -91,12 +92,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       this.publishActivityReachedNotification(identity, onSuspendToken);
 
-      const callActivityNotYetExecuted = matchingSubprocess === undefined;
-      if (callActivityNotYetExecuted) {
+      if (matchingSubprocess === undefined) {
         // Subprocess not yet started. We need to run the handler again.
-        const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
-
-        callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, onSuspendToken);
+        callActivityResult = await this.executeSubprocess(identity, processTokenFacade, onSuspendToken);
       } else {
         // Subprocess was already started. Resume it and wait for the result:
         callActivityResult = await this
@@ -144,13 +142,11 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   ): Promise<Array<Model.Base.FlowNode>> {
 
     try {
-      const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
-
       this.publishActivityReachedNotification(identity, token);
 
       await this.persistOnSuspend(token);
 
-      const callActivityResult = await this.executeSubprocess(identity, startEventId, processTokenFacade, token);
+      const callActivityResult = await this.executeSubprocess(identity, processTokenFacade, token);
 
       token.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
@@ -185,30 +181,6 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   }
 
   /**
-   * Retrieves the first accessible StartEvent for the ProcessModel with the
-   * given ID.
-   *
-   * @async
-   * @param   identity The users identity.
-   * @returns          The retrieved StartEvent.
-   */
-  private async getAccessibleCallActivityStartEvent(identity: IIdentity): Promise<string> {
-
-    const processModel = await this.processModelUseCases.getProcessModelById(identity, this.callActivity.calledReference);
-
-    /*
-     * Since we cannot specify StartEventIds with a CallActivity, we just pick the first available StartEvent we find.
-     *
-     * Note: If the user cannot access the process model and/or its StartEvents,
-     * the ProcessModelService will already have thrown an Unauthorized error,
-     * so we do not need to handle those cases here.
-     */
-    const startEvent = processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
-
-    return startEvent.id;
-  }
-
-  /**
    * Executes the Subprocess.
    *
    * @async
@@ -220,25 +192,75 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
    */
   private async executeSubprocess(
     identity: IIdentity,
-    startEventId: string,
     processTokenFacade: IProcessTokenFacade,
     token: ProcessToken,
   ): Promise<EndEventReachedMessage> {
 
-    const tokenData = processTokenFacade.getOldTokenFormat();
+    const startEventId = await this.getAccessibleCallActivityStartEvent(identity);
+    const initialPayload = this.getInitialPayload(processTokenFacade, token, identity);
 
-    const processInstanceId = token.processInstanceId;
     const correlationId = token.correlationId;
+    const parentProcessInstanceId = token.processInstanceId;
 
-    const payload = tokenData.current || {};
+    const payload = initialPayload || {};
 
     const processModelId = this.callActivity.calledReference;
 
     const result = await this
       .executeProcessService
-      .startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, processInstanceId);
+      .startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, parentProcessInstanceId);
 
     return result;
+  }
+
+  /**
+   * Retrieves the first accessible StartEvent for the ProcessModel with the
+   * given ID.
+   *
+   * @async
+   * @param   identity The users identity.
+   * @returns          The retrieved StartEvent.
+   */
+  private async getAccessibleCallActivityStartEvent(identity: IIdentity): Promise<string> {
+
+    const processModel = await this.processModelUseCases.getProcessModelById(identity, this.callActivity.calledReference);
+
+    const startEvents = processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
+
+    const startEventToUse = this.callActivity.startEventId !== undefined
+      ? startEvents.find((startEvent): boolean => startEvent.id === this.callActivity.startEventId)
+      : startEvents[0];
+
+    if (!startEventToUse) {
+      const error = new NotFoundError('The referenced ProcessModel has no matching StartEvent!');
+      error.additionalInformation = {
+        configuredStartEventId: this.callActivity.startEventId,
+      } as any;
+
+      throw error;
+    }
+
+    return startEventToUse.id;
+  }
+
+  private getInitialPayload(processTokenFacade: IProcessTokenFacade, token: ProcessToken, identity: IIdentity): any {
+
+    if (this.callActivity.payload === undefined) {
+      return token.payload;
+    }
+
+    try {
+      const tokenHistory = processTokenFacade.getOldTokenFormat();
+
+      const evaluatePayloadFunction = new Function('token', 'identity', `return ${this.callActivity.payload}`);
+
+      return evaluatePayloadFunction.call(tokenHistory, tokenHistory, identity);
+    } catch (error) {
+      const errorMessage = `CallActivity payload configuration '${this.callActivity.payload}' is invalid!`;
+      this.logger.error(errorMessage);
+
+      throw new InternalServerError(errorMessage);
+    }
   }
 
   private createResultTokenPayloadFromCallActivityResult(result: EndEventReachedMessage): any {

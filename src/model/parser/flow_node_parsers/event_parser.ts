@@ -7,6 +7,7 @@ import {
   createObjectWithCommonProperties,
   getModelPropertyAsArray,
 } from '../../type_factory';
+import {findExtensionPropertyByName} from './activity_parsers/extension_property_parser';
 
 const logger = Logger.createLogger('processengine:model_parser:event_parser');
 
@@ -296,16 +297,6 @@ function getErrorById(errorId: string): Model.GlobalElements.Error {
   }
 
   return matchingError;
-}
-
-function findExtensionPropertyByName(
-  propertyName: string,
-  extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>,
-): Model.Base.Types.CamundaExtensionProperty {
-
-  return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
-    return property.name === propertyName;
-  });
 }
 
 function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definitions.TimerType {
