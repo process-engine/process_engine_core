@@ -234,7 +234,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     if (!startEventToUse) {
       const error = new NotFoundError('The referenced ProcessModel has no matching StartEvent!');
       error.additionalInformation = {
-        selectedStartEventId: this.callActivity.startEventId,
+        configuredStartEventId: this.callActivity.startEventId,
       } as any;
 
       throw error;
