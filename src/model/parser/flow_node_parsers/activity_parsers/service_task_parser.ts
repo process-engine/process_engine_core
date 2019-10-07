@@ -2,6 +2,7 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
+import {findExtensionPropertyByName} from './extension_property_parser';
 
 export function parseServiceTasks(processData: any): Array<Model.Activities.ServiceTask> {
 
@@ -86,14 +87,4 @@ function getMethodInvocationforInternalServiceTask(serviceTask: Model.Activities
   methodInvocation.params = paramsProperty ? paramsProperty.value : '[]';
 
   return methodInvocation;
-}
-
-function findExtensionPropertyByName(
-  propertyName: string,
-  extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>,
-): Model.Base.Types.CamundaExtensionProperty {
-
-  return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
-    return property.name === propertyName;
-  });
 }

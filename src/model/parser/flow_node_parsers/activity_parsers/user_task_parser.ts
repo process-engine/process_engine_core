@@ -4,6 +4,7 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
+import {getValueFromExtensionProperty} from './extension_property_parser';
 
 export function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
 
@@ -110,69 +111,4 @@ function getDescriptionForUserTask(userTaskRaw: Model.Activities.UserTask): stri
 
 function getFinishedMessageForUserTask(userTaskRaw: Model.Activities.UserTask): string {
   return getValueFromExtensionProperty('finishedMessage', userTaskRaw);
-}
-
-function getValueFromExtensionProperty(name: string, userTaskRaw: Model.Activities.UserTask): string {
-  const extensionElements = userTaskRaw[BpmnTags.FlowElementProperty.ExtensionElements];
-
-  const userTaskHasNoExtensions = extensionElements === undefined;
-  if (userTaskHasNoExtensions) {
-    return undefined;
-  }
-
-  const extensionPropertiesDataRaw = extensionElements[BpmnTags.CamundaProperty.Properties];
-
-  const extensionPropertiesAreEmpty = extensionPropertiesDataRaw === undefined || extensionPropertiesDataRaw.length < 1;
-  if (extensionPropertiesAreEmpty) {
-    return undefined;
-  }
-
-  const extensionPropertyRaw = extensionPropertiesDataRaw[BpmnTags.CamundaProperty.Property];
-
-  const extensionPropertyIsEmpty = extensionPropertyRaw === undefined || extensionPropertyRaw.length < 1;
-  if (extensionPropertyIsEmpty) {
-    return undefined;
-  }
-
-  const extensionProperties = parseExtensionProperties(extensionPropertyRaw);
-  const preferredControlProperty = findExtensionPropertyByName(name, extensionProperties);
-
-  const userTaskHasPreferredControl = preferredControlProperty !== undefined;
-
-  return userTaskHasPreferredControl
-    ? preferredControlProperty.value
-    : undefined;
-}
-
-function findExtensionPropertyByName(
-  propertyName: string,
-  extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>,
-): Model.Base.Types.CamundaExtensionProperty {
-
-  return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
-    return property.name === propertyName;
-  });
-}
-
-function parseExtensionProperties(extensionPropertiesRaw: any): any {
-  const extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty> = [];
-
-  const extensionPropertiesIsNoArray = !Array.isArray(extensionPropertiesRaw);
-  if (extensionPropertiesIsNoArray) {
-    return [{
-      name: extensionPropertiesRaw.name,
-      value: extensionPropertiesRaw.value,
-    }];
-  }
-
-  for (const extensionPropertyRaw of extensionPropertiesRaw) {
-    const extensionProperty: Model.Base.Types.CamundaExtensionProperty = {
-      name: extensionPropertyRaw.name,
-      value: extensionPropertyRaw.value,
-    };
-
-    extensionProperties.push(extensionProperty);
-  }
-
-  return extensionProperties;
 }
