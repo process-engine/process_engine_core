@@ -44,7 +44,7 @@ function getStartEventId(rawData: any): string {
 }
 
 function getPayload(rawData: any): string {
-  return getValueFromExtensionProperty('startEventId', rawData);
+  return getValueFromExtensionProperty('payload', rawData);
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {
