@@ -22,8 +22,7 @@ describe('ErrorBoundaryEventHandler.canHandleError ', (): void => {
     const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
     errorEventDefinition.name = 'NotFoundError';
     errorEventDefinition.code = '404';
-    // TODO: "message" needs to be added to the ErrorEventDefinition type.
-    (errorEventDefinition as any).message = 'I failed to find something you wanted. Sorry.';
+    errorEventDefinition.message = 'I failed to find something you wanted. Sorry.';
 
     const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
     const handler = createHandler(boundaryEvent);
@@ -69,7 +68,7 @@ describe('ErrorBoundaryEventHandler.canHandleError ', (): void => {
   it('Should return true, if the configured error has a matching message and no other configurations.', async (): Promise<void> => {
 
     const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
-    (errorEventDefinition as any).message = 'I failed to find something you wanted. Sorry.';
+    errorEventDefinition.message = 'I failed to find something you wanted. Sorry.';
 
     const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
     const handler = createHandler(boundaryEvent);
@@ -148,7 +147,7 @@ describe('ErrorBoundaryEventHandler.canHandleError ', (): void => {
 
     const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
     errorEventDefinition.code = '666';
-    (errorEventDefinition as any).message = 'I failed to find something you wanted. Sorry.';
+    errorEventDefinition.message = 'I failed to find something you wanted. Sorry.';
 
     const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
     const handler = createHandler(boundaryEvent);
@@ -166,7 +165,7 @@ describe('ErrorBoundaryEventHandler.canHandleError ', (): void => {
     const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
     errorEventDefinition.name = 'WrongErrorType';
     errorEventDefinition.code = '666';
-    (errorEventDefinition as any).message = 'I don\'t want this test to succeed.';
+    errorEventDefinition.message = 'I don\'t want this test to succeed.';
 
     const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
     const handler = createHandler(boundaryEvent);
