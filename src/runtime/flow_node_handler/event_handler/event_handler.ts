@@ -46,6 +46,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
+      token.currentLane = processModelFacade.getLaneForFlowNode(this.flowNode.id).name;
 
       try {
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);

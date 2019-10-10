@@ -42,6 +42,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     this.logger.verbose(`Initializing TimerBoundaryEvent for ProcessModel ${token.processModelId} in ProcessInstance ${token.processInstanceId}`);
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
+    token.currentLane = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id).name;
     await this.persistOnEnter(token);
 
     const timerElapsed = async (): Promise<void> => {

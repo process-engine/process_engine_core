@@ -52,6 +52,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
+      token.currentLane = processModelFacade.getLaneForFlowNode(this.flowNode.id).name;
 
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);

@@ -25,6 +25,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
+    token.currentLane = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id).name;
     await this.persistOnEnter(token);
 
     const signalBoundaryEventName = eventAggregatorSettings.messagePaths.signalEventReached
