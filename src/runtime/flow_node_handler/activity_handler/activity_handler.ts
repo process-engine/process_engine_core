@@ -53,6 +53,11 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
+      const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
+      if (laneContainingCurrentFlowNode !== undefined) {
+        token.currentLane = laneContainingCurrentFlowNode.name;
+      }
+
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
         await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);

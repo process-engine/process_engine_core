@@ -4,7 +4,7 @@ import {Model} from '@process-engine/persistence_api.contracts';
 
 import {ErrorBoundaryEventHandler} from '../../../src/runtime/flow_node_handler/boundary_event_handler/error_boundary_event_handler';
 import {TestFixtureProvider} from '../../test_fixture_provider';
-import {EventAggregatorMock, FlowNodePersistenceFacadeMock} from '../../mocks';
+import {EventAggregatorMock, FlowNodePersistenceFacadeMock, ProcessModelFacadeMock} from '../../mocks';
 
 describe('ErrorBoundaryEventHandler.waitForTriggeringEvent ', (): void => {
 
@@ -21,6 +21,7 @@ describe('ErrorBoundaryEventHandler.waitForTriggeringEvent ', (): void => {
 
     const eventAggregatorMock = new EventAggregatorMock();
     const flowNodePersistenceFacadeMock = new FlowNodePersistenceFacadeMock();
+    const processModelFacadeMock = new ProcessModelFacadeMock();
 
     let persistOnEnterWasCalled = false;
 
@@ -31,7 +32,7 @@ describe('ErrorBoundaryEventHandler.waitForTriggeringEvent ', (): void => {
 
     const handler = new ErrorBoundaryEventHandler(eventAggregatorMock, flowNodePersistenceFacadeMock, boundaryEvent);
 
-    await handler.waitForTriggeringEvent((): any => {}, {} as any, {} as any, {} as any, 'flowNodeInstanceId');
+    await handler.waitForTriggeringEvent((): any => {}, {} as any, {} as any, processModelFacadeMock, 'flowNodeInstanceId');
 
     should(persistOnEnterWasCalled).be.true();
   });

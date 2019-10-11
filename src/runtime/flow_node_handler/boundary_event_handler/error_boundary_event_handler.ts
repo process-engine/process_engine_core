@@ -47,6 +47,11 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
+
+    const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id);
+    if (laneContainingCurrentFlowNode !== undefined) {
+      token.currentLane = laneContainingCurrentFlowNode.name;
+    }
     await this.persistOnEnter(token);
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;

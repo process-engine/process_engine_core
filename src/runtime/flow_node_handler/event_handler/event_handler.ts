@@ -47,6 +47,11 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
+      const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
+      if (laneContainingCurrentFlowNode !== undefined) {
+        token.currentLane = laneContainingCurrentFlowNode.name;
+      }
+
       try {
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);

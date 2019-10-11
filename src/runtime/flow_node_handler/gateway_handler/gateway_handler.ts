@@ -29,6 +29,11 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
       this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
+      const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
+      if (laneContainingCurrentFlowNode !== undefined) {
+        token.currentLane = laneContainingCurrentFlowNode.name;
+      }
+
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
 
