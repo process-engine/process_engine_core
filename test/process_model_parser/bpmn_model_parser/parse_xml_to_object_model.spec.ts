@@ -183,6 +183,38 @@ describe('BpmnModelParser.parseXmlToObjectModel ', (): void => {
     should(exclusiveGateway.defaultOutgoingSequenceFlowId).be.equal(expectedDefaultSequenceFlowId);
   });
 
+  it('Should correctly attach multiple BoundaryEvents to a FlowNode.', async (): Promise<void> => {
+
+    const xml = readBpmnFile('process_with_boundary_events.bpmn');
+    const parsedProcessDefinition = await parser.parseXmlToObjectModel(xml);
+
+    const parsedProcessModel = assertProcessDefinitionAndReturnProcessmodel(parsedProcessDefinition);
+
+    const expectedFlowNodeIdList = [
+      'StartEvent_1',
+      'ManualTask123',
+      'ThrowMessageConfirmTimeoutExpired',
+      'ThrowMessageConfirmManualTaskFinished',
+      'ThrowMessageConfirmSignalReceived',
+      'ThrowMessageConfirmMessageReceived',
+      'EndEvent_TimeoutReached',
+      'EndEvent_Regular',
+      'EndEvent_SignalReceived',
+      'EndEvent_MessageReceived',
+    ];
+
+    await fixtureProvider.assertThatProcessModelHasFlowNodes(parsedProcessModel, expectedFlowNodeIdList);
+
+    const processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
+
+    const manualTask = processModelFacade.getFlowNodeById('ManualTask123') as Model.Activities.ManualTask;
+
+    const boundaryEvents = processModelFacade.getBoundaryEventsFor(manualTask);
+
+    should(boundaryEvents).be.an.Array();
+    should(boundaryEvents).have.a.lengthOf(3);
+  });
+
   function readBpmnFile(bpmnFilename: string): string {
     const fullPath = `./test/bpmns/${bpmnFilename}`;
     const bpmnXml = fs.readFileSync(fullPath, 'utf8');

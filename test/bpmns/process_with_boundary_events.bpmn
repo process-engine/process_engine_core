@@ -15,10 +15,10 @@
         <bpmn:flowNodeRef>ThrowMessageConfirmMessageReceived</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ThrowMessageConfirmTimeoutExpired</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_TimeoutReached</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>EndEvent_Regular</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>EndEvent_SignalReceived</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_MessageReceived</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ThrowMessageConfirmManualTaskFinished</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_SignalReceived</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_Regular</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:startEvent id="StartEvent_1" name="Start">
@@ -68,12 +68,6 @@
     <bpmn:endEvent id="EndEvent_TimeoutReached" name="End after Timeout">
       <bpmn:incoming>SequenceFlow_08s938g</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:endEvent id="EndEvent_Regular" name="Regular End">
-      <bpmn:incoming>SequenceFlow_0woaapg</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:endEvent id="EndEvent_SignalReceived" name="End after Signal received">
-      <bpmn:incoming>SequenceFlow_0pj67d9</bpmn:incoming>
-    </bpmn:endEvent>
     <bpmn:endEvent id="EndEvent_MessageReceived" name="End after Message received">
       <bpmn:incoming>SequenceFlow_1b7oqkt</bpmn:incoming>
     </bpmn:endEvent>
@@ -83,6 +77,13 @@
       <bpmn:messageEventDefinition messageRef="Message_0km94eb" />
     </bpmn:intermediateThrowEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1b7oqkt" sourceRef="ThrowMessageConfirmMessageReceived" targetRef="EndEvent_MessageReceived" />
+    <bpmn:endEvent id="EndEvent_SignalReceived" name="End after Signal received">
+      <bpmn:incoming>SequenceFlow_0pj67d9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Regular" name="Regular End">
+      <bpmn:incoming>SequenceFlow_0woaapg</bpmn:incoming>
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
   </bpmn:process>
   <bpmn:message id="Message_1415hon" name="1234" />
   <bpmn:error id="Error_0agxpau" name="no_message_received" errorCode="666" />
@@ -92,6 +93,7 @@
   <bpmn:message id="Message_1yn6wrf" name="AcknowledgeSignalReceived" />
   <bpmn:message id="Message_0bl2m1v" name="AcknowledgeTimoutExpired" />
   <bpmn:message id="Message_0km94eb" name="AcknowledgeManualTaskFinished" />
+  <bpmn:error id="Error_giC2R3T6" name="Error Name" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0e03n3l">
       <bpmndi:BPMNShape id="Participant_1yuoono_di" bpmnElement="Participant_1yuoono">
@@ -138,12 +140,6 @@
         <di:waypoint x="446" y="406" />
         <di:waypoint x="446" y="568" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_1qx0y0l_di" bpmnElement="EndEvent_SignalReceived">
-        <dc:Bounds x="803" y="455" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="782" y="498" width="79" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_115y68b_di" bpmnElement="SequenceFlow_115y68b">
         <di:waypoint x="546" y="406" />
         <di:waypoint x="546" y="455" />
@@ -158,12 +154,6 @@
         <di:waypoint x="546" y="290" />
         <di:waypoint x="546" y="265" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_1xgm11g_di" bpmnElement="EndEvent_Regular">
-        <dc:Bounds x="803" y="330" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="790" y="373" width="62" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1louer3_di" bpmnElement="SequenceFlow_1louer3">
         <di:waypoint x="546" y="348" />
         <di:waypoint x="686" y="348" />
@@ -211,6 +201,18 @@
         <di:waypoint x="464" y="586" />
         <di:waypoint x="803" y="586" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0fdlumv_di" bpmnElement="EndEvent_SignalReceived">
+        <dc:Bounds x="803" y="455" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="782" y="498" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1sih0zm_di" bpmnElement="EndEvent_Regular">
+        <dc:Bounds x="803" y="330" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="790" y="373" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
