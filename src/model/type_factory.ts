@@ -3,10 +3,11 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 /**
  * Retrieves an element from the given raw ProcessModel data.
+ * Returns undefined, if the element does not exist.
  *
  * @param   rawProcessModel The raw ProcessModel from which to extract an element.
  * @param   elementName     The name of the element to extract.
- * @returns                 The extracted element.
+ * @returns                 The extracted element, or undefined if it doesn't exist.
  */
 export function getModelPropertyAsArray(rawProcessModel: any, elementName: string): any {
 

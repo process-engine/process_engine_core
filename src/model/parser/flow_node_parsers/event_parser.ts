@@ -30,56 +30,45 @@ export function parseEventsFromProcessData(
   eventDefinitions = parsedEventDefinitions;
 
   const startEvents = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
-  const endEvents = parseEndEvents(processData);
-
-  const boundaryEvents = parseBoundaryEvents(processData);
+  const endEvents = parseEventsByType(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
 
   const intermediateThrowEvents = parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent);
   const intermediateCatchEvents = parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent);
 
-  return Array.prototype.concat(startEvents, endEvents, boundaryEvents, intermediateThrowEvents, intermediateCatchEvents);
+  const boundaryEvents = parseBoundaryEvents(processData);
+
+  return Array.prototype.concat(startEvents, endEvents, intermediateThrowEvents, intermediateCatchEvents, boundaryEvents);
 }
 
-/**
- * Parse all EndEvents of a process.
- * ErrorEndEvents will get their Errors attached to them.
- *
- * @param processData Parsed process definition data.
- * @param errors      List of process errors.
- * @returns           An array of parsed EndEvents.
- */
-function parseEndEvents(processData: any): Array<Model.Events.EndEvent> {
+function parseEventsByType<TEvent extends Model.Events.Event>(
+  data: any,
+  eventTypeTag: BpmnTags.EventElement,
+  targetType: Model.Base.IConstructor<TEvent>,
+): Array<TEvent> {
 
-  const endEventsRaw = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
+  const events: Array<TEvent> = [];
 
-  const events = endEventsRaw.map((endEventRaw: any): Model.Events.EndEvent => {
-    return parseEndEvent(endEventRaw);
-  });
+  const eventsRaw = getModelPropertyAsArray(data, eventTypeTag);
+
+  if (!eventsRaw || eventsRaw.length === 0) {
+    return [];
+  }
+
+  for (const eventRaw of eventsRaw) {
+    const event = createObjectWithCommonProperties<TEvent>(eventRaw, targetType);
+    event.name = eventRaw.name;
+    event.defaultOutgoingSequenceFlowId = eventRaw.default;
+    event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    assignEventDefinitions(event, eventRaw);
+
+    (event as any).inputValues = getInputValues(event);
+
+    events.push(event);
+  }
 
   return events;
-}
-
-/**
- * Parses a single EndEvent from the given raw data.
- *
- * @param   endEventRaw The raw end event data.
- * @param   errors      Contains a list of error definitions.
- *                      If the EndEvent is an ErrorEndEvent, this list is used to retrieve the matching error definition.
- * @returns             The fully parsed EndEvent.
- */
-function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
-
-  const endEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
-
-  endEvent.name = endEventRaw.name;
-  endEvent.defaultOutgoingSequenceFlowId = endEventRaw.default;
-  endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-  endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-  assignEventDefinitions(endEvent, endEventRaw);
-  endEvent.inputValues = getInputValues(endEvent);
-
-  return endEvent;
 }
 
 function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
@@ -122,37 +111,6 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     }
 
     events.push(boundaryEvent);
-  }
-
-  return events;
-}
-
-function parseEventsByType<TEvent extends Model.Events.Event>(
-  data: any,
-  eventType: BpmnTags.EventElement,
-  type: Model.Base.IConstructor<TEvent>,
-): Array<TEvent> {
-
-  const events: Array<TEvent> = [];
-
-  const eventsRaw = getModelPropertyAsArray(data, eventType);
-
-  if (!eventsRaw || eventsRaw.length === 0) {
-    return [];
-  }
-
-  for (const eventRaw of eventsRaw) {
-    const event = createObjectWithCommonProperties<TEvent>(eventRaw, type);
-    event.name = eventRaw.name;
-    event.defaultOutgoingSequenceFlowId = eventRaw.default;
-    event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    assignEventDefinitions(event, eventRaw);
-
-    (event as any).inputValues = getInputValues(event);
-
-    events.push(event);
   }
 
   return events;
