@@ -184,7 +184,9 @@ function assignErrorEventDefinition(event: any, eventRaw: any): void {
 
   if (!errorObject) {
     const errorMessage = `Error reference on event ${event.id} is invalid!`;
+
     logger.error(errorMessage);
+
     const error = new UnprocessableEntityError(errorMessage);
     error.additionalInformation = {
       eventObject: event,
@@ -207,16 +209,14 @@ function assignMessageEventDefinition(event: any, eventRaw: any): void {
   const messageDefinition = getDefinitionForEvent(eventDefinitonValue.messageRef);
 
   if (!messageDefinition) {
-    const errorMessage = `Message reference '${eventDefinitonValue.messageRef}' on Event with ID ${event.id} is invalid!`;
-    logger.error(errorMessage);
-    const error = new UnprocessableEntityError(errorMessage);
-    error.additionalInformation = {
-      eventObject: event,
-      messageRef: eventDefinitonValue.messageRef,
-      rawEventData: eventRaw,
-    } as any;
-
-    throw error;
+    // TODO: Usually, this should throw an error. However, doing so would brek the "GetAllProcessModels" queries,
+    // which would in turn break BPMN Studio and thus leaving the user without any way to fix the diagram.s
+    // Maybe we should think about introducting some kind of leniency setting for the parser, to be able to only throw errors in certain UseCases.
+    logger.warn(
+      `Message reference '${eventDefinitonValue.messageRef}' on Event with ID ${event.id} is invalid! The event will not be executable!`,
+      event,
+      eventRaw,
+    );
   }
 
   event.messageEventDefinition = messageDefinition;
@@ -227,16 +227,12 @@ function assignSignalEventDefinition(event: any, eventRaw: any): void {
   const signalDefinition = getDefinitionForEvent(eventDefinitonValue.signalRef);
 
   if (!signalDefinition) {
-    const errorMessage = `Signal reference '${eventDefinitonValue.signalRef}' on Event with ID ${event.id} is invalid!`;
-    logger.error(errorMessage);
-    const error = new UnprocessableEntityError(errorMessage);
-    error.additionalInformation = {
-      eventObject: event,
-      signalRef: eventDefinitonValue.signalRef,
-      rawEventData: eventRaw,
-    } as any;
-
-    throw error;
+    // Same as above.
+    logger.warn(
+      `Signal reference '${eventDefinitonValue.signalRef}' on Event with ID ${event.id} is invalid! The event will not be executable!`,
+      event,
+      eventRaw,
+    );
   }
 
   event.signalEventDefinition = signalDefinition;
@@ -258,17 +254,8 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
   const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
 
   if (timerType === undefined || timerValue === undefined || timerValue.length === 0) {
-    const errorMessage = 'TimerEvents must always contain a type and a value!';
-    logger.error(errorMessage);
-    const error = new UnprocessableEntityError(errorMessage);
-    error.additionalInformation = {
-      eventObject: event,
-      timerType: timerType,
-      timerValue: timerValue,
-      rawEventData: eventRaw,
-    } as any;
-
-    throw error;
+    // Same as above.
+    logger.warn(`The timer on event with ID ${event.id} is invalid! The event will not be executable!`, event, eventRaw);
   }
 
   const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();

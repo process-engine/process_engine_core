@@ -85,43 +85,27 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
       timerEvents.forEach(assertTimerEvent);
     });
 
-    it('Should throw an error, if any of the given StartEvents uses an invalid timer definition.', (): void => {
+    it('Should not throw an error, if any of the given StartEvents uses an invalid timer definition.', (): void => {
+      const sampleFlowNode = SampleData.sampleStartEvents['bpmn:startEvent'].find((entry): boolean => entry.id === 'TimerStartEvent_1');
 
-      try {
-        const sampleFlowNode = SampleData.sampleStartEvents['bpmn:startEvent'].find((entry): boolean => entry.id === 'TimerStartEvent_1');
+      const sampleCopy = clone(sampleFlowNode);
+      sampleCopy['bpmn:timerEventDefinition'] = {} as any;
 
-        const sampleCopy = clone(sampleFlowNode);
-        sampleCopy['bpmn:timerEventDefinition'] = {} as any;
+      const samplePayload = {
+        'bpmn:startEvent': [sampleCopy],
+      };
 
-        const samplePayload = {
-          'bpmn:startEvent': [sampleCopy],
-        };
+      const result = parseEventsFromProcessData(samplePayload, [], sampleEvents);
 
-        const result = parseEventsFromProcessData(samplePayload, [], sampleEvents);
-        should.fail(result, 'Error', 'This should have caused an error, because the TimerStartEvent has no definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).match(/TimerEvents must always contain a type and a value/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('timerType');
-        should(error.additionalInformation).have.a.property('timerValue');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
+      should(result).be.an.Array();
+      should(result).be.length(1);
     });
 
-    it('Should throw an error, if any of the given StartEvents have invalid event references', (): void => {
+    it('Should not throw an error, if any of the given StartEvents have invalid event references', (): void => {
+      const result = parseEventsFromProcessData(SampleData.sampleStartEvents, [], []);
 
-      try {
-        const result = parseEventsFromProcessData(SampleData.sampleStartEvents, [], []);
-        should.fail(result, 'Error', 'This should have caused an error, because some of the events point to non-existing messages and signals!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).match(/reference.*?on event.*?is invalid/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
+      should(result).be.an.Array();
+      should(result).be.length(7);
     });
 
   });
@@ -154,21 +138,17 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
       terminateEvents.forEach(assertTerminateEvent);
     });
 
+    it('Should not throw an error, if any of the EndEvents has a definition that points to a non-existing message or signal', (): void => {
+      const result = parseEventsFromProcessData(SampleData.sampleEndEvents, sampleErrors, []);
+
+      should(result).be.an.Array();
+      should(result).be.length(8);
+    });
+
     it('Should throw an error, if any of the EndEvents has an ErrorDefinition that points to a non-existing error', (): void => {
 
       try {
         const result = parseEventsFromProcessData(SampleData.sampleEndEvents, [], sampleEvents);
-        should.fail(result, 'Error', 'This should have caused an error, because one of the events uses an invalid error definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).be.a.match(/reference.*?on event.*?is invalid/i);
-      }
-    });
-
-    it('Should throw an error, if any of the EndEvents has a definition that points to a non-existing message or signal', (): void => {
-
-      try {
-        const result = parseEventsFromProcessData(SampleData.sampleEndEvents, sampleErrors, []);
         should.fail(result, 'Error', 'This should have caused an error, because one of the events uses an invalid error definition!');
       } catch (error) {
         should(error).be.an.instanceOf(UnprocessableEntityError);
@@ -203,49 +183,33 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
       timerEvents.forEach(assertTimerEvent);
     });
 
-    it('Should throw an error, if any of the BoundaryEvents uses an invalid timer definition.', (): void => {
+    it('Should not throw an error, if any of the BoundaryEvents uses an invalid timer definition.', (): void => {
+      const sampleFlowNode = SampleData.sampleBoundaryEvents['bpmn:boundaryEvent'].find((entry): boolean => entry.id === 'TimerBoundaryEvent_1');
 
-      try {
-        const sampleFlowNode = SampleData.sampleBoundaryEvents['bpmn:boundaryEvent'].find((entry): boolean => entry.id === 'TimerBoundaryEvent_1');
+      const sampleCopy = clone(sampleFlowNode);
+      sampleCopy['bpmn:timerEventDefinition'] = {} as any;
 
-        const sampleCopy = clone(sampleFlowNode);
-        sampleCopy['bpmn:timerEventDefinition'] = {} as any;
+      const samplePayload = {
+        'bpmn:boundaryEvent': [sampleCopy],
+      };
 
-        const samplePayload = {
-          'bpmn:boundaryEvent': [sampleCopy],
-        };
+      const result = parseEventsFromProcessData(samplePayload, [], sampleEvents);
 
-        const result = parseEventsFromProcessData(samplePayload, [], sampleEvents);
-        should.fail(result, 'Error', 'This should have caused an error, because the TimerBoundaryEvent has no definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).match(/TimerEvents must always contain a type and a value/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('timerType');
-        should(error.additionalInformation).have.a.property('timerValue');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
+      should(result).be.an.Array();
+      should(result).be.length(1);
+    });
+
+    it('Should not throw an error, if any of the BoundaryEvents has a definition that points to a non-existing message or signal', (): void => {
+      const result = parseEventsFromProcessData(SampleData.sampleBoundaryEvents, sampleErrors, []);
+
+      should(result).be.an.Array();
+      should(result).be.length(7);
     });
 
     it('Should throw an error, if any of the BoundaryEvents has an ErrorDefinition that points to a non-existing error', (): void => {
 
       try {
         const result = parseEventsFromProcessData(SampleData.sampleBoundaryEvents, [], sampleEvents);
-        should.fail(result, 'Error', 'This should have caused an error, because one of the events uses an invalid error definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).be.a.match(/reference.*?on event.*?is invalid/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
-    });
-
-    it('Should throw an error, if any of the BoundaryEvents has a definition that points to a non-existing message or signal', (): void => {
-
-      try {
-        const result = parseEventsFromProcessData(SampleData.sampleBoundaryEvents, sampleErrors, []);
         should.fail(result, 'Error', 'This should have caused an error, because one of the events uses an invalid error definition!');
       } catch (error) {
         should(error).be.an.instanceOf(UnprocessableEntityError);
@@ -284,45 +248,30 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
       timerEvents.forEach(assertTimerEvent);
     });
 
-    it('Should throw an error, if any of the IntermediateCatchEvents uses an invalid timer definition.', (): void => {
+    it('Should not throw an error, if any of the IntermediateCatchEvents uses an invalid timer definition.', (): void => {
+      const sampleFlowNode = SampleData
+        .sampleIntermediateCatchEvents['bpmn:intermediateCatchEvent']
+        .find((entry): boolean => entry.id === 'TimerCatchEvent_1');
 
-      try {
-        const sampleFlowNode = SampleData
-          .sampleIntermediateCatchEvents['bpmn:intermediateCatchEvent']
-          .find((entry): boolean => entry.id === 'TimerCatchEvent_1');
+      const sampleCopy = clone(sampleFlowNode);
+      sampleCopy['bpmn:timerEventDefinition'] = {} as any;
 
-        const sampleCopy = clone(sampleFlowNode);
-        sampleCopy['bpmn:timerEventDefinition'] = {} as any;
+      const samplePayload = {
+        'bpmn:intermediateCatchEvent': [sampleCopy],
+      };
 
-        const samplePayload = {
-          'bpmn:intermediateCatchEvent': [sampleCopy],
-        };
+      const result = parseEventsFromProcessData(samplePayload, [], sampleEvents);
 
-        const result = parseEventsFromProcessData(samplePayload, [], sampleEvents);
-        should.fail(result, 'Error', 'This should have caused an error, because the TimerBoundaryEvent has no definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).match(/TimerEvents must always contain a type and a value/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('timerType');
-        should(error.additionalInformation).have.a.property('timerValue');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
+      should(result).be.an.Array();
+      should(result).be.length(1);
     });
 
-    it('Should throw an error, if any of the IntermediateCatchEvents has a definition that points to a non-existing message or signal', (): void => {
+    // eslint-disable-next-line max-len
+    it('Should not throw an error, if any of the IntermediateCatchEvents has a definition that points to a non-existing message or signal', (): void => {
+      const result = parseEventsFromProcessData(SampleData.sampleIntermediateCatchEvents, [], []);
 
-      try {
-        const result = parseEventsFromProcessData(SampleData.sampleIntermediateCatchEvents, [], []);
-        should.fail(result, 'Error', 'This should have caused an error, because one of the events uses an invalid error definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).be.a.match(/reference.*?on event.*?is invalid/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
+      should(result).be.an.Array();
+      should(result).be.length(7);
     });
 
   });
@@ -350,18 +299,12 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
       signalEvents.forEach(assertSignalEvent);
     });
 
-    it('Should throw an error, if any of the IntermediateThrowEvents has a definition that points to a non-existing message or signal', (): void => {
+    // eslint-disable-next-line max-len
+    it('Should not throw an error, if any of the IntermediateThrowEvents has a definition that points to a non-existing message or signal', (): void => {
+      const result = parseEventsFromProcessData(SampleData.sampleIntermediateThrowEvents, [], []);
 
-      try {
-        const result = parseEventsFromProcessData(SampleData.sampleIntermediateThrowEvents, [], []);
-        should.fail(result, 'Error', 'This should have caused an error, because one of the events uses an invalid error definition!');
-      } catch (error) {
-        should(error).be.an.instanceOf(UnprocessableEntityError);
-        should(error.message).be.a.match(/reference.*?on event.*?is invalid/i);
-        should(error).have.a.property('additionalInformation');
-        should(error.additionalInformation).have.a.property('eventObject');
-        should(error.additionalInformation).have.a.property('rawEventData');
-      }
+      should(result).be.an.Array();
+      should(result).be.length(7);
     });
   });
 
