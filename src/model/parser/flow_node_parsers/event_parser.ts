@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {
@@ -162,7 +162,21 @@ function assignEventDefinition(event: any, eventRaw: any): void {
 }
 
 function assignErrorEventDefinition(event: any, eventRaw: any): void {
-  event.errorEventDefinition = retrieveErrorObject(eventRaw);
+  const errorObject = retrieveErrorObject(eventRaw);
+
+  if (!errorObject) {
+    const errorMessage = `Error reference on event ${event.id} is invalid!`;
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
+  event.errorEventDefinition = errorObject;
 }
 
 function assignLinkEventDefinition(event: any, eventRaw: any): void {
@@ -172,12 +186,42 @@ function assignLinkEventDefinition(event: any, eventRaw: any): void {
 
 function assignMessageEventDefinition(event: any, eventRaw: any): void {
   const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
-  event.messageEventDefinition = getDefinitionForEvent(eventDefinitonValue.messageRef);
+  const messageDefinition = getDefinitionForEvent(eventDefinitonValue.messageRef);
+
+  if (!messageDefinition) {
+    const errorMessage = `Message reference '${eventDefinitonValue.messageRef}' on Event with ID ${event.id} is invalid!`;
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      messageRef: eventDefinitonValue.messageRef,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
+  event.messageEventDefinition = messageDefinition;
 }
 
 function assignSignalEventDefinition(event: any, eventRaw: any): void {
   const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
-  event.signalEventDefinition = getDefinitionForEvent(eventDefinitonValue.signalRef);
+  const signalDefinition = getDefinitionForEvent(eventDefinitonValue.signalRef);
+
+  if (!signalDefinition) {
+    const errorMessage = `Signal reference '${eventDefinitonValue.signalRef}' on Event with ID ${event.id} is invalid!`;
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      signalRef: eventDefinitonValue.signalRef,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
+  event.signalEventDefinition = signalDefinition;
 }
 
 function assignTimerEventDefinition(event: any, eventRaw: any): void {
@@ -194,6 +238,20 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
 
   const timerType = parseTimerDefinitionType(eventDefinitonValue);
   const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
+
+  if (timerType === undefined || timerValue === undefined || timerValue.length === 0) {
+    const errorMessage = 'TimerEvents must always contain a type and a value!';
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      timerType: timerType,
+      timerValue: timerValue,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
 
   const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
   timerDefinition.enabled = isEnabled;
@@ -222,21 +280,21 @@ function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions
  */
 function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
 
-  const eventHasErrorReference =
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined &&
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+  const eventHasNoErrorReference =
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === undefined ||
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === '';
 
-  if (eventHasErrorReference) {
-    const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
-
-    return getErrorById(errorId);
+  if (eventHasNoErrorReference) {
+    return {
+      id: '',
+      code: '',
+      name: '',
+      message: '',
+    };
   }
+  const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
-  return {
-    id: '',
-    code: '',
-    name: '',
-  };
+  return getErrorById(errorId);
 }
 
 /**
@@ -251,10 +309,6 @@ function getErrorById(errorId: string): Model.GlobalElements.Error {
   const matchingError = errors.find((entry: Model.GlobalElements.Error): boolean => {
     return entry.id === errorId;
   });
-
-  if (!matchingError) {
-    throw new NotFoundError(`No error with id ${errorId} found.`);
-  }
 
   return matchingError;
 }
