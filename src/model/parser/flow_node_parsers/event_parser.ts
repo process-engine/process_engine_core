@@ -146,6 +146,24 @@ function assignEventDefinition(event: any, eventRaw: any): void {
   const eventHasTimerEvent = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
   const eventHasTerminateEvent = eventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition] !== undefined;
 
+  // Might look a little weird, but counting "true" values is actually a lot easier than trying out every possible combo.
+  // It doesn't matter which events are modelled anyway, as soon as there is more than one, the FlowNode is simply not usable.
+  const allResults = [eventHasErrorEvent, eventHasLinkEvent, eventHasMessageEvent, eventHasSignalEvent, eventHasTimerEvent, eventHasTerminateEvent];
+
+  const eventHasTooManyDefinitions = allResults.filter((entry): boolean => entry === true).length > 1;
+  if (eventHasTooManyDefinitions) {
+    const message = `Event '${event}' has more than one type of event definition! This is not permitted!`;
+    logger.error(message);
+
+    const error = new UnprocessableEntityError(message);
+    error.additionalInformation = {
+      eventObject: event,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
   if (eventHasErrorEvent) {
     assignErrorEventDefinition(event, eventRaw);
   } else if (eventHasMessageEvent) {
