@@ -43,6 +43,23 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
     message: '',
   }];
 
+  describe('Saniy Checks', (): void => {
+
+    it('Should throw an error, if a given event contains more than one type of EventDefinition', (): void => {
+
+      try {
+        const result = parseEventsFromProcessData(SampleData.misconfiguredEvents, [], []);
+        should.fail(result, 'Error', 'This should have caused an error, because some of the events point to non-existing messages and signals!');
+      } catch (error) {
+        should(error).be.an.instanceOf(UnprocessableEntityError);
+        should(error.message).match(/event.*?has more than one type of event definition/i);
+        should(error).have.a.property('additionalInformation');
+        should(error.additionalInformation).have.a.property('eventObject');
+        should(error.additionalInformation).have.a.property('rawEventData');
+      }
+    });
+  });
+
   describe('StartEvent', (): void => {
 
     it('Should correctly parse a list of StartEvents of varying type', (): void => {
