@@ -214,19 +214,19 @@ function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions
 }
 
 /**
- * Retrieves the error definition from the given error list, that belongs to the given error end event.
- * If the error is anonymous, an empty error object is returned.
+ * Retrieves the error definition that belongs to the given ErrorEndEvent.
+ * If no error reference is attached, an empty error object is returned.
  *
  * @param   endEventRaw The raw ErrorEndEvent.
  * @returns             The matching error definition.
  */
 function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
 
-  const errorIsNotAnonymous =
+  const eventHasErrorReference =
     errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined &&
     errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
 
-  if (errorIsNotAnonymous) {
+  if (eventHasErrorReference) {
     const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
     return getErrorById(errorId);
