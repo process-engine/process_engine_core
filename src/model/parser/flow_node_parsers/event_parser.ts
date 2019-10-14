@@ -61,7 +61,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
     event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
     event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
 
-    assignEventDefinitions(event, eventRaw);
+    assignEventDefinition(event, eventRaw);
 
     (event as any).inputValues = getInputValues(event);
 
@@ -98,7 +98,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
                            boundaryEventRaw.cancelActivity === true;
     boundaryEvent.cancelActivity = cancelActivity;
 
-    assignEventDefinitions(boundaryEvent, boundaryEventRaw);
+    assignEventDefinition(boundaryEvent, boundaryEventRaw);
 
     const isCyclicTimerBoundaryEvent =
       boundaryEvent.timerEventDefinition &&
@@ -137,68 +137,70 @@ function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
     : undefined;
 }
 
-function assignEventDefinitions(event: any, eventRaw: any): void {
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.LinkEventDefinition, 'linkEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
+function assignEventDefinition(event: any, eventRaw: any): void {
+
+  const eventHasErrorEvent = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined;
+  const eventHasLinkEvent = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition] !== undefined;
+  const eventHasMessageEvent = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition] !== undefined;
+  const eventHasSignalEvent = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition] !== undefined;
+  const eventHasTimerEvent = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
+  const eventHasTerminateEvent = eventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition] !== undefined;
+
+  if (eventHasErrorEvent) {
+    assignErrorEventDefinition(event, eventRaw);
+  } else if (eventHasMessageEvent) {
+    assignMessageEventDefinition(event, eventRaw);
+  } else if (eventHasSignalEvent) {
+    assignSignalEventDefinition(event, eventRaw);
+  } else if (eventHasTimerEvent) {
+    assignTimerEventDefinition(event, eventRaw);
+  } else if (eventHasTerminateEvent) {
+    event.terminateEventDefinition = {};
+  } else if (eventHasLinkEvent) {
+    assignLinkEventDefinition(event, eventRaw);
+  }
 }
 
-function assignEventDefinition(
-  event: any,
-  eventRaw: any,
-  eventRawTagName: BpmnTags.FlowElementProperty,
-  targetPropertyName: string,
-): void {
+function assignErrorEventDefinition(event: any, eventRaw: any): void {
+  event.errorEventDefinition = retrieveErrorObject(eventRaw);
+}
 
-  const eventDefinitonValue = eventRaw[eventRawTagName];
+function assignLinkEventDefinition(event: any, eventRaw: any): void {
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition];
+  event.linkEventDefinition = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonValue.name);
+}
 
-  const eventHasNoMatchingDefinition = eventDefinitonValue === undefined;
-  if (eventHasNoMatchingDefinition) {
-    return;
-  }
+function assignMessageEventDefinition(event: any, eventRaw: any): void {
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
+  event.messageEventDefinition = getDefinitionForEvent(eventDefinitonValue.messageRef);
+}
 
-  switch (targetPropertyName) {
-    case 'errorEventDefinition':
-      event[targetPropertyName] = retrieveErrorObject(eventRaw);
-      break;
-    case 'linkEventDefinition':
-      // Unlinke messages and signals, links are not declared globally on a process model,
-      // but exist only on the event to which they are attached.
-      event[targetPropertyName] = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonValue.name);
-      break;
-    case 'messageEventDefinition':
-      event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);
-      break;
-    case 'signalEventDefinition':
-      event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
-      break;
-    case 'timerEventDefinition':
+function assignSignalEventDefinition(event: any, eventRaw: any): void {
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
+  event.signalEventDefinition = getDefinitionForEvent(eventDefinitonValue.signalRef);
+}
 
-      const isEnabledCamundaProperty = event.extensionElements && event.extensionElements.camundaExtensionProperties
-        ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
-        : undefined;
+function assignTimerEventDefinition(event: any, eventRaw: any): void {
 
-      const isEnabled = isEnabledCamundaProperty !== undefined
-        ? isEnabledCamundaProperty.value === 'true'
-        : true;
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
 
-      const timerType = parseTimerDefinitionType(eventDefinitonValue);
-      const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
+  const isEnabledCamundaProperty = event.extensionElements && event.extensionElements.camundaExtensionProperties
+    ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
+    : undefined;
 
-      const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
-      timerDefinition.enabled = isEnabled;
-      timerDefinition.timerType = timerType;
-      timerDefinition.value = timerValue;
+  const isEnabled = isEnabledCamundaProperty !== undefined
+    ? isEnabledCamundaProperty.value === 'true'
+    : true;
 
-      event[targetPropertyName] = timerDefinition;
-      break;
-    default:
-      event[targetPropertyName] = {};
-      break;
-  }
+  const timerType = parseTimerDefinitionType(eventDefinitonValue);
+  const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
+
+  const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+  timerDefinition.enabled = isEnabled;
+  timerDefinition.timerType = timerType;
+  timerDefinition.value = timerValue;
+
+  event.timerEventDefinition = timerDefinition;
 }
 
 function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
