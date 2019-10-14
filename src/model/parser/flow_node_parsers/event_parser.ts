@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {NotFoundError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {
@@ -30,56 +30,45 @@ export function parseEventsFromProcessData(
   eventDefinitions = parsedEventDefinitions;
 
   const startEvents = parseEventsByType(processData, BpmnTags.EventElement.StartEvent, Model.Events.StartEvent);
-  const endEvents = parseEndEvents(processData);
-
-  const boundaryEvents = parseBoundaryEvents(processData);
+  const endEvents = parseEventsByType(processData, BpmnTags.EventElement.EndEvent, Model.Events.EndEvent);
 
   const intermediateThrowEvents = parseEventsByType(processData, BpmnTags.EventElement.IntermediateThrowEvent, Model.Events.IntermediateThrowEvent);
   const intermediateCatchEvents = parseEventsByType(processData, BpmnTags.EventElement.IntermediateCatchEvent, Model.Events.IntermediateCatchEvent);
 
-  return Array.prototype.concat(startEvents, endEvents, boundaryEvents, intermediateThrowEvents, intermediateCatchEvents);
+  const boundaryEvents = parseBoundaryEvents(processData);
+
+  return Array.prototype.concat(startEvents, endEvents, intermediateThrowEvents, intermediateCatchEvents, boundaryEvents);
 }
 
-/**
- * Parse all EndEvents of a process.
- * ErrorEndEvents will get their Errors attached to them.
- *
- * @param processData Parsed process definition data.
- * @param errors      List of process errors.
- * @returns           An array of parsed EndEvents.
- */
-function parseEndEvents(processData: any): Array<Model.Events.EndEvent> {
+function parseEventsByType<TEvent extends Model.Events.Event>(
+  data: any,
+  eventTypeTag: BpmnTags.EventElement,
+  targetType: Model.Base.IConstructor<TEvent>,
+): Array<TEvent> {
 
-  const endEventsRaw = getModelPropertyAsArray(processData, BpmnTags.EventElement.EndEvent);
+  const events: Array<TEvent> = [];
 
-  const events = endEventsRaw.map((endEventRaw: any): Model.Events.EndEvent => {
-    return parseEndEvent(endEventRaw);
-  });
+  const eventsRaw = getModelPropertyAsArray(data, eventTypeTag);
+
+  if (!eventsRaw || eventsRaw.length === 0) {
+    return [];
+  }
+
+  for (const eventRaw of eventsRaw) {
+    const event = createObjectWithCommonProperties<TEvent>(eventRaw, targetType);
+    event.name = eventRaw.name;
+    event.defaultOutgoingSequenceFlowId = eventRaw.default;
+    event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
+    event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
+
+    assignEventDefinition(event, eventRaw);
+
+    (event as any).inputValues = getInputValues(event);
+
+    events.push(event);
+  }
 
   return events;
-}
-
-/**
- * Parses a single EndEvent from the given raw data.
- *
- * @param   endEventRaw The raw end event data.
- * @param   errors      Contains a list of error definitions.
- *                      If the EndEvent is an ErrorEndEvent, this list is used to retrieve the matching error definition.
- * @returns             The fully parsed EndEvent.
- */
-function parseEndEvent(endEventRaw: any): Model.Events.EndEvent {
-
-  const endEvent = createObjectWithCommonProperties(endEventRaw, Model.Events.EndEvent);
-
-  endEvent.name = endEventRaw.name;
-  endEvent.defaultOutgoingSequenceFlowId = endEventRaw.default;
-  endEvent.incoming = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-  endEvent.outgoing = getModelPropertyAsArray(endEventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-  assignEventDefinitions(endEvent, endEventRaw);
-  endEvent.inputValues = getInputValues(endEvent);
-
-  return endEvent;
 }
 
 function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent> {
@@ -109,7 +98,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
                            boundaryEventRaw.cancelActivity === true;
     boundaryEvent.cancelActivity = cancelActivity;
 
-    assignEventDefinitions(boundaryEvent, boundaryEventRaw);
+    assignEventDefinition(boundaryEvent, boundaryEventRaw);
 
     const isCyclicTimerBoundaryEvent =
       boundaryEvent.timerEventDefinition &&
@@ -122,37 +111,6 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
     }
 
     events.push(boundaryEvent);
-  }
-
-  return events;
-}
-
-function parseEventsByType<TEvent extends Model.Events.Event>(
-  data: any,
-  eventType: BpmnTags.EventElement,
-  type: Model.Base.IConstructor<TEvent>,
-): Array<TEvent> {
-
-  const events: Array<TEvent> = [];
-
-  const eventsRaw = getModelPropertyAsArray(data, eventType);
-
-  if (!eventsRaw || eventsRaw.length === 0) {
-    return [];
-  }
-
-  for (const eventRaw of eventsRaw) {
-    const event = createObjectWithCommonProperties<TEvent>(eventRaw, type);
-    event.name = eventRaw.name;
-    event.defaultOutgoingSequenceFlowId = eventRaw.default;
-    event.incoming = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowIncoming);
-    event.outgoing = getModelPropertyAsArray(eventRaw, BpmnTags.FlowElementProperty.SequenceFlowOutgoing);
-
-    assignEventDefinitions(event, eventRaw);
-
-    (event as any).inputValues = getInputValues(event);
-
-    events.push(event);
   }
 
   return events;
@@ -179,68 +137,146 @@ function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
     : undefined;
 }
 
-function assignEventDefinitions(event: any, eventRaw: any): void {
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.ErrorEventDefinition, 'errorEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.LinkEventDefinition, 'linkEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.MessageEventDefinition, 'messageEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.SignalEventDefinition, 'signalEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TerminateEventDefinition, 'terminateEventDefinition');
-  assignEventDefinition(event, eventRaw, BpmnTags.FlowElementProperty.TimerEventDefinition, 'timerEventDefinition');
+function assignEventDefinition(event: any, eventRaw: any): void {
+
+  const eventHasErrorEvent = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined;
+  const eventHasLinkEvent = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition] !== undefined;
+  const eventHasMessageEvent = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition] !== undefined;
+  const eventHasSignalEvent = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition] !== undefined;
+  const eventHasTimerEvent = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
+  const eventHasTerminateEvent = eventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition] !== undefined;
+
+  // Might look a little weird, but counting "true" values is actually a lot easier than trying out every possible combo.
+  // It doesn't matter which events are modelled anyway, as soon as there is more than one, the FlowNode is simply not usable.
+  const allResults = [eventHasErrorEvent, eventHasLinkEvent, eventHasMessageEvent, eventHasSignalEvent, eventHasTimerEvent, eventHasTerminateEvent];
+
+  const eventHasTooManyDefinitions = allResults.filter((entry): boolean => entry === true).length > 1;
+  if (eventHasTooManyDefinitions) {
+    const message = `Event '${event}' has more than one type of event definition! This is not permitted!`;
+    logger.error(message);
+
+    const error = new UnprocessableEntityError(message);
+    error.additionalInformation = {
+      eventObject: event,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
+  if (eventHasErrorEvent) {
+    assignErrorEventDefinition(event, eventRaw);
+  } else if (eventHasMessageEvent) {
+    assignMessageEventDefinition(event, eventRaw);
+  } else if (eventHasSignalEvent) {
+    assignSignalEventDefinition(event, eventRaw);
+  } else if (eventHasTimerEvent) {
+    assignTimerEventDefinition(event, eventRaw);
+  } else if (eventHasTerminateEvent) {
+    event.terminateEventDefinition = {};
+  } else if (eventHasLinkEvent) {
+    assignLinkEventDefinition(event, eventRaw);
+  }
 }
 
-function assignEventDefinition(
-  event: any,
-  eventRaw: any,
-  eventRawTagName: BpmnTags.FlowElementProperty,
-  targetPropertyName: string,
-): void {
+function assignErrorEventDefinition(event: any, eventRaw: any): void {
+  const errorObject = retrieveErrorObject(eventRaw);
 
-  const eventDefinitonValue = eventRaw[eventRawTagName];
+  if (!errorObject) {
+    const errorMessage = `Error reference on event ${event.id} is invalid!`;
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      rawEventData: eventRaw,
+    } as any;
 
-  const eventHasNoMatchingDefinition = eventDefinitonValue === undefined;
-  if (eventHasNoMatchingDefinition) {
-    return;
+    throw error;
   }
 
-  switch (targetPropertyName) {
-    case 'errorEventDefinition':
-      event[targetPropertyName] = retrieveErrorObject(eventRaw);
-      break;
-    case 'linkEventDefinition':
-      // Unlinke messages and signals, links are not declared globally on a process model,
-      // but exist only on the event to which they are attached.
-      event[targetPropertyName] = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonValue.name);
-      break;
-    case 'messageEventDefinition':
-      event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.messageRef);
-      break;
-    case 'signalEventDefinition':
-      event[targetPropertyName] = getDefinitionForEvent(eventDefinitonValue.signalRef);
-      break;
-    case 'timerEventDefinition':
+  event.errorEventDefinition = errorObject;
+}
 
-      const isEnabledCamundaProperty = event.extensionElements && event.extensionElements.camundaExtensionProperties
-        ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
-        : undefined;
+function assignLinkEventDefinition(event: any, eventRaw: any): void {
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition];
+  event.linkEventDefinition = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonValue.name);
+}
 
-      const isEnabled = isEnabledCamundaProperty !== undefined
-        ? isEnabledCamundaProperty.value === 'true'
-        : true;
+function assignMessageEventDefinition(event: any, eventRaw: any): void {
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
+  const messageDefinition = getDefinitionForEvent(eventDefinitonValue.messageRef);
 
-      const timerType = parseTimerDefinitionType(eventDefinitonValue);
-      const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
+  if (!messageDefinition) {
+    const errorMessage = `Message reference '${eventDefinitonValue.messageRef}' on Event with ID ${event.id} is invalid!`;
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      messageRef: eventDefinitonValue.messageRef,
+      rawEventData: eventRaw,
+    } as any;
 
-      const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
-      timerDefinition.enabled = isEnabled;
-      timerDefinition.timerType = timerType;
-      timerDefinition.value = timerValue;
-
-      event[targetPropertyName] = timerDefinition;
-      break;
-    default:
-      event[targetPropertyName] = {};
-      break;
+    throw error;
   }
+
+  event.messageEventDefinition = messageDefinition;
+}
+
+function assignSignalEventDefinition(event: any, eventRaw: any): void {
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
+  const signalDefinition = getDefinitionForEvent(eventDefinitonValue.signalRef);
+
+  if (!signalDefinition) {
+    const errorMessage = `Signal reference '${eventDefinitonValue.signalRef}' on Event with ID ${event.id} is invalid!`;
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      signalRef: eventDefinitonValue.signalRef,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
+  event.signalEventDefinition = signalDefinition;
+}
+
+function assignTimerEventDefinition(event: any, eventRaw: any): void {
+
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
+
+  const isEnabledCamundaProperty = event.extensionElements && event.extensionElements.camundaExtensionProperties
+    ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
+    : undefined;
+
+  const isEnabled = isEnabledCamundaProperty !== undefined
+    ? isEnabledCamundaProperty.value === 'true'
+    : true;
+
+  const timerType = parseTimerDefinitionType(eventDefinitonValue);
+  const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
+
+  if (timerType === undefined || timerValue === undefined || timerValue.length === 0) {
+    const errorMessage = 'TimerEvents must always contain a type and a value!';
+    logger.error(errorMessage);
+    const error = new UnprocessableEntityError(errorMessage);
+    error.additionalInformation = {
+      eventObject: event,
+      timerType: timerType,
+      timerValue: timerValue,
+      rawEventData: eventRaw,
+    } as any;
+
+    throw error;
+  }
+
+  const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
+  timerDefinition.enabled = isEnabled;
+  timerDefinition.timerType = timerType;
+  timerDefinition.value = timerValue;
+
+  event.timerEventDefinition = timerDefinition;
 }
 
 function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
@@ -254,29 +290,29 @@ function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions
 }
 
 /**
- * Retrieves the error definition from the given error list, that belongs to the given error end event.
- * If the error is anonymous, an empty error object is returned.
+ * Retrieves the error definition that belongs to the given ErrorEndEvent.
+ * If no error reference is attached, an empty error object is returned.
  *
  * @param   endEventRaw The raw ErrorEndEvent.
  * @returns             The matching error definition.
  */
 function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
 
-  const errorIsNotAnonymous =
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined &&
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== '';
+  const eventHasNoErrorReference =
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === undefined ||
+    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === '';
 
-  if (errorIsNotAnonymous) {
-    const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
-
-    return getErrorById(errorId);
+  if (eventHasNoErrorReference) {
+    return {
+      id: '',
+      code: '',
+      name: '',
+      message: '',
+    };
   }
+  const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
 
-  return {
-    id: '',
-    code: '',
-    name: '',
-  };
+  return getErrorById(errorId);
 }
 
 /**
@@ -291,10 +327,6 @@ function getErrorById(errorId: string): Model.GlobalElements.Error {
   const matchingError = errors.find((entry: Model.GlobalElements.Error): boolean => {
     return entry.id === errorId;
   });
-
-  if (!matchingError) {
-    throw new NotFoundError(`No error with id ${errorId} found.`);
-  }
 
   return matchingError;
 }
