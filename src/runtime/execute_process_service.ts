@@ -1,11 +1,17 @@
 import * as uuid from 'node-uuid';
 
-import {BadRequestError, InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
+import {
+  BadRequestError,
+  InternalServerError,
+  NotFoundError,
+  isEssentialProjectsError,
+} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {IProcessModelUseCases, Model} from '@process-engine/persistence_api.contracts';
 import {
+  BpmnError,
   EndEventReachedMessage,
   IExecuteProcessService,
   IFlowNodeHandlerFactory,
@@ -145,7 +151,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       } catch (error) {
         // Errors from @essential-project and ErrorEndEvents are thrown as they are.
         // Everything else is thrown as an InternalServerError.
-        const isPresetError = (error.errorCode || error.code) && error.name;
+        const isPresetError = isEssentialProjectsError(error) || error instanceof BpmnError;
         if (isPresetError) {
           reject(error);
         } else {
