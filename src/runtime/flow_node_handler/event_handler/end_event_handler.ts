@@ -8,7 +8,6 @@ import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   BpmnError,
   EndEventReachedMessage,
-  ErrorEndEventReachedMessage,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -106,6 +105,7 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
 
         // Finalization
         if (flowNodeIsErrorEndEvent) {
+          this.notifyAboutEndEventReached(identity, token);
           const errorObj = new BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
 
           return reject(errorObj);
