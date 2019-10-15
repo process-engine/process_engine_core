@@ -93,10 +93,17 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
         }
 
         // Event notifications
+        if (flowNodeIsErrorEndEvent) {
+          const errorObj = new BpmnError(
+            this.endEvent.errorEventDefinition.name,
+            this.endEvent.errorEventDefinition.code,
+            this.endEvent.errorEventDefinition.message,
+          );
+
+          return reject(errorObj);
+        }
         if (flowNodeIsTerminateEndEvent) {
           this.notifyAboutTermination(identity, token);
-        } else if (flowNodeIsErrorEndEvent) {
-          return this.createAndRejectError(identity, token, reject);
         } else if (flowNodeIsMessageEndEvent) {
           this.sendMessage(identity, token);
         } else if (flowNodeIsSignalEndEvent) {
@@ -263,19 +270,6 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
     this.eventAggregator.publish(eventName, message);
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
-  }
-
-  private async createAndRejectError(identity: IIdentity, token: ProcessToken, rejectFunc: Function): Promise<void> {
-
-    const errorObj = new BpmnError(
-      this.endEvent.errorEventDefinition.name,
-      this.endEvent.errorEventDefinition.code,
-      this.endEvent.errorEventDefinition.message,
-    );
-
-    rejectFunc(errorObj);
-    await new Promise((cb): any => setTimeout(cb, 100));
-    this.notifyAboutEndEventReached(identity, token);
   }
 
   /**
