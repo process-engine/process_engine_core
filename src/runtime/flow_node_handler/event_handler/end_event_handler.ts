@@ -79,8 +79,6 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
       const flowNodeIsSignalEndEvent = this.endEvent.signalEventDefinition !== undefined;
 
       try {
-        let errorObj: BpmnError;
-
         const claimCheckNeeded = flowNodeIsMessageEndEvent || flowNodeIsSignalEndEvent;
         if (claimCheckNeeded) {
           await this.ensureHasClaim(identity, processModelFacade);
@@ -98,8 +96,6 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
         // Event notifications
         if (flowNodeIsTerminateEndEvent) {
           this.notifyAboutTermination(identity, token);
-        } else if (flowNodeIsErrorEndEvent) {
-          errorObj = this.createBpmnError();
         } else if (flowNodeIsMessageEndEvent) {
           this.sendMessage(identity, token);
         } else if (flowNodeIsSignalEndEvent) {
@@ -110,6 +106,7 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
 
         // Finalization
         if (flowNodeIsErrorEndEvent) {
+          const errorObj = new BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
           this.notifyAboutError(identity, token, errorObj);
 
           return reject(errorObj);
@@ -173,15 +170,6 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
 
       throw new InternalServerError(errorMessage);
     }
-  }
-
-  /**
-   * When an ErrorEndEvent is used, this will reate an error object with which
-   * to end the process.
-   * The process will not be finished regularly in this case.
-   */
-  private createBpmnError(): BpmnError {
-    return new BpmnError(this.endEvent.errorEventDefinition.name, this.endEvent.errorEventDefinition.code);
   }
 
   /**
