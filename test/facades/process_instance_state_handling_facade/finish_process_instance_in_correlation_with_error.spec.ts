@@ -104,7 +104,7 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
       });
     });
 
-    it('Should send a onProcessTerminated notification, if the error is from a process termination', async (): Promise<void> => {
+    it('Should send an onProcessTerminated notification, if the error is from a process termination', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
