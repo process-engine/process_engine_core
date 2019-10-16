@@ -374,11 +374,15 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       return rejectFunc(error);
     }
 
-    await Promise.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
-      const flowNodeAfterBoundaryEvent = errorHandler.getNextFlowNode(processModelFacade);
-      const errorHandlerId = errorHandler.getInstanceId();
-      await this.continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
-    });
+    try {
+      await Promise.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
+        const flowNodeAfterBoundaryEvent = errorHandler.getNextFlowNode(processModelFacade);
+        const errorHandlerId = errorHandler.getInstanceId();
+        await this.continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
+      });
+    } catch (errorFromBoundaryEventChain) {
+      rejectFunc(errorFromBoundaryEventChain);
+    }
 
     return resolveFunc();
   }

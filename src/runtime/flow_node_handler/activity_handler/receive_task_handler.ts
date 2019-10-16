@@ -42,7 +42,6 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
 
     this.logger.verbose(`Executing ReceiveTask instance ${this.flowNodeInstanceId}`);
     await this.persistOnEnter(token);
-    await this.persistOnSuspend(token);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade, identity);
   }
@@ -67,13 +66,12 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
 
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise = this.waitForMessage();
+      const executionPromise = this.waitForMessage(token);
 
       this.onInterruptedCallback = (): void => {
         if (this.messageSubscription) {
           this.eventAggregator.unsubscribe(this.messageSubscription);
         }
-        executionPromise.cancel();
         handlerPromise.cancel();
 
         return undefined;
@@ -108,9 +106,9 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
    * @async
    * @returns The received message.
    */
-  private async waitForMessage(): Promise<MessageEventReachedMessage> {
+  private async waitForMessage(token: ProcessToken): Promise<MessageEventReachedMessage> {
 
-    return new Promise<MessageEventReachedMessage>((resolve: Function): void => {
+    return new Promise<MessageEventReachedMessage>(async (resolve: Function): Promise<void> => {
 
       const messageEventName = eventAggregatorSettings
         .messagePaths
@@ -121,6 +119,8 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
         this.eventAggregator.subscribeOnce(messageEventName, (message: MessageEventReachedMessage): void => {
           resolve(message);
         });
+
+      await this.persistOnSuspend(token);
     });
   }
 
