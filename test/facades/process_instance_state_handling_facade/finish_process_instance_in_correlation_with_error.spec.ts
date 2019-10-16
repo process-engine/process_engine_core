@@ -125,17 +125,18 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
       }
     });
 
-    it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
+    it('Should throw an error, if no error object is given', async (): Promise<void> => {
       try {
-        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(undefined, sampleProcessInstanceConfig, sampleError);
+        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, undefined);
+        should.fail('received result', undefined, 'Expected this test to cause an error!');
       } catch (error) {
-        should.fail(error, undefined, 'Did not expect an error here!');
+        should(error).be.instanceOf(Error);
       }
     });
 
-    it('Should not throw an error, if no error object is given', async (): Promise<void> => {
+    it('Should not throw an error, if no Identity is given', async (): Promise<void> => {
       try {
-        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, undefined);
+        await processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(undefined, sampleProcessInstanceConfig, sampleError);
       } catch (error) {
         should.fail(error, undefined, 'Did not expect an error here!');
       }
