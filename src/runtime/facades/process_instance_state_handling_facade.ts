@@ -158,7 +158,7 @@ export class ProcessInstanceStateHandlingFacade {
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
   }
 
-  private sendProcessInstanceTerminationNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
+  public sendProcessInstanceTerminationNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
 
     const eventName = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);

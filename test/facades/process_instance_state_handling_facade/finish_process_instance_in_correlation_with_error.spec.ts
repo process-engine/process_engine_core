@@ -62,7 +62,7 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
       });
     });
 
-    it('Should log that a new ProcessInstance was finished', async (): Promise<void> => {
+    it('Should log that a new ProcessInstance was finished with an error', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
@@ -83,7 +83,7 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
       });
     });
 
-    it('Should send the notification about finishing the ProcessInstance', async (): Promise<void> => {
+    it('Should send the notification about the errored ProcessInstance', async (): Promise<void> => {
 
       return new Promise(async (resolve): Promise<void> => {
 
@@ -101,6 +101,30 @@ describe('ProcessInstanceStateHandlingFacade.finishProcessInstanceInCorrelationW
 
         await processInstanceStateHandlingFacade
           .finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, sampleError);
+      });
+    });
+
+    it('Should send a onProcessTerminated notification, if the error is from a process termination', async (): Promise<void> => {
+
+      return new Promise(async (resolve): Promise<void> => {
+
+        const processInstanceStateHandlingFacade = fixtureProvider.createProcessInstanceStateHandlingFacade();
+
+        const terminationError = new Error('Process was terminated');
+
+        processInstanceStateHandlingFacade.logProcessError = (): void => {};
+
+        const callback = (identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void => {
+          should(identity).be.eql(sampleIdentity);
+          should(processInstanceConfig).be.eql(sampleProcessInstanceConfig);
+          should(error).be.equal(terminationError);
+          resolve();
+        };
+
+        processInstanceStateHandlingFacade.sendProcessInstanceTerminationNotification = callback;
+
+        await processInstanceStateHandlingFacade
+          .finishProcessInstanceInCorrelationWithError(sampleIdentity, sampleProcessInstanceConfig, terminationError);
       });
     });
 
