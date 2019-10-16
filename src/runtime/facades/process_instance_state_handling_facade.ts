@@ -106,7 +106,14 @@ export class ProcessInstanceStateHandlingFacade {
 
     this.logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
 
-    this.sendProcessInstanceErrorNotification(identity, processInstanceConfig, error);
+    const terminationRegex = /terminated/i;
+    const isTerminationError = terminationRegex.test(error.message);
+
+    if (isTerminationError) {
+      this.sendProcessInstanceTerminationNotification(identity, processInstanceConfig, error);
+    } else {
+      this.sendProcessInstanceErrorNotification(identity, processInstanceConfig, error);
+    }
   }
 
   public sendProcessInstanceFinishedNotification(
@@ -134,7 +141,6 @@ export class ProcessInstanceStateHandlingFacade {
 
   public sendProcessInstanceErrorNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
 
-    // Send notification about the errored ProcessInstance.
     const instanceErrorEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
@@ -150,6 +156,25 @@ export class ProcessInstanceStateHandlingFacade {
 
     this.eventAggregator.publish(instanceErrorEventName, instanceErroredMessage);
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
+  }
+
+  private sendProcessInstanceTerminationNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
+
+    const eventName = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+
+    const message = new ProcessTerminatedMessage(
+      processInstanceConfig.correlationId,
+      processInstanceConfig.processModelId,
+      processInstanceConfig.processInstanceId,
+      undefined,
+      undefined,
+      identity,
+      error,
+    );
+
+    this.eventAggregator.publish(eventName, message);
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 
   public async terminateSubprocesses(identity: IIdentity, processInstanceId: string): Promise<void> {
