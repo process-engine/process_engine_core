@@ -4,7 +4,7 @@ import {BadRequestError, InternalServerError} from '@essential-projects/errors_t
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
-import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
+import {ILoggingApi, LogLevel, MetricMeasurementPoint} from '@process-engine/logging_api_contracts';
 import {CorrelationState, ICorrelationService, IProcessModelUseCases} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodeInstanceResult,
@@ -227,6 +227,7 @@ export class ProcessInstanceStateHandlingFacade {
       processModelId,
       processInstanceId,
       LogLevel.info,
+      MetricMeasurementPoint.onProcessStart,
       'Process instance started.',
       startTime.toDate(),
     );
@@ -249,6 +250,7 @@ export class ProcessInstanceStateHandlingFacade {
       processModelId,
       processInstanceId,
       LogLevel.info,
+      MetricMeasurementPoint.onProcessStart,
       'ProcessInstance resumed.',
       startTime.toDate(),
     );
@@ -270,6 +272,7 @@ export class ProcessInstanceStateHandlingFacade {
       processModelId,
       processInstanceId,
       LogLevel.info,
+      MetricMeasurementPoint.onProcessFinish,
       'Process instance finished.',
       endTime.toDate(),
     );
@@ -291,8 +294,10 @@ export class ProcessInstanceStateHandlingFacade {
       processModelId,
       processInstanceId,
       LogLevel.error,
-      error.message,
+      MetricMeasurementPoint.onProcessError,
+      `ProcessInstance exited with an error: ${error.message}`,
       errorTime.toDate(),
+      error,
     );
   }
 
