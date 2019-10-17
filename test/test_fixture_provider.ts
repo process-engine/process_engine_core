@@ -20,7 +20,6 @@ import {
   EventAggregatorMock,
   FlowNodeInstanceServiceMock,
   LoggingServiceMock,
-  MetricsServiceMock,
   ProcessModelUseCasesMock,
   TimerServiceMock,
 } from './mocks';
@@ -79,13 +78,11 @@ export class TestFixtureProvider {
   public createFlowNodePersistenceFacade(
     flowNodeInstanceServiceMock?: FlowNodeInstanceServiceMock,
     loggingServiceMock?: LoggingServiceMock,
-    metricsServiceMock?: MetricsServiceMock,
   ): FlowNodePersistenceFacade {
 
     return new FlowNodePersistenceFacade(
       flowNodeInstanceServiceMock || new FlowNodeInstanceServiceMock(),
       loggingServiceMock || new LoggingServiceMock(),
-      metricsServiceMock || new MetricsServiceMock(),
     );
   }
 
@@ -93,7 +90,6 @@ export class TestFixtureProvider {
     correlationServiceMock?: CorrelationServiceMock,
     eventAggregatorMock?: EventAggregatorMock,
     loggingServiceMock?: LoggingServiceMock,
-    metricsServiceMock?: MetricsServiceMock,
     processModelUseCasesMock?: ProcessModelUseCasesMock,
   ): ProcessInstanceStateHandlingFacade {
 
@@ -101,7 +97,6 @@ export class TestFixtureProvider {
       correlationServiceMock || new CorrelationServiceMock(),
       eventAggregatorMock || new EventAggregatorMock(),
       loggingServiceMock || new LoggingServiceMock(),
-      metricsServiceMock || new MetricsServiceMock(),
       processModelUseCasesMock || new ProcessModelUseCasesMock(),
     );
   }

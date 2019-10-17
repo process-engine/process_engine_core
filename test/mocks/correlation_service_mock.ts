@@ -1,7 +1,12 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {Correlation, ProcessInstance} from '@process-engine/persistence_api.contracts';
+import {
+  Correlation,
+  CorrelationState,
+  ICorrelationService,
+  ProcessInstance,
+} from '@process-engine/persistence_api.contracts';
 
-export class CorrelationServiceMock {
+export class CorrelationServiceMock implements ICorrelationService {
 
   public async createEntry(
     identity: IIdentity,
@@ -53,6 +58,33 @@ export class CorrelationServiceMock {
     error: Error,
   ): Promise<void> {
     return Promise.resolve();
+  }
+
+  public async getProcessInstancesForCorrelation(
+    identity: IIdentity,
+    correlationId: string,
+    offset?: number,
+    limit?: number,
+  ): Promise<Array<ProcessInstance>> {
+    return Promise.resolve([]);
+  }
+
+  public async getProcessInstancesForProcessModel(
+    identity: IIdentity,
+    processModelId: string,
+    offset?: number,
+    limit?: number,
+  ): Promise<Array<ProcessInstance>> {
+    return Promise.resolve([]);
+  }
+
+  public async getProcessInstancesByState(
+    identity: IIdentity,
+    state: CorrelationState,
+    offset?: number,
+    limit?: number,
+  ): Promise<Array<ProcessInstance>> {
+    return Promise.resolve([]);
   }
 
 }

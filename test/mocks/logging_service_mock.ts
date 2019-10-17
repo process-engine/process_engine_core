@@ -1,5 +1,5 @@
 import {IIdentity} from '@essential-projects/iam_contracts';
-import {LogEntry, LogLevel} from '@process-engine/logging_api_contracts';
+import {LogEntry, LogLevel, MetricMeasurementPoint} from '@process-engine/logging_api_contracts';
 
 export class LoggingServiceMock {
 
@@ -12,8 +12,10 @@ export class LoggingServiceMock {
     processModelId: string,
     processInstanceId: string,
     logLevel: LogLevel,
-    message: string,
+    measuredAt: MetricMeasurementPoint,
+    message?: string,
     timestamp?: Date,
+    error?: Error,
   ): Promise<void> {
     return Promise.resolve();
   }
@@ -25,9 +27,16 @@ export class LoggingServiceMock {
     flowNodeInstanceId: string,
     flowNodeId: string,
     logLevel: LogLevel,
-    message: string,
+    measuredAt: MetricMeasurementPoint,
+    tokenPayload: any,
+    message?: string,
     timestamp?: Date,
+    error?: Error,
   ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  public archiveProcessModelLogs(identity: IIdentity, processModelId: string): Promise<void> {
     return Promise.resolve();
   }
 
