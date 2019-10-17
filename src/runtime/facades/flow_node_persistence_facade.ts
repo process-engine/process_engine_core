@@ -1,7 +1,6 @@
 import * as moment from 'moment';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {IFlowNodeInstanceService, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {IFlowNodePersistenceFacade} from '@process-engine/process_engine_contracts';
 
@@ -9,16 +8,13 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
   private flowNodeInstanceService: IFlowNodeInstanceService;
   private loggingApiService: ILoggingApi;
-  private metricsApiService: IMetricsApi;
 
   constructor(
     flowNodeInstanceService: IFlowNodeInstanceService,
     loggingApiService: ILoggingApi,
-    metricsApiService: IMetricsApi,
   ) {
     this.flowNodeInstanceService = flowNodeInstanceService;
     this.loggingApiService = loggingApiService;
-    this.metricsApiService = metricsApiService;
   }
 
   public async persistOnEnter(
@@ -31,16 +27,6 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
     await this.flowNodeInstanceService.persistOnEnter(flowNode, flowNodeInstanceId, processToken, previousFlowNodeInstanceId);
 
     const now = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceEnter(
-      processToken.correlationId,
-      processToken.processInstanceId,
-      processToken.processModelId,
-      flowNodeInstanceId,
-      flowNode.id,
-      processToken.payload,
-      now,
-    );
 
     this.loggingApiService.writeLogForFlowNode(
       processToken.correlationId,
@@ -63,16 +49,6 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     const now = moment.utc();
 
-    this.metricsApiService.writeOnFlowNodeInstanceExit(
-      processToken.correlationId,
-      processToken.processInstanceId,
-      processToken.processModelId,
-      flowNodeInstanceId,
-      flowNode.id,
-      processToken.payload,
-      now,
-    );
-
     this.loggingApiService.writeLogForFlowNode(
       processToken.correlationId,
       processToken.processModelId,
@@ -93,16 +69,6 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
     await this.flowNodeInstanceService.persistOnTerminate(flowNode, flowNodeInstanceId, processToken);
 
     const now = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceExit(
-      processToken.correlationId,
-      processToken.processInstanceId,
-      processToken.processModelId,
-      flowNodeInstanceId,
-      flowNode.id,
-      processToken.payload,
-      now,
-    );
 
     this.loggingApiService.writeLogForFlowNode(
       processToken.correlationId,
@@ -126,17 +92,6 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     const now = moment.utc();
 
-    this.metricsApiService.writeOnFlowNodeInstanceError(
-      processToken.correlationId,
-      processToken.processInstanceId,
-      processToken.processModelId,
-      flowNodeInstanceId,
-      flowNode.id,
-      processToken.payload,
-      error,
-      now,
-    );
-
     this.loggingApiService.writeLogForFlowNode(
       processToken.correlationId,
       processToken.processModelId,
@@ -158,16 +113,6 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
 
     const now = moment.utc();
 
-    this.metricsApiService.writeOnFlowNodeInstanceSuspend(
-      processToken.correlationId,
-      processToken.processInstanceId,
-      processToken.processModelId,
-      flowNodeInstanceId,
-      flowNode.id,
-      processToken.payload,
-      now,
-    );
-
     this.loggingApiService.writeLogForFlowNode(
       processToken.correlationId,
       processToken.processModelId,
@@ -188,16 +133,6 @@ export class FlowNodePersistenceFacade implements IFlowNodePersistenceFacade {
     await this.flowNodeInstanceService.resume(flowNode.id, flowNodeInstanceId, processToken);
 
     const now = moment.utc();
-
-    this.metricsApiService.writeOnFlowNodeInstanceResume(
-      processToken.correlationId,
-      processToken.processInstanceId,
-      processToken.processModelId,
-      flowNodeInstanceId,
-      flowNode.id,
-      processToken.payload,
-      now,
-    );
 
     this.loggingApiService.writeLogForFlowNode(
       processToken.correlationId,
