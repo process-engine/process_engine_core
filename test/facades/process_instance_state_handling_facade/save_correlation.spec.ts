@@ -52,7 +52,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
       };
 
       return fixtureProvider
-        .createProcessInstanceStateHandlingFacade(correlationServiceMock, undefined, undefined, undefined, processModelUseCaseMock);
+        .createProcessInstanceStateHandlingFacade(correlationServiceMock, undefined, undefined, processModelUseCaseMock);
     }
 
     it('Should pass all information to the CorrelationService.', async (): Promise<void> => {
@@ -113,7 +113,7 @@ describe('ProcessInstanceStateHandlingFacade.saveCorrelation', (): void => {
       };
 
       const processInstanceStateHandlingFacade =
-        fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, undefined, undefined, undefined, processModelUseCaseMock);
+        fixtureProvider.createProcessInstanceStateHandlingFacade(undefined, undefined, undefined, processModelUseCaseMock);
 
       try {
         await processInstanceStateHandlingFacade.saveCorrelation(sampleIdentity, sampleProcessInstanceConfig);
