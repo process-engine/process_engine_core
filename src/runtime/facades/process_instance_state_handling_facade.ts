@@ -5,7 +5,6 @@ import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {ILoggingApi, LogLevel} from '@process-engine/logging_api_contracts';
-import {IMetricsApi} from '@process-engine/metrics_api_contracts';
 import {CorrelationState, ICorrelationService, IProcessModelUseCases} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodeInstanceResult,
@@ -22,20 +21,17 @@ export class ProcessInstanceStateHandlingFacade {
   private readonly correlationService: ICorrelationService;
   private readonly eventAggregator: IEventAggregator;
   private readonly loggingApiService: ILoggingApi;
-  private readonly metricsApiService: IMetricsApi;
   private readonly processModelUseCases: IProcessModelUseCases;
 
   constructor(
     correlationService: ICorrelationService,
     eventAggregator: IEventAggregator,
     loggingApiService: ILoggingApi,
-    metricsApiService: IMetricsApi,
     processModelUseCases: IProcessModelUseCases,
   ) {
     this.correlationService = correlationService;
     this.eventAggregator = eventAggregator;
     this.loggingApiService = loggingApiService;
-    this.metricsApiService = metricsApiService;
     this.processModelUseCases = processModelUseCases;
   }
 
@@ -226,8 +222,6 @@ export class ProcessInstanceStateHandlingFacade {
 
     const startTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessStarted(correlationId, processInstanceId, processModelId, startTime);
-
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
       processModelId,
@@ -250,8 +244,6 @@ export class ProcessInstanceStateHandlingFacade {
 
     const startTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessStarted(correlationId, processInstanceId, processModelId, startTime);
-
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
       processModelId,
@@ -273,8 +265,6 @@ export class ProcessInstanceStateHandlingFacade {
 
     const endTime = moment.utc();
 
-    this.metricsApiService.writeOnProcessFinished(correlationId, processInstanceId, processModelId, endTime);
-
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
       processModelId,
@@ -295,8 +285,6 @@ export class ProcessInstanceStateHandlingFacade {
   public logProcessError(correlationId: string, processModelId: string, processInstanceId: string, error: Error): void {
 
     const errorTime = moment.utc();
-
-    this.metricsApiService.writeOnProcessError(correlationId, processInstanceId, processModelId, error, errorTime);
 
     this.loggingApiService.writeLogForProcessModel(
       correlationId,
