@@ -6,6 +6,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
+  ErrorEndEventReachedMessage,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
@@ -27,6 +28,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   private isInterrupted = false;
 
   private processTerminationSubscription: Subscription;
+  private processErrorSubscription: Subscription;
 
   constructor(
     container: IContainer,
@@ -76,6 +78,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     const subscriptionForProcessTerminationNeeded = !this.processTerminationSubscription;
     if (subscriptionForProcessTerminationNeeded) {
       this.processTerminationSubscription = this.subscribeToProcessTermination(token);
+    }
+
+    const subscriptionForProcessErrorNeeded = !this.processErrorSubscription;
+    if (subscriptionForProcessErrorNeeded) {
+      this.processErrorSubscription = this.subscribeToProcessError(token);
     }
   }
 
@@ -172,6 +179,36 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  protected subscribeToProcessError(token: ProcessToken): Subscription {
+
+    const errorEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const onErroredCallback = async (message: ErrorEndEventReachedMessage): Promise<void> => {
+      // This is done to prevent anybody from accessing the handler after an error message was received.
+      // This is necessary, to prevent access until the the state change to "error" is done.
+      this.isInterrupted = true;
+
+      const payloadIsDefined = message !== undefined;
+
+      const processError = payloadIsDefined
+        ? `Process run into an error through ErrorEndEvent '${message.flowNodeId}'!`
+        : 'Process run into an error!';
+
+      token.payload = payloadIsDefined
+        ? message.currentToken
+        : {};
+
+      this.logger.error(processError);
+
+      await this.persistOnError(token, message.error);
+
+      this.removeInstanceFromIocContainer(token);
+    };
+
+    return this.eventAggregator.subscribeOnce(errorEvent, onErroredCallback);
   }
 
   private removeInstanceFromIocContainer(processToken: ProcessToken): void {
