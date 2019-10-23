@@ -6,6 +6,7 @@ import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
   BpmnType,
+  CorrelationState,
   FlowNodeInstance,
   FlowNodeInstanceState,
   ICorrelationService,
@@ -29,12 +30,6 @@ import {ProcessTokenFacade} from './facades/process_token_facade';
 import {IProcessInstanceConfig} from './facades/iprocess_instance_config';
 
 const logger = new Logger('processengine:runtime:resume_process_service');
-
-interface IProcessInstanceModelAssociation {
-  processModelId: string;
-  processInstanceId: string;
-  processInstanceOwner: IIdentity;
-}
 
 /**
  * This service is designed to find and resume ProcessInstances that were
@@ -76,10 +71,7 @@ export class ResumeProcessService implements IResumeProcessService {
     logger.info('Resuming ProcessInstances that were not yet finished.');
 
     // First get all active FlowNodeInstances from every ProcessInstance.
-    const activeFlowNodeInstances = await this.flowNodeInstanceService.queryActive();
-
-    // Now get the unique ProcessInstanceIds and ProcessModelIds from the list.
-    const activeProcessInstances = this.findProcessInstancesFromFlowNodeList(activeFlowNodeInstances);
+    const activeProcessInstances = await this.correlationService.getProcessInstancesByState(identity, CorrelationState.running);
 
     logger.verbose(`Found ${activeProcessInstances.length} ProcessInstances to resume.`);
 
@@ -88,7 +80,7 @@ export class ResumeProcessService implements IResumeProcessService {
       //
       // Lets say, Process A sends signals/messages to Process B,
       // then these processes must run in concert, not sequentially.
-      this.resumeProcessInstanceById(processInstance.processInstanceOwner, processInstance.processModelId, processInstance.processInstanceId);
+      this.resumeProcessInstanceById(processInstance.identity, processInstance.processModelId, processInstance.processInstanceId);
     }
   }
 
@@ -238,46 +230,6 @@ export class ResumeProcessService implements IResumeProcessService {
 
       throw error;
     }
-  }
-
-  /**
-   * Takes a list of FlowNodeInstances and picks out the unique ProcessModelIds
-   * and ProcessInstanceIds from each.
-   *
-   * Each Id is only stored once, to account for ProcessInstances with parallel
-   * running branches.
-   *
-   * Also, Subprocesses must be filtered out, because these are always handled
-   * by a CallActivityHandler or SubProcessHandler.
-   *
-   * @param   activeFlowNodeInstances The list of FlowNodeInstances from which
-   *                                  to get a list of ProcessInstances.
-   * @returns                         The list of ProcessInstances.
-   */
-  private findProcessInstancesFromFlowNodeList(activeFlowNodeInstances: Array<FlowNodeInstance>): Array<IProcessInstanceModelAssociation> {
-
-    const activeProcessInstances: Array<IProcessInstanceModelAssociation> = [];
-
-    for (const flowNodeInstance of activeFlowNodeInstances) {
-      // Store each processInstanceId and processModelId only once,
-      // to account for processes with ParallelGateways.
-      const processInstanceListHasNoMatchingEntry = !activeProcessInstances.some((entry: IProcessInstanceModelAssociation): boolean => {
-        return entry.processInstanceId === flowNodeInstance.processInstanceId;
-      });
-
-      const flowNodeInstanceIsNotPartOfSubprocess = !flowNodeInstance.parentProcessInstanceId;
-
-      if (processInstanceListHasNoMatchingEntry && flowNodeInstanceIsNotPartOfSubprocess) {
-        const newAssociation = {
-          processInstanceId: flowNodeInstance.processInstanceId,
-          processModelId: flowNodeInstance.processModelId,
-          processInstanceOwner: flowNodeInstance.owner,
-        };
-        activeProcessInstances.push(newAssociation);
-      }
-    }
-
-    return activeProcessInstances;
   }
 
 }
