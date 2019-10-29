@@ -35,9 +35,9 @@
   "dependencies": {
     "@essential-projects/errors_ts": "^1.5.0",
     "@essential-projects/timing_contracts": "^5.0.0",
-    "@process-engine/logging_api_contracts": "^1.0.0",
-    "@process-engine/metrics_api_contracts": "^2.0.0",
-    "@process-engine/persistence_api.contracts": "1.1.0-alpha.4",
+    "@process-engine/logging_api_contracts": "2.0.0-alpha.3",
+    "@process-engine/metrics_api_contracts": "3.0.0-alpha.3",
+    "@process-engine/persistence_api.contracts": "1.1.0-alpha.11",
     "@process-engine/process_engine_contracts": "^46.0.0",
     "@types/clone": "^0.1.30",
     "@types/socket.io": "^2.1.2",
@@ -58,13 +58,12 @@
     "@types/bluebird-global": "^3.5.9",
     "@types/express": "^4.16.0",
     "@types/mocha": "^5.2.6",
-    "@types/node": "^10.12.2",
+    "@types/node": "^12.11.7",
     "c8": "^5.0.1",
-    "eslint": "^5.16.0",
+    "eslint": "^6.6.0",
     "mocha": "^6.0.0",
     "ts-mocha": "^6.0.0",
-    "tsconfig": "^7.0.0",
-    "typescript": "^3.3.3"
+    "typescript": "^3.6.4"
   },
   "scripts": {
     "clean": "rm -rf dist",
