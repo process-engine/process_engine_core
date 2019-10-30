@@ -35,8 +35,8 @@
   "dependencies": {
     "@essential-projects/errors_ts": "^1.5.0",
     "@essential-projects/timing_contracts": "^5.0.0",
-    "@process-engine/logging_api_contracts": "2.0.0-alpha.4",
-    "@process-engine/persistence_api.contracts": "1.1.0-alpha.12",
+    "@process-engine/logging_api_contracts": "2.0.0-beta.3",
+    "@process-engine/persistence_api.contracts": "1.1.0-beta.9",
     "@process-engine/process_engine_contracts": "^46.0.0",
     "@types/clone": "^0.1.30",
     "@types/socket.io": "^2.1.2",
