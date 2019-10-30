@@ -1,9 +1,8 @@
-import * as moment from 'moment';
 import * as should from 'should';
 
-import {LogLevel} from '@process-engine/logging_api_contracts';
+import {LogLevel, MetricMeasurementPoint} from '@process-engine/logging_api_contracts';
 
-import {FlowNodeInstanceServiceMock, LoggingServiceMock, MetricsServiceMock} from '../../mocks';
+import {FlowNodeInstanceServiceMock, LoggingServiceMock} from '../../mocks';
 import {TestFixtureProvider} from '../../test_fixture_provider';
 
 describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
@@ -59,7 +58,9 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
         flowNodeInstanceId: string,
         flowNodeId: string,
         logLevel: LogLevel,
-        message: string,
+        measuredAt: MetricMeasurementPoint,
+        tokenPayload: any,
+        message?: string,
       ): any => {
 
         should(correlationId).be.eql(sampleToken.correlationId);
@@ -68,47 +69,12 @@ describe('FlowNodePersistenceFacade.persistOnSuspend', (): void => {
         should(flowNodeInstanceId).be.eql(sampleFlowNodeInstanceId);
         should(flowNodeId).be.eql(sampleFlowNode.id);
         should(logLevel).be.equal(LogLevel.info);
+        should(measuredAt).be.equal(MetricMeasurementPoint.onFlowNodeSuspend);
         should(message).be.equal('Flow Node execution suspended.');
         resolve();
       };
 
       const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(undefined, loggingServiceMock);
-
-      await flowNodePersistenceFacade
-        .persistOnSuspend(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any);
-    });
-
-  });
-
-  it('Should pass all information to the MetricsService', async (): Promise<void> => {
-
-    return new Promise(async (resolve, reject): Promise<void> => {
-
-      const metricsServiceMock = new MetricsServiceMock();
-      metricsServiceMock.writeOnFlowNodeInstanceSuspend = (
-        correlationId: string,
-        processInstanceId: string,
-        processModelId: string,
-        flowNodeInstanceId: string,
-        flowNodeId: string,
-        payload: any,
-        timeStamp: moment.Moment,
-      ): any => {
-
-        const receivedTimeStamp = timeStamp.format('DD.MM.YYYY HH:mm:ss');
-        const now = moment.utc().format('DD.MM.YYYY HH:mm:ss');
-
-        should(correlationId).be.eql(sampleToken.correlationId);
-        should(processInstanceId).be.eql(sampleToken.processInstanceId);
-        should(processModelId).be.eql(sampleToken.processModelId);
-        should(flowNodeInstanceId).be.eql(sampleFlowNodeInstanceId);
-        should(flowNodeId).be.eql(sampleFlowNode.id);
-        should(payload).be.equal(sampleToken.payload);
-        should(receivedTimeStamp).be.equal(now);
-        resolve();
-      };
-
-      const flowNodePersistenceFacade = fixtureProvider.createFlowNodePersistenceFacade(undefined, undefined, metricsServiceMock);
 
       await flowNodePersistenceFacade
         .persistOnSuspend(sampleFlowNode as any, sampleFlowNodeInstanceId, sampleToken as any);

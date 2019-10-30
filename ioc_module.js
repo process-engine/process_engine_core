@@ -100,7 +100,7 @@ function registerServices(container) {
 
   container
     .register('FlowNodePersistenceFacade', FlowNodePersistenceFacade)
-    .dependencies('FlowNodeInstanceService', 'LoggingApiService', 'MetricsApiService');
+    .dependencies('FlowNodeInstanceService', 'LoggingApiService');
 
   container
     .register('ProcessInstanceStateHandlingFacade', ProcessInstanceStateHandlingFacade)
@@ -108,7 +108,6 @@ function registerServices(container) {
       'CorrelationService',
       'EventAggregator',
       'LoggingApiService',
-      'MetricsApiService',
       'ProcessModelUseCases',
     );
 
