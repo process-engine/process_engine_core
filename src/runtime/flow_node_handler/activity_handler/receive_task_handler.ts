@@ -88,7 +88,7 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
       this.sendReplyToSender(identity, token);
 
       processTokenFacade.addResultForFlowNode(this.receiveTask.id, this.flowNodeInstanceId, receivedMessage.currentToken);
-      await this.persistOnExit(receivedMessage.currentToken);
+      await this.persistOnExit(token);
 
       this.publishActivityFinishedNotification(identity, token);
 
