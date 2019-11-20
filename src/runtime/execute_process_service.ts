@@ -281,7 +281,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processToken = processTokenFacade.createProcessToken(payload);
     processToken.caller = caller;
-    processToken.payload = payload;
 
     const processInstanceConfig = {
       correlationId: correlationId,
