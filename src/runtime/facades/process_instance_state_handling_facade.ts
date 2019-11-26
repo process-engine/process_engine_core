@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 
-import {BadRequestError, InternalServerError} from '@essential-projects/errors_ts';
+import {BadRequestError, BaseError, InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -73,11 +73,13 @@ export class ProcessInstanceStateHandlingFacade {
     resultToken: IFlowNodeInstanceResult,
   ): Promise<void> {
 
+    const {correlationId, processInstanceId, processModelId} = processInstanceConfig;
+
     await this
       .correlationService
-      .finishProcessInstanceInCorrelation(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId);
+      .finishProcessInstanceInCorrelation(identity, correlationId, processInstanceId);
 
-    this.logProcessFinished(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId);
+    this.logProcessFinished(correlationId, processModelId, processInstanceId);
 
     this.sendProcessInstanceFinishedNotification(identity, processInstanceConfig, resultToken);
   }
@@ -93,22 +95,28 @@ export class ProcessInstanceStateHandlingFacade {
   public async finishProcessInstanceInCorrelationWithError(
     identity: IIdentity,
     processInstanceConfig: IProcessInstanceConfig,
-    error: Error,
+    error: BaseError,
   ): Promise<void> {
+
+    const {correlationId, processInstanceId, processModelId} = processInstanceConfig;
+
+    const identityToUse = error.additionalInformation && error.additionalInformation.terminatedBy
+      ? error.additionalInformation.terminatedBy
+      : identity;
 
     await this
       .correlationService
-      .finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig.correlationId, processInstanceConfig.processInstanceId, error);
+      .finishProcessInstanceInCorrelationWithError(identityToUse, correlationId, processInstanceId, error);
 
-    this.logProcessError(processInstanceConfig.correlationId, processInstanceConfig.processModelId, processInstanceConfig.processInstanceId, error);
+    this.logProcessError(correlationId, processModelId, processInstanceId, error);
 
     const terminationRegex = /terminated/i;
     const isTerminationError = terminationRegex.test(error.message);
 
     if (isTerminationError) {
-      this.sendProcessInstanceTerminationNotification(identity, processInstanceConfig, error);
+      this.sendProcessInstanceTerminationNotification(identityToUse, processInstanceConfig, error);
     } else {
-      this.sendProcessInstanceErrorNotification(identity, processInstanceConfig, error);
+      this.sendProcessInstanceErrorNotification(identityToUse, processInstanceConfig, error);
     }
   }
 
