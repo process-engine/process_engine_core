@@ -261,27 +261,6 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
   }
 
   /**
-   * Publishes a notification on the EventAggregator, informing about a new
-   * reached IntermediateCatchEvent.
-   *
-   * @param token    Contains all the information required for the Notification message.
-   */
-  protected sendIntermediateCatchEventReachedNotification(token: ProcessToken): void {
-
-    const message = new IntermediateCatchEventReachedMessage(
-      token.correlationId,
-      token.processModelId,
-      token.processInstanceId,
-      this.flowNode.id,
-      this.flowNodeInstanceId,
-      undefined,
-      token.payload,
-    );
-
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateCatchEventReached, message);
-  }
-
-  /**
    * Publishes a notification on the EventAggregator, informing about a
    * triggered IntermediateThrowEvent.
    *
@@ -300,6 +279,27 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     );
 
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateThrowEventTriggered, message);
+  }
+
+  /**
+   * Publishes a notification on the EventAggregator, informing about a new
+   * reached IntermediateCatchEvent.
+   *
+   * @param token    Contains all the information required for the Notification message.
+   */
+  protected sendIntermediateCatchEventReachedNotification(token: ProcessToken): void {
+
+    const message = new IntermediateCatchEventReachedMessage(
+      token.correlationId,
+      token.processModelId,
+      token.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      undefined,
+      token.payload,
+    );
+
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.intermediateCatchEventReached, message);
   }
 
   /**
