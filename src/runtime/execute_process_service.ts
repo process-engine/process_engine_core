@@ -309,10 +309,23 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
         .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
-      this.eventAggregator.subscribeOnce(terminateEvent, async (): Promise<void> => {
+      this.eventAggregator.subscribeOnce(terminateEvent, async (message): Promise<void> => {
         await this.processInstanceStateHandlingFacade.terminateSubprocesses(identity, processInstanceConfig.processInstanceId);
 
-        throw new InternalServerError('Process was terminated!');
+        const processWasTerminatedByUser = message && message.terminatedBy;
+
+        const errorMsg = processWasTerminatedByUser
+          ? `Process was terminated by user ${message.terminatedBy.userId}!`
+          : 'Process was terminated!';
+        const error = new InternalServerError(errorMsg);
+
+        if (processWasTerminatedByUser) {
+          error.additionalInformation = {
+            terminatedBy: message.terminatedBy,
+          };
+        }
+
+        throw error;
       });
 
       await this.processInstanceStateHandlingFacade.saveCorrelation(identity, processInstanceConfig);
