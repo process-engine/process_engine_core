@@ -20,7 +20,6 @@ import {
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredData,
-  TerminateEndEventReachedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
@@ -319,14 +318,15 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
-      const payloadIsDefined = message !== undefined;
+    const onTerminatedCallback = async (message: any): Promise<void> => {
+      const terminatedByEndEvent = message && message.flowNodeId;
+      const terminationUserId = message && message.terminatedBy ? message.terminatedBy.userId : undefined;
 
-      const processTerminatedError = payloadIsDefined
-        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
-        : 'Process was terminated!';
+      const processTerminatedError = terminatedByEndEvent
+        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`
+        : `Process was terminated by user ${terminationUserId}`;
 
-      token.payload = payloadIsDefined
+      token.payload = terminatedByEndEvent
         ? message.currentToken
         : {};
 
@@ -335,6 +335,12 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       await this.interrupt(token, true);
 
       const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
+
+      if (message.terminatedBy) {
+        terminationError.additionalInformation = {
+          terminatedBy: message.terminatedBy,
+        };
+      }
 
       return rejectionFunction(terminationError);
     };
