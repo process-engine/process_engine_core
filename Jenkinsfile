@@ -51,6 +51,7 @@ pipeline {
       }
     }
     stage('Install dependencies') {
+      options {skipDefaultCheckout()}
       when {
         expression {buildIsRequired == true}
       }
@@ -62,6 +63,7 @@ pipeline {
       }
     }
     stage('Build Sources') {
+      options {skipDefaultCheckout()}
       when {
         expression {buildIsRequired == true}
       }
@@ -71,6 +73,7 @@ pipeline {
       }
     }
     stage('Test') {
+      options {skipDefaultCheckout()}
       when {
         expression {buildIsRequired == true}
       }
@@ -90,6 +93,7 @@ pipeline {
       }
     }
     stage('Set package version') {
+      options {skipDefaultCheckout()}
       when {
         expression {buildIsRequired == true}
       }
@@ -99,6 +103,7 @@ pipeline {
       }
     }
     stage('Publish') {
+      options {skipDefaultCheckout()}
       when {
         expression {buildIsRequired == true}
       }
@@ -130,6 +135,7 @@ pipeline {
       }
     }
     stage('Cleanup') {
+      options {skipDefaultCheckout()}
       when {
         expression {buildIsRequired == true}
       }
