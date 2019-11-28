@@ -9,41 +9,26 @@ export function parseSendTasks(
   processData: any,
   eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Activities.SendTask> {
-  const sendTasks: Array<Model.Activities.SendTask> = [];
 
   const sendTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
 
   const noSendTasksFound = !(sendTasksRaw?.length > 0);
   if (noSendTasksFound) {
-    return sendTasks;
+    return [];
   }
 
-  for (const currentRawSendTask of sendTasksRaw) {
-    const sendTask = createActivityInstance(currentRawSendTask, Model.Activities.SendTask);
+  const sendTasks = sendTasksRaw.map((sendTaskRaw): Model.Activities.SendTask => {
+    const sendTask = createActivityInstance(sendTaskRaw, Model.Activities.SendTask);
 
-    const messageRefNotDefined = currentRawSendTask.messageRef == undefined;
-    if (messageRefNotDefined) {
-      throw new UnprocessableEntityError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
+    if (!sendTaskRaw.messageRef) {
+      throw new UnprocessableEntityError(`SendTask ${sendTaskRaw.id} does not have a messageRef!`);
     }
 
-    const sendTaskMessageDefinition =
-      getDefinitionForEvent<Model.Events.Definitions.MessageEventDefinition>(currentRawSendTask.messageRef, eventDefinitions);
+    sendTask.messageEventDefinition = <Model.Events.MessageEventDefinition>
+      eventDefinitions.find((entry): boolean => entry.id === sendTaskRaw.messageRef);
 
-    sendTask.messageEventDefinition = sendTaskMessageDefinition;
-    sendTasks.push(sendTask);
-  }
-
-  return sendTasks;
-}
-
-function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
-  eventDefinitionId: string,
-  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
-): TEventDefinition {
-
-  const matchingEventDefintion = eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
-    return entry.id === eventDefinitionId;
+    return sendTask;
   });
 
-  return <TEventDefinition> matchingEventDefintion;
+  return sendTasks;
 }

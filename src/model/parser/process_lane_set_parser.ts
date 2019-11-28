@@ -4,7 +4,7 @@ import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type
 
 export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
-  const laneSetData = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
+  const laneSetData = data[BpmnTags.Lane.LaneSet] ?? data[BpmnTags.LaneProperty.ChildLaneSet];
 
   if (!laneSetData) {
     return undefined;
@@ -24,10 +24,6 @@ export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
     lane.name = laneRaw.name;
 
-    const flowNodeReferenceTrimmer = (reference: string): string => {
-      return reference.trim();
-    };
-
     const flowNodeReferences = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
 
     const laneHasNoFlowNodes = !(flowNodeReferences?.length > 0);
@@ -35,8 +31,7 @@ export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
       return laneSet;
     }
 
-    const trimmedFlowNodeReferences = flowNodeReferences.map(flowNodeReferenceTrimmer);
-    lane.flowNodeReferences = trimmedFlowNodeReferences;
+    lane.flowNodeReferences = flowNodeReferences.map((reference: string): string => reference.trim());
 
     if (laneRaw[BpmnTags.LaneProperty.ChildLaneSet]) {
       lane.childLaneSet = parseProcessLaneSet(laneRaw);

@@ -4,7 +4,5 @@ export function findExtensionPropertyByName(
   propertyName: string,
   extensionProperties: Array<Model.Base.Types.CamundaExtensionProperty>,
 ): Model.Base.Types.CamundaExtensionProperty {
-  return extensionProperties.find((property: Model.Base.Types.CamundaExtensionProperty): boolean => {
-    return property.name === propertyName;
-  });
+  return extensionProperties.find((property): boolean => property.name === propertyName);
 }

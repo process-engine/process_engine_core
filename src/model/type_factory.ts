@@ -66,7 +66,6 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
       rawDataToParse: rawData,
       elementInstance: instance,
     };
-
     throw error;
   }
 
@@ -82,14 +81,10 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
     const extensionData = rawData[BpmnTags.FlowElementProperty.ExtensionElements];
     instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.CamundaProperty.ExecutionListener];
 
-    // NOTE: The extension property collection is wrapped in a property named "camunda:property",
-    // which in turn is located in "camunda:properties".
-    let camundaProperties = extensionData[BpmnTags.CamundaProperty.Properties];
+    // NOTE: The extension property collection is wrapped in a property named "camunda:property", which in turn is located in "camunda:properties".
+    const camundaProperties = filterOutEmptyProperties(extensionData[BpmnTags.CamundaProperty.Properties]);
 
-    camundaProperties = filterOutEmptyProperties(camundaProperties);
-
-    if (camundaProperties !== undefined) {
-      // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
+    if (camundaProperties != undefined) {
       instance.extensionElements.camundaExtensionProperties = getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
     }
   }

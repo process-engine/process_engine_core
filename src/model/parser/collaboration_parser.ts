@@ -4,34 +4,30 @@ import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type
 
 export function parseCollaboration(parsedObjectModel: object): Model.Collaboration {
 
-  const collaborationData = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
+  const collaborationRaw = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
 
-  const collaboration = createObjectWithCommonProperties(collaborationData, Model.Collaboration);
+  const collaboration = createObjectWithCommonProperties(collaborationRaw, Model.Collaboration);
 
-  collaboration.name = collaborationData.name;
-
-  collaboration.participants = getCollaborationParticipants(collaborationData);
+  collaboration.name = collaborationRaw.name;
+  collaboration.participants = getCollaborationParticipants(collaborationRaw);
 
   return collaboration;
 }
 
 function getCollaborationParticipants(collaborationData: object): Array<Model.Participant> {
 
-  // NOTE: Depending on how the 'bpmn:participant' tag has been formatted and the number of stored participants,
-  // this can be either an Array or an Object. For easy usability, we'll always convert this to an Array, since this
-  // is what our object model expects.
-  const participantData = getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
+  const participantsRaw = getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
 
-  const convertedParticipants: Array<Model.Participant> = [];
+  const participants: Array<Model.Participant> = [];
 
-  for (const participantRaw of participantData) {
+  for (const participantRaw of participantsRaw) {
     const participant = createObjectWithCommonProperties(participantRaw, Model.Participant);
 
     participant.name = participantRaw.name;
     participant.processReference = participantRaw.processRef;
 
-    convertedParticipants.push(participant);
+    participants.push(participant);
   }
 
-  return convertedParticipants;
+  return participants;
 }

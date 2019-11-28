@@ -6,14 +6,14 @@ import {findExtensionPropertyByName} from './extension_property_parser';
 
 export function parseCallActivities(processData: any): Array<Model.Activities.CallActivity> {
 
-  const callActivities: Array<Model.Activities.CallActivity> = [];
-
   const callActivitiesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
 
   const noCallActivitiesFound = !(callActivitiesRaw?.length > 0);
   if (noCallActivitiesFound) {
     return [];
   }
+
+  const callActivities: Array<Model.Activities.CallActivity> = [];
 
   for (const callActivityRaw of callActivitiesRaw) {
     let callActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);

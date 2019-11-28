@@ -9,41 +9,26 @@ export function parseReceiveTasks(
   processData: any,
   eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Activities.ReceiveTask> {
-  const receiveTasks: Array<Model.Activities.ReceiveTask> = [];
 
   const receiveTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ReceiveTask);
 
   const noReceiveTasksFound = !(receiveTasksRaw?.length > 0);
   if (noReceiveTasksFound) {
-    return receiveTasks;
+    return [];
   }
 
-  for (const currentRawReceiveTask of receiveTasksRaw) {
-    const receiveTask = createActivityInstance(currentRawReceiveTask, Model.Activities.ReceiveTask);
+  const receiveTasks = receiveTasksRaw.map((receiveTaskRaw): Model.Activities.ReceiveTask => {
+    const receiveTask = createActivityInstance(receiveTaskRaw, Model.Activities.ReceiveTask);
 
-    const messageRefNotDefined = currentRawReceiveTask.messageRef == undefined;
-    if (messageRefNotDefined) {
-      throw new UnprocessableEntityError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
+    if (!receiveTaskRaw.messageRef) {
+      throw new UnprocessableEntityError(`ReceiveTask ${receiveTaskRaw.id} does not have a messageRef!`);
     }
 
-    const receiveTaskMessageDefinition =
-      getDefinitionForEvent<Model.Events.Definitions.MessageEventDefinition>(currentRawReceiveTask.messageRef, eventDefinitions);
+    receiveTask.messageEventDefinition = <Model.Events.MessageEventDefinition>
+      eventDefinitions.find((entry): boolean => entry.id === receiveTaskRaw.messageRef);
 
-    receiveTask.messageEventDefinition = receiveTaskMessageDefinition;
-    receiveTasks.push(receiveTask);
-  }
-
-  return receiveTasks;
-}
-
-function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
-  eventDefinitionId: string,
-  eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
-): TEventDefinition {
-
-  const matchingEventDefintion = eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
-    return entry.id === eventDefinitionId;
+    return receiveTask;
   });
 
-  return <TEventDefinition> matchingEventDefintion;
+  return receiveTasks;
 }
