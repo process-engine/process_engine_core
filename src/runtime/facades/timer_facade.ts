@@ -217,7 +217,7 @@ export class TimerFacade implements ITimerFacade {
       logger.error(errorMessage, flowNode);
 
       const error = new UnprocessableEntityError(errorMessage);
-      error.additionalInformation = <any> flowNode;
+      error.additionalInformation = flowNode;
 
       throw error;
     }
@@ -229,7 +229,7 @@ export class TimerFacade implements ITimerFacade {
       logger.error(errorMessage, flowNode);
 
       const invalidCrontabError = new UnprocessableEntityError(errorMessage);
-      error.additionalInformation = <any> {
+      error.additionalInformation = {
         validationError: error.message,
         flowNode: flowNode,
       };

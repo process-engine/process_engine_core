@@ -150,7 +150,7 @@ function assignEventDefinition(event: any, eventRaw: any): void {
     error.additionalInformation = {
       eventObject: event,
       rawEventData: eventRaw,
-    } as any;
+    };
 
     throw error;
   }
@@ -182,7 +182,7 @@ function assignErrorEventDefinition(event: any, eventRaw: any): void {
     error.additionalInformation = {
       eventObject: event,
       rawEventData: eventRaw,
-    } as any;
+    };
 
     throw error;
   }

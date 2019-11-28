@@ -150,8 +150,7 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
         const errorMessage = `The configuration for FormField ${formField.id} is invalid!`;
 
         const invalidFormFieldError = new InternalServerError(errorMessage);
-
-        const errorDetails = {
+        invalidFormFieldError.additionalInformation = {
           processModelId: token.processModelId,
           processInstanceId: token.processInstanceId,
           correlationId: token.correlationId,
@@ -161,8 +160,6 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
           currentToken: oldTokenFormat,
           validationError: error.message,
         };
-
-        invalidFormFieldError.additionalInformation = errorDetails as any;
 
         this.logger.error(errorMessage);
 

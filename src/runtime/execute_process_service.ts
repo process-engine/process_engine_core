@@ -214,15 +214,11 @@ export class ExecuteProcessService implements IExecuteProcessService {
         return currentStartEvent.id;
       });
 
-      const errorMessage = 'The Process Model contains multiple StartEvents, but no initial StartEvent was defined.';
-      const badRequestError = new BadRequestError(errorMessage);
-
-      const additionalInfos = {
+      const badRequestError = new BadRequestError('The Process Model contains multiple StartEvents, but no initial StartEvent was defined.');
+      badRequestError.additionalInformation = {
         message: 'The ProcessModel contains the following StartEvent',
         startEventIds: startEventIds,
       };
-
-      badRequestError.additionalInformation = additionalInfos as any;
 
       throw badRequestError;
     }

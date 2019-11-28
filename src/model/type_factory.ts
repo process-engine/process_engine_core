@@ -61,12 +61,11 @@ export function createObjectWithCommonProperties<TTargetType extends Model.Base.
 export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.Base.BaseElement): Model.Base.BaseElement {
 
   if (!rawData.id) {
-    const additionalInfo = {
+    const error = new UnprocessableEntityError('The given element has no ID!');
+    error.additionalInformation = {
       rawDataToParse: rawData,
       elementInstance: instance,
     };
-    const error = new UnprocessableEntityError('The given element has no ID!');
-    error.additionalInformation = additionalInfo as any;
 
     throw error;
   }
@@ -143,7 +142,7 @@ function filterOutEmptyProperties(camundaProperties: any): any {
     const error = new UnprocessableEntityError('The XML contains more than one camunda:properties collection! This is not allowed!');
     error.additionalInformation = {
       propertyCollection: filteredProperties,
-    } as any;
+    };
 
     throw error;
   }
