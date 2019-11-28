@@ -4,7 +4,6 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
-import {getValueFromExtensionProperty} from './extension_property_parser';
 
 export function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
 
@@ -26,9 +25,9 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
     userTask.dueDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.DueDate]);
     userTask.followUpDate = parseDate(userTaskRaw[BpmnTags.CamundaProperty.FollowupDate]);
     userTask.formFields = parseFormFields(userTaskRaw);
-    userTask.preferredControl = getPreferredControlForUserTask(userTaskRaw);
-    userTask.description = getDescriptionForUserTask(userTaskRaw);
-    userTask.finishedMessage = getFinishedMessageForUserTask(userTaskRaw);
+    setPreferredControlForUserTask(userTask);
+    setDescriptionForUserTask(userTask);
+    setFinishedMessageForUserTask(userTask);
 
     userTasks.push(userTask);
   }
@@ -101,14 +100,26 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
   return userTasks;
 }
 
-function getPreferredControlForUserTask(userTaskRaw: Model.Activities.UserTask): string {
-  return getValueFromExtensionProperty('preferredControl', userTaskRaw);
+function setPreferredControlForUserTask(userTask: Model.Activities.UserTask): void {
+  userTask.preferredControl = userTask
+    .extensionElements
+    .camundaExtensionProperties
+    .find((property): boolean => property.name === 'preferredControl')
+    ?.value;
 }
 
-function getDescriptionForUserTask(userTaskRaw: Model.Activities.UserTask): string {
-  return getValueFromExtensionProperty('description', userTaskRaw);
+function setDescriptionForUserTask(userTask: Model.Activities.UserTask): void {
+  userTask.description = userTask
+    .extensionElements
+    .camundaExtensionProperties
+    .find((property): boolean => property.name === 'description')
+    ?.value;
 }
 
-function getFinishedMessageForUserTask(userTaskRaw: Model.Activities.UserTask): string {
-  return getValueFromExtensionProperty('finishedMessage', userTaskRaw);
+function setFinishedMessageForUserTask(userTask: Model.Activities.UserTask): void {
+  userTask.finishedMessage = userTask
+    .extensionElements
+    .camundaExtensionProperties
+    .find((property): boolean => property.name === 'finishedMessage')
+    ?.value;
 }

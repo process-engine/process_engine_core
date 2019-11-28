@@ -2,7 +2,6 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
-import {getValueFromExtensionProperty} from './extension_property_parser';
 
 export function parseCallActivities(processData: any): Array<Model.Activities.CallActivity> {
 
