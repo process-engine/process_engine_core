@@ -62,7 +62,7 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
     assignEventDefinition(event, eventRaw);
 
-    (event as any).inputValues = getInputValues(event);
+    setInputValues(event);
 
     events.push(event);
   }
@@ -100,10 +100,10 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     assignEventDefinition(boundaryEvent, boundaryEventRaw);
 
-    const isCyclicTimerBoundaryEvent = boundaryEvent?.timerEventDefinition?.timerType === Model.Events.Definitions.TimerType.timeCycle;
+    const isCyclicTimerBoundaryEvent = boundaryEvent.timerEventDefinition?.timerType === Model.Events.Definitions.TimerType.timeCycle;
     if (isCyclicTimerBoundaryEvent) {
       const errorMessage = 'Using cyclic timers for BoundaryEvents is not allowed!';
-      logger.error(errorMessage, boundaryEvent);
+      logger.error(errorMessage);
       throw new UnprocessableEntityError(errorMessage);
     }
 
@@ -113,23 +113,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
   return events;
 }
 
-function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
-
-  const eventHasNoExtensionElements = !(event?.extensionElements?.camundaExtensionProperties?.length > 0);
-  if (eventHasNoExtensionElements) {
-    return undefined;
-  }
-
-  const extensionProperties = event.extensionElements.camundaExtensionProperties;
-  const inputValueProperty = findExtensionPropertyByName('inputValues', extensionProperties);
-
-  const payloadPropertyHasValue = inputValueProperty?.value?.length > 0;
-
-  return payloadPropertyHasValue ? inputValueProperty.value : undefined;
-}
-
 function assignEventDefinition(event: any, eventRaw: any): void {
-
   const eventHasErrorEvent = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined;
   const eventHasLinkEvent = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition] !== undefined;
   const eventHasMessageEvent = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition] !== undefined;
@@ -171,7 +155,19 @@ function assignEventDefinition(event: any, eventRaw: any): void {
 }
 
 function assignErrorEventDefinition(event: any, eventRaw: any): void {
-  const errorObject = retrieveErrorObject(eventRaw);
+
+  const errorId = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+
+  const defaultError = {
+    id: '',
+    code: '',
+    name: '',
+    message: '',
+  };
+
+  const errorObject = errorId
+    ? errors.find((entry: Model.GlobalElements.Error): boolean => entry.id === errorId)
+    : defaultError;
 
   if (!errorObject) {
     const errorMessage = `Error reference on event ${event.id} is invalid!`;
@@ -196,34 +192,26 @@ function assignLinkEventDefinition(event: any, eventRaw: any): void {
 }
 
 function assignMessageEventDefinition(event: any, eventRaw: any): void {
-  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
-  const messageDefinition = getDefinitionForEvent(eventDefinitonValue.messageRef);
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition].messageRef;
+  const messageDefinition = getDefinitionForEvent(eventDefinitonValue);
 
   if (!messageDefinition) {
     // TODO: Usually, this should throw an error. However, doing so would brek the "GetAllProcessModels" queries,
-    // which would in turn break BPMN Studio and thus leaving the user without any way to fix the diagram.s
+    // which would in turn break BPMN Studio and thus leaving the user without any way to fix the diagram.
     // Maybe we should think about introducting some kind of leniency setting for the parser, to be able to only throw errors in certain UseCases.
-    logger.warn(
-      `Message reference '${eventDefinitonValue.messageRef}' on Event with ID ${event.id} is invalid! The event will not be executable!`,
-      event,
-      eventRaw,
-    );
+    logger.warn(`Message reference '${eventDefinitonValue.messageRef}' on Event ${event.id} is invalid! The event will not be executable!`, event);
   }
 
   event.messageEventDefinition = messageDefinition;
 }
 
 function assignSignalEventDefinition(event: any, eventRaw: any): void {
-  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
-  const signalDefinition = getDefinitionForEvent(eventDefinitonValue.signalRef);
+  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition].signalRef;
+  const signalDefinition = getDefinitionForEvent(eventDefinitonValue);
 
   if (!signalDefinition) {
     // Same as above.
-    logger.warn(
-      `Signal reference '${eventDefinitonValue.signalRef}' on Event with ID ${event.id} is invalid! The event will not be executable!`,
-      event,
-      eventRaw,
-    );
+    logger.warn(`Signal reference '${eventDefinitonValue.signalRef}' on Event ${event.id} is invalid! The event will not be executable!`, event);
   }
 
   event.signalEventDefinition = signalDefinition;
@@ -255,57 +243,6 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
   timerDefinition.value = timerValue;
 
   event.timerEventDefinition = timerDefinition;
-}
-
-function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
-
-  const matchingEventDefintion = eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
-    return entry.id === eventDefinitionId;
-  });
-
-  return <TEventDefinition> matchingEventDefintion;
-}
-
-/**
- * Retrieves the error definition that belongs to the given ErrorEndEvent.
- * If no error reference is attached, an empty error object is returned.
- *
- * @param   endEventRaw The raw ErrorEndEvent.
- * @returns             The matching error definition.
- */
-function retrieveErrorObject(errorEndEventRaw: any): Model.GlobalElements.Error {
-
-  const eventHasNoErrorReference =
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === undefined ||
-    errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] === '';
-
-  if (eventHasNoErrorReference) {
-    return {
-      id: '',
-      code: '',
-      name: '',
-      message: '',
-    };
-  }
-  const errorId = errorEndEventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
-
-  return getErrorById(errorId);
-}
-
-/**
- * Return the error with the given id from the raw error definition data.
- *
- * @param errorId ID of the error to find.
- * @returns       The retrieved Error.
- * @throws        404, if no matching error was found.
- */
-function getErrorById(errorId: string): Model.GlobalElements.Error {
-
-  const matchingError = errors.find((entry: Model.GlobalElements.Error): boolean => {
-    return entry.id === errorId;
-  });
-
-  return matchingError;
 }
 
 function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definitions.TimerType {
@@ -346,4 +283,12 @@ function parseTimerDefinitionValue(eventDefinition: any): string {
   }
 
   return undefined;
+}
+
+function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
+  return <TEventDefinition> eventDefinitions.find((entry): boolean => entry.id === eventDefinitionId);
+}
+
+function setInputValues<TEvent extends Model.Events.Event>(event: TEvent): void {
+  (event as any).inputValues = findExtensionPropertyByName('inputValues', event.extensionElements.camundaExtensionProperties)?.value;
 }
