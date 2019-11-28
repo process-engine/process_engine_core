@@ -2,6 +2,7 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
+import {findExtensionPropertyByName} from './extension_property_parser';
 
 export function parseCallActivities(processData: any): Array<Model.Activities.CallActivity> {
 
@@ -40,19 +41,11 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
 }
 
 function setStartEventId(callActivity: Model.Activities.CallActivity): void {
-  callActivity.startEventId = callActivity
-    .extensionElements
-    .camundaExtensionProperties
-    .find((property): boolean => property.name === 'startEventId')
-    ?.value;
+  callActivity.startEventId = findExtensionPropertyByName('startEventId', callActivity.extensionElements.camundaExtensionProperties)?.value;
 }
 
 function setPayload(callActivity: Model.Activities.CallActivity): void {
-  callActivity.payload = callActivity
-    .extensionElements
-    .camundaExtensionProperties
-    .find((property): boolean => property.name === 'payload')
-    ?.value;
+  callActivity.payload = findExtensionPropertyByName('payload', callActivity.extensionElements.camundaExtensionProperties)?.value;
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {

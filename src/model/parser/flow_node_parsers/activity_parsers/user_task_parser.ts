@@ -4,6 +4,7 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
+import {findExtensionPropertyByName} from './extension_property_parser';
 
 export function parseUserTasks(processData: any): Array<Model.Activities.UserTask> {
 
@@ -101,25 +102,13 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 }
 
 function setPreferredControlForUserTask(userTask: Model.Activities.UserTask): void {
-  userTask.preferredControl = userTask
-    .extensionElements
-    .camundaExtensionProperties
-    .find((property): boolean => property.name === 'preferredControl')
-    ?.value;
+  userTask.preferredControl = findExtensionPropertyByName('preferredControl', userTask.extensionElements.camundaExtensionProperties)?.value;
 }
 
 function setDescriptionForUserTask(userTask: Model.Activities.UserTask): void {
-  userTask.description = userTask
-    .extensionElements
-    .camundaExtensionProperties
-    .find((property): boolean => property.name === 'description')
-    ?.value;
+  userTask.description = findExtensionPropertyByName('description', userTask.extensionElements.camundaExtensionProperties)?.value;
 }
 
 function setFinishedMessageForUserTask(userTask: Model.Activities.UserTask): void {
-  userTask.finishedMessage = userTask
-    .extensionElements
-    .camundaExtensionProperties
-    .find((property): boolean => property.name === 'finishedMessage')
-    ?.value;
+  userTask.finishedMessage = findExtensionPropertyByName('finishedMessage', userTask.extensionElements.camundaExtensionProperties)?.value;
 }
