@@ -129,7 +129,7 @@ describe('TypeFactory.setCommonObjectPropertiesFromData', (): void => {
     should(result.extensionElements.camundaExtensionProperties).be.eql(expectedCamundaPropertyList);
   });
 
-  it('Should not throw an error, if no "bpmn:extensionElements" tag exist', (): void => {
+  it('Should assign a blank extensionElements collection, if no "bpmn:extensionElements" tag exist on the raw dataset', (): void => {
 
     const sampleData = {
       id: 'HelloWorldId',
@@ -142,7 +142,7 @@ describe('TypeFactory.setCommonObjectPropertiesFromData', (): void => {
 
     should(result.id).be.equal(sampleData.id);
     should(result.documentation).be.eql([sampleData['bpmn:documentation']]);
-    should(result).not.have.property('extensionElements');
+    should(result).have.property('extensionElements');
   });
 
   it('Should not throw an error, if "bpmn:extensionElements" has no "camunda:executionListener" tag', (): void => {
