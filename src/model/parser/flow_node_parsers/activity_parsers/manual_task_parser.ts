@@ -9,7 +9,8 @@ export function parseManualTasks(processData: any): Array<Model.Activities.Manua
 
   const manualTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ManualTask);
 
-  if (!manualTasksRaw || manualTasksRaw.length === 0) {
+  const noManualTasksFound = !(manualTasksRaw?.length > 0);
+  if (noManualTasksFound) {
     return [];
   }
 

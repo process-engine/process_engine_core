@@ -1,21 +1,19 @@
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../type_factory';
+
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type_factory';
 
 export function parseProcessSequenceFlows(data: any): Array<Model.ProcessElements.SequenceFlow> {
 
   // NOTE: See above, this can be an Object or an Array (Admittedly, the first is somewhat unlikely here, but not impossible).
-  const sequenceData = getModelPropertyAsArray(data, BpmnTags.OtherElements.SequenceFlow);
+  const sequenceFlowsRaw = getModelPropertyAsArray(data, BpmnTags.OtherElements.SequenceFlow);
+
+  if (!sequenceFlowsRaw) {
+    return [];
+  }
 
   const sequences: Array<Model.ProcessElements.SequenceFlow> = [];
 
-  if (!sequenceData) {
-    return sequences;
-  }
-
-  for (const sequenceRaw of sequenceData) {
+  for (const sequenceRaw of sequenceFlowsRaw) {
 
     const sequenceFlow = createObjectWithCommonProperties(sequenceRaw, Model.ProcessElements.SequenceFlow);
 

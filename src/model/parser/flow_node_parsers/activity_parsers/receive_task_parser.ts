@@ -13,7 +13,7 @@ export function parseReceiveTasks(
 
   const receiveTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ReceiveTask);
 
-  const noReceiveTasksFound = receiveTasksRaw === undefined || receiveTasksRaw.length === 0;
+  const noReceiveTasksFound = !(receiveTasksRaw?.length > 0);
   if (noReceiveTasksFound) {
     return receiveTasks;
   }
@@ -21,7 +21,7 @@ export function parseReceiveTasks(
   for (const currentRawReceiveTask of receiveTasksRaw) {
     const receiveTask = createActivityInstance(currentRawReceiveTask, Model.Activities.ReceiveTask);
 
-    const messageRefNotDefined = currentRawReceiveTask.messageRef === undefined;
+    const messageRefNotDefined = currentRawReceiveTask.messageRef == undefined;
     if (messageRefNotDefined) {
       throw new UnprocessableEntityError(`No message Reference for Receive Task with id ${currentRawReceiveTask.id} given`);
     }

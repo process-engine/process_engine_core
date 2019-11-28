@@ -13,7 +13,7 @@ export function parseSendTasks(
 
   const sendTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SendTask);
 
-  const noSendTasksFound = sendTasksRaw === undefined || sendTasksRaw.length === 0;
+  const noSendTasksFound = !(sendTasksRaw?.length > 0);
   if (noSendTasksFound) {
     return sendTasks;
   }
@@ -21,7 +21,7 @@ export function parseSendTasks(
   for (const currentRawSendTask of sendTasksRaw) {
     const sendTask = createActivityInstance(currentRawSendTask, Model.Activities.SendTask);
 
-    const messageRefNotDefined = currentRawSendTask.messageRef === undefined;
+    const messageRefNotDefined = currentRawSendTask.messageRef == undefined;
     if (messageRefNotDefined) {
       throw new UnprocessableEntityError(`No message Reference for Send Task with id ${currentRawSendTask.id} given`);
     }

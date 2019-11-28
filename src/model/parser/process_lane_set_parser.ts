@@ -1,8 +1,6 @@
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../type_factory';
+
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type_factory';
 
 export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
@@ -32,7 +30,7 @@ export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
     const flowNodeReferences = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
 
-    const laneHasNoFlowNodes = flowNodeReferences === undefined || flowNodeReferences.length === 0;
+    const laneHasNoFlowNodes = !(flowNodeReferences?.length > 0);
     if (laneHasNoFlowNodes) {
       return laneSet;
     }

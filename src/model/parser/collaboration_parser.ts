@@ -1,10 +1,8 @@
-import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/persistence_api.contracts';
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../type_factory';
+import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
-export function parseCollaboration(parsedObjectModel: IParsedObjectModel): Model.Collaboration {
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type_factory';
+
+export function parseCollaboration(parsedObjectModel: object): Model.Collaboration {
 
   const collaborationData = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
 
@@ -17,7 +15,7 @@ export function parseCollaboration(parsedObjectModel: IParsedObjectModel): Model
   return collaboration;
 }
 
-function getCollaborationParticipants(collaborationData: any): Array<Model.Participant> {
+function getCollaborationParticipants(collaborationData: object): Array<Model.Participant> {
 
   // NOTE: Depending on how the 'bpmn:participant' tag has been formatted and the number of stored participants,
   // this can be either an Array or an Object. For easy usability, we'll always convert this to an Array, since this

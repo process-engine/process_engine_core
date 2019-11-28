@@ -1,9 +1,6 @@
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
-import {
-  getModelPropertyAsArray,
-  setCommonObjectPropertiesFromData,
-} from '../../../type_factory';
+import {getModelPropertyAsArray, setCommonObjectPropertiesFromData} from '../../../type_factory';
 
 export function createActivityInstance<TActivity extends Model.Activities.Activity>(data: any, type: Model.Base.IConstructor<TActivity>): TActivity {
 

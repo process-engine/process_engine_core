@@ -10,7 +10,8 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
 
   const callActivitiesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
 
-  if (!callActivitiesRaw || callActivitiesRaw.length === 0) {
+  const noCallActivitiesFound = !(callActivitiesRaw?.length > 0);
+  if (noCallActivitiesFound) {
     return [];
   }
 
@@ -18,8 +19,8 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
     let callActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
 
     if (callActivityRaw.calledElement) {
-      callActivity.startEventId = getStartEventId(callActivityRaw);
-      callActivity.payload = getPayload(callActivityRaw);
+      setStartEventId(callActivity);
+      setPayload(callActivity);
       callActivity.calledReference = callActivityRaw.calledElement;
       // NOTE: There is also a CMMN type, which is not supported yet.
       callActivity.type = Model.Activities.CallActivityType.BPMN;
@@ -39,12 +40,20 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
   return callActivities;
 }
 
-function getStartEventId(rawData: any): string {
-  return getValueFromExtensionProperty('startEventId', rawData);
+function setStartEventId(callActivity: Model.Activities.CallActivity): void {
+  callActivity.startEventId = callActivity
+    .extensionElements
+    .camundaExtensionProperties
+    .find((property): boolean => property.name === 'startEventId')
+    ?.value;
 }
 
-function getPayload(rawData: any): string {
-  return getValueFromExtensionProperty('payload', rawData);
+function setPayload(callActivity: Model.Activities.CallActivity): void {
+  callActivity.payload = callActivity
+    .extensionElements
+    .camundaExtensionProperties
+    .find((property): boolean => property.name === 'payload')
+    ?.value;
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {

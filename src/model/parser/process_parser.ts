@@ -1,21 +1,13 @@
+import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
-import {
-  BpmnTags,
-  IParsedObjectModel,
-  Model,
-} from '@process-engine/persistence_api.contracts';
-
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../type_factory';
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type_factory';
 
 import {parseProcessFlowNodes, parseProcessLaneSet, parseProcessSequenceFlows} from './index';
 
 // TODO: The following elements are not supported yet:
 // - Text annotations
 // - Associations
-export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Model.Process> {
+export function parseProcesses(parsedObjectModel: object): Array<Model.Process> {
 
   const processData = getModelPropertyAsArray(parsedObjectModel, BpmnTags.CommonElement.Process);
 
@@ -52,7 +44,7 @@ export function parseProcesses(parsedObjectModel: IParsedObjectModel): Array<Mod
  * @returns                 A list of all parsed error definitions.
  *                          Returns an empty list, if no errors are defined.
  */
-function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Array<Model.GlobalElements.Error> {
+function parseErrorsFromProcessModel(parsedObjectModel: object): Array<Model.GlobalElements.Error> {
 
   const errors: Array<Model.GlobalElements.Error> = [];
   const collaborationHasNoError = !parsedObjectModel[BpmnTags.CommonElement.Error];
@@ -77,7 +69,7 @@ function parseErrorsFromProcessModel(parsedObjectModel: IParsedObjectModel): Arr
   return errors;
 }
 
-function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectModel): Array<Model.Events.Definitions.EventDefinition> {
+function parseEventDefinitionsFromObjectModel(parsedObjectModel: object): Array<Model.Events.Definitions.EventDefinition> {
 
   const messageDefinitions =
     parseEventDefinitionTypeFromObjectModel(parsedObjectModel, BpmnTags.CommonElement.Message, Model.Events.Definitions.MessageEventDefinition);
@@ -89,7 +81,7 @@ function parseEventDefinitionsFromObjectModel(parsedObjectModel: IParsedObjectMo
 }
 
 function parseEventDefinitionTypeFromObjectModel<TEventDefinition extends Model.Events.Definitions.EventDefinition>(
-  parsedObjectModel: IParsedObjectModel,
+  parsedObjectModel: object,
   tagName: BpmnTags.CommonElement,
   typeFactory: Model.Base.IConstructor<TEventDefinition>,
 ): Array<TEventDefinition> {
@@ -98,7 +90,7 @@ function parseEventDefinitionTypeFromObjectModel<TEventDefinition extends Model.
 
   const rawDefinitions = getModelPropertyAsArray(parsedObjectModel, tagName);
 
-  const collaborationHasNoMatchingDefinitions = !rawDefinitions || rawDefinitions.length === 0;
+  const collaborationHasNoMatchingDefinitions = !(rawDefinitions?.length > 0);
   if (collaborationHasNoMatchingDefinitions) {
     return eventDefinitions;
   }

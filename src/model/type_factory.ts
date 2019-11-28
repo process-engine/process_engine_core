@@ -1,4 +1,5 @@
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 /**
@@ -76,11 +77,10 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
     instance.documentation = [rawData[BpmnTags.FlowElementProperty.Documentation]];
   }
 
+  instance.extensionElements = new Model.Base.Types.ExtensionElements();
+
   if (rawData[BpmnTags.FlowElementProperty.ExtensionElements]) {
-
     const extensionData = rawData[BpmnTags.FlowElementProperty.ExtensionElements];
-
-    instance.extensionElements = new Model.Base.Types.ExtensionElements();
     instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.CamundaProperty.ExecutionListener];
 
     // NOTE: The extension property collection is wrapped in a property named "camunda:property",
@@ -90,10 +90,8 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
     camundaProperties = filterOutEmptyProperties(camundaProperties);
 
     if (camundaProperties !== undefined) {
-
       // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
-      instance.extensionElements.camundaExtensionProperties =
-        getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
+      instance.extensionElements.camundaExtensionProperties = getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
     }
   }
 
@@ -115,15 +113,12 @@ function filterOutEmptyProperties(camundaProperties: any): any {
 
   // Filter out strings etc, because these are not valid for the 'camunda:properties' tag.
   if (!Array.isArray(camundaProperties)) {
-    return typeof camundaProperties === 'object'
-      ? camundaProperties
-      : undefined;
+    return typeof camundaProperties === 'object' ? camundaProperties : undefined;
   }
 
   const filteredProperties = camundaProperties.filter((property: any): boolean => {
-    const propertyIsEmpty = property === null || property === undefined;
 
-    if (propertyIsEmpty) {
+    if (property == undefined) {
       return false;
     }
 

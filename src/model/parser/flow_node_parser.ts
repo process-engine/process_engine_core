@@ -1,4 +1,5 @@
 import {Model} from '@process-engine/persistence_api.contracts';
+
 import {FlowNodeParsers} from './flow_node_parsers/index';
 
 export function parseProcessFlowNodes(

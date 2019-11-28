@@ -1,15 +1,13 @@
 import {Logger} from 'loggerhythm';
 
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../../type_factory';
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../../type_factory';
 import {findExtensionPropertyByName} from './activity_parsers/extension_property_parser';
 
-const logger = Logger.createLogger('processengine:model_parser:event_parser');
+const logger = Logger.createLogger('atlasengine:process_model_parser:event_parser');
 
 let errors: Array<Model.GlobalElements.Error> = [];
 let eventDefinitions: Array<Model.Events.Definitions.EventDefinition> = [];
@@ -50,7 +48,8 @@ function parseEventsByType<TEvent extends Model.Events.Event>(
 
   const eventsRaw = getModelPropertyAsArray(data, eventTypeTag);
 
-  if (!eventsRaw || eventsRaw.length === 0) {
+  const noEventsFound = !(eventsRaw?.length > 0);
+  if (noEventsFound) {
     return [];
   }
 
@@ -77,7 +76,8 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
   const boundaryEventsRaw = getModelPropertyAsArray(processData, BpmnTags.EventElement.Boundary);
 
-  if (!boundaryEventsRaw || boundaryEventsRaw.length === 0) {
+  const noBoundaryEventsFound = !(boundaryEventsRaw?.length > 0);
+  if (noBoundaryEventsFound) {
     return [];
   }
 
@@ -100,10 +100,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     assignEventDefinition(boundaryEvent, boundaryEventRaw);
 
-    const isCyclicTimerBoundaryEvent =
-      boundaryEvent.timerEventDefinition &&
-      boundaryEvent.timerEventDefinition.timerType === Model.Events.Definitions.TimerType.timeCycle;
-
+    const isCyclicTimerBoundaryEvent = boundaryEvent?.timerEventDefinition?.timerType === Model.Events.Definitions.TimerType.timeCycle;
     if (isCyclicTimerBoundaryEvent) {
       const errorMessage = 'Using cyclic timers for BoundaryEvents is not allowed!';
       logger.error(errorMessage, boundaryEvent);
@@ -118,11 +115,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
 function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
 
-  const eventHasNoExtensionElements =
-    !event.extensionElements ||
-    !event.extensionElements.camundaExtensionProperties ||
-    event.extensionElements.camundaExtensionProperties.length === 0;
-
+  const eventHasNoExtensionElements = !(event?.extensionElements?.camundaExtensionProperties?.length > 0);
   if (eventHasNoExtensionElements) {
     return undefined;
   }
@@ -130,11 +123,9 @@ function getInputValues<TEvent extends Model.Events.Event>(event: TEvent): any {
   const extensionProperties = event.extensionElements.camundaExtensionProperties;
   const inputValueProperty = findExtensionPropertyByName('inputValues', extensionProperties);
 
-  const payloadPropertyHasValue = inputValueProperty && inputValueProperty.value && inputValueProperty.value.length > 0;
+  const payloadPropertyHasValue = inputValueProperty?.value?.length > 0;
 
-  return payloadPropertyHasValue
-    ? inputValueProperty.value
-    : undefined;
+  return payloadPropertyHasValue ? inputValueProperty.value : undefined;
 }
 
 function assignEventDefinition(event: any, eventRaw: any): void {
@@ -242,7 +233,7 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
 
   const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
 
-  const isEnabledCamundaProperty = event.extensionElements && event.extensionElements.camundaExtensionProperties
+  const isEnabledCamundaProperty = event?.extensionElements?.camundaExtensionProperties
     ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
     : undefined;
 
@@ -253,7 +244,7 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
   const timerType = parseTimerDefinitionType(eventDefinitonValue);
   const timerValue = parseTimerDefinitionValue(eventDefinitonValue);
 
-  if (timerType === undefined || timerValue === undefined || timerValue.length === 0) {
+  if (timerType == undefined || !(timerValue?.length > 0)) {
     // Same as above.
     logger.warn(`The timer on event with ID ${event.id} is invalid! The event will not be executable!`, event, eventRaw);
   }
@@ -268,10 +259,9 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
 
 function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions.EventDefinition>(eventDefinitionId: string): TEventDefinition {
 
-  const matchingEventDefintion: Model.Events.Definitions.EventDefinition =
-    eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
-      return entry.id === eventDefinitionId;
-    });
+  const matchingEventDefintion = eventDefinitions.find((entry: Model.Events.Definitions.EventDefinition): boolean => {
+    return entry.id === eventDefinitionId;
+  });
 
   return <TEventDefinition> matchingEventDefintion;
 }

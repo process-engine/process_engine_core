@@ -25,7 +25,8 @@ function parseGatewaysByType<TGateway extends Model.Gateways.Gateway>(
 
   const gatewaysRaw = getModelPropertyAsArray(processData, gatewayType);
 
-  if (!gatewaysRaw || gatewaysRaw.length === 0) {
+  const noGatewaysFound = !(gatewaysRaw?.length > 0);
+  if (noGatewaysFound) {
     return [];
   }
 

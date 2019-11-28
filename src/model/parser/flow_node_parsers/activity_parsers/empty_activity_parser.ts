@@ -8,7 +8,9 @@ export function parseEmptyActivities(processData: any): Array<Model.Activities.E
   const emptyActivities: Array<Model.Activities.EmptyActivity> = [];
 
   const emptyActivitiesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.EmptyActivity);
-  if (!emptyActivitiesRaw || emptyActivitiesRaw.length === 0) {
+
+  const noEmptyActivitiesFound = !(emptyActivitiesRaw?.length > 0);
+  if (noEmptyActivitiesFound) {
     return [];
   }
 

@@ -10,7 +10,7 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
 
   const serviceTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ServiceTask);
 
-  const noServiceTasksFound = !serviceTasksRaw || serviceTasksRaw.length === 0;
+  const noServiceTasksFound = !(serviceTasksRaw?.length > 0);
   if (noServiceTasksFound) {
     return [];
   }
@@ -49,11 +49,7 @@ export function parseServiceTasks(processData: any): Array<Model.Activities.Serv
 
 function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): string {
 
-  const serviceTaskHasNoExtensionProperties =
-    !serviceTask.extensionElements ||
-    !serviceTask.extensionElements.camundaExtensionProperties ||
-    serviceTask.extensionElements.camundaExtensionProperties.length === 0;
-
+  const serviceTaskHasNoExtensionProperties = !(serviceTask?.extensionElements?.camundaExtensionProperties?.length > 0);
   if (serviceTaskHasNoExtensionProperties) {
     return undefined;
   }
@@ -61,7 +57,7 @@ function getPayloadForExternalTask(serviceTask: Model.Activities.ServiceTask): s
   const extensionProperties = serviceTask.extensionElements.camundaExtensionProperties;
   const payloadProperty = findExtensionPropertyByName('payload', extensionProperties);
 
-  const payloadPropertyHasValue = payloadProperty && payloadProperty.value && payloadProperty.value.length > 0;
+  const payloadPropertyHasValue = payloadProperty?.value?.length > 0;
 
   return payloadPropertyHasValue ? payloadProperty.value : undefined;
 }

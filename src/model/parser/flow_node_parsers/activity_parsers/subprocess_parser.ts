@@ -17,7 +17,7 @@ export function parseSubProcesses(
 
   const subProcessesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SubProcess);
 
-  const noSubProcessesFound = !subProcessesRaw || subProcessesRaw.length === 0;
+  const noSubProcessesFound = !(subProcessesRaw?.length > 0);
   if (noSubProcessesFound) {
     return [];
   }

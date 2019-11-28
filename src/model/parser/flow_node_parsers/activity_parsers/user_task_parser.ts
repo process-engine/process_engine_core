@@ -12,7 +12,7 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   const userTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.UserTask);
 
-  const noUserTasksFound = !userTasksRaw || userTasksRaw.length === 0;
+  const noUserTasksFound = !(userTasksRaw?.length > 0);
   if (noUserTasksFound) {
     return [];
   }
@@ -88,8 +88,8 @@ export function parseUserTasks(processData: any): Array<Model.Activities.UserTas
 
   function parseDate(value: string): Date {
 
-    const isValidDate = !value || value.length === 0 || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid();
-    if (isValidDate) {
+    const isNoValidDate = !(value?.length > 0) || !moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid();
+    if (isNoValidDate) {
       return undefined;
     }
 

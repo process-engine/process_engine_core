@@ -1,13 +1,9 @@
-import {
-  BpmnTags,
-  IParsedObjectModel,
-  Model,
-} from '@process-engine/persistence_api.contracts';
+import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {createObjectWithCommonProperties} from '../type_factory';
 import {parseCollaboration, parseProcesses} from './index';
 
-export function parseDefinitions(parsedObjectModel: IParsedObjectModel): Model.Definitions {
+export function parseDefinitions(parsedObjectModel: object): Model.Definitions {
 
   const definitions = parsedObjectModel[BpmnTags.CommonElement.Definitions];
 

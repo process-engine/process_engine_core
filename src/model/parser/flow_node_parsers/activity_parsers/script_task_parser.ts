@@ -9,7 +9,7 @@ export function parseScriptTasks(processData: any): Array<Model.Activities.Scrip
 
   const scriptTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ScriptTask);
 
-  const noScriptTasksFound = !scriptTasksRaw || scriptTasksRaw.length === 0;
+  const noScriptTasksFound = !(scriptTasksRaw?.length > 0);
   if (noScriptTasksFound) {
     return [];
   }
