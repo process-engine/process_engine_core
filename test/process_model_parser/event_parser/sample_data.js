@@ -110,6 +110,55 @@ module.exports.sampleEndEvents = {
   }]
 };
 
+module.exports.sampleEndEventsWithInputValues = {
+  'bpmn:endEvent': [{
+    id: 'Event_1',
+    name: 'Ends with message',
+    'bpmn:incoming': 'SequenceFlow_0woaapg',
+    'bpmn:messageEventDefinition': {
+      messageRef: 'Message_1'
+    },
+    'bpmn:extensionElements': {
+      'camunda:properties': {
+        'camunda:property': {
+          name: 'inputValues',
+          value: 'value',
+        },
+      },
+    },
+  }, {
+    id: 'Event_2',
+    name: 'End with Signal',
+    'bpmn:incoming': 'SequenceFlow_0pj67d9',
+    'bpmn:signalEventDefinition': {
+      signalRef: 'Signal_1'
+    },
+    'bpmn:extensionElements': {
+      'camunda:properties': {
+        'camunda:property': {
+          name: 'inputValues',
+          value: ['value1', 'value2', 'value3'],
+        },
+      },
+    },
+  }, {
+    id: 'Event_3',
+    name: 'End with Signal',
+    'bpmn:incoming': 'SequenceFlow_0pj67d9',
+    'bpmn:signalEventDefinition': {
+      signalRef: 'Signal_1'
+    },
+    'bpmn:extensionElements': {
+      'camunda:properties': {
+        'camunda:property': {
+          name: 'inputValues',
+          value: undefined,
+        },
+      },
+    },
+  }]
+};
+
 module.exports.sampleBoundaryEvents = {
   'bpmn:boundaryEvent': [{
     id: 'SignalBoundaryEvent_1',
@@ -313,6 +362,21 @@ module.exports.misconfiguredEvents = {
     },
     'bpmn:messageEventDefinition': {
       messageRef: 'Message_1'
+    }
+  }]
+};
+
+module.exports.boundaryEventsWithCyclicTimers = {
+  'bpmn:boundaryEvent': [{
+    id: 'TimerBoundaryEvent_1',
+    name: 'Random timer',
+    attachedToRef: 'ManualTask123',
+    'bpmn:outgoing': 'SequenceFlow_00h99uz',
+    'bpmn:timerEventDefinition': {
+      'bpmn:timeCycle': {
+        _: '* * * * 1',
+        'xsi:type': 'bpmn:tFormalExpression'
+      }
     }
   }]
 };

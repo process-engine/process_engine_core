@@ -138,6 +138,25 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
       terminateEvents.forEach(assertTerminateEvent);
     });
 
+    it('Should correctly parse a list of EndEvents that have inputValues attached to them', (): void => {
+
+      const result = <Array<Model.Events.EndEvent>> parseEventsFromProcessData(SampleData.sampleEndEventsWithInputValues, sampleErrors, sampleEvents);
+
+      should(result).be.an.Array();
+      should(result).be.length(3);
+
+      const eventWithString = result.find((value): boolean => value.id === 'Event_1');
+      const eventWithArray = result.find((value): boolean => value.id === 'Event_2');
+      const eventWithNothing = result.find((value): boolean => value.id === 'Event_3');
+
+      const expectedStringInputValues = 'value';
+      const expectedArrayInputValues = ['value1', 'value2', 'value3'];
+
+      should(eventWithString.inputValues).be.eql(expectedStringInputValues);
+      should(eventWithArray.inputValues).be.eql(expectedArrayInputValues);
+      should.not.exist(eventWithNothing.inputValues);
+    });
+
     it('Should not throw an error, if any of the EndEvents has a definition that points to a non-existing message or signal', (): void => {
       const result = parseEventsFromProcessData(SampleData.sampleEndEvents, sampleErrors, []);
 
@@ -217,6 +236,16 @@ describe('EventParser.parseEventsFromProcessData', (): void => {
         should(error).have.a.property('additionalInformation');
         should(error.additionalInformation).have.a.property('eventObject');
         should(error.additionalInformation).have.a.property('rawEventData');
+      }
+    });
+
+    it('Should throw an error, if a BoundaryEvent contains a cyclic timer, which is not allowed', (): void => {
+      try {
+        const result = parseEventsFromProcessData(SampleData.boundaryEventsWithCyclicTimers, [], sampleEvents);
+        should.fail(result, 'Error', 'This should have caused an error, because cyclic timers are not allowed in BoundaryEvents!');
+      } catch (error) {
+        should(error).be.an.instanceOf(UnprocessableEntityError);
+        should(error.message).be.a.match(/Using cyclic timers for BoundaryEvents is not allowed/i);
       }
     });
 
