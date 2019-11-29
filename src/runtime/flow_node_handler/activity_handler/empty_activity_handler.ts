@@ -59,18 +59,13 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive = this.emptyActivitySubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
-        }
+        this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
       await this.suspendAndWaitForFinishEvent(identity, token);
-      await this.persistOnResume(token);
 
+      await this.persistOnResume(token);
       processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
 
@@ -95,22 +90,17 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive = this.emptyActivitySubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
-        }
+        this.eventAggregator.unsubscribe(this.emptyActivitySubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
-      const waitForContinueEventPromise = await this.waitForFinishEvent(onSuspendToken);
+      const waitForContinueEventPromise = this.waitForFinishEvent(onSuspendToken);
 
       this.publishEmptyActivityReachedNotification(identity, onSuspendToken);
 
       await waitForContinueEventPromise;
-      await this.persistOnResume(onSuspendToken);
 
+      await this.persistOnResume(onSuspendToken);
       processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, onSuspendToken.payload);
       await this.persistOnExit(onSuspendToken);
 
@@ -152,10 +142,8 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
    *                 creating the EventSubscription.
    */
   private waitForFinishEvent(token: ProcessToken): Promise<any> {
-
     return new Promise<any>(async (resolve: EventReceivedCallback): Promise<void> => {
       const continueEmptyActivityEvent = this.getFinishEmptyActivityEventName(token.correlationId, token.processInstanceId);
-
       this.emptyActivitySubscription = this.eventAggregator.subscribeOnce(continueEmptyActivityEvent, resolve);
     });
   }

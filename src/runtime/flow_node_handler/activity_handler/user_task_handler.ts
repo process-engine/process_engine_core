@@ -62,13 +62,8 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
         this.validateUserTaskFormFieldConfigurations(token, processTokenFacade);
 
         this.onInterruptedCallback = (): void => {
-          const subscriptionIsActive = this.userTaskSubscription !== undefined;
-          if (subscriptionIsActive) {
-            this.eventAggregator.unsubscribe(this.userTaskSubscription);
-          }
+          this.eventAggregator.unsubscribe(this.userTaskSubscription);
           handlerPromise.cancel();
-
-          return undefined;
         };
 
         const userTaskResult = await this.suspendAndWaitForUserTaskResult(identity, token);
@@ -105,13 +100,8 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive = this.userTaskSubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.userTaskSubscription);
-        }
+        this.eventAggregator.unsubscribe(this.userTaskSubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
       const waitForMessagePromise = this.waitForUserTaskResult(identity, onSuspendToken);
@@ -236,16 +226,15 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
 
       const finishUserTaskEvent = this.getFinishUserTaskEventName(token.correlationId, token.processInstanceId);
 
-      this.userTaskSubscription =
-        this.eventAggregator.subscribeOnce(finishUserTaskEvent, async (message: FinishUserTaskMessage): Promise<void> => {
-          const userTaskResult = {
-            // TODO: We need to investigate how many components will break when we change this.
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            form_fields: message.result || undefined,
-          };
+      this.userTaskSubscription = this.eventAggregator.subscribeOnce(finishUserTaskEvent, async (message: FinishUserTaskMessage): Promise<void> => {
+        const userTaskResult = {
+          // TODO: We need to investigate how many components will break when we change this.
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          form_fields: message.result || undefined,
+        };
 
-          resolve(userTaskResult);
-        });
+        resolve(userTaskResult);
+      });
     });
   }
 

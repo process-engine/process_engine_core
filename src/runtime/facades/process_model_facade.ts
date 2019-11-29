@@ -61,10 +61,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   public getProcessModelHasLanes(): boolean {
-
-    return this.processModel.laneSet !== undefined
-            && this.processModel.laneSet.lanes !== undefined
-            && this.processModel.laneSet.lanes.length > 0;
+    return this.processModel.laneSet?.lanes?.length > 0;
   }
 
   public getLaneForFlowNode(flowNodeId: string): Model.ProcessElements.Lane {
@@ -139,21 +136,19 @@ export class ProcessModelFacade implements IProcessModelFacade {
       return sequenceFlow.targetRef === flowNode.id;
     });
 
-    const flowhasNoSource = !sequenceFlows || sequenceFlows.length === 0;
+    const flowhasNoSource = !(sequenceFlows?.length > 0);
     if (flowhasNoSource) {
       return undefined;
     }
 
     // Then find the source FlowNodes for each SequenceFlow
     const previousFlowNodes = sequenceFlows.map((currentSequenceFlow: Model.ProcessElements.SequenceFlow): Model.Base.FlowNode => {
-      const sourceNode: Model.Base.FlowNode =
-        this.processModel
-          .flowNodes
-          .find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === currentSequenceFlow.sourceRef);
+      const sourceNode: Model.Base.FlowNode = this.processModel
+        .flowNodes
+        .find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === currentSequenceFlow.sourceRef);
 
       // If the sourceNode happens to be a BoundaryEvent, return the Node that the BoundaryEvent is attached to.
-      const sourceNodeIsBoundaryEvent = sourceNode.bpmnType === BpmnType.boundaryEvent;
-      if (sourceNodeIsBoundaryEvent) {
+      if (sourceNode.bpmnType === BpmnType.boundaryEvent) {
         return this.processModel.flowNodes.find((currentFlowNode: Model.Base.FlowNode): boolean => {
           return currentFlowNode.id === (sourceNode as Model.Events.BoundaryEvent).attachedToRef;
         });
@@ -172,7 +167,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
       return sequenceFlow.sourceRef === flowNode.id;
     });
 
-    const flowhasNoTarget = !sequenceFlows || sequenceFlows.length === 0;
+    const flowhasNoTarget = !(sequenceFlows?.length > 0);
     if (flowhasNoTarget) {
       return undefined;
     }
@@ -207,7 +202,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
       const isNoIntermediateLinkCatchEvent =
         !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
-        flowNodeAsCatchEvent.linkEventDefinition === undefined;
+        flowNodeAsCatchEvent.linkEventDefinition == undefined;
 
       if (isNoIntermediateLinkCatchEvent) {
         return false;
@@ -222,9 +217,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
   }
 
   protected filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
-    const flowNodes = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => {
-      return flowNode instanceof type;
-    });
+    const flowNodes = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => flowNode instanceof type);
 
     return flowNodes as Array<TFlowNode>;
   }
@@ -247,9 +240,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
       let matchingLane: Model.ProcessElements.Lane;
 
-      const laneHasChildLaneSet = lane.childLaneSet !== undefined
-                               && lane.childLaneSet.lanes !== undefined
-                               && lane.childLaneSet.lanes.length > 0;
+      const laneHasChildLaneSet = lane.childLaneSet?.lanes?.length > 0;
 
       if (laneHasChildLaneSet) {
         matchingLane = this.findLaneForFlowNodeIdFromLaneSet(flowNodeId, lane.childLaneSet);
@@ -260,8 +251,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
         }
       }
 
-      const matchFound = matchingLane !== undefined;
-      if (matchFound) {
+      if (matchingLane != undefined) {
         return matchingLane;
       }
     }

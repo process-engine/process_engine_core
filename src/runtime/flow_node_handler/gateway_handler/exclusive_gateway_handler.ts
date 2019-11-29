@@ -120,12 +120,11 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
     const truthySequenceFlows = await this.getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
 
-    const noTruthySequenceFlowsExist = truthySequenceFlows.length === 0;
-    if (noTruthySequenceFlowsExist) {
+    if (truthySequenceFlows.length === 0) {
 
       // if no SequenceFlows have a truthy condition, but a default Sequence Flow is defined,
       // return the targetRef of that SequenceFlow.
-      const gatewayHasDefaultSequenceFlow = this.exclusiveGateway.defaultOutgoingSequenceFlowId !== undefined;
+      const gatewayHasDefaultSequenceFlow = this.exclusiveGateway.defaultOutgoingSequenceFlowId != undefined;
       if (gatewayHasDefaultSequenceFlow) {
 
         const defaultSequenceFlow = sequenceFlows.find((flow: Model.ProcessElements.SequenceFlow): boolean => {
@@ -144,8 +143,7 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
       throw noSequenceFlowFoundError;
     }
 
-    const tooManyTruthySequenceFlowsExist = truthySequenceFlows.length > 1;
-    if (tooManyTruthySequenceFlowsExist) {
+    if (truthySequenceFlows.length > 1) {
 
       const tooManySequenceFlowsError =
         new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
@@ -172,7 +170,7 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
       // Thus, it must not be included with the condition evaluations.
       const sequenceFlowIsDefaultFlow = sequenceFlow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
 
-      const sequenceFlowHasNoCondition = sequenceFlow.conditionExpression === undefined;
+      const sequenceFlowHasNoCondition = sequenceFlow.conditionExpression == undefined;
 
       if (sequenceFlowHasNoCondition || sequenceFlowIsDefaultFlow) {
         continue;

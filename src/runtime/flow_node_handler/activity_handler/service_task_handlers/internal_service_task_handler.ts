@@ -57,8 +57,7 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
     this.publishActivityReachedNotification(identity, token);
 
-    const serviceTaskHasNoInvocation = this.serviceTask.invocation === undefined;
-    if (serviceTaskHasNoInvocation) {
+    if (this.serviceTask.invocation == undefined) {
       this.logger.verbose('ServiceTask has no invocation. Skipping execution.');
 
       processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, {});
@@ -75,18 +74,13 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
     const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      const executionPromise = this.executeInternalServiceTask(token, processTokenFacade, identity);
-
       this.onInterruptedCallback = (): void => {
-        executionPromise.cancel();
         handlerPromise.cancel();
-
-        return resolve();
       };
 
       try {
         this.logger.verbose('Executing internal ServiceTask');
-        const result = await executionPromise;
+        const result = await this.executeInternalServiceTask(token, processTokenFacade, identity);
 
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
         token.payload = result;
@@ -145,7 +139,7 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
       const serviceInstance = await this.container.resolveAsync(invocation.module);
 
       const evaluateParamsFunction = new Function('context', 'token', `return ${invocation.params}`);
-      const argumentsToPassThrough = evaluateParamsFunction.call(tokenData, identity, tokenData) || [];
+      const argumentsToPassThrough = evaluateParamsFunction.call(tokenData, identity, tokenData) ?? [];
 
       const serviceMethod = serviceInstance[invocation.method];
 

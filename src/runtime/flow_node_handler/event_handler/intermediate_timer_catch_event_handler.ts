@@ -41,10 +41,9 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.sendIntermediateCatchEventReachedNotification(token);
-
     this.logger.verbose(`Executing TimerCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
+    this.sendIntermediateCatchEventReachedNotification(token);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
@@ -59,13 +58,8 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
 
       try {
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-          if (this.timerSubscription) {
-            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
-          }
-
+          this.timerFacade.cancelTimerSubscription(this.timerSubscription);
           processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
-
           handlerPromise.cancel();
         };
 
@@ -74,10 +68,8 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
         processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, token.payload);
 
         await this.persistOnResume(token);
-
-        this.sendIntermediateCatchEventFinishedNotification(token);
-
         await this.persistOnExit(token);
+        this.sendIntermediateCatchEventFinishedNotification(token);
 
         const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.timerCatchEvent);
 
@@ -102,13 +94,8 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
 
       try {
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-          if (this.timerSubscription) {
-            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
-          }
-
+          this.timerFacade.cancelTimerSubscription(this.timerSubscription);
           processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
-
           handlerPromise.cancel();
         };
 
@@ -143,9 +130,7 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
         const timerElapsed = (): void => {
-          if (this.timerSubscription && this.timerSubscription.onlyReceiveOnce === false) {
-            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
-          }
+          this.timerFacade.cancelTimerSubscription(this.timerSubscription);
           resolve();
         };
 

@@ -69,12 +69,8 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
       const executionPromise = this.waitForMessage(token);
 
       this.onInterruptedCallback = (): void => {
-        if (this.messageSubscription) {
-          this.eventAggregator.unsubscribe(this.messageSubscription);
-        }
+        this.eventAggregator.unsubscribe(this.messageSubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
       this.publishActivityReachedNotification(identity, token);
@@ -115,10 +111,9 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
         .sendTaskReached
         .replace(eventAggregatorSettings.messageParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
-      this.messageSubscription =
-        this.eventAggregator.subscribeOnce(messageEventName, (message: MessageEventReachedMessage): void => {
-          resolve(message);
-        });
+      this.messageSubscription = this.eventAggregator.subscribeOnce(messageEventName, (message: MessageEventReachedMessage): void => {
+        resolve(message);
+      });
 
       await this.persistOnSuspend(token);
     });

@@ -82,7 +82,7 @@ export class ProcessTokenFacade implements IProcessTokenFacade {
 
     const tokenData = {
       history: {},
-      current: currentResult ? currentResult.result : undefined,
+      current: currentResult?.result ?? undefined,
     };
 
     for (const tokenResult of tokenResults) {

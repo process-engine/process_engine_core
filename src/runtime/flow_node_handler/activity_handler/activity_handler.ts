@@ -53,7 +53,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
       const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
-      if (laneContainingCurrentFlowNode !== undefined) {
+      if (laneContainingCurrentFlowNode != undefined) {
         token.currentLane = laneContainingCurrentFlowNode.name;
       }
 
@@ -67,7 +67,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         // EndEvents will return "undefined" as the next FlowNode.
         // So if no FlowNode is to be run next, we have arrived at the end of the current flow.
-        const processIsNotYetFinished = nextFlowNodes !== undefined && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
@@ -147,7 +147,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         // EndEvents will return "undefined" as the next FlowNode.
         // So if no FlowNode is returned, we have arrived at the end of the ProcessInstance.
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const currentResult = processTokenFacade
@@ -232,7 +232,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       case FlowNodeInstanceState.running:
         const resumeToken = flowNodeInstance.getTokenByType(ProcessTokenType.onResume);
 
-        const notSuspendedYet = resumeToken === undefined;
+        const notSuspendedYet = resumeToken == undefined;
         if (notSuspendedYet) {
           this.logger.verbose('FlowNodeInstance was interrupted at the beginning. Resuming from the start.');
           const onEnterToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);
@@ -319,8 +319,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback = async (message: any): Promise<void> => {
-      const terminatedByEndEvent = message && message.flowNodeId;
-      const terminationUserId = message && message.terminatedBy ? message.terminatedBy.userId : undefined;
+      const terminatedByEndEvent = message?.flowNodeId != undefined;
+      const terminationUserId = message?.terminatedBy?.userId ?? undefined;
 
       const processTerminatedError = terminatedByEndEvent
         ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`

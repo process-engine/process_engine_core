@@ -12,7 +12,6 @@ import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
-  TerminateEndEventReachedMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
@@ -75,13 +74,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     // likely crash the ProcessInstance.
     this.incomingFlowNodeInstanceIds.push(this.previousFlowNodeInstanceId);
 
-    const subscriptionForProcessTerminationNeeded = !this.processTerminationSubscription;
-    if (subscriptionForProcessTerminationNeeded) {
+    if (!this.processTerminationSubscription) {
       this.processTerminationSubscription = this.subscribeToProcessTermination(token);
     }
 
-    const subscriptionForProcessErrorNeeded = !this.processErrorSubscription;
-    if (subscriptionForProcessErrorNeeded) {
+    if (!this.processErrorSubscription) {
       this.processErrorSubscription = this.subscribeToProcessError(token);
     }
   }
@@ -121,6 +118,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
         return result.flowNodeId === previousFlowNode.id;
       });
     });
+
     if (notAllBranchesHaveFinished) {
       return undefined;
     }
@@ -156,22 +154,16 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onTerminatedCallback = async (message: TerminateEndEventReachedMessage): Promise<void> => {
+    const onTerminatedCallback = async (message): Promise<void> => {
       // This is done to prevent anybody from accessing the handler after a termination message was received.
       // This is necessary, to prevent access until the the state change to "terminated" is done.
       this.isInterrupted = true;
 
-      const payloadIsDefined = message !== undefined;
+      const terminatedByEndEvent = message?.flowNodeId != undefined;
 
-      const processTerminatedError = payloadIsDefined
-        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'!`
-        : 'Process was terminated!';
-
-      token.payload = payloadIsDefined
+      token.payload = terminatedByEndEvent
         ? message.currentToken
         : {};
-
-      this.logger.error(processTerminatedError);
 
       await this.persistOnTerminate(token);
 
@@ -191,17 +183,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       // This is necessary, to prevent access until the the state change to "error" is done.
       this.isInterrupted = true;
 
-      const payloadIsDefined = message !== undefined;
-
-      const processError = payloadIsDefined
-        ? `Process run into an error through ErrorEndEvent '${message.flowNodeId}'!`
-        : 'Process run into an error!';
+      const payloadIsDefined = message != undefined;
 
       token.payload = payloadIsDefined
         ? message.currentToken
         : {};
-
-      this.logger.error(processError);
 
       await this.persistOnError(token, message.error);
 

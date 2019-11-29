@@ -216,8 +216,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
     const onTerminatedCallback = async (message: any): Promise<void> => {
-      const terminatedByEndEvent = message && message.flowNodeId;
-      const terminationUserId = message && message.terminatedBy ? message.terminatedBy.userId : undefined;
+      const terminatedByEndEvent = message?.flowNodeId != undefined;
+      const terminationUserId = message?.terminatedBy?.userId ?? undefined;
 
       const processTerminatedError = terminatedByEndEvent
         ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`

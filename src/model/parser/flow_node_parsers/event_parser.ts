@@ -93,7 +93,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     // NOTE: Interrupting BoundaryEvents are sometimes missing this property!
     // However, non-interrupting BoundaryEvents always have it.
-    const cancelActivity = boundaryEventRaw.cancelActivity === undefined ||
+    const cancelActivity = boundaryEventRaw.cancelActivity == undefined ||
                            boundaryEventRaw.cancelActivity === 'true' ||
                            boundaryEventRaw.cancelActivity === true;
     boundaryEvent.cancelActivity = cancelActivity;
@@ -114,12 +114,12 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 }
 
 function assignEventDefinition(event: any, eventRaw: any): void {
-  const eventHasErrorEvent = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] !== undefined;
-  const eventHasLinkEvent = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition] !== undefined;
-  const eventHasMessageEvent = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition] !== undefined;
-  const eventHasSignalEvent = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition] !== undefined;
-  const eventHasTimerEvent = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] !== undefined;
-  const eventHasTerminateEvent = eventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition] !== undefined;
+  const eventHasErrorEvent = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] != undefined;
+  const eventHasLinkEvent = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition] != undefined;
+  const eventHasMessageEvent = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition] != undefined;
+  const eventHasSignalEvent = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition] != undefined;
+  const eventHasTimerEvent = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition] != undefined;
+  const eventHasTerminateEvent = eventRaw[BpmnTags.FlowElementProperty.TerminateEventDefinition] != undefined;
 
   // Might look a little weird, but counting "true" values is actually a lot easier than trying out every possible combo.
   // It doesn't matter which events are modelled anyway, as soon as there is more than one, the FlowNode is simply not usable.
@@ -225,7 +225,7 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
     ? findExtensionPropertyByName('enabled', event.extensionElements.camundaExtensionProperties)
     : undefined;
 
-  const isEnabled = isEnabledCamundaProperty !== undefined
+  const isEnabled = isEnabledCamundaProperty != undefined
     ? isEnabledCamundaProperty.value === 'true'
     : true;
 
@@ -247,17 +247,17 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
 
 function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definitions.TimerType {
 
-  const timerIsCyclic = eventDefinition[TimerEventDefinitionBpmnTag.Cycle] !== undefined;
+  const timerIsCyclic = eventDefinition[TimerEventDefinitionBpmnTag.Cycle] != undefined;
   if (timerIsCyclic) {
     return Model.Events.Definitions.TimerType.timeCycle;
   }
 
-  const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] !== undefined;
+  const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] != undefined;
   if (timerIsDate) {
     return Model.Events.Definitions.TimerType.timeDate;
   }
 
-  const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] !== undefined;
+  const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] != undefined;
   if (timerIsDuration) {
     return Model.Events.Definitions.TimerType.timeDuration;
   }
@@ -267,17 +267,17 @@ function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definition
 
 function parseTimerDefinitionValue(eventDefinition: any): string {
 
-  const timerIsCyclic = eventDefinition[TimerEventDefinitionBpmnTag.Cycle] !== undefined;
+  const timerIsCyclic = eventDefinition[TimerEventDefinitionBpmnTag.Cycle] != undefined;
   if (timerIsCyclic) {
     return eventDefinition[TimerEventDefinitionBpmnTag.Cycle]._;
   }
 
-  const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] !== undefined;
+  const timerIsDate = eventDefinition[TimerEventDefinitionBpmnTag.Date] != undefined;
   if (timerIsDate) {
     return eventDefinition[TimerEventDefinitionBpmnTag.Date]._;
   }
 
-  const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] !== undefined;
+  const timerIsDuration = eventDefinition[TimerEventDefinitionBpmnTag.Duration] != undefined;
   if (timerIsDuration) {
     return eventDefinition[TimerEventDefinitionBpmnTag.Duration]._;
   }

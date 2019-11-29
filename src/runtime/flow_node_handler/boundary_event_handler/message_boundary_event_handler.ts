@@ -26,7 +26,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id);
-    if (laneContainingCurrentFlowNode !== undefined) {
+    if (laneContainingCurrentFlowNode != undefined) {
       token.currentLane = laneContainingCurrentFlowNode.name;
     }
     await this.persistOnEnter(token);
@@ -50,7 +50,11 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
       return onTriggeredCallback(eventData);
     };
 
-    this.subscription = this.eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback);
+    // An interrupting BoundaryEvent can only be triggered once.
+    // A non-interrupting BoundaryEvent can be triggerred repeatedly.
+    this.subscription = this.boundaryEventModel.cancelActivity
+      ? this.eventAggregator.subscribeOnce(messageBoundaryEventName, messageReceivedCallback)
+      : this.eventAggregator.subscribe(messageBoundaryEventName, messageReceivedCallback);
   }
 
   public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {

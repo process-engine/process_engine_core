@@ -30,7 +30,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
       const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
-      if (laneContainingCurrentFlowNode !== undefined) {
+      if (laneContainingCurrentFlowNode != undefined) {
         token.currentLane = laneContainingCurrentFlowNode.name;
       }
 
@@ -41,7 +41,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
@@ -102,7 +102,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const currentResult = processTokenFacade

@@ -68,12 +68,8 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        if (this.responseSubscription) {
-          this.eventAggregator.unsubscribe(this.responseSubscription);
-        }
+        this.eventAggregator.unsubscribe(this.responseSubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
       const onResponseReceivedCallback = async (): Promise<void> => {

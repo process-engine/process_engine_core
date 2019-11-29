@@ -68,8 +68,33 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     // eslint-disable-next-line consistent-return
     const resumerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
+      this.onInterruptedCallback = async (): Promise<void> => {
+        this.eventAggregator.unsubscribe(this.externalTaskSubscription);
+        await this.abortExternalTask(onSuspendToken);
+        resumerPromise.cancel();
+      };
+
+      this.publishActivityReachedNotification(identity, onSuspendToken);
+
+      const externalTask = await this.getExternalTaskForFlowNodeInstance(flowNodeInstance);
+
+      if (!externalTask) {
+        // No ExternalTask has been created yet. We can just execute the normal handler.
+        const result = await this.executeExternalServiceTask(onSuspendToken, processTokenFacade, identity);
+
+        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
+        onSuspendToken.payload = result;
+        await this.persistOnExit(onSuspendToken);
+
+        const nextFlowNode = processModelFacade.getNextFlowNodesFor(this.serviceTask);
+
+        this.publishActivityFinishedNotification(identity, onSuspendToken);
+
+        return resolve(nextFlowNode);
+      }
+
       // Callback for processing an ExternalTask result.
-      let processExternalTaskResult = async (error: Error, result: any): Promise<void> => {
+      const processExternalTaskResult = async (error: Error, result: any): Promise<void> => {
 
         if (error) {
           this.logger.error('External processing of ServiceTask failed!', error);
@@ -93,42 +118,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         return resolve(nextFlowNode);
       };
 
-      this.onInterruptedCallback = async (): Promise<void> => {
-
-        await this.abortExternalTask(onSuspendToken);
-
-        if (this.externalTaskSubscription) {
-          this.eventAggregator.unsubscribe(this.externalTaskSubscription);
-        }
-        resumerPromise.cancel();
-
-        processExternalTaskResult = async (error: Error, result: any): Promise<void> => { };
-
-        return undefined;
-      };
-
-      this.publishActivityReachedNotification(identity, onSuspendToken);
-
-      const externalTask = await this.getExternalTaskForFlowNodeInstance(flowNodeInstance);
-
-      const noMatchingExteralTaskExists = !externalTask;
-      if (noMatchingExteralTaskExists) {
-        // No ExternalTask has been created yet. We can just execute the normal handler.
-        const result = await this.executeExternalServiceTask(onSuspendToken, processTokenFacade, identity);
-
-        processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, result);
-        onSuspendToken.payload = result;
-        await this.persistOnExit(onSuspendToken);
-
-        const nextFlowNode = processModelFacade.getNextFlowNodesFor(this.serviceTask);
-
-        this.publishActivityFinishedNotification(identity, onSuspendToken);
-
-        return resolve(nextFlowNode);
-      }
-
-      const externalTaskIsAlreadyFinished = externalTask.state === ExternalTaskState.finished;
-      if (externalTaskIsAlreadyFinished) {
+      if (externalTask.state === ExternalTaskState.finished) {
         // The external worker has already finished processing the ExternalTask
         // and we only missed the notification.
         // We can continue with the ExternalTask we retrieved from the database.
@@ -155,6 +145,11 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       try {
+        this.onInterruptedCallback = async (): Promise<void> => {
+          await this.abortExternalTask(token);
+          handlerPromise.cancel();
+        };
+
         this.logger.verbose('Executing external ServiceTask');
 
         const topicHasTokenExpression = this.serviceTask.topic.indexOf('token.') > -1;
@@ -162,21 +157,11 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
           this.serviceTask.topic = this.parseExternalTaskTopic(processTokenFacade);
         }
 
-        const serviceTaskHasAttachedPayload = this.serviceTask.payload !== undefined;
-        if (serviceTaskHasAttachedPayload) {
+        if (this.serviceTask.payload != undefined) {
           token.payload = this.parseExternalTaskPayload(processTokenFacade, identity);
         }
 
         await this.persistOnSuspend(token);
-
-        this.onInterruptedCallback = async (): Promise<void> => {
-
-          await this.abortExternalTask(token);
-
-          handlerPromise.cancel();
-
-          return undefined;
-        };
 
         this.publishActivityReachedNotification(identity, token);
 
@@ -337,11 +322,11 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
   private async abortExternalTask(token: ProcessToken): Promise<void> {
 
-    const matchingExternalTask =
-      await this.externalTaskRepository.getByInstanceIds(token.correlationId, token.processInstanceId, this.flowNodeInstanceId);
+    const matchingExternalTask = await this
+      .externalTaskRepository
+      .getByInstanceIds(token.correlationId, token.processInstanceId, this.flowNodeInstanceId);
 
-    const taskIsAlreadyFinished = matchingExternalTask.state === ExternalTaskState.finished;
-    if (taskIsAlreadyFinished) {
+    if (matchingExternalTask.state === ExternalTaskState.finished) {
       return;
     }
 

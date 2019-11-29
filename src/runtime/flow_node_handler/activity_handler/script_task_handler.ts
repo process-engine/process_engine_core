@@ -59,10 +59,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
 
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
           processTokenFacade.addResultForFlowNode(this.scriptTask.id, this.flowNodeInstanceId, interruptionToken.payload);
-          executionPromise.cancel();
           handlerPromise.cancel();
-
-          return resolve();
         };
         result = await executionPromise;
 
@@ -103,7 +100,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
         const tokenData = processTokenFacade.getOldTokenFormat();
 
         let result = await scriptFunction.call(this, tokenData, identity);
-        result = result === undefined
+        result = result == undefined
           ? {}
           : result;
 

@@ -267,7 +267,9 @@ export class CronjobService implements ICronjobService {
 
   private getActiveCyclicTimerStartEventsForProcessModel(processModel: Model.Process): Array<Model.Events.StartEvent> {
 
-    const isActiveCyclicTimerStartEvent = (startEvent: Model.Events.StartEvent): boolean => {
+    const startEvents = processModel.flowNodes.filter((flowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
+
+    const cyclicTimerStartEvents = startEvents.filter((startEvent: Model.Events.StartEvent): boolean => {
 
       if (!startEvent.timerEventDefinition) {
         return false;
@@ -279,14 +281,9 @@ export class CronjobService implements ICronjobService {
       const isActive = startEvent.timerEventDefinition.enabled;
 
       return isCyclicTimer && isActive;
-    };
+    });
 
-    const startEvents = <Array<Model.Events.StartEvent>>
-      processModel.flowNodes.filter((flowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
-
-    const cyclicTimerStartEvents = startEvents.filter(isActiveCyclicTimerStartEvent);
-
-    return cyclicTimerStartEvents;
+    return <Array<Model.Events.StartEvent>> cyclicTimerStartEvents;
   }
 
   private isValidCrontab(crontab: string): boolean {
@@ -332,9 +329,9 @@ export class CronjobService implements ICronjobService {
     const cronjobWithStartEvent = [];
 
     if (startEventId) {
-      const cronjobForProcessModel = this.cronjobDictionary[processModelId].find((cronjob: CronjobCollectionEntry): boolean => {
-        return cronjob.startEventId === startEventId;
-      });
+      const cronjobForProcessModel = this
+        .cronjobDictionary[processModelId]
+        .find((cronjob: CronjobCollectionEntry): boolean => cronjob.startEventId === startEventId);
 
       cronjobWithStartEvent.push(cronjobForProcessModel);
     }

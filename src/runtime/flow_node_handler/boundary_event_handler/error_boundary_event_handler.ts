@@ -27,8 +27,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
     const errorDefinition = this.boundaryEventModel.errorEventDefinition;
 
-    const modelHasNoErrorDefinition = !errorDefinition;
-    if (modelHasNoErrorDefinition) {
+    if (!errorDefinition) {
       return true;
     }
 
@@ -49,7 +48,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
   ): Promise<void> {
 
     const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id);
-    if (laneContainingCurrentFlowNode !== undefined) {
+    if (laneContainingCurrentFlowNode != undefined) {
       token.currentLane = laneContainingCurrentFlowNode.name;
     }
     await this.persistOnEnter(token);

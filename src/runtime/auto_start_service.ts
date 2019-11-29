@@ -56,7 +56,7 @@ export class AutoStartService implements IAutoStartService {
   private async onMessageReceived(eventData: MessageEventReachedMessage): Promise<void> {
     logger.info('Received a message: ', eventData);
 
-    const noMessageReferenceProvided = !eventData || !eventData.messageReference;
+    const noMessageReferenceProvided = !(eventData?.messageReference);
     if (noMessageReferenceProvided) {
       logger.info('The payload of the received message did not contain a message name. Skipping execution.');
 
@@ -75,7 +75,7 @@ export class AutoStartService implements IAutoStartService {
   private async onSignalReceived(eventData: SignalEventReachedMessage): Promise<void> {
     logger.info('Received a signal: ', eventData);
 
-    const noSignalReferenceProvided = !eventData || !eventData.signalReference;
+    const noSignalReferenceProvided = !(eventData?.signalReference);
     if (noSignalReferenceProvided) {
       logger.info('The payload of the received signal did not contain a Signal name. Skipping execution.');
 
@@ -126,9 +126,7 @@ export class AutoStartService implements IAutoStartService {
     const matches = processModels.filter((processModel: Model.Process): boolean => {
 
       const hasMatchingStartEvents = processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
-        return flowNode.bpmnType === BpmnType.startEvent &&
-          flowNode[expectedEventDefinitionName] !== undefined &&
-          flowNode[expectedEventDefinitionName].name === eventName;
+        return flowNode.bpmnType === BpmnType.startEvent && flowNode[expectedEventDefinitionName]?.name === eventName;
       });
 
       return processModel.isExecutable && hasMatchingStartEvents;
@@ -169,9 +167,7 @@ export class AutoStartService implements IAutoStartService {
     const findMatchingStartEventId = (processModel: Model.Process): string => {
 
       const matchingFlowNode = processModel.flowNodes.find((flowNode: Model.Base.FlowNode): boolean => {
-        return flowNode.bpmnType === BpmnType.startEvent &&
-          flowNode[eventDefinitionPropertyName] !== undefined &&
-          flowNode[eventDefinitionPropertyName].name === eventName;
+        return flowNode.bpmnType === BpmnType.startEvent && flowNode[eventDefinitionPropertyName]?.name === eventName;
       });
 
       return matchingFlowNode.id;

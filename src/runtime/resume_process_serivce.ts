@@ -93,11 +93,9 @@ export class ResumeProcessService implements IResumeProcessService {
     // ----
     // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
     // There is no point in trying to resume anything that's already finished.
-    const processHasActiveFlowNodeInstances =
-      flowNodeInstancesForProcessInstance.some((entry: FlowNodeInstance): boolean => {
-        return entry.state === FlowNodeInstanceState.running ||
-               entry.state === FlowNodeInstanceState.suspended;
-      });
+    const processHasActiveFlowNodeInstances = flowNodeInstancesForProcessInstance.some((entry: FlowNodeInstance): boolean => {
+      return entry.state === FlowNodeInstanceState.running || entry.state === FlowNodeInstanceState.suspended;
+    });
 
     if (!processHasActiveFlowNodeInstances) {
       logger.info(`ProcessInstance ${processInstanceId} is not active anymore.`);
@@ -157,10 +155,9 @@ export class ResumeProcessService implements IResumeProcessService {
     const startEvent = processModelFacade.getStartEventById(startEventInstance.flowNodeId);
 
     // The initial ProcessToken will always be the payload that the StartEvent first received.
-    const initialToken =
-      startEventInstance.tokens.find((token: ProcessToken): boolean => {
-        return token.type === ProcessTokenType.onEnter;
-      });
+    const initialToken = startEventInstance.tokens.find((token: ProcessToken): boolean => {
+      return token.type === ProcessTokenType.onEnter;
+    });
 
     const processTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, startEventInstance.correlationId, identity);
 
