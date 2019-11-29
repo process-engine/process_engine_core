@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {BadRequestError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -71,20 +71,6 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
-
-    const gatewayTypeIsNotSupported =
-      this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
-      this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
-
-    if (gatewayTypeIsNotSupported) {
-      const unsupportedErrorMessage =
-        `ExclusiveGateway ${this.exclusiveGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
-      const unsupportedError = new UnprocessableEntityError(unsupportedErrorMessage);
-
-      this.persistOnError(token, unsupportedError);
-
-      throw unsupportedError;
-    }
 
     processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, this.flowNodeInstanceId, token.payload);
 
