@@ -64,6 +64,8 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
       await this.suspendAndWaitForManualTaskResult(identity, token);
       token.payload = {};
 
+      this.logger.verbose(`Resuming ManualTask instance ${this.flowNodeInstanceId}.`);
+
       await this.persistOnResume(token);
       processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
@@ -98,6 +100,7 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
       this.publishManualTaskReachedNotification(identity, onSuspendToken);
 
       await waitForMessagePromise;
+      this.logger.verbose(`Resuming ManualTask instance ${this.flowNodeInstanceId}.`);
 
       onSuspendToken.payload = {};
 

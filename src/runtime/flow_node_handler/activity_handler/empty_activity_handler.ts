@@ -64,6 +64,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
       };
 
       await this.suspendAndWaitForFinishEvent(identity, token);
+      this.logger.verbose(`Resuming EmptyActivity instance ${this.flowNodeInstanceId}.`);
 
       await this.persistOnResume(token);
       processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, token.payload);
@@ -99,6 +100,7 @@ export class EmptyActivityHandler extends ActivityHandler<Model.Activities.Empty
       this.publishEmptyActivityReachedNotification(identity, onSuspendToken);
 
       await waitForContinueEventPromise;
+      this.logger.verbose(`Resuming EmptyActivity instance ${this.flowNodeInstanceId}.`);
 
       await this.persistOnResume(onSuspendToken);
       processTokenFacade.addResultForFlowNode(this.emptyActivity.id, this.flowNodeInstanceId, onSuspendToken.payload);

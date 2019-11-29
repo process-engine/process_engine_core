@@ -77,6 +77,8 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
 
       const receivedMessage = await executionPromise;
 
+      this.logger.verbose(`Resuming ReceiveTask instance ${this.flowNodeInstanceId}.`);
+
       token.payload = receivedMessage.currentToken;
 
       await this.persistOnResume(token);
@@ -104,16 +106,14 @@ export class ReceiveTaskHandler extends ActivityHandler<Model.Activities.Receive
    */
   private async waitForMessage(token: ProcessToken): Promise<MessageEventReachedMessage> {
 
-    return new Promise<MessageEventReachedMessage>(async (resolve: Function): Promise<void> => {
+    return new Promise<MessageEventReachedMessage>(async (resolve): Promise<void> => {
 
       const messageEventName = eventAggregatorSettings
         .messagePaths
         .sendTaskReached
         .replace(eventAggregatorSettings.messageParams.messageReference, this.receiveTask.messageEventDefinition.name);
 
-      this.messageSubscription = this.eventAggregator.subscribeOnce(messageEventName, (message: MessageEventReachedMessage): void => {
-        resolve(message);
-      });
+      this.messageSubscription = this.eventAggregator.subscribeOnce(messageEventName, resolve);
 
       await this.persistOnSuspend(token);
     });

@@ -230,8 +230,10 @@ export class UserTaskHandler extends ActivityHandler<Model.Activities.UserTask> 
         const userTaskResult = {
           // TODO: We need to investigate how many components will break when we change this.
           // eslint-disable-next-line @typescript-eslint/camelcase
-          form_fields: message.result || undefined,
+          form_fields: message?.result ?? undefined,
         };
+
+        this.logger.verbose(`Resuming UserTask instance ${this.flowNodeInstanceId} with received input: `, userTaskResult);
 
         resolve(userTaskResult);
       });
