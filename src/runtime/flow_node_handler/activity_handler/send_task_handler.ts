@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {FlowNodeInstance, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
@@ -73,7 +73,6 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
       };
 
       const onResponseReceivedCallback = async (): Promise<void> => {
-
         processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
         await this.persistOnResume(token);
         await this.persistOnExit(token);
@@ -99,7 +98,7 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
    *
    * @param callback The function to call upon receiving the message.
    */
-  private waitForResponseFromReceiveTask(callback: Function): void {
+  private waitForResponseFromReceiveTask(callback: EventReceivedCallback): void {
 
     const messageName = this.sendTask.messageEventDefinition.name;
 
@@ -108,9 +107,7 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
       .receiveTaskReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
 
-    this.responseSubscription = this.eventAggregator.subscribeOnce(messageEventName, (): void => {
-      callback();
-    });
+    this.responseSubscription = this.eventAggregator.subscribeOnce(messageEventName, callback);
   }
 
   /**

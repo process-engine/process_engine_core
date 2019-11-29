@@ -100,9 +100,7 @@ export class ScriptTaskHandler extends ActivityHandler<Model.Activities.ScriptTa
         const tokenData = processTokenFacade.getOldTokenFormat();
 
         let result = await scriptFunction.call(this, tokenData, identity);
-        result = result == undefined
-          ? {}
-          : result;
+        result = result == undefined ? {} : result;
 
         return resolve(result);
       } catch (error) {
