@@ -91,11 +91,9 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
           this.createProcessInstanceConfig(processModelFacade, processTokenFacade, onSuspendToken, identity, subProcessInstanceId);
 
         this.onInterruptedCallback = (): void => {
-
           this.cancelEventAggregatorSubscriptions();
           this.sendTerminationSignalToSubProcess(subProcessInstanceId);
-
-          return undefined;
+          handlerPromise.cancel();
         };
 
         this.publishActivityReachedNotification(identity, onSuspendToken);
@@ -154,11 +152,9 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
 
       try {
         this.onInterruptedCallback = (): void => {
-
           this.cancelEventAggregatorSubscriptions();
           this.sendTerminationSignalToSubProcess(processInstanceConfig.processInstanceId);
-
-          return undefined;
+          handlerPromise.cancel();
         };
 
         this.publishActivityReachedNotification(identity, token);
@@ -211,8 +207,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
       return entry.flowNodeId === processInstanceConfig.startEvent.id;
     });
 
-    const startEventWasNotYetStarted = !flowNodeInstanceForStartEvent;
-    if (startEventWasNotYetStarted) {
+    if (!flowNodeInstanceForStartEvent) {
       return this.waitForSubProcessExecution(processInstanceConfig, identity);
     }
 
@@ -232,7 +227,7 @@ export class SubProcessHandler extends ActivityHandler<Model.Activities.SubProce
     const subProcessStartEvents = subProcessModelFacade.getStartEvents();
     const subProcessStartEvent = subProcessStartEvents[0];
 
-    const subProcessInstanceId = processInstanceId || uuid.v4();
+    const subProcessInstanceId = processInstanceId ?? uuid.v4();
 
     const currentResults = processTokenFacade.getAllResults();
 

@@ -72,10 +72,10 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
   ): Promise<Array<Model.Base.FlowNode>> {
 
     return new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
-      const flowNodeIsTerminateEndEvent = this.endEvent.terminateEventDefinition !== undefined;
-      const flowNodeIsErrorEndEvent = this.endEvent.errorEventDefinition !== undefined;
-      const flowNodeIsMessageEndEvent = this.endEvent.messageEventDefinition !== undefined;
-      const flowNodeIsSignalEndEvent = this.endEvent.signalEventDefinition !== undefined;
+      const flowNodeIsTerminateEndEvent = this.endEvent.terminateEventDefinition != undefined;
+      const flowNodeIsErrorEndEvent = this.endEvent.errorEventDefinition != undefined;
+      const flowNodeIsMessageEndEvent = this.endEvent.messageEventDefinition != undefined;
+      const flowNodeIsSignalEndEvent = this.endEvent.signalEventDefinition != undefined;
 
       try {
         const claimCheckNeeded = flowNodeIsMessageEndEvent || flowNodeIsSignalEndEvent;
@@ -152,9 +152,7 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
   private getFinalTokenPayloadFromInputValues(token: ProcessToken, processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
 
     try {
-      const eventUsesDefaultPayload = this.endEvent.inputValues === undefined;
-
-      if (eventUsesDefaultPayload) {
+      if (this.endEvent.inputValues == undefined) {
         return token.payload;
       }
 

@@ -49,27 +49,25 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const matchingCatchEvents = processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
-    const matchingCatchEvent = await this.getMatchingCatchEvent(token, matchingCatchEvents);
+    const matchingCatchEvent = await this.getMatchingCatchEvent(token, processModelFacade);
 
-    // LinkEvents basically work like SequenceFlows, in that they do nothing but direct
-    // the ProcessInstance to another FlowNode.
-    // So we can just return the retrieved CatchEvent as a next FlowNode and exit.
     processTokenFacade.addResultForFlowNode(this.linkThrowEventModel.id, this.flowNodeInstanceId, {});
 
-    this.sendIntermediateThrowEventTriggeredNotification(token);
-
     await this.persistOnExit(token);
+
+    this.sendIntermediateThrowEventTriggeredNotification(token);
 
     return [matchingCatchEvent];
   }
 
   private async getMatchingCatchEvent(
     token: ProcessToken,
-    events: Array<Model.Events.IntermediateCatchEvent>,
+    processModelFacade: IProcessModelFacade,
   ): Promise<Model.Events.IntermediateCatchEvent> {
 
-    const noMatchingLinkCatchEventExists = !events || events.length === 0;
+    const matchingCatchEvents = processModelFacade.getLinkCatchEventsByLinkName(this.linkThrowEventModel.linkEventDefinition.name);
+
+    const noMatchingLinkCatchEventExists = !(matchingCatchEvents?.length > 0);
     if (noMatchingLinkCatchEventExists) {
       const errorMessage = `No IntermediateCatchEvent with a link called '${this.linkThrowEventModel.linkEventDefinition.name}' exists!`;
       this.logger.error(errorMessage);
@@ -80,9 +78,8 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
       throw notFoundError;
     }
 
-    // By BPMN Specs, all IntermediateLinkCatchEvents must have unique link names.
-    // So if multiple links with the same name exist, it constitutes an invalid process model.
-    const tooManyMatchingLinkCatchEvents = events.length > 1;
+    // By BPMN Specs, each IntermediateLinkCatchEvent must use a unique link name.
+    const tooManyMatchingLinkCatchEvents = matchingCatchEvents.length > 1;
     if (tooManyMatchingLinkCatchEvents) {
       const errorMessage = `Too many CatchEvents for link '${this.linkThrowEventModel.linkEventDefinition.name}' exist!`;
       this.logger.error(errorMessage);
@@ -93,7 +90,7 @@ export class IntermediateLinkThrowEventHandler extends EventHandler<Model.Events
       throw notFoundError;
     }
 
-    return events[0];
+    return matchingCatchEvents[0];
   }
 
 }

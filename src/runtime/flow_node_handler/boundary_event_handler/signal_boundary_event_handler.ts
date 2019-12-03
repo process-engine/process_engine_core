@@ -26,7 +26,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id);
-    if (laneContainingCurrentFlowNode !== undefined) {
+    if (laneContainingCurrentFlowNode != undefined) {
       token.currentLane = laneContainingCurrentFlowNode.name;
     }
     await this.persistOnEnter(token);
@@ -34,7 +34,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     const signalBoundaryEventName = eventAggregatorSettings.messagePaths.signalEventReached
       .replace(eventAggregatorSettings.messageParams.signalReference, this.boundaryEventModel.signalEventDefinition.name);
 
-    const messageReceivedCallback = async (signal: SignalEventReachedMessage): Promise<void> => {
+    const signalReceivedCallback = async (signal: SignalEventReachedMessage): Promise<void> => {
 
       const nextFlowNode = this.getNextFlowNode(processModelFacade);
 
@@ -50,7 +50,11 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
       return onTriggeredCallback(eventData);
     };
 
-    this.subscription = this.eventAggregator.subscribeOnce(signalBoundaryEventName, messageReceivedCallback);
+    // An interrupting BoundaryEvent can only be triggered once.
+    // A non-interrupting BoundaryEvent can be triggerred repeatedly.
+    this.subscription = this.boundaryEventModel.cancelActivity
+      ? this.eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback)
+      : this.eventAggregator.subscribe(signalBoundaryEventName, signalReceivedCallback);
   }
 
   public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {

@@ -175,8 +175,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       throw new BadRequestError('The process model is not executable!');
     }
 
-    const startEventParameterGiven = startEventId !== undefined;
-    if (startEventParameterGiven) {
+    if (startEventId != undefined) {
       const hasNoMatchingStartEvent = !processModel.flowNodes.some((flowNode: Model.Base.FlowNode): boolean => {
         return flowNode.id === startEventId;
       });
@@ -208,21 +207,14 @@ export class ExecuteProcessService implements IExecuteProcessService {
     const processModelFacade = new ProcessModelFacade(processModel);
     const startEvents = processModelFacade.getStartEvents();
 
-    const multipleStartEventsDefined = startEvents.length > 1;
-    if (multipleStartEventsDefined) {
-      const startEventIds = startEvents.map((currentStartEvent: Model.Events.StartEvent): string => {
-        return currentStartEvent.id;
-      });
+    if (startEvents.length > 1) {
+      const startEventIds = startEvents.map((currentStartEvent: Model.Events.StartEvent): string => currentStartEvent.id);
 
-      const errorMessage = 'The Process Model contains multiple StartEvents, but no initial StartEvent was defined.';
-      const badRequestError = new BadRequestError(errorMessage);
-
-      const additionalInfos = {
+      const badRequestError = new BadRequestError('The Process Model contains multiple StartEvents, but no initial StartEvent was defined.');
+      badRequestError.additionalInformation = {
         message: 'The ProcessModel contains the following StartEvent',
         startEventIds: startEventIds,
       };
-
-      badRequestError.additionalInformation = additionalInfos as any;
 
       throw badRequestError;
     }
@@ -261,9 +253,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     const processModelFacade = new ProcessModelFacade(processModel);
 
-    const startEventIdSpecified = startEventId !== undefined;
-
-    const startEvent = startEventIdSpecified
+    const startEvent = startEventId != undefined
       ? processModelFacade.getStartEventById(startEventId)
       : processModelFacade.getSingleStartEvent();
 
@@ -273,13 +263,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
       correlationId = uuid.v4();
     }
 
-    if (payload === undefined) {
-      payload = {};
-    }
-
     const processTokenFacade = new ProcessTokenFacade(processInstanceId, processModel.id, correlationId, identity);
 
-    const processToken = processTokenFacade.createProcessToken(payload);
+    const processToken = processTokenFacade.createProcessToken(payload ?? {});
     processToken.caller = caller;
 
     const processInstanceConfig = {
@@ -312,7 +298,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
       this.eventAggregator.subscribeOnce(terminateEvent, async (message): Promise<void> => {
         await this.processInstanceStateHandlingFacade.terminateSubprocesses(identity, processInstanceConfig.processInstanceId);
 
-        const processWasTerminatedByUser = message && message.terminatedBy;
+        const processWasTerminatedByUser = message?.terminatedBy;
 
         const errorMsg = processWasTerminatedByUser
           ? `Process was terminated by user ${message.terminatedBy.userId}!`
@@ -340,7 +326,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         identity,
       );
 
-      const allResults = await processInstanceConfig.processTokenFacade.getAllResults();
+      const allResults = processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken = allResults.pop();
 
       await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(identity, processInstanceConfig, resultToken);

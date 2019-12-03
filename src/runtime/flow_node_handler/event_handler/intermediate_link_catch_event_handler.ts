@@ -36,10 +36,10 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.sendIntermediateCatchEventReachedNotification(token);
-
     this.logger.verbose(`Executing LinkCatchEvent instance ${this.flowNodeInstanceId}.`);
+
     await this.persistOnEnter(token);
+    this.sendIntermediateCatchEventReachedNotification(token);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
@@ -52,10 +52,9 @@ export class IntermediateLinkCatchEventHandler extends EventHandler<Model.Events
 
     // This type of FlowNode works pretty much like a regular StartEvent, except that it is called mid-process.
     processTokenFacade.addResultForFlowNode(this.linkCatchEventModel.id, this.flowNodeInstanceId, {});
+    await this.persistOnExit(token);
 
     this.sendIntermediateCatchEventFinishedNotification(token);
-
-    await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.linkCatchEventModel);
   }

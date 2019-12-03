@@ -1,6 +1,6 @@
 import {Logger} from 'loggerhythm';
 
-import {BadRequestError, UnprocessableEntityError} from '@essential-projects/errors_ts';
+import {BadRequestError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -72,20 +72,6 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const gatewayTypeIsNotSupported =
-      this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
-      this.exclusiveGateway.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
-
-    if (gatewayTypeIsNotSupported) {
-      const unsupportedErrorMessage =
-        `ExclusiveGateway ${this.exclusiveGateway.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
-      const unsupportedError = new UnprocessableEntityError(unsupportedErrorMessage);
-
-      this.persistOnError(token, unsupportedError);
-
-      throw unsupportedError;
-    }
-
     processTokenFacade.addResultForFlowNode(this.exclusiveGateway.id, this.flowNodeInstanceId, token.payload);
 
     const outgoingSequenceFlows = processModelFacade.getOutgoingSequenceFlowsFor(this.exclusiveGateway.id);
@@ -120,12 +106,11 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
 
     const truthySequenceFlows = await this.getSequenceFlowsWithMatchingCondition(sequenceFlows, processTokenFacade);
 
-    const noTruthySequenceFlowsExist = truthySequenceFlows.length === 0;
-    if (noTruthySequenceFlowsExist) {
+    if (truthySequenceFlows.length === 0) {
 
       // if no SequenceFlows have a truthy condition, but a default Sequence Flow is defined,
       // return the targetRef of that SequenceFlow.
-      const gatewayHasDefaultSequenceFlow = this.exclusiveGateway.defaultOutgoingSequenceFlowId !== undefined;
+      const gatewayHasDefaultSequenceFlow = this.exclusiveGateway.defaultOutgoingSequenceFlowId != undefined;
       if (gatewayHasDefaultSequenceFlow) {
 
         const defaultSequenceFlow = sequenceFlows.find((flow: Model.ProcessElements.SequenceFlow): boolean => {
@@ -144,8 +129,7 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
       throw noSequenceFlowFoundError;
     }
 
-    const tooManyTruthySequenceFlowsExist = truthySequenceFlows.length > 1;
-    if (tooManyTruthySequenceFlowsExist) {
+    if (truthySequenceFlows.length > 1) {
 
       const tooManySequenceFlowsError =
         new BadRequestError(`More than one outgoing SequenceFlow for ExclusiveGateway ${this.exclusiveGateway.id} had a truthy condition!`);
@@ -172,7 +156,7 @@ export class ExclusiveGatewayHandler extends GatewayHandler<Model.Gateways.Exclu
       // Thus, it must not be included with the condition evaluations.
       const sequenceFlowIsDefaultFlow = sequenceFlow.id === this.exclusiveGateway.defaultOutgoingSequenceFlowId;
 
-      const sequenceFlowHasNoCondition = sequenceFlow.conditionExpression === undefined;
+      const sequenceFlowHasNoCondition = sequenceFlow.conditionExpression == undefined;
 
       if (sequenceFlowHasNoCondition || sequenceFlowIsDefaultFlow) {
         continue;

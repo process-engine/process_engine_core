@@ -5,18 +5,16 @@ import {createActivityInstance} from './activity_factory';
 
 export function parseManualTasks(processData: any): Array<Model.Activities.ManualTask> {
 
-  const manualTasks: Array<Model.Activities.ManualTask> = [];
-
   const manualTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ManualTask);
 
-  if (!manualTasksRaw || manualTasksRaw.length === 0) {
+  const noManualTasksFound = !(manualTasksRaw?.length > 0);
+  if (noManualTasksFound) {
     return [];
   }
 
-  for (const manualTaskRaw of manualTasksRaw) {
-    const manualTask = createActivityInstance(manualTaskRaw, Model.Activities.ManualTask);
-    manualTasks.push(manualTask);
-  }
+  const manualTasks = manualTasksRaw.map((manualTaskRaw): Model.Activities.ManualTask => {
+    return createActivityInstance(manualTaskRaw, Model.Activities.ManualTask);
+  });
 
   return manualTasks;
 }

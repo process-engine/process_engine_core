@@ -48,7 +48,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
       const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
-      if (laneContainingCurrentFlowNode !== undefined) {
+      if (laneContainingCurrentFlowNode != undefined) {
         token.currentLane = laneContainingCurrentFlowNode.name;
       }
 
@@ -57,7 +57,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
@@ -115,7 +115,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
         const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const currentResult = processTokenFacade
@@ -189,7 +189,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       case FlowNodeInstanceState.running:
         const resumeToken = flowNodeInstance.getTokenByType(ProcessTokenType.onResume);
 
-        const notSuspendedYet = resumeToken === undefined;
+        const notSuspendedYet = resumeToken == undefined;
         if (notSuspendedYet) {
           this.logger.verbose('FlowNodeInstance was interrupted at the beginning. Resuming from the start.');
           const onEnterToken = flowNodeInstance.getTokenByType(ProcessTokenType.onEnter);

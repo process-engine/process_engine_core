@@ -1,39 +1,33 @@
-import {BpmnTags, IParsedObjectModel, Model} from '@process-engine/persistence_api.contracts';
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../type_factory';
+import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
-export function parseCollaboration(parsedObjectModel: IParsedObjectModel): Model.Collaboration {
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type_factory';
 
-  const collaborationData = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
+export function parseCollaboration(parsedObjectModel: object): Model.Collaboration {
 
-  const collaboration = createObjectWithCommonProperties(collaborationData, Model.Collaboration);
+  const collaborationRaw = parsedObjectModel[BpmnTags.CommonElement.Collaboration];
 
-  collaboration.name = collaborationData.name;
+  const collaboration = createObjectWithCommonProperties(collaborationRaw, Model.Collaboration);
 
-  collaboration.participants = getCollaborationParticipants(collaborationData);
+  collaboration.name = collaborationRaw.name;
+  collaboration.participants = getCollaborationParticipants(collaborationRaw);
 
   return collaboration;
 }
 
-function getCollaborationParticipants(collaborationData: any): Array<Model.Participant> {
+function getCollaborationParticipants(collaborationData: object): Array<Model.Participant> {
 
-  // NOTE: Depending on how the 'bpmn:participant' tag has been formatted and the number of stored participants,
-  // this can be either an Array or an Object. For easy usability, we'll always convert this to an Array, since this
-  // is what our object model expects.
-  const participantData = getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
+  const participantsRaw = getModelPropertyAsArray(collaborationData, BpmnTags.CommonElement.Participant);
 
-  const convertedParticipants: Array<Model.Participant> = [];
+  const participants: Array<Model.Participant> = [];
 
-  for (const participantRaw of participantData) {
+  for (const participantRaw of participantsRaw) {
     const participant = createObjectWithCommonProperties(participantRaw, Model.Participant);
 
     participant.name = participantRaw.name;
     participant.processReference = participantRaw.processRef;
 
-    convertedParticipants.push(participant);
+    participants.push(participant);
   }
 
-  return convertedParticipants;
+  return participants;
 }

@@ -1,12 +1,10 @@
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
-import {
-  createObjectWithCommonProperties,
-  getModelPropertyAsArray,
-} from '../type_factory';
+
+import {createObjectWithCommonProperties, getModelPropertyAsArray} from '../type_factory';
 
 export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
-  const laneSetData = data[BpmnTags.Lane.LaneSet] || data[BpmnTags.LaneProperty.ChildLaneSet];
+  const laneSetData = data[BpmnTags.Lane.LaneSet] ?? data[BpmnTags.LaneProperty.ChildLaneSet];
 
   if (!laneSetData) {
     return undefined;
@@ -26,19 +24,14 @@ export function parseProcessLaneSet(data: any): Model.ProcessElements.LaneSet {
 
     lane.name = laneRaw.name;
 
-    const flowNodeReferenceTrimmer = (reference: string): string => {
-      return reference.trim();
-    };
-
     const flowNodeReferences = getModelPropertyAsArray(laneRaw, BpmnTags.LaneProperty.FlowNodeRef);
 
-    const laneHasNoFlowNodes = flowNodeReferences === undefined || flowNodeReferences.length === 0;
+    const laneHasNoFlowNodes = !(flowNodeReferences?.length > 0);
     if (laneHasNoFlowNodes) {
       return laneSet;
     }
 
-    const trimmedFlowNodeReferences = flowNodeReferences.map(flowNodeReferenceTrimmer);
-    lane.flowNodeReferences = trimmedFlowNodeReferences;
+    lane.flowNodeReferences = flowNodeReferences.map((reference: string): string => reference.trim());
 
     if (laneRaw[BpmnTags.LaneProperty.ChildLaneSet]) {
       lane.childLaneSet = parseProcessLaneSet(laneRaw);

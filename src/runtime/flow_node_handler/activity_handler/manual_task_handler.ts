@@ -7,7 +7,6 @@ import {FlowNodeInstance, Model, ProcessToken} from '@process-engine/persistence
 import {
   ActivityFinishedMessage,
   ActivityReachedMessage,
-  FinishManualTaskMessage,
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -58,21 +57,17 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive = this.manualTaskSubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.manualTaskSubscription);
-        }
+        this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
-      const manualTaskResult = await this.suspendAndWaitForManualTaskResult(identity, token);
-      token.payload = manualTaskResult;
+      await this.suspendAndWaitForManualTaskResult(identity, token);
+      token.payload = {};
+
+      this.logger.verbose(`Resuming ManualTask instance ${this.flowNodeInstanceId}.`);
 
       await this.persistOnResume(token);
-
-      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
+      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
 
       this.publishManualTaskFinishedNotification(identity, token);
@@ -96,26 +91,22 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (): void => {
-        const subscriptionIsActive = this.manualTaskSubscription !== undefined;
-        if (subscriptionIsActive) {
-          this.eventAggregator.unsubscribe(this.manualTaskSubscription);
-        }
+        this.eventAggregator.unsubscribe(this.manualTaskSubscription);
         handlerPromise.cancel();
-
-        return undefined;
       };
 
-      const waitForMessagePromise = await this.waitForManualTaskResult(identity, onSuspendToken);
+      const waitForMessagePromise = this.waitForManualTaskResult(identity, onSuspendToken);
 
       this.publishManualTaskReachedNotification(identity, onSuspendToken);
 
-      const manualTaskResult = await waitForMessagePromise;
+      await waitForMessagePromise;
+      this.logger.verbose(`Resuming ManualTask instance ${this.flowNodeInstanceId}.`);
 
-      onSuspendToken.payload = manualTaskResult;
+      onSuspendToken.payload = {};
 
       await this.persistOnResume(onSuspendToken);
 
-      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, manualTaskResult);
+      processTokenFacade.addResultForFlowNode(this.manualTask.id, this.flowNodeInstanceId, onSuspendToken.payload);
       await this.persistOnExit(onSuspendToken);
 
       this.publishManualTaskFinishedNotification(identity, onSuspendToken);
@@ -159,18 +150,9 @@ export class ManualTaskHandler extends ActivityHandler<Model.Activities.ManualTa
    * @returns        The recevied ManualTask result.
    */
   private waitForManualTaskResult(identity: IIdentity, token: ProcessToken): Promise<any> {
-
-    return new Promise<any>(async (resolve: Function): Promise<void> => {
-
+    return new Promise<any>(async (resolve): Promise<void> => {
       const finishManualTaskEvent = this.getFinishManualTaskEventName(token.correlationId, token.processInstanceId);
-
-      this.manualTaskSubscription =
-        this.eventAggregator.subscribeOnce(finishManualTaskEvent, (message: FinishManualTaskMessage): void => {
-          // An empty object is used, because ManualTasks do not yield results.
-          const manualTaskResult = {};
-
-          resolve(manualTaskResult);
-        });
+      this.manualTaskSubscription = this.eventAggregator.subscribeOnce(finishManualTaskEvent, resolve);
     });
   }
 

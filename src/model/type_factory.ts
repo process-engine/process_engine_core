@@ -1,4 +1,5 @@
 import {UnprocessableEntityError} from '@essential-projects/errors_ts';
+
 import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 /**
@@ -60,13 +61,11 @@ export function createObjectWithCommonProperties<TTargetType extends Model.Base.
 export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.Base.BaseElement): Model.Base.BaseElement {
 
   if (!rawData.id) {
-    const additionalInfo = {
+    const error = new UnprocessableEntityError('The given element has no ID!');
+    error.additionalInformation = {
       rawDataToParse: rawData,
       elementInstance: instance,
     };
-    const error = new UnprocessableEntityError('The given element has no ID!');
-    error.additionalInformation = additionalInfo as any;
-
     throw error;
   }
 
@@ -76,24 +75,17 @@ export function setCommonObjectPropertiesFromData(rawData: any, instance: Model.
     instance.documentation = [rawData[BpmnTags.FlowElementProperty.Documentation]];
   }
 
+  instance.extensionElements = new Model.Base.Types.ExtensionElements();
+
   if (rawData[BpmnTags.FlowElementProperty.ExtensionElements]) {
-
     const extensionData = rawData[BpmnTags.FlowElementProperty.ExtensionElements];
-
-    instance.extensionElements = new Model.Base.Types.ExtensionElements();
     instance.extensionElements.camundaExecutionListener = extensionData[BpmnTags.CamundaProperty.ExecutionListener];
 
-    // NOTE: The extension property collection is wrapped in a property named "camunda:property",
-    // which in turn is located in "camunda:properties".
-    let camundaProperties = extensionData[BpmnTags.CamundaProperty.Properties];
+    // NOTE: The extension property collection is wrapped in a property named "camunda:property", which in turn is located in "camunda:properties".
+    const camundaProperties = filterOutEmptyProperties(extensionData[BpmnTags.CamundaProperty.Properties]);
 
-    camundaProperties = filterOutEmptyProperties(camundaProperties);
-
-    if (camundaProperties !== undefined) {
-
-      // This covers all properties defined in the Extensions-Panel (mapper, module/method/param, etc).
-      instance.extensionElements.camundaExtensionProperties =
-        getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
+    if (camundaProperties != undefined) {
+      instance.extensionElements.camundaExtensionProperties = getModelPropertyAsArray(camundaProperties, BpmnTags.CamundaProperty.Property);
     }
   }
 
@@ -115,15 +107,12 @@ function filterOutEmptyProperties(camundaProperties: any): any {
 
   // Filter out strings etc, because these are not valid for the 'camunda:properties' tag.
   if (!Array.isArray(camundaProperties)) {
-    return typeof camundaProperties === 'object'
-      ? camundaProperties
-      : undefined;
+    return typeof camundaProperties === 'object' ? camundaProperties : undefined;
   }
 
   const filteredProperties = camundaProperties.filter((property: any): boolean => {
-    const propertyIsEmpty = property === null || property === undefined;
 
-    if (propertyIsEmpty) {
+    if (property == undefined) {
       return false;
     }
 
@@ -148,7 +137,7 @@ function filterOutEmptyProperties(camundaProperties: any): any {
     const error = new UnprocessableEntityError('The XML contains more than one camunda:properties collection! This is not allowed!');
     error.additionalInformation = {
       propertyCollection: filteredProperties,
-    } as any;
+    };
 
     throw error;
   }

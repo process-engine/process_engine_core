@@ -48,12 +48,10 @@ export class IntermediateEmptyEventHandler extends EventHandler<Model.Events.Int
     processModelFacade: IProcessModelFacade,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    // This type of FlowNode works pretty much like a regular StartEvent, except that it is called mid-process.
     processTokenFacade.addResultForFlowNode(this.emptyEventModel.id, this.flowNodeInstanceId, token.payload);
+    await this.persistOnExit(token);
 
     this.sendIntermediateThrowEventTriggeredNotification(token);
-
-    await this.persistOnExit(token);
 
     return processModelFacade.getNextFlowNodesFor(this.emptyEventModel);
   }

@@ -86,9 +86,8 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
 
       processTokenFacade.addResultForFlowNode(this.signalThrowEvent.id, this.flowNodeInstanceId, {});
 
-      this.sendIntermediateThrowEventTriggeredNotification(token);
-
       await this.persistOnExit(token);
+      this.sendIntermediateThrowEventTriggeredNotification(token);
 
       return processModelFacade.getNextFlowNodesFor(this.signalThrowEvent);
     } catch (error) {
@@ -129,8 +128,7 @@ export class IntermediateSignalThrowEventHandler extends EventHandler<Model.Even
   private getTokenPayloadFromInputValues(token: ProcessToken, processTokenFacade: IProcessTokenFacade, identity: IIdentity): any {
 
     try {
-      const eventUsesDefaultPayload = this.signalThrowEvent.inputValues === undefined;
-      if (eventUsesDefaultPayload) {
+      if (this.signalThrowEvent.inputValues == undefined) {
         return token.payload;
       }
 

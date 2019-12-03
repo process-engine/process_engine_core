@@ -40,10 +40,9 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    this.sendIntermediateCatchEventReachedNotification(token);
-
     this.logger.verbose(`Executing SignalCatchEvent instance ${this.flowNodeInstanceId}.`);
     await this.persistOnEnter(token);
+    this.sendIntermediateCatchEventReachedNotification(token);
 
     return this.executeHandler(token, processTokenFacade, processModelFacade);
   }
@@ -57,16 +56,9 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-        if (this.subscription) {
-          this.eventAggregator.unsubscribe(this.subscription);
-        }
-
+        this.eventAggregator.unsubscribe(this.subscription);
         processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
-
         handlerPromise.cancel();
-
-        return undefined;
       };
 
       const receivedMessage = await this.suspendAndWaitForSignal(token);
@@ -97,16 +89,9 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
     const handlerPromise = new Promise<any>(async (resolve: Function, reject: Function): Promise<void> => {
 
       this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-        if (this.subscription) {
-          this.eventAggregator.unsubscribe(this.subscription);
-        }
-
+        this.eventAggregator.unsubscribe(this.subscription);
         processTokenFacade.addResultForFlowNode(this.signalCatchEvent.id, this.flowNodeInstanceId, interruptionToken);
-
         handlerPromise.cancel();
-
-        return undefined;
       };
 
       const receivedMessage = await this.waitForSignal();
@@ -139,16 +124,15 @@ export class IntermediateSignalCatchEventHandler extends EventHandler<Model.Even
       const signalEventName = eventAggregatorSettings.messagePaths.signalEventReached
         .replace(eventAggregatorSettings.messageParams.signalReference, this.signalCatchEvent.signalEventDefinition.name);
 
-      this.subscription =
-        this.eventAggregator.subscribeOnce(signalEventName, (signal: SignalEventReachedMessage): void => {
-          this.logger.verbose(
-            `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
-            signal,
-            'Resuming execution.',
-          );
+      this.subscription = this.eventAggregator.subscribeOnce(signalEventName, (signal: SignalEventReachedMessage): void => {
+        this.logger.verbose(
+          `SignalCatchEvent instance ${this.flowNodeInstanceId} received signal ${signalEventName}:`,
+          signal,
+          'Resuming execution.',
+        );
 
-          return resolve(signal);
-        });
+        return resolve(signal);
+      });
       this.logger.verbose(`SignalCatchEvent instance ${this.flowNodeInstanceId} waiting for signal ${signalEventName}.`);
     });
   }

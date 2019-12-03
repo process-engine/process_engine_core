@@ -100,9 +100,7 @@ export class ProcessInstanceStateHandlingFacade {
 
     const {correlationId, processInstanceId, processModelId} = processInstanceConfig;
 
-    const identityToUse = error.additionalInformation && error.additionalInformation.terminatedBy
-      ? error.additionalInformation.terminatedBy
-      : identity;
+    const identityToUse = error.additionalInformation?.terminatedBy ?? identity;
 
     await this
       .correlationService
@@ -190,7 +188,7 @@ export class ProcessInstanceStateHandlingFacade {
     const processInstances =
       await this.correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
 
-    const noSubprocessesFound = !processInstances || processInstances.length === 0;
+    const noSubprocessesFound = !(processInstances?.length > 0);
     if (noSubprocessesFound) {
       return;
     }

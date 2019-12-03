@@ -2,24 +2,25 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
-import {getValueFromExtensionProperty} from './extension_property_parser';
+import {findExtensionPropertyByName} from './extension_property_parser';
 
 export function parseCallActivities(processData: any): Array<Model.Activities.CallActivity> {
 
-  const callActivities: Array<Model.Activities.CallActivity> = [];
-
   const callActivitiesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.CallActivity);
 
-  if (!callActivitiesRaw || callActivitiesRaw.length === 0) {
+  const noCallActivitiesFound = !(callActivitiesRaw?.length > 0);
+  if (noCallActivitiesFound) {
     return [];
   }
+
+  const callActivities: Array<Model.Activities.CallActivity> = [];
 
   for (const callActivityRaw of callActivitiesRaw) {
     let callActivity = createActivityInstance(callActivityRaw, Model.Activities.CallActivity);
 
     if (callActivityRaw.calledElement) {
-      callActivity.startEventId = getStartEventId(callActivityRaw);
-      callActivity.payload = getPayload(callActivityRaw);
+      setStartEventId(callActivity);
+      setPayload(callActivity);
       callActivity.calledReference = callActivityRaw.calledElement;
       // NOTE: There is also a CMMN type, which is not supported yet.
       callActivity.type = Model.Activities.CallActivityType.BPMN;
@@ -39,12 +40,12 @@ export function parseCallActivities(processData: any): Array<Model.Activities.Ca
   return callActivities;
 }
 
-function getStartEventId(rawData: any): string {
-  return getValueFromExtensionProperty('startEventId', rawData);
+function setStartEventId(callActivity: Model.Activities.CallActivity): void {
+  callActivity.startEventId = findExtensionPropertyByName('startEventId', callActivity.extensionElements.camundaExtensionProperties)?.value;
 }
 
-function getPayload(rawData: any): string {
-  return getValueFromExtensionProperty('payload', rawData);
+function setPayload(callActivity: Model.Activities.CallActivity): void {
+  callActivity.payload = findExtensionPropertyByName('payload', callActivity.extensionElements.camundaExtensionProperties)?.value;
 }
 
 function determineCallActivityMappingType(callActivity: Model.Activities.CallActivity, data: any): Model.Activities.CallActivity {

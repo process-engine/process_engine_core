@@ -5,24 +5,22 @@ import {createActivityInstance} from './activity_factory';
 
 export function parseScriptTasks(processData: any): Array<Model.Activities.ScriptTask> {
 
-  const scriptTasks: Array<Model.Activities.ScriptTask> = [];
-
   const scriptTasksRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.ScriptTask);
 
-  const noScriptTasksFound = !scriptTasksRaw || scriptTasksRaw.length === 0;
+  const noScriptTasksFound = !(scriptTasksRaw?.length > 0);
   if (noScriptTasksFound) {
     return [];
   }
 
-  for (const scriptTaskRaw of scriptTasksRaw) {
+  const scriptTasks = scriptTasksRaw.map((scriptTaskRaw: any): Model.Activities.ScriptTask => {
     const scriptTask = createActivityInstance(scriptTaskRaw, Model.Activities.ScriptTask);
 
     scriptTask.scriptFormat = scriptTaskRaw.scriptFormat;
     scriptTask.script = scriptTaskRaw[BpmnTags.FlowElementProperty.BpmnScript];
     scriptTask.resultVariable = scriptTaskRaw[BpmnTags.CamundaProperty.ResultVariable];
 
-    scriptTasks.push(scriptTask);
-  }
+    return scriptTask;
+  });
 
   return scriptTasks;
 }

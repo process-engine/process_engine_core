@@ -125,7 +125,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
       return sequenceFlow.targetRef === flowNode.id;
     });
 
-    const flowhasNoSource = !sequenceFlows || sequenceFlows.length === 0;
+    const flowhasNoSource = !(sequenceFlows?.length > 0);
     if (flowhasNoSource) {
       return undefined;
     }
@@ -138,8 +138,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
         .find((currentFlowNode: Model.Base.FlowNode): boolean => currentFlowNode.id === currentSequenceFlow.sourceRef);
 
       // If the sourceNode happens to be a BoundaryEvent, return the Node that the BoundaryEvent is attached to.
-      const sourceNodeIsBoundaryEvent = sourceNode.bpmnType === BpmnType.boundaryEvent;
-      if (sourceNodeIsBoundaryEvent) {
+      if (sourceNode.bpmnType === BpmnType.boundaryEvent) {
         return this.subProcessDefinition.flowNodes.find((currentFlowNode: Model.Base.FlowNode): boolean => {
           return currentFlowNode.id === (sourceNode as Model.Events.BoundaryEvent).attachedToRef;
         });
@@ -158,7 +157,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
       return sequenceFlow.sourceRef === flowNode.id;
     });
 
-    const flowhasNoTarget = !sequenceFlows || sequenceFlows.length === 0;
+    const flowhasNoTarget = !(sequenceFlows?.length > 0);
     if (flowhasNoTarget) {
       return undefined;
     }
@@ -210,7 +209,7 @@ export class SubProcessModelFacade extends ProcessModelFacade {
 
       const isNoIntermediateLinkCatchEvent =
         !(flowNode instanceof Model.Events.IntermediateCatchEvent) ||
-        flowNodeAsCatchEvent.linkEventDefinition === undefined;
+        flowNodeAsCatchEvent.linkEventDefinition == undefined;
 
       if (isNoIntermediateLinkCatchEvent) {
         return false;

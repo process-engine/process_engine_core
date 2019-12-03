@@ -13,24 +13,22 @@ export function parseSubProcesses(
   eventDefinitions: Array<Model.Events.Definitions.EventDefinition>,
 ): Array<Model.Activities.SubProcess> {
 
-  const subProcesses: Array<Model.Activities.SubProcess> = [];
-
   const subProcessesRaw = getModelPropertyAsArray(processData, BpmnTags.TaskElement.SubProcess);
 
-  const noSubProcessesFound = !subProcessesRaw || subProcessesRaw.length === 0;
+  const noSubProcessesFound = !(subProcessesRaw?.length > 0);
   if (noSubProcessesFound) {
     return [];
   }
 
-  for (const subProcessRaw of subProcessesRaw) {
-    const subProcess = createActivityInstance(subProcessRaw, Model.Activities.SubProcess);
+  const subProcesses: Array<Model.Activities.SubProcess> = subProcessesRaw.map((subprocessRaw) => {
+    const subProcess = createActivityInstance(subprocessRaw, Model.Activities.SubProcess);
 
-    subProcess.laneSet = parseProcessLaneSet(subProcessRaw);
-    subProcess.flowNodes = parseProcessFlowNodes(subProcessRaw, errors, eventDefinitions);
-    subProcess.sequenceFlows = parseProcessSequenceFlows(subProcessRaw);
+    subProcess.laneSet = parseProcessLaneSet(subprocessRaw);
+    subProcess.flowNodes = parseProcessFlowNodes(subprocessRaw, errors, eventDefinitions);
+    subProcess.sequenceFlows = parseProcessSequenceFlows(subprocessRaw);
 
-    subProcesses.push(subProcess);
-  }
+    return subProcess;
+  });
 
   return subProcesses;
 }

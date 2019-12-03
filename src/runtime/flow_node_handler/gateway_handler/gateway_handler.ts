@@ -1,4 +1,4 @@
-import {InternalServerError} from '@essential-projects/errors_ts';
+import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -15,7 +15,7 @@ import {
 
 import {FlowNodeHandler} from '../flow_node_handler';
 
-export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> {
+export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> extends FlowNodeHandler<TFlowNode> {
 
   public async execute(
     token: ProcessToken,
@@ -26,11 +26,26 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
   ): Promise<void> {
 
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
+
+      const gatewayTypeIsNotSupported =
+        this.flowNode.gatewayDirection === Model.Gateways.GatewayDirection.Unspecified ||
+        this.flowNode.gatewayDirection === Model.Gateways.GatewayDirection.Mixed;
+
+      if (gatewayTypeIsNotSupported) {
+        const unsupportedErrorMessage = `Gateway ${this.flowNode.id} is neither a Split- nor a Join-Gateway! Mixed Gateways are NOT supported!`;
+        const unsupportedError = new UnprocessableEntityError(unsupportedErrorMessage);
+
+        this.logger.error(unsupportedErrorMessage);
+        this.persistOnError(token, unsupportedError);
+
+        return reject(unsupportedError);
+      }
+
       this.previousFlowNodeInstanceId = previousFlowNodeInstanceId;
       token.flowNodeInstanceId = this.flowNodeInstanceId;
 
       const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.flowNode.id);
-      if (laneContainingCurrentFlowNode !== undefined) {
+      if (laneContainingCurrentFlowNode != undefined) {
         token.currentLane = laneContainingCurrentFlowNode.name;
       }
 
@@ -41,7 +56,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const nextFlowNodeExecutionPromises: Array<Promise<void>> = [];
@@ -102,7 +117,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Base.FlowNode> exte
         const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
-        const processIsNotYetFinished = nextFlowNodes && nextFlowNodes.length > 0;
+        const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
 
           const currentResult = processTokenFacade

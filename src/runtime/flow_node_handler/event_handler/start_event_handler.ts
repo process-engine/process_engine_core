@@ -61,13 +61,8 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
       try {
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-          if (this.timerSubscription) {
-            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
-          }
-
+          this.timerFacade.cancelTimerSubscription(this.timerSubscription);
           processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, interruptionToken);
-
           handlerPromise.cancel();
         };
 
@@ -105,19 +100,14 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
       try {
         this.onInterruptedCallback = (interruptionToken: ProcessToken): void => {
-
-          if (this.timerSubscription) {
-            this.timerFacade.cancelTimerSubscription(this.timerSubscription);
-          }
-
+          this.timerFacade.cancelTimerSubscription(this.timerSubscription);
           processTokenFacade.addResultForFlowNode(this.startEvent.id, this.flowNodeInstanceId, interruptionToken);
-
           handlerPromise.cancel();
         };
 
         this.sendProcessStartedMessage(identity, token, this.startEvent.id);
 
-        const flowNodeIsTimerStartEvent = this.startEvent.timerEventDefinition !== undefined;
+        const flowNodeIsTimerStartEvent = this.startEvent.timerEventDefinition != undefined;
 
         // Cyclic TimerStartEvents are started automatically through the Cronjob Service.
         // All other Timer types are started through this handler, since they cannot be automatically scheduled.
@@ -184,10 +174,7 @@ export class StartEventHandler extends EventHandler<Model.Events.StartEvent> {
 
     const timerElapsed = (): void => {
       this.logger.verbose('Timer has expired, continuing execution');
-      if (this.timerSubscription && this.timerSubscription.onlyReceiveOnce === false) {
-        this.timerFacade.cancelTimerSubscription(this.timerSubscription);
-      }
-
+      this.timerFacade.cancelTimerSubscription(this.timerSubscription);
       resolveFunc(currentToken.payload);
     };
 

@@ -82,7 +82,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       // First we need to find out if the Subprocess was already started.
       const processInstances = await this.correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
-      const noSubprocessesFound = !processInstances || processInstances.length === 0;
+      const noSubprocessesFound = !(processInstances?.length > 0);
 
       const matchingSubprocess = noSubprocessesFound
         ? undefined
@@ -92,7 +92,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       this.publishActivityReachedNotification(identity, onSuspendToken);
 
-      if (matchingSubprocess === undefined) {
+      if (matchingSubprocess == undefined) {
         // Subprocess not yet started. We need to run the handler again.
         callActivityResult = await this.executeSubprocess(identity, processTokenFacade, onSuspendToken);
       } else {
@@ -151,7 +151,6 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       token.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
       await this.persistOnResume(token);
-
       processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
       await this.persistOnExit(token);
 
@@ -202,7 +201,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     const correlationId = token.correlationId;
     const parentProcessInstanceId = token.processInstanceId;
 
-    const payload = initialPayload || {};
+    const payload = initialPayload ?? {};
 
     const processModelId = this.callActivity.calledReference;
 
@@ -227,7 +226,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
     const startEvents = processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => flowNode.bpmnType === BpmnType.startEvent);
 
-    const startEventToUse = this.callActivity.startEventId !== undefined
+    const startEventToUse = this.callActivity.startEventId != undefined
       ? startEvents.find((startEvent): boolean => startEvent.id === this.callActivity.startEventId)
       : startEvents[0];
 
@@ -235,7 +234,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       const error = new NotFoundError('The referenced ProcessModel has no matching StartEvent!');
       error.additionalInformation = {
         configuredStartEventId: this.callActivity.startEventId,
-      } as any;
+      };
 
       throw error;
     }
@@ -245,7 +244,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
   private getInitialPayload(processTokenFacade: IProcessTokenFacade, token: ProcessToken, identity: IIdentity): any {
 
-    if (this.callActivity.payload === undefined) {
+    if (this.callActivity.payload == undefined) {
       return token.payload;
     }
 
@@ -267,9 +266,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
     const callActivityToken = result.currentToken;
 
-    const tokenPayloadIsFromNestedCallActivity = callActivityToken.result !== undefined
-                                              && callActivityToken.endEventName !== undefined
-                                              && callActivityToken.endEventId !== undefined;
+    const tokenPayloadIsFromNestedCallActivity = callActivityToken.result != undefined
+                                              && callActivityToken.endEventName != undefined
+                                              && callActivityToken.endEventId != undefined;
 
     // If the token ran through a nested CallActivity, its result will already be wrapped in an object.
     // If that is the case, we need to extract the result and ignore the rest.
