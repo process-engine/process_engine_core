@@ -2,6 +2,6 @@
   "extends": "@essential-projects/eslint-config",
   "rules": {
     "@typescript-eslint/no-explicit-any": ["off"],
-    "no-null/no-null": ["off"]
+    "@typescript-eslint/no-unused-vars": ["off"]
   }
 }
