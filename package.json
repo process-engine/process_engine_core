@@ -1,6 +1,6 @@
 {
   "name": "@process-engine/process_engine_core",
-  "version": "12.13.0-alpha.4",
+  "version": "12.13.1",
   "description": "The ProcessEngine core package. ProcessEngine is a tool to bring BPMN diagrams to life in JS.",
   "license": "MIT",
   "main": "dist/commonjs/index.js",

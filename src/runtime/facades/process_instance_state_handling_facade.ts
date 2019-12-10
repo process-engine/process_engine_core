@@ -128,7 +128,7 @@ export class ProcessInstanceStateHandlingFacade {
     const instanceFinishedEventName = eventAggregatorSettings.messagePaths.processInstanceWithIdEnded
       .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
 
-    const instanceFinishedMessage = new ProcessEndedMessage(
+    const message = new ProcessEndedMessage(
       processInstanceConfig.correlationId,
       processInstanceConfig.processModelId,
       processInstanceConfig.processInstanceId,
@@ -138,7 +138,10 @@ export class ProcessInstanceStateHandlingFacade {
       resultToken.result,
     );
 
-    this.eventAggregator.publish(instanceFinishedEventName, instanceFinishedMessage);
+    // Instance specific notification
+    this.eventAggregator.publish(instanceFinishedEventName, message);
+    // Generic notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
   }
 
   public sendProcessInstanceErrorNotification(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig, error: Error): void {
@@ -156,7 +159,9 @@ export class ProcessInstanceStateHandlingFacade {
       error,
     );
 
+    // Instance specific notification
     this.eventAggregator.publish(instanceErrorEventName, instanceErroredMessage);
+    // Generic notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processError, instanceErroredMessage);
   }
 
@@ -175,7 +180,9 @@ export class ProcessInstanceStateHandlingFacade {
       error,
     );
 
+    // Instance specific notification
     this.eventAggregator.publish(eventName, message);
+    // Generic notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
   }
 

@@ -291,34 +291,10 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
     );
 
     // ProcessInstance specific notification
-    this.notifyAboutEndEventReached(identity, token);
-    // Global notification
-    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processEnded, message);
-  }
-
-  /**
-   * Publishes a notification about the EndEvent that has been reached.
-   *
-   * @param identity The identity that owns the EndEvent instance.
-   * @param token    The current ProcessToken.
-   */
-  private notifyAboutEndEventReached(identity: IIdentity, token: ProcessToken): void {
-
-    // Publish regular success messsage.
     const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
       .replace(eventAggregatorSettings.messageParams.correlationId, token.correlationId)
       .replace(eventAggregatorSettings.messageParams.processModelId, token.processModelId);
 
-    const message = new EndEventReachedMessage(
-      token.correlationId,
-      token.processModelId,
-      token.processInstanceId,
-      this.endEvent.id,
-      this.flowNodeInstanceId,
-      identity,
-      token.payload,
-      this.endEvent.name,
-    );
     this.eventAggregator.publish(processEndMessageName, message);
   }
 
