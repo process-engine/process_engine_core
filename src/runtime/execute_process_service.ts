@@ -135,17 +135,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
           .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
           .replace(eventAggregatorSettings.messageParams.processModelId, processModelId);
 
-        let eventSubscription: Subscription;
+        const eventSubscription = this
+          .eventAggregator
+          .subscribe(processEndMessageName, (message: EndEventReachedMessage): void => {
 
-        const messageReceivedCallback = async (message: EndEventReachedMessage): Promise<void> => {
-          const isAwaitedEndEvent = !endEventId || message.flowNodeId === endEventId;
-          if (isAwaitedEndEvent) {
-            this.eventAggregator.unsubscribe(eventSubscription);
-            resolve(message);
-          }
-        };
-
-        eventSubscription = this.eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
+            const isAwaitedEndEvent = !endEventId || message.flowNodeId === endEventId;
+            if (isAwaitedEndEvent) {
+              this.eventAggregator.unsubscribe(eventSubscription);
+              resolve(message);
+            }
+          });
 
         await this.executeProcess(identity, processInstanceConfig);
       } catch (error) {
