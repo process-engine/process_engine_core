@@ -290,7 +290,6 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
       this.endEvent.name,
     );
 
-    // ProcessInstance specific notification
     const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
       .replace(eventAggregatorSettings.messageParams.correlationId, token.correlationId)
       .replace(eventAggregatorSettings.messageParams.processModelId, token.processModelId);
