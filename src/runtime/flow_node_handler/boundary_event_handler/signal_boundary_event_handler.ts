@@ -42,7 +42,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
         boundaryInstanceId: this.boundaryEventInstanceId,
         nextFlowNode: nextFlowNode,
         interruptHandler: this.boundaryEventModel.cancelActivity,
-        eventPayload: signal.currentToken,
+        eventPayload: signal?.currentToken ?? {},
       };
 
       this.sendBoundaryEventTriggeredNotification(token);
