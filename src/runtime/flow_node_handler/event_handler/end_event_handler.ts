@@ -85,6 +85,8 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
 
         token.payload = this.getFinalTokenPayloadFromInputValues(token, processTokenFacade, identity);
 
+        processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, token.payload);
+
         // Event persisting
         if (flowNodeIsTerminateEndEvent) {
           await this.persistOnTerminate(token);
