@@ -135,17 +135,16 @@ export class ExecuteProcessService implements IExecuteProcessService {
           .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
           .replace(eventAggregatorSettings.messageParams.processModelId, processModelId);
 
-        let eventSubscription: Subscription;
+        const eventSubscription = this
+          .eventAggregator
+          .subscribe(processEndMessageName, (message: EndEventReachedMessage): void => {
 
-        const messageReceivedCallback = async (message: EndEventReachedMessage): Promise<void> => {
-          const isAwaitedEndEvent = !endEventId || message.flowNodeId === endEventId;
-          if (isAwaitedEndEvent) {
-            this.eventAggregator.unsubscribe(eventSubscription);
-            resolve(message);
-          }
-        };
-
-        eventSubscription = this.eventAggregator.subscribe(processEndMessageName, messageReceivedCallback);
+            const isAwaitedEndEvent = !endEventId || message.flowNodeId === endEventId;
+            if (isAwaitedEndEvent) {
+              this.eventAggregator.unsubscribe(eventSubscription);
+              resolve(message);
+            }
+          });
 
         await this.executeProcess(identity, processInstanceConfig);
       } catch (error) {
@@ -314,7 +313,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
         throw error;
       });
 
-      await this.processInstanceStateHandlingFacade.saveCorrelation(identity, processInstanceConfig);
+      await this.processInstanceStateHandlingFacade.saveProcessInstance(identity, processInstanceConfig);
 
       const startEventHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
@@ -329,9 +328,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const allResults = processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken = allResults.pop();
 
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(identity, processInstanceConfig, resultToken);
+      await this.processInstanceStateHandlingFacade.finishProcessInstance(identity, processInstanceConfig, resultToken);
     } catch (error) {
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig, error);
+      await this.processInstanceStateHandlingFacade.finishProcessInstanceWithError(identity, processInstanceConfig, error);
 
       throw error;
     }

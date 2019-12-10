@@ -42,7 +42,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
         boundaryInstanceId: this.boundaryEventInstanceId,
         nextFlowNode: nextFlowNode,
         interruptHandler: this.boundaryEventModel.cancelActivity,
-        eventPayload: message.currentToken,
+        eventPayload: message?.currentToken ?? {},
       };
 
       this.sendBoundaryEventTriggeredNotification(token);

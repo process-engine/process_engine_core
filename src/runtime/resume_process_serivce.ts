@@ -221,9 +221,9 @@ export class ResumeProcessService implements IResumeProcessService {
         throw new InternalServerError('Process was terminated!');
       });
 
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelation(identity, processInstanceConfig, resultToken);
+      await this.processInstanceStateHandlingFacade.finishProcessInstance(identity, processInstanceConfig, resultToken);
     } catch (error) {
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceInCorrelationWithError(identity, processInstanceConfig, error);
+      await this.processInstanceStateHandlingFacade.finishProcessInstanceWithError(identity, processInstanceConfig, error);
 
       throw error;
     }
