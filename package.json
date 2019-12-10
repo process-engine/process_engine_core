@@ -1,8 +1,5 @@
 {
   "name": "@process-engine/process_engine_core",
-  "publishConfig": {
-    "registry": "https://www.npmjs.com"
-  },
   "version": "12.13.0",
   "description": "The ProcessEngine core package. ProcessEngine is a tool to bring BPMN diagrams to life in JS.",
   "license": "MIT",
