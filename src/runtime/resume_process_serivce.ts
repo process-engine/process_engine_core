@@ -245,11 +245,17 @@ export class ResumeProcessService implements IResumeProcessService {
       finalFlowNode?.state === FlowNodeInstanceState.terminated;
 
     if (processFinishedWithError) {
+      // Default error is used, if, for whatever reasons, no error is attached to the FlowNodeInstance.
+      // This was possible in older versions of the ProcessEngine.
+      const errorToUse = finalFlowNode.error ?? new InternalServerError('Process was terminated!');
+
       await this
         .correlationService
         // TODO: Fix type of `FlowNodeInstance.error` property
-        .finishProcessInstanceInCorrelationWithError(identity, processInstance.correlationId, processInstanceId, finalFlowNode.error as any);
+        .finishProcessInstanceInCorrelationWithError(identity, processInstance.correlationId, processInstanceId, errorToUse as any);
+
     } else {
+
       await this
         .correlationService
         .finishProcessInstanceInCorrelation(identity, processInstance.correlationId, processInstanceId);
