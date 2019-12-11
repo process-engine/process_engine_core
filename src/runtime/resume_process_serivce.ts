@@ -240,7 +240,7 @@ export class ResumeProcessService implements IResumeProcessService {
     await this.correlationService.finishProcessInstanceInCorrelation(identity, processInstance.correlationId, processInstanceId);
 
     const finalFlowNode = this.getFinalFlowNodeForOrphanedProcessInstance(flowNodeInstances);
-    const finalToken = finalFlowNode?.getTokenByType(ProcessTokenType.onExit).payload ?? undefined;
+    const finalToken = finalFlowNode?.getTokenByType(ProcessTokenType.onExit)?.payload ?? {};
 
     const result = new EndEventReachedMessage(
       processInstance.correlationId,
