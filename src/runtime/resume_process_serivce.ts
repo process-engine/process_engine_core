@@ -266,7 +266,6 @@ export class ResumeProcessService implements IResumeProcessService {
 
     // Check for ProcessTermination
     const terminatedFlowNode = flowNodeInstances.find((fni): boolean => fni.state === FlowNodeInstanceState.terminated);
-
     if (terminatedFlowNode) {
       return terminatedFlowNode;
     }
@@ -274,8 +273,7 @@ export class ResumeProcessService implements IResumeProcessService {
     // Check for Errors
     const erroredFlowNode = flowNodeInstances.find((fni): boolean => fni.state === FlowNodeInstanceState.error);
 
-    // If none of the above happened, then some unknown error caused the ProcessInstance to become orphaned.
-    return erroredFlowNode ?? undefined;
+    return erroredFlowNode;
   }
 
 }
