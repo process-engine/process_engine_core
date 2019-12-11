@@ -92,15 +92,15 @@ export class ResumeProcessService implements IResumeProcessService {
 
     // ----
     // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
-    // There is no point in trying to resume anything that's already finished.
-    const processHasActiveFlowNodeInstances = flowNodeInstancesForProcessInstance.some((entry: FlowNodeInstance): boolean => {
+    // If no FlowNodeInstances are active anymore, then we are dealing with an orphaned ProcessInstance that we have to finish manually.
+    const processIsNotActiveAnymore = !flowNodeInstancesForProcessInstance.some((entry: FlowNodeInstance): boolean => {
       return entry.state === FlowNodeInstanceState.running || entry.state === FlowNodeInstanceState.suspended;
     });
 
-    if (!processHasActiveFlowNodeInstances) {
-      logger.info(`ProcessInstance ${processInstanceId} is not active anymore.`);
-
-      return undefined;
+    if (processIsNotActiveAnymore) {
+      logger.warn(`ProcessInstance ${processInstanceId} is not active anymore. It is likely something went wrong during final state transition.`);
+      logger.warn(`Setting orphaned ProcessInstance ${processInstanceId} state to "finished", so it won't show up again.`);
+      return this.finishOrphanedProcessInstance(identity, flowNodeInstancesForProcessInstance, processInstanceId);
     }
 
     return new Promise<EndEventReachedMessage>(async (resolve: Function, reject: Function): Promise<void> => {
@@ -227,6 +227,72 @@ export class ResumeProcessService implements IResumeProcessService {
 
       throw error;
     }
+  }
+
+  private async finishOrphanedProcessInstance(
+    identity: IIdentity,
+    flowNodeInstances: Array<FlowNodeInstance>,
+    processInstanceId: string,
+  ): Promise<EndEventReachedMessage> {
+
+    const processInstance = await this.correlationService.getByProcessInstanceId(identity, processInstanceId);
+
+    const finalFlowNode = this.getFinalFlowNodeForOrphanedProcessInstance(flowNodeInstances);
+    const finalToken = finalFlowNode?.getTokenByType(ProcessTokenType.onExit)?.payload ?? {};
+
+    const processFinishedWithError =
+      finalFlowNode?.state === FlowNodeInstanceState.error ||
+      finalFlowNode?.state === FlowNodeInstanceState.terminated;
+
+    if (processFinishedWithError) {
+      // Default error is used, if, for whatever reasons, no error is attached to the FlowNodeInstance.
+      // This was possible in older versions of the ProcessEngine.
+      const errorToUse = finalFlowNode.error ?? new InternalServerError('Process was terminated!');
+
+      await this
+        .correlationService
+        // TODO: Fix type of `FlowNodeInstance.error` property
+        .finishProcessInstanceInCorrelationWithError(identity, processInstance.correlationId, processInstanceId, errorToUse as any);
+
+    } else {
+
+      await this
+        .correlationService
+        .finishProcessInstanceInCorrelation(identity, processInstance.correlationId, processInstanceId);
+    }
+
+    const result = new EndEventReachedMessage(
+      processInstance.correlationId,
+      processInstance.processModelId,
+      processInstanceId,
+      finalFlowNode?.flowNodeId,
+      finalFlowNode?.id,
+      processInstance.identity,
+      finalToken,
+      finalFlowNode?.flowNodeName,
+    );
+
+    return result;
+  }
+
+  private getFinalFlowNodeForOrphanedProcessInstance(flowNodeInstances: Array<FlowNodeInstance>): FlowNodeInstance {
+
+    // Check if the Instance was finished regularly by an EndEvent
+    const endEvent = flowNodeInstances.find((fni): boolean => fni.flowNodeType === BpmnType.endEvent);
+    if (endEvent) {
+      return endEvent;
+    }
+
+    // Check for ProcessTermination
+    const terminatedFlowNode = flowNodeInstances.find((fni): boolean => fni.state === FlowNodeInstanceState.terminated);
+    if (terminatedFlowNode) {
+      return terminatedFlowNode;
+    }
+
+    // Check for Errors
+    const erroredFlowNode = flowNodeInstances.find((fni): boolean => fni.state === FlowNodeInstanceState.error);
+
+    return erroredFlowNode;
   }
 
 }
