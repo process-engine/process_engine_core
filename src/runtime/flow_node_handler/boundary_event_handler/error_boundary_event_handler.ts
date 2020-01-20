@@ -60,17 +60,13 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
 
     const errorDefinition = this.boundaryEventModel.errorEventDefinition;
 
-    const errorDefinitionHasNoName = !errorDefinition.name || errorDefinition.name === '';
-    const nameMatches = errorDefinitionHasNoName || errorDefinition.name === error.name;
-
     const errorDefinitionHasNoCode = !errorDefinition.code || errorDefinition.code === '';
     const codeMatches = errorDefinitionHasNoCode || `${errorDefinition.code}` === `${error.code}`;
 
-    // TODO: Add "message" to the ErrorEventDefinition type
     const errorDefinitionHasNoMessage = !errorDefinition.message || errorDefinition.message === '';
     const messageMatches = errorDefinitionHasNoMessage || errorDefinition.message === error.message;
 
-    const isMatch = nameMatches && codeMatches && messageMatches;
+    const isMatch = codeMatches && messageMatches;
 
     return isMatch;
   }
