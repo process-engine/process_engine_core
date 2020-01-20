@@ -109,6 +109,39 @@ describe('ErrorBoundaryEventHandler.canHandleError ', (): void => {
 
   });
 
+  it('Should return true, if the name does not match and nothing else is configured.', async (): Promise<void> => {
+
+    const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
+    errorEventDefinition.name = 'I failed to find something you wanted. Sorry.';
+
+    const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
+    const handler = createHandler(boundaryEvent);
+
+    const sampleError = new NotFoundError('I failed to find something you wanted. Sorry.');
+
+    const canHandleError = handler.canHandleError(sampleError, {} as any);
+
+    should(canHandleError).be.true();
+
+  });
+
+  it('Should return true, if the code matches, but the name does not.', async (): Promise<void> => {
+
+    const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
+    errorEventDefinition.name = 'I failed to find something you wanted. Sorry.';
+    errorEventDefinition.code = '404';
+
+    const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
+    const handler = createHandler(boundaryEvent);
+
+    const sampleError = new NotFoundError('I failed to find something you wanted. Sorry.');
+
+    const canHandleError = handler.canHandleError(sampleError, {} as any);
+
+    should(canHandleError).be.true();
+
+  });
+
   it('Should return false, if name matches, but another property does not', async (): Promise<void> => {
 
     const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
@@ -129,7 +162,7 @@ describe('ErrorBoundaryEventHandler.canHandleError ', (): void => {
   it('Should return false, if code matches, but another property does not', async (): Promise<void> => {
 
     const errorEventDefinition = new Model.Events.Definitions.ErrorEventDefinition();
-    errorEventDefinition.name = 'WrongErrorType';
+    errorEventDefinition.message = 'WrongErrorType';
     errorEventDefinition.code = '404';
 
     const boundaryEvent = createErrorBoundaryEvent(errorEventDefinition);
