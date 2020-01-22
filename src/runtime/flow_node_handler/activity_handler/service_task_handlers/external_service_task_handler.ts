@@ -108,7 +108,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
         }
 
         this.logger.verbose('External processing of the ServiceTask finished successfully.');
-        onSuspendToken.payload = result;
+        onSuspendToken.payload = result ?? {};
 
         await this.persistOnResume(onSuspendToken);
         processTokenFacade.addResultForFlowNode(this.serviceTask.id, this.flowNodeInstanceId, onSuspendToken.payload);
@@ -220,7 +220,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
           } else {
 
             this.logger.verbose('The external worker successfully finished processing the ExternalTask.');
-            token.payload = result;
+            token.payload = result ?? {};
 
             await this.persistOnResume(token);
 
@@ -250,7 +250,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
     this.externalTaskSubscription =
       this.eventAggregator.subscribeOnce(externalTaskFinishedEventName, async (message: any): Promise<void> => {
-        resolveFunc(message.error, message.result);
+        resolveFunc(message?.error, message?.result);
       });
   }
 
