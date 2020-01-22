@@ -1,5 +1,7 @@
 export * from './correlation_service_mock';
 export * from './event_aggregator_mock';
+export * from './external_task_repository_mock';
+export * from './flow_node_handler_factory_mock';
 export * from './flow_node_instance_persistence_facade_mock';
 export * from './flow_node_instance_service_mock';
 export * from './logging_service_mock';
