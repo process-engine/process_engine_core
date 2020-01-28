@@ -551,7 +551,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       await this.handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity);
 
       if (eventData.interruptHandler) {
-        await this.interrupt(currentProcessToken);
         return handlerResolve(undefined);
       }
     };
@@ -588,6 +587,10 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     if (eventData.eventPayload) {
       currentProcessToken.payload = eventData.eventPayload;
+    }
+
+    if (eventData.interruptHandler) {
+      await this.interrupt(currentProcessToken);
     }
 
     await this.continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
