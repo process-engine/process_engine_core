@@ -275,8 +275,8 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade?: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<void> {
-    await super.afterExecute(token, processTokenFacade, processModelFacade, identity);
     await this.detachBoundaryEvents(token, processModelFacade);
+    await super.afterExecute(token, processTokenFacade, processModelFacade, identity);
   }
 
   protected async continueAfterSuspend(
@@ -504,7 +504,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     const boundaryEventModels = processModelFacade.getBoundaryEventsFor(this.flowNode);
 
-    const noBoundaryEventsFound = !boundaryEventModels || boundaryEventModels.length === 0;
+    const noBoundaryEventsFound = boundaryEventModels?.length === 0;
     if (noBoundaryEventsFound) {
       return;
     }
