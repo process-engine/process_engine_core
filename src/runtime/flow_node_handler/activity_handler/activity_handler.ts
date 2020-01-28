@@ -485,7 +485,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    * Creates handlers for all BoundaryEvents attached this handler's FlowNode.
    *
    * @async
-   * @param currentProcessToken The current Processtoken.
+   * @param processToken        The current Processtoken.
    * @param processTokenFacade  The Facade for managing the ProcessInstance's
    *                            ProcessTokens.
    * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
@@ -495,7 +495,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    *                            triggered.
    */
   private async attachBoundaryEvents(
-    currentProcessToken: ProcessToken,
+    processToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -511,7 +511,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     // Create a handler for each attached BoundaryEvent and store it in the internal collection.
     for (const model of boundaryEventModels) {
-      await this.createBoundaryEventHandler(model, currentProcessToken, processTokenFacade, processModelFacade, identity, handlerResolve);
+      await this.createBoundaryEventHandler(model, processToken, processTokenFacade, processModelFacade, identity, handlerResolve);
     }
   }
 
@@ -526,7 +526,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
   private findErrorBoundaryEventHandlersForError(error: Error, token: ProcessToken): Array<ErrorBoundaryEventHandler> {
     const errorBoundaryEventHandlers = this
       .attachedBoundaryEventHandlers
-      .filter((handler: IBoundaryEventHandler): boolean => handler instanceof ErrorBoundaryEventHandler) as Array<ErrorBoundaryEventHandler>;
+      .filter((handler): boolean => handler instanceof ErrorBoundaryEventHandler) as Array<ErrorBoundaryEventHandler>;
 
     const handlersForError =
       errorBoundaryEventHandlers.filter((handler: ErrorBoundaryEventHandler): boolean => handler.canHandleError(error as BpmnError, token));
@@ -536,7 +536,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
   private async createBoundaryEventHandler(
     boundaryEventModel: Model.Events.BoundaryEvent,
-    currentProcessToken: ProcessToken,
+    processToken: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
@@ -548,7 +548,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     const onBoundaryEventTriggeredCallback = async (eventData: OnBoundaryEventTriggeredData): Promise<void> => {
       // To prevent the Promise-chain from being broken too soon, we must first await the execution of the BoundaryEvent's execution path.
       // Interruption will already have happended, when this path is finished, so there is no danger of running this handler twice.
-      await this.handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity);
+      await this.handleBoundaryEvent(eventData, processToken, processTokenFacade, processModelFacade, identity);
 
       if (eventData.interruptHandler) {
         return handlerResolve(undefined);
@@ -556,7 +556,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     };
 
     boundaryEventHandler
-      .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, currentProcessToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
+      .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, processToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
 
     this.attachedBoundaryEventHandlers.push(boundaryEventHandler);
   }
