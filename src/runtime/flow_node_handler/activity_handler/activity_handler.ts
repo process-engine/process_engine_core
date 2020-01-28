@@ -555,7 +555,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       }
     };
 
-    await boundaryEventHandler
+    boundaryEventHandler
       .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, currentProcessToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
 
     this.attachedBoundaryEventHandlers.push(boundaryEventHandler);
