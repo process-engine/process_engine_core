@@ -1,6 +1,6 @@
 import {Subscription} from '@essential-projects/event_aggregator_contracts';
 
-import {ProcessToken} from '@process-engine/persistence_api.contracts';
+import {FlowNodeInstance, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   IProcessModelFacade,
   IProcessTokenFacade,
@@ -25,11 +25,36 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
 
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
+    await this.persistOnEnter(token);
+
+    this.waitForSignal(onTriggeredCallback, token, processModelFacade);
+  }
+
+  public async resumeWait(
+    boundaryEventInstance: FlowNodeInstance,
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    attachedFlowNodeInstanceId: string,
+  ): Promise<void> {
+
+    this.boundaryEventInstanceId = boundaryEventInstance.id;
+    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+
+    this.waitForSignal(onTriggeredCallback, token, processModelFacade);
+  }
+
+  private waitForSignal(
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+    token: ProcessToken,
+    processModelFacade: IProcessModelFacade,
+  ): void {
+
     const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id);
     if (laneContainingCurrentFlowNode != undefined) {
       token.currentLane = laneContainingCurrentFlowNode.name;
     }
-    await this.persistOnEnter(token);
 
     const signalBoundaryEventName = eventAggregatorSettings.messagePaths.signalEventReached
       .replace(eventAggregatorSettings.messageParams.signalReference, this.boundaryEventModel.signalEventDefinition.name);

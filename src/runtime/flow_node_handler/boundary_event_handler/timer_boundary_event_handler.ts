@@ -2,7 +2,7 @@ import {Logger} from 'loggerhythm';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 
-import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
+import {FlowNodeInstance, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
@@ -48,6 +48,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   }
 
   public async resumeWait(
+    boundaryEventInstance: FlowNodeInstance,
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -56,6 +57,8 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   ): Promise<void> {
 
     this.logger.verbose(`Resuming BoundaryEvent on FlowNodeInstance ${attachedFlowNodeInstanceId} in ProcessInstance ${token.processInstanceId}`);
+
+    this.boundaryEventInstanceId = boundaryEventInstance.id;
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     this.initializeTimer(onTriggeredCallback, token, processTokenFacade, processModelFacade);

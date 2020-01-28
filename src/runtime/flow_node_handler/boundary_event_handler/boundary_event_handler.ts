@@ -25,7 +25,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   protected readonly boundaryEventModel: Model.Events.BoundaryEvent;
   protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
-  protected readonly boundaryEventInstanceId: string;
+  protected boundaryEventInstanceId: string;
 
   constructor(
     eventAggregator: IEventAggregator,
