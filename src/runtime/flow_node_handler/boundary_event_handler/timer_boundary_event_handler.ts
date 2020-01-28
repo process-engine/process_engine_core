@@ -72,8 +72,8 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
   }
 
   public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
-    await super.cancel(token, processModelFacade);
     this.timerFacade.cancelTimerSubscription(this.timerSubscription);
+    await super.cancel(token, processModelFacade);
   }
 
 }
