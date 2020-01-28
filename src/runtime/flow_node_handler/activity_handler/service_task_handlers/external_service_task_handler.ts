@@ -146,6 +146,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
       try {
         this.onInterruptedCallback = async (): Promise<void> => {
+          this.eventAggregator.unsubscribe(this.externalTaskSubscription);
           await this.abortExternalTask(token);
           handlerPromise.cancel();
         };
@@ -330,7 +331,7 @@ export class ExternalServiceTaskHandler extends ActivityHandler<Model.Activities
       return;
     }
 
-    const abortError = new InternalServerError('The ExternalTask was aborted, because the corresponding ProcessInstance was interrupted!');
+    const abortError = new InternalServerError('The ExternalTask was aborted, because the corresponding ServiceTask was interrupted!');
 
     await this.externalTaskRepository.finishWithError(matchingExternalTask.id, abortError);
   }
