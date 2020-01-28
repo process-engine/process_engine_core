@@ -129,7 +129,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         if (flowNodeInstancesAfterBoundaryEvents.length === 0) {
           this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
-          await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
+          await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve, allFlowNodeInstances);
 
           nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
         } else {
@@ -500,6 +500,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     handlerResolve: Function,
+    flowNodeInstances?: Array<FlowNodeInstance>,
   ): Promise<void> {
 
     const boundaryEventModels = processModelFacade.getBoundaryEventsFor(this.flowNode);
@@ -511,7 +512,9 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     // Create a handler for each attached BoundaryEvent and store it in the internal collection.
     for (const model of boundaryEventModels) {
-      await this.createBoundaryEventHandler(model, processToken, processTokenFacade, processModelFacade, identity, handlerResolve);
+
+      const flowNodeInstance = flowNodeInstances?.find((entry) => entry.flowNodeId === model.id && entry.state === FlowNodeInstanceState.running);
+      await this.createBoundaryEventHandler(model, processToken, processTokenFacade, processModelFacade, identity, handlerResolve, flowNodeInstance);
     }
   }
 
@@ -541,6 +544,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     handlerResolve: Function,
+    flowNodeInstance?: FlowNodeInstance,
   ): Promise<void> {
     const boundaryEventHandler = await this.flowNodeHandlerFactory.createForBoundaryEvent(boundaryEventModel);
 
@@ -555,8 +559,19 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       }
     };
 
-    boundaryEventHandler
-      .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, processToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
+    if (flowNodeInstance) {
+      boundaryEventHandler.resumeWait(
+        flowNodeInstance,
+        onBoundaryEventTriggeredCallback,
+        processToken,
+        processTokenFacade,
+        processModelFacade,
+        this.flowNodeInstanceId,
+      );
+    } else {
+      boundaryEventHandler
+        .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, processToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
+    }
 
     this.attachedBoundaryEventHandlers.push(boundaryEventHandler);
   }
