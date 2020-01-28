@@ -442,6 +442,13 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
   ): Array<IFlowNodeModelInstanceAssociation> {
 
+    const getBoundaryEventPreceedingFlowNodeInstance = (flowNodeInstance: FlowNodeInstance): Model.Events.BoundaryEvent => {
+      const matchingBoundaryEventInstance =
+        flowNodeInstances.find((entry: FlowNodeInstance): boolean => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
+
+      return boundaryEvents.find((entry: Model.Events.BoundaryEvent): boolean => entry.id === matchingBoundaryEventInstance.flowNodeId);
+    };
+
     const boundaryEvents = processModelFacade.getBoundaryEventsFor(this.flowNode);
     if (boundaryEvents.length === 0) {
       return [];
@@ -468,13 +475,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         nextFlowNode: processModelFacade.getFlowNodeById(fni.flowNodeId),
       };
     });
-
-    const getBoundaryEventPreceedingFlowNodeInstance = (flowNodeInstance: FlowNodeInstance): Model.Events.BoundaryEvent => {
-      const matchingBoundaryEventInstance =
-        flowNodeInstances.find((entry: FlowNodeInstance): boolean => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
-
-      return boundaryEvents.find((entry: Model.Events.BoundaryEvent): boolean => entry.id === matchingBoundaryEventInstance.flowNodeId);
-    };
 
     return flowNodeModelInstanceAssociations;
   }
@@ -551,6 +551,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       await this.handleBoundaryEvent(eventData, currentProcessToken, processTokenFacade, processModelFacade, identity);
 
       if (eventData.interruptHandler) {
+        await this.interrupt(currentProcessToken);
         return handlerResolve(undefined);
       }
     };
@@ -587,10 +588,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     if (eventData.eventPayload) {
       currentProcessToken.payload = eventData.eventPayload;
-    }
-
-    if (eventData.interruptHandler) {
-      await this.interrupt(currentProcessToken);
     }
 
     await this.continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
