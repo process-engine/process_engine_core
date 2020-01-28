@@ -1,6 +1,6 @@
 import * as uuid from 'node-uuid';
 
-import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
+import {FlowNodeInstance, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
@@ -43,6 +43,15 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   }
 
   public abstract async waitForTriggeringEvent(
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    attachedFlowNodeInstanceId: string,
+  ): Promise<void>;
+
+  public abstract async resumeWait(
+    boundaryEventInstance: FlowNodeInstance,
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
