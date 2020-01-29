@@ -562,7 +562,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     };
 
     if (flowNodeInstance) {
-      boundaryEventHandler.resumeWait(
+      await boundaryEventHandler.resumeWait(
         flowNodeInstance,
         onBoundaryEventTriggeredCallback,
         processToken,
@@ -571,7 +571,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         this.flowNodeInstanceId,
       );
     } else {
-      boundaryEventHandler
+      await boundaryEventHandler
         .waitForTriggeringEvent(onBoundaryEventTriggeredCallback, processToken, processTokenFacade, processModelFacade, this.flowNodeInstanceId);
     }
 
