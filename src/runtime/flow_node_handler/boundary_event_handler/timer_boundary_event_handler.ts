@@ -58,7 +58,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
     this.logger.verbose(`Resuming BoundaryEvent on FlowNodeInstance ${attachedFlowNodeInstanceId} in ProcessInstance ${token.processInstanceId}`);
 
-    this.boundaryEventInstanceId = boundaryEventInstance.id;
+    this.boundaryEventInstance = boundaryEventInstance;
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     this.initializeTimer(onTriggeredCallback, token, processTokenFacade, processModelFacade);

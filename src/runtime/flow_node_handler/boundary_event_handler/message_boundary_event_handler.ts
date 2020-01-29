@@ -39,7 +39,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
-    this.boundaryEventInstanceId = boundaryEventInstance.id;
+    this.boundaryEventInstance = boundaryEventInstance;
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
     this.waitForMessage(onTriggeredCallback, token, processModelFacade);

@@ -31,7 +31,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
   protected boundaryEventInstanceId: string;
-  protected boundaryEventInstance?: FlowNodeInstance; // Only set during FlowNode resumption.
+  private flowNodeInstance?: FlowNodeInstance; // Only set during FlowNode resumption.
 
   constructor(
     eventAggregator: IEventAggregator,
@@ -42,6 +42,11 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     this.boundaryEventModel = boundaryEventModel;
     this.boundaryEventInstanceId = uuid.v4();
     this.eventAggregator = eventAggregator;
+  }
+
+  protected set boundaryEventInstance(flowNodeInstance: FlowNodeInstance) {
+    this.flowNodeInstance = flowNodeInstance;
+    this.boundaryEventInstanceId = flowNodeInstance.id;
   }
 
   public getInstanceId(): string {
@@ -66,7 +71,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   ): Promise<void>;
 
   public async cancel(processToken: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
-    if (this.boundaryEventInstance?.state !== FlowNodeInstanceState.running) {
+    if (this.boundaryEventInstance?.state === FlowNodeInstanceState.finished) {
       return;
     }
     await this.persistOnExit(processToken);
