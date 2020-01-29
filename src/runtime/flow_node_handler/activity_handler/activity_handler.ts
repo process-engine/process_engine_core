@@ -442,7 +442,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
   ): Array<IFlowNodeModelInstanceAssociation> {
 
-    const getBoundaryEventPreceedingFlowNodeInstance = (flowNodeInstance: FlowNodeInstance): Model.Events.BoundaryEvent => {
+    const getBoundaryEventPrecedingFlowNodeInstance = (flowNodeInstance: FlowNodeInstance): Model.Events.BoundaryEvent => {
       const matchingBoundaryEventInstance =
         flowNodeInstances.find((entry: FlowNodeInstance): boolean => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
 
@@ -470,7 +470,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     const flowNodeModelInstanceAssociations = flowNodeInstancesAfterBoundaryEvents.map((fni: FlowNodeInstance): IFlowNodeModelInstanceAssociation => {
       return {
-        boundaryEventModel: getBoundaryEventPreceedingFlowNodeInstance(fni),
+        boundaryEventModel: getBoundaryEventPrecedingFlowNodeInstance(fni),
         nextFlowNodeInstance: fni,
         nextFlowNode: processModelFacade.getFlowNodeById(fni.flowNodeId),
       };
