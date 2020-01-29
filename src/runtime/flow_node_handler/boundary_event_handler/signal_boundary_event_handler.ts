@@ -45,6 +45,11 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     this.waitForSignal(onTriggeredCallback, token, processModelFacade);
   }
 
+  public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+    await super.cancel(token, processModelFacade);
+    this.eventAggregator.unsubscribe(this.subscription);
+  }
+
   private waitForSignal(
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
     token: ProcessToken,
@@ -80,11 +85,6 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     this.subscription = this.boundaryEventModel.cancelActivity
       ? this.eventAggregator.subscribeOnce(signalBoundaryEventName, signalReceivedCallback)
       : this.eventAggregator.subscribe(signalBoundaryEventName, signalReceivedCallback);
-  }
-
-  public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
-    await super.cancel(token, processModelFacade);
-    this.eventAggregator.unsubscribe(this.subscription);
   }
 
 }
