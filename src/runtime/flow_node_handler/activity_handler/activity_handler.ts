@@ -512,7 +512,10 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     // Create a handler for each attached BoundaryEvent and store it in the internal collection.
     for (const model of boundaryEventModels) {
-      const flowNodeInstance = flowNodeInstances?.find((entry) => entry.flowNodeId === model.id && entry.previousFlowNodeInstanceId === this.flowNodeInstanceId);
+      const flowNodeInstance = flowNodeInstances?.find((entry) => {
+        return entry.flowNodeId === model.id && entry.previousFlowNodeInstanceId === this.flowNodeInstanceId;
+      });
+
       await this.createBoundaryEventHandler(model, processToken, processTokenFacade, processModelFacade, identity, handlerResolve, flowNodeInstance);
     }
   }

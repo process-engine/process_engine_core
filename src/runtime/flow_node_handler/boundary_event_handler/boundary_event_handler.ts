@@ -1,6 +1,11 @@
 import * as uuid from 'node-uuid';
 
-import {FlowNodeInstance, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
+import {
+  FlowNodeInstance,
+  FlowNodeInstanceState,
+  Model,
+  ProcessToken,
+} from '@process-engine/persistence_api.contracts';
 import {
   BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
@@ -26,6 +31,7 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
   protected boundaryEventInstanceId: string;
+  protected boundaryEventInstance?: FlowNodeInstance; // Only set during FlowNode resumption.
 
   constructor(
     eventAggregator: IEventAggregator,
@@ -60,7 +66,9 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   ): Promise<void>;
 
   public async cancel(processToken: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
-    await this.persistOnExit(processToken);
+    if (this.boundaryEventInstance?.state === FlowNodeInstanceState.running) {
+      await this.persistOnExit(processToken);
+    }
   }
 
   public getNextFlowNode(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
