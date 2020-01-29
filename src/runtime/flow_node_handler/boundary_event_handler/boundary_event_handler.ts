@@ -66,9 +66,10 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   ): Promise<void>;
 
   public async cancel(processToken: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
-    if (this.boundaryEventInstance?.state === FlowNodeInstanceState.running) {
-      await this.persistOnExit(processToken);
+    if (this.boundaryEventInstance?.state !== FlowNodeInstanceState.running) {
+      return;
     }
+    await this.persistOnExit(processToken);
   }
 
   public getNextFlowNode(processModelFacade: IProcessModelFacade): Model.Base.FlowNode {
