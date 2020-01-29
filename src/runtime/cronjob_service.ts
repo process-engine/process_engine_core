@@ -1,6 +1,7 @@
 import * as cronparser from 'cron-parser';
 import {Logger} from 'loggerhythm';
 import * as moment from 'moment';
+import * as uuid from 'node-uuid';
 
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
@@ -300,7 +301,7 @@ export class CronjobService implements ICronjobService {
     const matchingConfig = this.cronjobDictionary[processModelId].find((config): boolean => config.cronjob === crontab);
 
     // Starting the ProcessModel will not be awaited to ensure all ProcessModels are started simultaneously.
-    const correlationId = 'started_by_cronjob';
+    const correlationId = `cronjob_${uuid.v4()}`;
     this.executeProcessService.start(this.internalIdentity, processModelId, correlationId, matchingConfig.startEventId, {});
 
     const cronjobHistoryEntry: Cronjob = {
