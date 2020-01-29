@@ -1,6 +1,11 @@
 import * as uuid from 'node-uuid';
 
-import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
+import {
+  FlowNodeInstance,
+  FlowNodeInstanceState,
+  Model,
+  ProcessToken,
+} from '@process-engine/persistence_api.contracts';
 import {
   BoundaryEventTriggeredMessage,
   IBoundaryEventHandler,
@@ -25,7 +30,8 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
   protected readonly boundaryEventModel: Model.Events.BoundaryEvent;
   protected readonly flowNodePersistenceFacade: IFlowNodePersistenceFacade;
 
-  protected readonly boundaryEventInstanceId: string;
+  protected boundaryEventInstanceId: string;
+  private flowNodeInstance?: FlowNodeInstance; // Only set during FlowNode resumption.
 
   constructor(
     eventAggregator: IEventAggregator,
@@ -36,6 +42,11 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     this.boundaryEventModel = boundaryEventModel;
     this.boundaryEventInstanceId = uuid.v4();
     this.eventAggregator = eventAggregator;
+  }
+
+  protected set boundaryEventInstance(flowNodeInstance: FlowNodeInstance) {
+    this.flowNodeInstance = flowNodeInstance;
+    this.boundaryEventInstanceId = flowNodeInstance.id;
   }
 
   public getInstanceId(): string {
@@ -50,7 +61,19 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     attachedFlowNodeInstanceId: string,
   ): Promise<void>;
 
+  public abstract async resumeWait(
+    boundaryEventInstance: FlowNodeInstance,
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    attachedFlowNodeInstanceId: string,
+  ): Promise<void>;
+
   public async cancel(processToken: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
+    if (this.boundaryEventInstance?.state === FlowNodeInstanceState.finished) {
+      return;
+    }
     await this.persistOnExit(processToken);
   }
 

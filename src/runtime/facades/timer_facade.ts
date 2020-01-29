@@ -50,10 +50,12 @@ export class TimerFacade implements ITimerFacade {
   }
 
   public cancelTimerSubscription(subscription: Subscription): void {
-    const timerId = this.timerStorage[subscription.eventName];
-
     this.eventAggregator.unsubscribe(subscription);
-    this.timerService.cancel(timerId);
+
+    if (subscription?.eventName) {
+      const timerId = this.timerStorage[subscription.eventName];
+      this.timerService.cancel(timerId);
+    }
   }
 
   public startCycleTimer(timerValue: string, flowNode: Model.Base.FlowNode, timerCallback: Function, timerExpiredEventName: string): Subscription {

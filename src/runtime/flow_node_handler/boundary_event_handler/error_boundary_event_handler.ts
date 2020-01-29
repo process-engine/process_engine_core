@@ -1,4 +1,4 @@
-import {ProcessToken} from '@process-engine/persistence_api.contracts';
+import {FlowNodeInstance, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   BpmnError,
   IProcessModelFacade,
@@ -53,6 +53,18 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     }
     await this.persistOnEnter(token);
 
+    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+  }
+
+  public async resumeWait(
+    boundaryEventInstance: FlowNodeInstance,
+    onTriggeredCallback: OnBoundaryEventTriggeredCallback,
+    token: ProcessToken, processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    attachedFlowNodeInstanceId: string,
+  ): Promise<void> {
+
+    this.boundaryEventInstance = boundaryEventInstance;
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
   }
 
