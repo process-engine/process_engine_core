@@ -97,7 +97,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         callActivityResult = await this.executeSubprocess(identity, processTokenFacade, onSuspendToken);
       } else {
         // Subprocess was already started. Resume it and wait for the result:
-        callActivityResult = await this
+        callActivityResult = <EndEventReachedMessage> await this
           .resumeProcessService
           .resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
       }
@@ -263,6 +263,10 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   }
 
   private createResultTokenPayloadFromCallActivityResult(result: EndEventReachedMessage): any {
+
+    if (!result) {
+      return {};
+    }
 
     const callActivityToken = result.currentToken;
 

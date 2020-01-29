@@ -84,20 +84,34 @@ export class ResumeProcessService implements IResumeProcessService {
     }
   }
 
-  public async resumeProcessInstanceById(identity: IIdentity, processModelId: string, processInstanceId: string): Promise<EndEventReachedMessage> {
+  public async resumeProcessInstanceById(
+    identity: IIdentity,
+    processModelId: string,
+    processInstanceId: string,
+  ): Promise<EndEventReachedMessage | void> {
 
     logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
+    const processInstance = await this.correlationService.getByProcessInstanceId(identity, processInstanceId);
+
+    // Safeguard, for when this function is called by CallActivities.
+    if (processInstance.state !== CorrelationState.running) {
+      logger.info(`ProcessInstance ${processInstanceId} is already finished.`);
+      return Promise.resolve();
+    }
+
     const flowNodeInstancesForProcessInstance = await this.flowNodeInstanceService.queryByProcessInstance(processInstanceId);
 
-    // ----
-    // First check if there even are any FlowNodeInstances still active for the ProcessInstance.
-    // If no FlowNodeInstances are active anymore, then we are dealing with an orphaned ProcessInstance that we have to finish manually.
-    const processIsNotActiveAnymore = !flowNodeInstancesForProcessInstance.some((entry: FlowNodeInstance): boolean => {
+    const hasActiveFlowNodeInstances = flowNodeInstancesForProcessInstance.some((entry) => {
       return entry.state === FlowNodeInstanceState.running || entry.state === FlowNodeInstanceState.suspended;
     });
 
-    if (processIsNotActiveAnymore) {
+    const hasReachedAnEndEvent = flowNodeInstancesForProcessInstance.some((entry) => entry.flowNodeType === BpmnType.endEvent);
+
+    // If no FlowNodeInstances are active anymore and at least one EndEvent was reached,
+    // we are dealing with an orphaned ProcessInstance that we have to finish manually.
+    const processInstanceIsOrphaned = !hasActiveFlowNodeInstances && hasReachedAnEndEvent;
+    if (processInstanceIsOrphaned) {
       logger.warn(`ProcessInstance ${processInstanceId} is not active anymore. It is likely something went wrong during final state transition.`);
       logger.warn(`Setting orphaned ProcessInstance ${processInstanceId} state to "finished", so it won't show up again.`);
       return this.finishOrphanedProcessInstance(identity, flowNodeInstancesForProcessInstance, processInstanceId);
