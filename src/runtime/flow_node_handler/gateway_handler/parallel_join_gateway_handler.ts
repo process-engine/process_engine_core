@@ -1,17 +1,18 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
-  ErrorEndEventReachedMessage,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ProcessErrorMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
@@ -184,7 +185,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     const errorEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onErroredCallback = async (message: ErrorEndEventReachedMessage): Promise<void> => {
+    const onErroredCallback = async (message: ProcessErrorMessage): Promise<void> => {
       // This is done to prevent anybody from accessing the handler after an error message was received.
       // This is necessary, to prevent access until the the state change to "error" is done.
       this.isInterrupted = true;
@@ -195,8 +196,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
         ? message.currentToken
         : {};
 
+      const error = new InternalServerError('ProcessInstance encountered an error!');
+      error.additionalInformation = message.currentToken;
+
       this.cleanupSubscriptions();
-      await this.persistOnError(token, message.error);
+      await this.persistOnError(token, error);
 
       this.removeInstanceFromIocContainer(token);
     };
