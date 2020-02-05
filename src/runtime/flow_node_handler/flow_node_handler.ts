@@ -255,7 +255,7 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
   }
 
-  protected subscribeToProcessError(token: ProcessToken): Subscription {
+  protected subscribeToProcessError(token: ProcessToken, rejectionFunction: Function): Subscription {
 
     const errorEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
@@ -274,6 +274,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       await this.onInterruptedCallback(token);
       await this.afterExecute(token);
       await this.persistOnError(token, error);
+
+      return rejectionFunction(error);
     };
 
     return this.eventAggregator.subscribeOnce(errorEvent, onErroredCallback);

@@ -58,6 +58,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
+        this.processErrorSubscription = this.subscribeToProcessError(token, reject);
         await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
@@ -128,6 +129,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         if (flowNodeInstancesAfterBoundaryEvents.length === 0) {
           this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
+          this.processErrorSubscription = this.subscribeToProcessError(token, reject);
           await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve, allFlowNodeInstances);
 
           nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);

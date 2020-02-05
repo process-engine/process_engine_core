@@ -51,6 +51,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
 
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
+        this.processErrorSubscription = this.subscribeToProcessError(token, reject);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
@@ -112,6 +113,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
 
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
+        this.processErrorSubscription = this.subscribeToProcessError(token, reject);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
         const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
