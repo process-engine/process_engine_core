@@ -236,11 +236,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         ? message.currentToken
         : {};
 
-      this.logger.error(processTerminatedError);
-
       await this.onInterruptedCallback(token);
       await this.afterExecute(token);
-
       await this.persistOnTerminate(token);
 
       const terminationError = new InternalServerError(processTerminatedError);
