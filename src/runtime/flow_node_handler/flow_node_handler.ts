@@ -199,6 +199,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, previousFlowNodeInstanceIdToPersist);
   }
 
+  protected async persistOnSuspend(processToken: ProcessToken): Promise<void> {
+    await this.flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
+  }
+
+  protected async persistOnResume(processToken: ProcessToken): Promise<void> {
+    await this.flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
+  }
+
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
     await this.flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
   }
