@@ -54,8 +54,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       return;
     }
 
-    await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-
     // TODO: Works for now, but there really must be a better solution for this problem.
     //
     // The base ID gets overwritten each time an incoming SequenceFlow arrives.
@@ -78,6 +76,15 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     if (!this.processErrorSubscription) {
       this.processErrorSubscription = this.subscribeToProcessError(token);
     }
+  }
+
+  protected async afterExecute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+    return Promise.resolve();
   }
 
   protected async startExecution(
@@ -126,6 +133,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, aggregatedResults);
     await this.persistOnExit(token);
+    this.cleanupSubscriptions();
 
     this.removeInstanceFromIocContainer(token);
 
@@ -162,6 +170,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
         ? message.currentToken
         : {};
 
+      this.cleanupSubscriptions();
       await this.persistOnTerminate(token);
 
       this.removeInstanceFromIocContainer(token);
@@ -186,12 +195,18 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
         ? message.currentToken
         : {};
 
+      this.cleanupSubscriptions();
       await this.persistOnError(token, message.error);
 
       this.removeInstanceFromIocContainer(token);
     };
 
     return this.eventAggregator.subscribeOnce(errorEvent, onErroredCallback);
+  }
+
+  private cleanupSubscriptions(): void {
+    this.eventAggregator.unsubscribe(this.processErrorSubscription);
+    this.eventAggregator.unsubscribe(this.terminationSubscription);
   }
 
   private removeInstanceFromIocContainer(processToken: ProcessToken): void {
