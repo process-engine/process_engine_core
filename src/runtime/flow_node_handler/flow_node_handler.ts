@@ -13,6 +13,7 @@ import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ProcessErrorMessage,
   eventAggregatorSettings,
   onInterruptionCallback,
 } from '@process-engine/process_engine_contracts';
@@ -252,6 +253,30 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  protected subscribeToProcessError(token: ProcessToken): Subscription {
+
+    const errorEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const onErroredCallback = async (message: ProcessErrorMessage): Promise<void> => {
+
+      const payloadIsDefined = message != undefined;
+
+      token.payload = payloadIsDefined
+        ? message.currentToken
+        : {};
+
+      const error = new InternalServerError('ProcessInstance encountered an error!');
+      error.additionalInformation = message.currentToken;
+
+      await this.onInterruptedCallback(token);
+      await this.afterExecute(token);
+      await this.persistOnError(token, error);
+    };
+
+    return this.eventAggregator.subscribeOnce(errorEvent, onErroredCallback);
   }
 
   protected findNextInstanceOfFlowNode(allFlowNodeInstances: Array<FlowNodeInstance>, nextFlowNodeId: string): FlowNodeInstance {
