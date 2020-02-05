@@ -293,43 +293,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
 
-  protected subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
-
-    const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
-
-    const onTerminatedCallback = async (message: any): Promise<void> => {
-      const terminatedByEndEvent = message?.flowNodeId != undefined;
-      const terminationUserId = message?.terminatedBy?.userId ?? undefined;
-
-      const processTerminatedError = terminatedByEndEvent
-        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`
-        : `Process was terminated by user ${terminationUserId}`;
-
-      token.payload = terminatedByEndEvent
-        ? message.currentToken
-        : {};
-
-      this.logger.error(processTerminatedError);
-
-      await this.onInterruptedCallback(token);
-      await this.afterExecute(token);
-      await this.persistOnTerminate(token);
-
-      const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
-
-      if (message.terminatedBy) {
-        terminationError.additionalInformation = {
-          terminatedBy: message.terminatedBy,
-        };
-      }
-
-      return rejectionFunction(terminationError);
-    };
-
-    return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
-  }
-
   private async handleActivityError(
     token: ProcessToken,
     error: Error,
