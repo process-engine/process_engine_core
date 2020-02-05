@@ -16,7 +16,6 @@ import {
   IBoundaryEventHandler,
   IFlowNodeHandler,
   IFlowNodeInstanceResult,
-  IInterruptible,
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredData,
@@ -36,7 +35,7 @@ interface IFlowNodeModelInstanceAssociation {
 /**
  * This is the base handler for all Activities and Tasks.
  */
-export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> implements IInterruptible {
+export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> {
 
   private attachedBoundaryEventHandlers: Array<IBoundaryEventHandler> = [];
 
@@ -201,17 +200,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     });
   }
 
-  public async interrupt(token: ProcessToken, terminate?: boolean): Promise<void> {
-    await this.onInterruptedCallback(token);
-    await this.afterExecute(token);
-
-    if (terminate) {
-      return this.persistOnTerminate(token);
-    }
-
-    return this.persistOnExit(token);
-  }
-
   protected async resumeFromState(
     flowNodeInstance: FlowNodeInstance,
     processTokenFacade: IProcessTokenFacade,
@@ -324,7 +312,9 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
       this.logger.error(processTerminatedError);
 
-      await this.interrupt(token, true);
+      await this.onInterruptedCallback(token);
+      await this.afterExecute(token);
+      await this.persistOnTerminate(token);
 
       const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
 
@@ -579,33 +569,34 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    * this handler as well as all attached BoundaryEvents.
    *
    * @async
-   * @param eventData           The data sent with the triggered BoundaryEvent.
-   * @param currentProcessToken The current Processtoken.
-   * @param processTokenFacade  The Facade for managing the ProcessInstance's
-   *                            ProcessTokens.
-   * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
-   * @param identity            The ProcessInstance owner.
+   * @param eventData          The data sent with the triggered BoundaryEvent.
+   * @param verbose            The current Processtoken.
+   * @param processTokenFacade The Facade for managing the ProcessInstance's ProcessTokens.
+   * @param processModelFacade The ProcessModelFacade containing the ProcessModel.
+   * @param identity           The ProcessInstance owner.
    */
   private async handleBoundaryEvent(
     eventData: OnBoundaryEventTriggeredData,
-    currentProcessToken: ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<void> {
 
     if (eventData.eventPayload) {
-      currentProcessToken.payload = eventData.eventPayload;
+      token.payload = eventData.eventPayload;
     }
 
     if (eventData.interruptHandler) {
-      await this.interrupt(currentProcessToken);
+      await this.onInterruptedCallback(token);
+      await this.afterExecute(token);
+      await this.persistOnExit(token);
     }
 
     await this.continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
       eventData.boundaryInstanceId,
       eventData.nextFlowNode,
-      currentProcessToken,
+      token,
       processTokenFacade,
       processModelFacade,
       identity,
