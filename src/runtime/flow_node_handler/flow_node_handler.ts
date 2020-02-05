@@ -22,7 +22,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   protected flowNodeInstanceId: string = undefined;
   protected flowNode: TFlowNode;
   protected previousFlowNodeInstanceId: string;
+
   protected terminationSubscription: Subscription;
+  protected processErrorSubscription: Subscription;
 
   protected logger: Logger;
 
@@ -101,9 +103,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade?: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<void> {
-    if (this.terminationSubscription) {
-      this.eventAggregator.unsubscribe(this.terminationSubscription);
-    }
+    this.eventAggregator.unsubscribe(this.processErrorSubscription);
+    this.eventAggregator.unsubscribe(this.terminationSubscription);
   }
 
   // TODO: Move to "FlowNodeExecutionService"
