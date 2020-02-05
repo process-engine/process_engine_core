@@ -26,9 +26,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
   private isInterrupted = false;
 
-  private processTerminationSubscription: Subscription;
-  private processErrorSubscription: Subscription;
-
   constructor(
     container: IContainer,
     eventAggregator: IEventAggregator,
@@ -74,8 +71,8 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     // likely crash the ProcessInstance.
     this.incomingFlowNodeInstanceIds.push(this.previousFlowNodeInstanceId);
 
-    if (!this.processTerminationSubscription) {
-      this.processTerminationSubscription = this.subscribeToProcessTermination(token);
+    if (!this.terminationSubscription) {
+      this.terminationSubscription = this.subscribeToProcessTermination(token);
     }
 
     if (!this.processErrorSubscription) {
