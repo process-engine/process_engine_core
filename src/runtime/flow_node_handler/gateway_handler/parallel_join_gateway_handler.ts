@@ -127,6 +127,8 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     if (notAllBranchesHaveFinished) {
       return undefined;
     }
+    this.cleanupSubscriptions();
+    this.removeInstanceFromIocContainer(token);
 
     const aggregatedResults = this.aggregateResults();
 
@@ -134,9 +136,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, aggregatedResults);
     await this.persistOnExit(token);
-    this.cleanupSubscriptions();
-
-    this.removeInstanceFromIocContainer(token);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
@@ -164,6 +163,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       // This is done to prevent anybody from accessing the handler after a termination message was received.
       // This is necessary, to prevent access until the the state change to "terminated" is done.
       this.isInterrupted = true;
+      this.cleanupSubscriptions();
 
       const terminatedByEndEvent = message?.flowNodeId != undefined;
 
@@ -171,7 +171,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
         ? message.currentToken
         : {};
 
-      this.cleanupSubscriptions();
       await this.persistOnTerminate(token);
 
       this.removeInstanceFromIocContainer(token);
@@ -189,6 +188,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       // This is done to prevent anybody from accessing the handler after an error message was received.
       // This is necessary, to prevent access until the the state change to "error" is done.
       this.isInterrupted = true;
+      this.cleanupSubscriptions();
 
       const payloadIsDefined = message != undefined;
 
@@ -199,7 +199,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       const error = new InternalServerError('ProcessInstance encountered an error!');
       error.additionalInformation = message.currentToken;
 
-      this.cleanupSubscriptions();
       await this.persistOnError(token, error);
 
       this.removeInstanceFromIocContainer(token);
