@@ -220,12 +220,12 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
     const flowNodesAfterSplitGateway = this.getNextFlowNodesFor(splitGateway);
 
-    let joinGateway: Model.Gateways.Gateway;
+    let discoveredJoinGateway: Model.Gateways.Gateway;
 
     for (const flowNode of flowNodesAfterSplitGateway) {
 
-      if (joinGateway) {
-        return joinGateway;
+      if (discoveredJoinGateway) {
+        return discoveredJoinGateway;
       }
 
       let currentFlowNode = this.getNextFlowNodesFor(flowNode)[0];
@@ -240,21 +240,21 @@ export class ProcessModelFacade implements IProcessModelFacade {
         const flowNodeIsJoinGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Converging;
 
         if (bpmnTypesMatch && flowNodeIsJoinGateway) {
-          joinGateway = currentFlowNode as Model.Gateways.Gateway;
+          discoveredJoinGateway = currentFlowNode as Model.Gateways.Gateway;
 
           break;
         }
 
-        const currentFlowNodeIsAGateway =
+        const flowNodeIsAGateway =
           currentFlowNode.bpmnType === BpmnType.parallelGateway ||
           currentFlowNode.bpmnType === BpmnType.exclusiveGateway ||
           currentFlowNode.bpmnType === BpmnType.inclusiveGateway ||
           currentFlowNode.bpmnType === BpmnType.eventBasedGateway ||
           currentFlowNode.bpmnType === BpmnType.complexGateway;
 
-        const currentFlowNodeIsSplitGateway = !flowNodeIsJoinGateway;
+        const isSplitGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
 
-        if (currentFlowNodeIsAGateway && currentFlowNodeIsSplitGateway) {
+        if (flowNodeIsAGateway && isSplitGateway) {
           const nestedJoinGateway = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway);
           currentFlowNode = nestedJoinGateway ? this.getNextFlowNodesFor(nestedJoinGateway)[0] : undefined;
         } else {
@@ -263,7 +263,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
       }
     }
 
-    return joinGateway;
+    return discoveredJoinGateway;
   }
 
   protected filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
