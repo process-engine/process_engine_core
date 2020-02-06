@@ -56,7 +56,7 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
       throw new InternalServerError(`No matching Join Gateway was found for ParallelSplitGateway ${this.parallelGateway.id}!`);
     }
 
-    this.flowNodeHandlerFactory.create(joinGateway, token);
+    await this.flowNodeHandlerFactory.create(joinGateway, token);
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, {});
     await this.persistOnExit(token);
