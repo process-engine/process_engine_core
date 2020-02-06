@@ -228,7 +228,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
         return discoveredJoinGateway;
       }
 
-      let currentFlowNode = this.getNextFlowNodesFor(flowNode)[0];
+      let currentFlowNode = flowNode;
 
       while (true) {
         const endOfBranchReached = currentFlowNode == undefined;
