@@ -16,7 +16,6 @@ import {
   IBoundaryEventHandler,
   IFlowNodeHandler,
   IFlowNodeInstanceResult,
-  IInterruptible,
   IProcessModelFacade,
   IProcessTokenFacade,
   OnBoundaryEventTriggeredData,
@@ -36,7 +35,7 @@ interface IFlowNodeModelInstanceAssociation {
 /**
  * This is the base handler for all Activities and Tasks.
  */
-export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> implements IInterruptible {
+export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> {
 
   private attachedBoundaryEventHandlers: Array<IBoundaryEventHandler> = [];
 
@@ -59,6 +58,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
+        this.processErrorSubscription = this.subscribeToProcessError(token, reject);
         await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
@@ -129,6 +129,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
         if (flowNodeInstancesAfterBoundaryEvents.length === 0) {
           this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
+          this.processErrorSubscription = this.subscribeToProcessError(token, reject);
           await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve, allFlowNodeInstances);
 
           nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
@@ -199,17 +200,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         return this.handleActivityError(token, error, processTokenFacade, processModelFacade, identity, resolve, reject);
       }
     });
-  }
-
-  public async interrupt(token: ProcessToken, terminate?: boolean): Promise<void> {
-    await this.onInterruptedCallback(token);
-    await this.afterExecute(token);
-
-    if (terminate) {
-      return this.persistOnTerminate(token);
-    }
-
-    return this.persistOnExit(token);
   }
 
   protected async resumeFromState(
@@ -303,49 +293,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     await this.persistOnExit(resumeToken);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
-  }
-
-  protected async persistOnSuspend(processToken: ProcessToken): Promise<void> {
-    await this.flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
-  }
-
-  protected async persistOnResume(processToken: ProcessToken): Promise<void> {
-    await this.flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
-  }
-
-  protected subscribeToProcessTermination(token: ProcessToken, rejectionFunction: Function): Subscription {
-
-    const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
-      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
-
-    const onTerminatedCallback = async (message: any): Promise<void> => {
-      const terminatedByEndEvent = message?.flowNodeId != undefined;
-      const terminationUserId = message?.terminatedBy?.userId ?? undefined;
-
-      const processTerminatedError = terminatedByEndEvent
-        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`
-        : `Process was terminated by user ${terminationUserId}`;
-
-      token.payload = terminatedByEndEvent
-        ? message.currentToken
-        : {};
-
-      this.logger.error(processTerminatedError);
-
-      await this.interrupt(token, true);
-
-      const terminationError: InternalServerError = new InternalServerError(processTerminatedError);
-
-      if (message.terminatedBy) {
-        terminationError.additionalInformation = {
-          terminatedBy: message.terminatedBy,
-        };
-      }
-
-      return rejectionFunction(terminationError);
-    };
-
-    return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
   }
 
   private async handleActivityError(
@@ -587,33 +534,34 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
    * this handler as well as all attached BoundaryEvents.
    *
    * @async
-   * @param eventData           The data sent with the triggered BoundaryEvent.
-   * @param currentProcessToken The current Processtoken.
-   * @param processTokenFacade  The Facade for managing the ProcessInstance's
-   *                            ProcessTokens.
-   * @param processModelFacade  The ProcessModelFacade containing the ProcessModel.
-   * @param identity            The ProcessInstance owner.
+   * @param eventData          The data sent with the triggered BoundaryEvent.
+   * @param verbose            The current Processtoken.
+   * @param processTokenFacade The Facade for managing the ProcessInstance's ProcessTokens.
+   * @param processModelFacade The ProcessModelFacade containing the ProcessModel.
+   * @param identity           The ProcessInstance owner.
    */
   private async handleBoundaryEvent(
     eventData: OnBoundaryEventTriggeredData,
-    currentProcessToken: ProcessToken,
+    token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
   ): Promise<void> {
 
     if (eventData.eventPayload) {
-      currentProcessToken.payload = eventData.eventPayload;
+      token.payload = eventData.eventPayload;
     }
 
     if (eventData.interruptHandler) {
-      await this.interrupt(currentProcessToken);
+      await this.onInterruptedCallback(token);
+      await this.afterExecute(token);
+      await this.persistOnExit(token);
     }
 
     await this.continueAfterBoundaryEvent<typeof eventData.nextFlowNode>(
       eventData.boundaryInstanceId,
       eventData.nextFlowNode,
-      currentProcessToken,
+      token,
       processTokenFacade,
       processModelFacade,
       identity,

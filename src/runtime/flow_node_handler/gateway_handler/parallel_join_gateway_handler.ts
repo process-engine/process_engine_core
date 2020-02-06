@@ -1,17 +1,18 @@
 import {IContainer} from 'addict-ioc';
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
-  ErrorEndEventReachedMessage,
   IFlowNodeHandlerFactory,
   IFlowNodeInstanceResult,
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ProcessErrorMessage,
   eventAggregatorSettings,
 } from '@process-engine/process_engine_contracts';
 
@@ -25,9 +26,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
   private receivedResults: Array<IFlowNodeInstanceResult> = [];
 
   private isInterrupted = false;
-
-  private processTerminationSubscription: Subscription;
-  private processErrorSubscription: Subscription;
 
   constructor(
     container: IContainer,
@@ -57,8 +55,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       return;
     }
 
-    await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-
     // TODO: Works for now, but there really must be a better solution for this problem.
     //
     // The base ID gets overwritten each time an incoming SequenceFlow arrives.
@@ -74,13 +70,22 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     // likely crash the ProcessInstance.
     this.incomingFlowNodeInstanceIds.push(this.previousFlowNodeInstanceId);
 
-    if (!this.processTerminationSubscription) {
-      this.processTerminationSubscription = this.subscribeToProcessTermination(token);
+    if (!this.terminationSubscription) {
+      this.terminationSubscription = this.subscribeToProcessTermination(token);
     }
 
     if (!this.processErrorSubscription) {
       this.processErrorSubscription = this.subscribeToProcessError(token);
     }
+  }
+
+  protected async afterExecute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+  ): Promise<void> {
+    return Promise.resolve();
   }
 
   protected async startExecution(
@@ -122,6 +127,8 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     if (notAllBranchesHaveFinished) {
       return undefined;
     }
+    this.cleanupSubscriptions();
+    this.removeInstanceFromIocContainer(token);
 
     const aggregatedResults = this.aggregateResults();
 
@@ -129,8 +136,6 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
 
     processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, aggregatedResults);
     await this.persistOnExit(token);
-
-    this.removeInstanceFromIocContainer(token);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
   }
@@ -158,6 +163,7 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
       // This is done to prevent anybody from accessing the handler after a termination message was received.
       // This is necessary, to prevent access until the the state change to "terminated" is done.
       this.isInterrupted = true;
+      this.cleanupSubscriptions();
 
       const terminatedByEndEvent = message?.flowNodeId != undefined;
 
@@ -178,10 +184,11 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
     const errorEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
       .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
 
-    const onErroredCallback = async (message: ErrorEndEventReachedMessage): Promise<void> => {
+    const onErroredCallback = async (message: ProcessErrorMessage): Promise<void> => {
       // This is done to prevent anybody from accessing the handler after an error message was received.
       // This is necessary, to prevent access until the the state change to "error" is done.
       this.isInterrupted = true;
+      this.cleanupSubscriptions();
 
       const payloadIsDefined = message != undefined;
 
@@ -189,12 +196,20 @@ export class ParallelJoinGatewayHandler extends GatewayHandler<Model.Gateways.Pa
         ? message.currentToken
         : {};
 
-      await this.persistOnError(token, message.error);
+      const error = new InternalServerError('ProcessInstance encountered an error!');
+      error.additionalInformation = message.currentToken;
+
+      await this.persistOnError(token, error);
 
       this.removeInstanceFromIocContainer(token);
     };
 
     return this.eventAggregator.subscribeOnce(errorEvent, onErroredCallback);
+  }
+
+  private cleanupSubscriptions(): void {
+    this.eventAggregator.unsubscribe(this.processErrorSubscription);
+    this.eventAggregator.unsubscribe(this.terminationSubscription);
   }
 
   private removeInstanceFromIocContainer(processToken: ProcessToken): void {

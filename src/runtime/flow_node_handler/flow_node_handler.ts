@@ -13,6 +13,7 @@ import {
   IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
+  ProcessErrorMessage,
   eventAggregatorSettings,
   onInterruptionCallback,
 } from '@process-engine/process_engine_contracts';
@@ -22,7 +23,9 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
   protected flowNodeInstanceId: string = undefined;
   protected flowNode: TFlowNode;
   protected previousFlowNodeInstanceId: string;
+
   protected terminationSubscription: Subscription;
+  protected processErrorSubscription: Subscription;
 
   protected logger: Logger;
 
@@ -101,9 +104,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     processModelFacade?: IProcessModelFacade,
     identity?: IIdentity,
   ): Promise<void> {
-    if (this.terminationSubscription) {
-      this.eventAggregator.unsubscribe(this.terminationSubscription);
-    }
+    this.eventAggregator.unsubscribe(this.processErrorSubscription);
+    this.eventAggregator.unsubscribe(this.terminationSubscription);
   }
 
   // TODO: Move to "FlowNodeExecutionService"
@@ -198,6 +200,14 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     await this.flowNodePersistenceFacade.persistOnEnter(this.flowNode, this.flowNodeInstanceId, processToken, previousFlowNodeInstanceIdToPersist);
   }
 
+  protected async persistOnSuspend(processToken: ProcessToken): Promise<void> {
+    await this.flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
+  }
+
+  protected async persistOnResume(processToken: ProcessToken): Promise<void> {
+    await this.flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
+  }
+
   protected async persistOnExit(processToken: ProcessToken): Promise<void> {
     await this.flowNodePersistenceFacade.persistOnExit(this.flowNode, this.flowNodeInstanceId, processToken);
   }
@@ -227,11 +237,8 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
         ? message.currentToken
         : {};
 
-      this.logger.error(processTerminatedError);
-
       await this.onInterruptedCallback(token);
       await this.afterExecute(token);
-
       await this.persistOnTerminate(token);
 
       const terminationError = new InternalServerError(processTerminatedError);
@@ -246,6 +253,32 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
     };
 
     return this.eventAggregator.subscribeOnce(terminateEvent, onTerminatedCallback);
+  }
+
+  protected subscribeToProcessError(token: ProcessToken, rejectionFunction: Function): Subscription {
+
+    const errorEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, token.processInstanceId);
+
+    const onErroredCallback = async (message: ProcessErrorMessage): Promise<void> => {
+
+      const payloadIsDefined = message != undefined;
+
+      token.payload = payloadIsDefined
+        ? message.currentToken
+        : {};
+
+      const error = new InternalServerError('ProcessInstance encountered an error!');
+      error.additionalInformation = message.currentToken;
+
+      await this.onInterruptedCallback(token);
+      await this.afterExecute(token);
+      await this.persistOnError(token, error);
+
+      return rejectionFunction(error);
+    };
+
+    return this.eventAggregator.subscribeOnce(errorEvent, onErroredCallback);
   }
 
   protected findNextInstanceOfFlowNode(allFlowNodeInstances: Array<FlowNodeInstance>, nextFlowNodeId: string): FlowNodeInstance {

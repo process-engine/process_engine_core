@@ -29,10 +29,11 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
-    terminationCallback?: Function,
+    rejectFunction?: Function,
   ): Promise<void> {
     await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
-    this.terminationSubscription = this.subscribeToProcessTermination(token, terminationCallback);
+    this.terminationSubscription = this.subscribeToProcessTermination(token, rejectFunction);
+    this.processErrorSubscription = this.subscribeToProcessError(token, rejectFunction);
   }
 
   public async execute(
@@ -250,14 +251,6 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
     await this.persistOnExit(resumeToken);
 
     return processModelFacade.getNextFlowNodesFor(this.flowNode);
-  }
-
-  protected async persistOnSuspend(processToken: ProcessToken): Promise<void> {
-    await this.flowNodePersistenceFacade.persistOnSuspend(this.flowNode, this.flowNodeInstanceId, processToken);
-  }
-
-  protected async persistOnResume(processToken: ProcessToken): Promise<void> {
-    await this.flowNodePersistenceFacade.persistOnResume(this.flowNode, this.flowNodeInstanceId, processToken);
   }
 
   /**
