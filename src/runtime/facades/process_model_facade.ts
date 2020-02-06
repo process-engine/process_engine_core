@@ -216,7 +216,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return matchingIntermediateCatchEvents as Array<Model.Events.IntermediateCatchEvent>;
   }
 
-  public findJoinGatewayAfterSplitGateway(splitGateway: Model.Gateways.Gateway): Model.Gateways.Gateway {
+  public findJoinGatewayAfterSplitGateway(splitGateway: Model.Gateways.Gateway, parentSplitGateway?: Model.Gateways.Gateway): Model.Gateways.Gateway {
 
     const flowNodesAfterSplitGateway = this.getNextFlowNodesFor(splitGateway);
 
@@ -230,14 +230,14 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
       let currentFlowNode = flowNode;
 
+      // eslint-disable-next-line
       while (true) {
         const endOfBranchReached = currentFlowNode == undefined;
         if (endOfBranchReached) {
           break;
         }
-
         const bpmnTypesMatch = currentFlowNode.bpmnType === splitGateway.bpmnType;
-        const flowNodeIsJoinGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Converging;
+        const flowNodeIsJoinGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection != Model.Gateways.GatewayDirection.Diverging;
 
         if (bpmnTypesMatch && flowNodeIsJoinGateway) {
           discoveredJoinGateway = currentFlowNode as Model.Gateways.Gateway;
@@ -255,14 +255,20 @@ export class ProcessModelFacade implements IProcessModelFacade {
         const isSplitGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
 
         if (flowNodeIsAGateway && isSplitGateway) {
-          const nestedJoinGateway = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway);
-          currentFlowNode = nestedJoinGateway ? this.getNextFlowNodesFor(nestedJoinGateway)[0] : undefined;
+          const nestedJoinGateway = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway, splitGateway);
+          currentFlowNode = nestedJoinGateway;
+        } else if (!flowNodeIsAGateway) {
+          const nextFlowNodes = this.getNextFlowNodesFor(flowNode);
+          currentFlowNode = nextFlowNodes?.length > 0 ? nextFlowNodes[0] : undefined;
         } else {
-          currentFlowNode = this.getNextFlowNodesFor(flowNode)[0];
+          const typeMatchesParentGateway = currentFlowNode.bpmnType === parentSplitGateway?.bpmnType;
+          if (typeMatchesParentGateway) {
+            discoveredJoinGateway = currentFlowNode as Model.Gateways.Gateway;
+          }
+          break;
         }
       }
     }
-
     return discoveredJoinGateway;
   }
 
