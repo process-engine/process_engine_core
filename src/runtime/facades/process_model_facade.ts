@@ -256,7 +256,7 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
         if (currentFlowNodeIsAGateway && currentFlowNodeIsSplitGateway) {
           const nestedJoinGateway = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway);
-          currentFlowNode = this.getNextFlowNodesFor(nestedJoinGateway)[0];
+          currentFlowNode = nestedJoinGateway ? this.getNextFlowNodesFor(nestedJoinGateway)[0] : undefined;
         } else {
           currentFlowNode = this.getNextFlowNodesFor(flowNode)[0];
         }
