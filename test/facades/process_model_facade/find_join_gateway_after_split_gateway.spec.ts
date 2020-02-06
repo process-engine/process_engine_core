@@ -5,7 +5,7 @@ import {Model} from '@process-engine/persistence_api.contracts';
 import {ProcessModelFacade} from '../../../src/runtime/facades/process_model_facade';
 import {TestFixtureProvider} from '../../test_fixture_provider';
 
-describe.only('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void => {
+describe('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void => {
 
   let fixtureProvider: TestFixtureProvider;
   let processModelFacade: ProcessModelFacade;
