@@ -43,7 +43,7 @@ describe.only('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void =>
     should(joinGateway.id).be.equal('Parallel_Join_Gateway_3');
   });
 
-  it.only('Should return the matching Join Gateway, if one of the branches of the split gateway leads to an EndEvent.', async (): Promise<void> => {
+  it('Should return the matching Join Gateway, if one of the branches of the split gateway leads to an EndEvent.', async (): Promise<void> => {
     const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Parallel_Split_Gateway_4');
     const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(splitGateway);
 
@@ -59,7 +59,7 @@ describe.only('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void =>
     should(joinGateway.id).be.equal('Parallel_Join_Gateway_5');
   });
 
-  it('Should ignore any path created by a BoundaryEvent.', async (): Promise<void> => {
+  it('Should not travel through a path that starts at a BoundaryEvent.', async (): Promise<void> => {
     const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Parallel_Split_Gateway_6');
     const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(splitGateway);
 
