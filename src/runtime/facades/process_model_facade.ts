@@ -216,6 +216,55 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return matchingIntermediateCatchEvents as Array<Model.Events.IntermediateCatchEvent>;
   }
 
+  public findJoinGatewayAfterSplitGateway(splitGateway: Model.Gateways.Gateway): Model.Gateways.Gateway {
+
+    const flowNodesAfterSplitGateway = this.getNextFlowNodesFor(splitGateway);
+
+    let joinGateway: Model.Gateways.Gateway;
+
+    for (const flowNode of flowNodesAfterSplitGateway) {
+
+      if (joinGateway) {
+        return joinGateway;
+      }
+
+      let currentFlowNode = this.getNextFlowNodesFor(flowNode)[0];
+
+      while (true) {
+        const endOfBranchReached = currentFlowNode == undefined;
+        if (endOfBranchReached) {
+          break;
+        }
+
+        const bpmnTypesMatch = currentFlowNode.bpmnType === splitGateway.bpmnType;
+        const flowNodeIsJoinGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Converging;
+
+        if (bpmnTypesMatch && flowNodeIsJoinGateway) {
+          joinGateway = currentFlowNode as Model.Gateways.Gateway;
+
+          break;
+        }
+
+        const currentFlowNodeIsAGateway =
+          currentFlowNode.bpmnType === BpmnType.parallelGateway ||
+          currentFlowNode.bpmnType === BpmnType.exclusiveGateway ||
+          currentFlowNode.bpmnType === BpmnType.inclusiveGateway ||
+          currentFlowNode.bpmnType === BpmnType.eventBasedGateway ||
+          currentFlowNode.bpmnType === BpmnType.complexGateway;
+
+        const currentFlowNodeIsSplitGateway = !flowNodeIsJoinGateway;
+
+        if (currentFlowNodeIsAGateway && currentFlowNodeIsSplitGateway) {
+          currentFlowNode = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway);
+        } else {
+          currentFlowNode = this.getNextFlowNodesFor(flowNode)[0];
+        }
+      }
+    }
+
+    return joinGateway;
+  }
+
   protected filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
     const flowNodes = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => flowNode instanceof type);
 
