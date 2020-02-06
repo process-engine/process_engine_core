@@ -24,6 +24,18 @@ import {FlowNodeHandler} from '../flow_node_handler';
  */
 export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extends FlowNodeHandler<TFlowNode> {
 
+  protected async beforeExecute(
+    token: ProcessToken,
+    processTokenFacade: IProcessTokenFacade,
+    processModelFacade: IProcessModelFacade,
+    identity: IIdentity,
+    rejectFunction?: Function,
+  ): Promise<void> {
+    await super.beforeExecute(token, processTokenFacade, processModelFacade, identity);
+    this.terminationSubscription = this.subscribeToProcessTermination(token, rejectFunction);
+    this.processErrorSubscription = this.subscribeToProcessError(token, rejectFunction);
+  }
+
   public async execute(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
@@ -42,10 +54,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       }
 
       try {
-        this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
-        this.processErrorSubscription = this.subscribeToProcessError(token, reject);
-
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
+        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
@@ -103,10 +112,7 @@ export abstract class EventHandler<TFlowNode extends Model.Base.FlowNode> extend
       const token = flowNodeInstanceForHandler.tokens[0];
 
       try {
-        this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
-        this.processErrorSubscription = this.subscribeToProcessError(token, reject);
-
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
+        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
         const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
         await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
 
