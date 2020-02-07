@@ -241,7 +241,6 @@ export class ProcessModelFacade implements IProcessModelFacade {
 
         if (bpmnTypesMatch && flowNodeIsJoinGateway) {
           discoveredJoinGateway = currentFlowNode as Model.Gateways.Gateway;
-
           break;
         }
 
@@ -253,19 +252,17 @@ export class ProcessModelFacade implements IProcessModelFacade {
           currentFlowNode.bpmnType === BpmnType.complexGateway;
 
         const isSplitGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
+        const typeMatchesParentGateway = currentFlowNode.bpmnType === parentSplitGateway?.bpmnType;
 
         if (flowNodeIsAGateway && isSplitGateway) {
           const nestedJoinGateway = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway, splitGateway);
           currentFlowNode = nestedJoinGateway;
-        } else if (!flowNodeIsAGateway) {
-          const nextFlowNodes = this.getNextFlowNodesFor(flowNode);
-          currentFlowNode = nextFlowNodes?.length > 0 ? nextFlowNodes[0] : undefined;
-        } else {
-          const typeMatchesParentGateway = currentFlowNode.bpmnType === parentSplitGateway?.bpmnType;
-          if (typeMatchesParentGateway) {
-            discoveredJoinGateway = currentFlowNode as Model.Gateways.Gateway;
-          }
+        } else if (flowNodeIsAGateway && typeMatchesParentGateway) {
+          discoveredJoinGateway = currentFlowNode as Model.Gateways.Gateway;
           break;
+        } else {
+          const nextFlowNodes = this.getNextFlowNodesFor(currentFlowNode);
+          currentFlowNode = nextFlowNodes?.length > 0 ? nextFlowNodes[0] : undefined;
         }
       }
     }
