@@ -231,7 +231,26 @@ export class ProcessModelFacade implements IProcessModelFacade {
       }
     }
 
-    // Now we need to make sure we have the right gateway, by determining if all paths lead to the same gateway.
+    // If none or only one gateway was discovered, just return that.
+    if (discoveredJoinGateways.length <= 1) {
+      return discoveredJoinGateways[0];
+    }
+
+    // If multiple branches lead to a Join Gateway,
+    // we need to make sure we have the right one, by determining if all paths ended at the same gateway.
+    const gatewayId = discoveredJoinGateways[0].id;
+    const allBranchesLeadToSameJoinGateway = discoveredJoinGateways.every((entry) => entry.id === gatewayId);
+
+    if (!allBranchesLeadToSameJoinGateway) {
+      const error = new InternalServerError(`Failed to discover definitive Join Gateway for Split Gateway ${splitGateway.id}! Check your BPMN!`);
+      error.additionalInformation = {
+        splitGateway: splitGateway,
+        parentSplitGateway: parentSplitGateway,
+        discoveredJoinGateways: discoveredJoinGateways,
+      };
+
+      throw error;
+    }
 
     return discoveredJoinGateways[0];
   }
