@@ -67,6 +67,14 @@ describe('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void => {
     should(joinGateway.id).be.equal('Parallel_Join_Gateway_6');
   });
 
+  it('Should pass through a Join Gateway on the same level that is of a different type.', async (): Promise<void> => {
+    const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Parallel_Split_Gateway_7');
+    const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(splitGateway);
+
+    should.exist(joinGateway);
+    should(joinGateway.id).be.equal('Parallel_Join_Gateway_7');
+  });
+
   it('Should return undefined, if none of the branches after the split gateway lead to a corresponding join gateway.', async (): Promise<void> => {
     const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Exclusive_Split_Gateway_1');
     const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(splitGateway);
