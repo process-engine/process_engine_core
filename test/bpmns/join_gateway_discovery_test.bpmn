@@ -63,9 +63,17 @@
         <bpmn:flowNodeRef>Exclusive_Split_Gateway_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_0zzr2iw</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_1ykfme2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Parallel_Split_Gateway_8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_1xsw1ob</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_1t4011h</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Parallel_Join_Gateway_8-1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_0j5v83l</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_0tqqgee</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>BoundaryEvent_0ukysab</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>BoundaryEvent_0ob83hs</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>BoundaryEvent_0rk68bd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_0zt0sx5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Parallel_Join_Gateway_8-2</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:startEvent id="StartEvent_1mox3jl" name="Start Event">
@@ -251,7 +259,7 @@
     </bpmn:task>
     <bpmn:sequenceFlow id="SequenceFlow_14r6bpo" sourceRef="Parallel_Split_Gateway_5" targetRef="Task_0szm473" />
     <bpmn:sequenceFlow id="SequenceFlow_0d3ey6y" sourceRef="Task_0szm473" targetRef="Parallel_Join_Gateway_5" />
-    <bpmn:parallelGateway id="Parallel_Split_Gateway_5">
+    <bpmn:parallelGateway id="Parallel_Split_Gateway_5" name="">
       <bpmn:incoming>SequenceFlow_1m275p0</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0eal41f</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_14r6bpo</bpmn:outgoing>
@@ -362,14 +370,54 @@
     <bpmn:sequenceFlow id="SequenceFlow_1140gtp" sourceRef="StartEvent_1c5p1h0" targetRef="Exclusive_Split_Gateway_1" />
     <bpmn:sequenceFlow id="SequenceFlow_1cgxn1u" sourceRef="Exclusive_Split_Gateway_1" targetRef="EndEvent_0zzr2iw" />
     <bpmn:sequenceFlow id="SequenceFlow_04ia8ly" sourceRef="Exclusive_Split_Gateway_1" targetRef="EndEvent_1ykfme2" />
+    <bpmn:sequenceFlow id="SequenceFlow_0eqcoit" sourceRef="Parallel_Join_Gateway_8-1" targetRef="EndEvent_0tqqgee" />
+    <bpmn:parallelGateway id="Parallel_Split_Gateway_8" name="">
+      <bpmn:incoming>SequenceFlow_0c2bkbq</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0fcdrfk</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_15u6qfd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:task id="Task_1xsw1ob">
+      <bpmn:incoming>SequenceFlow_0fcdrfk</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1nf5vrl</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_1t4011h">
+      <bpmn:incoming>SequenceFlow_15u6qfd</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1lfenv4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:parallelGateway id="Parallel_Join_Gateway_8-1" name="">
+      <bpmn:incoming>SequenceFlow_1nf5vrl</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1ypbusb</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0eqcoit</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:boundaryEvent id="BoundaryEvent_0zt0sx5" attachedToRef="Task_1t4011h">
+      <bpmn:outgoing>SequenceFlow_1o65h3z</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    <bpmn:startEvent id="StartEvent_0j5v83l" name="">
+      <bpmn:outgoing>SequenceFlow_0c2bkbq</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0c2bkbq" sourceRef="StartEvent_0j5v83l" targetRef="Parallel_Split_Gateway_8" />
+    <bpmn:sequenceFlow id="SequenceFlow_0fcdrfk" sourceRef="Parallel_Split_Gateway_8" targetRef="Task_1xsw1ob" />
+    <bpmn:sequenceFlow id="SequenceFlow_15u6qfd" sourceRef="Parallel_Split_Gateway_8" targetRef="Task_1t4011h" />
+    <bpmn:sequenceFlow id="SequenceFlow_1nf5vrl" name="" sourceRef="Task_1xsw1ob" targetRef="Parallel_Join_Gateway_8-1" />
+    <bpmn:sequenceFlow id="SequenceFlow_1lfenv4" sourceRef="Task_1t4011h" targetRef="Parallel_Join_Gateway_8-2" />
+    <bpmn:sequenceFlow id="SequenceFlow_1o65h3z" sourceRef="BoundaryEvent_0zt0sx5" targetRef="Parallel_Join_Gateway_8-2" />
+    <bpmn:sequenceFlow id="SequenceFlow_1ypbusb" sourceRef="Parallel_Join_Gateway_8-2" targetRef="Parallel_Join_Gateway_8-1" />
+    <bpmn:endEvent id="EndEvent_0tqqgee">
+      <bpmn:incoming>SequenceFlow_0eqcoit</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:parallelGateway id="Parallel_Join_Gateway_8-2" name="">
+      <bpmn:incoming>SequenceFlow_1lfenv4</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1o65h3z</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1ypbusb</bpmn:outgoing>
+    </bpmn:parallelGateway>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1cidyxu">
       <bpmndi:BPMNShape id="Participant_0px403d_di" bpmnElement="Participant_0px403d" isHorizontal="true">
-        <dc:Bounds x="5" y="-47" width="792" height="2522" />
+        <dc:Bounds x="5" y="-47" width="799" height="2876" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_1xzf0d3_di" bpmnElement="Lane_1xzf0d3" isHorizontal="true">
-        <dc:Bounds x="35" y="-47" width="762" height="2522" />
+        <dc:Bounds x="35" y="-47" width="769" height="2876" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_1mox3jl_di" bpmnElement="StartEvent_1mox3jl">
         <dc:Bounds x="83" y="69" width="36" height="36" />
@@ -820,6 +868,66 @@
         <di:waypoint x="510" y="2185" />
         <di:waypoint x="510" y="2170" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_0j5v83l_di" bpmnElement="StartEvent_0j5v83l">
+        <dc:Bounds x="83" y="2621" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParallelGateway_1r806hc_di" bpmnElement="Parallel_Split_Gateway_8">
+        <dc:Bounds x="196" y="2614" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_1xsw1ob_di" bpmnElement="Task_1xsw1ob">
+        <dc:Bounds x="305" y="2476" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_1t4011h_di" bpmnElement="Task_1t4011h">
+        <dc:Bounds x="305" y="2697" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParallelGateway_0gagipe_di" bpmnElement="Parallel_Join_Gateway_8-1">
+        <dc:Bounds x="485" y="2614" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0tqqgee_di" bpmnElement="EndEvent_0tqqgee">
+        <dc:Bounds x="658" y="2621" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0zt0sx5_di" bpmnElement="BoundaryEvent_0zt0sx5">
+        <dc:Bounds x="387" y="2759" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0c2bkbq_di" bpmnElement="SequenceFlow_0c2bkbq">
+        <di:waypoint x="119" y="2639" />
+        <di:waypoint x="196" y="2639" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0fcdrfk_di" bpmnElement="SequenceFlow_0fcdrfk">
+        <di:waypoint x="221" y="2614" />
+        <di:waypoint x="221" y="2516" />
+        <di:waypoint x="305" y="2516" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_15u6qfd_di" bpmnElement="SequenceFlow_15u6qfd">
+        <di:waypoint x="221" y="2664" />
+        <di:waypoint x="221" y="2737" />
+        <di:waypoint x="305" y="2737" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1nf5vrl_di" bpmnElement="SequenceFlow_1nf5vrl">
+        <di:waypoint x="405" y="2516" />
+        <di:waypoint x="510" y="2516" />
+        <di:waypoint x="510" y="2614" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1lfenv4_di" bpmnElement="SequenceFlow_1lfenv4">
+        <di:waypoint x="405" y="2737" />
+        <di:waypoint x="485" y="2737" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1o65h3z_di" bpmnElement="SequenceFlow_1o65h3z">
+        <di:waypoint x="423" y="2777" />
+        <di:waypoint x="510" y="2777" />
+        <di:waypoint x="510" y="2762" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1ypbusb_di" bpmnElement="SequenceFlow_1ypbusb">
+        <di:waypoint x="510" y="2712" />
+        <di:waypoint x="510" y="2664" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0eqcoit_di" bpmnElement="SequenceFlow_0eqcoit">
+        <di:waypoint x="535" y="2639" />
+        <di:waypoint x="658" y="2639" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ParallelGateway_10qbkev_di" bpmnElement="Parallel_Join_Gateway_8-2">
+        <dc:Bounds x="485" y="2712" width="50" height="50" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

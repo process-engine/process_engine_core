@@ -81,4 +81,25 @@ describe('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void => {
 
     should.not.exist(joinGateway);
   });
+
+  // eslint-disable-next-line
+  it('Should throw an error, if the branches lead to different join gateways of the same type, which constitues an invalid BPMN.', async (): Promise<void> => {
+    const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Parallel_Split_Gateway_8');
+
+    try {
+      const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(splitGateway);
+
+      should.fail(joinGateway, undefined, 'This should have caused an error!');
+    } catch (error) {
+      should(error.message).match(/failed to discover definitive join gateway/i);
+      should(error.code).be.equal(500);
+
+      should(error).have.property('additionalInformation');
+      should(error.additionalInformation.splitGateway).be.eql(splitGateway);
+      should(error.additionalInformation.parentSplitGateway).be.undefined();
+
+      should(error.additionalInformation.discoveredJoinGateways).be.an.Array();
+      should(error.additionalInformation.discoveredJoinGateways).have.a.lengthOf(2);
+    }
+  });
 });
