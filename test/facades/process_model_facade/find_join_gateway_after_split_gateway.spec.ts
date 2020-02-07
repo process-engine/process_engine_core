@@ -19,7 +19,7 @@ describe('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void => {
     processModelFacade = fixtureProvider.createProcessModelFacade(parsedProcessModel);
   });
 
-  it('Should return the matching Join Gateway of a given Split Gateway.', async (): Promise<void> => {
+  it('Should return the Join Gateway that corresponds to the given Split Gateway.', async (): Promise<void> => {
     const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Parallel_Split_Gateway_1');
     const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(splitGateway);
 
@@ -83,7 +83,7 @@ describe('ProcessModelFacade.findJoinGatewayAfterSplitGateway', (): void => {
   });
 
   // eslint-disable-next-line
-  it('Should throw an error, if the branches lead to different join gateways of the same type, which constitues an invalid BPMN.', async (): Promise<void> => {
+  it('Should throw an error, if the branches lead to different join gateways of the same type, which constitutes an invalid BPMN.', async (): Promise<void> => {
     const splitGateway = <Model.Gateways.ParallelGateway> processModelFacade.getFlowNodeById('Parallel_Split_Gateway_8');
 
     try {
