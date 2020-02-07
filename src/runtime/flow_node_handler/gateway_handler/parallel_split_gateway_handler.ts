@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -7,10 +8,10 @@ import {Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
   IFlowNodeHandlerFactory,
   IFlowNodePersistenceFacade,
-  IProcessModelFacade,
   IProcessTokenFacade,
 } from '@process-engine/process_engine_contracts';
 
+import {ProcessModelFacade} from '../../facades/process_model_facade';
 import {GatewayHandler} from './index';
 
 export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.ParallelGateway> {
@@ -32,7 +33,7 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
   protected async startExecution(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
+    processModelFacade: ProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
@@ -45,14 +46,27 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
   protected async executeHandler(
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
-    processModelFacade: IProcessModelFacade,
+    processModelFacade: ProcessModelFacade,
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, {});
-    await this.persistOnExit(token);
+    try {
+      const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(this.parallelGateway);
 
-    return processModelFacade.getNextFlowNodesFor(this.parallelGateway);
+      if (!joinGateway) {
+        throw new InternalServerError(`No matching Join Gateway was found for ParallelSplitGateway ${this.parallelGateway.id}!`);
+      }
+
+      await this.flowNodeHandlerFactory.create(joinGateway, token);
+
+      processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, {});
+      await this.persistOnExit(token);
+
+      return processModelFacade.getNextFlowNodesFor(this.parallelGateway);
+    } catch (error) {
+      this.logger.error('Failed to discover Join Gateway!', error);
+      throw error;
+    }
   }
 
 }

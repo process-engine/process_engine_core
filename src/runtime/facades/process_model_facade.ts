@@ -216,6 +216,56 @@ export class ProcessModelFacade implements IProcessModelFacade {
     return matchingIntermediateCatchEvents as Array<Model.Events.IntermediateCatchEvent>;
   }
 
+  /**
+   * Takes a Split Gateway of any type and determines which Join Gateway is its counterpart.
+   *
+   * Note:
+   * This should not be used for Exclusive Gateways, because these are not required to have a Join Gateway.
+   *
+   * @param   splitGateway         The Split Gateway for which to search the corresponding Joing Gateway.
+   * @param   parentSplitGateway   When dealing with a nested Split Gateway, this will contain the parent.
+   * @returns                      The discovered Join Gateway. Will return undefined, if no Gateway was found.
+   * @throws {InternalServerError} If the branches lead to multiple Join Gateways. This inidcates an invalid or broken BPMN.
+   */
+  public findJoinGatewayAfterSplitGateway(splitGateway: Model.Gateways.Gateway, parentSplitGateway?: Model.Gateways.Gateway): Model.Gateways.Gateway {
+
+    const flowNodesAfterSplitGateway = this.getNextFlowNodesFor(splitGateway);
+
+    const discoveredJoinGateways: Array<Model.Gateways.Gateway> = [];
+
+    // Travel through all branches and find out where they ultimately lead to
+    for (const flowNode of flowNodesAfterSplitGateway) {
+      const discoveredJoinGateway = this.travelToJoinGateway(splitGateway, flowNode, parentSplitGateway);
+
+      if (discoveredJoinGateway) {
+        discoveredJoinGateways.push(discoveredJoinGateway);
+      }
+    }
+
+    // If only one gateway was discovered, no validation is necessary.
+    if (discoveredJoinGateways.length <= 1) {
+      return discoveredJoinGateways[0];
+    }
+
+    // Ensure we have the right gateway, by determining if all paths ended at the same one.
+    // If not, the BPMN is most likely invalid or broken.
+    const gatewayId = discoveredJoinGateways[0].id;
+    const allBranchesLeadToSameJoinGateway = discoveredJoinGateways.every((entry) => entry.id === gatewayId);
+
+    if (!allBranchesLeadToSameJoinGateway) {
+      const error = new InternalServerError(`Failed to discover definitive Join Gateway for Split Gateway ${splitGateway.id}! Check your BPMN!`);
+      error.additionalInformation = {
+        splitGateway: splitGateway,
+        parentSplitGateway: parentSplitGateway,
+        discoveredJoinGateways: discoveredJoinGateways,
+      };
+
+      throw error;
+    }
+
+    return discoveredJoinGateways[0];
+  }
+
   protected filterFlowNodesByType<TFlowNode extends Model.Base.FlowNode>(type: Model.Base.IConstructor<TFlowNode>): Array<TFlowNode> {
     const flowNodes = this.processModel.flowNodes.filter((flowNode: Model.Base.FlowNode): boolean => flowNode instanceof type);
 
@@ -257,6 +307,50 @@ export class ProcessModelFacade implements IProcessModelFacade {
     }
 
     return undefined;
+  }
+
+  private travelToJoinGateway(
+    startSplitGateway: Model.Gateways.Gateway,
+    startingFlowNode: Model.Base.FlowNode,
+    parentSplitGateway?: Model.Gateways.Gateway,
+  ): Model.Gateways.Gateway {
+
+    let currentFlowNode = startingFlowNode;
+
+    // eslint-disable-next-line
+    while (true) {
+      const endOfBranchReached = currentFlowNode == undefined;
+      if (endOfBranchReached) {
+        return undefined;
+      }
+
+      const bpmnTypesMatch = currentFlowNode.bpmnType === startSplitGateway.bpmnType;
+      const flowNodeIsJoinGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection != Model.Gateways.GatewayDirection.Diverging;
+
+      if (bpmnTypesMatch && flowNodeIsJoinGateway) {
+        return currentFlowNode as Model.Gateways.Gateway;
+      }
+
+      const flowNodeIsAGateway =
+        currentFlowNode.bpmnType === BpmnType.parallelGateway ||
+        currentFlowNode.bpmnType === BpmnType.exclusiveGateway ||
+        currentFlowNode.bpmnType === BpmnType.inclusiveGateway ||
+        currentFlowNode.bpmnType === BpmnType.eventBasedGateway ||
+        currentFlowNode.bpmnType === BpmnType.complexGateway;
+
+      const isSplitGateway = (currentFlowNode as Model.Gateways.Gateway).gatewayDirection === Model.Gateways.GatewayDirection.Diverging;
+      const typeMatchesParentGateway = currentFlowNode.bpmnType === parentSplitGateway?.bpmnType;
+
+      if (flowNodeIsAGateway && isSplitGateway) {
+        const nestedJoinGateway = this.findJoinGatewayAfterSplitGateway(currentFlowNode as Model.Gateways.Gateway, startSplitGateway);
+        currentFlowNode = nestedJoinGateway;
+      } else if (flowNodeIsAGateway && typeMatchesParentGateway) {
+        return currentFlowNode as Model.Gateways.Gateway;
+      }
+
+      const nextFlowNodes = this.getNextFlowNodesFor(currentFlowNode);
+      currentFlowNode = nextFlowNodes?.length > 0 ? nextFlowNodes[0] : undefined;
+    }
   }
 
 }
