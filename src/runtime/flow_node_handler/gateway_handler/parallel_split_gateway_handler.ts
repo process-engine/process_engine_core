@@ -50,18 +50,23 @@ export class ParallelSplitGatewayHandler extends GatewayHandler<Model.Gateways.P
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(this.parallelGateway);
+    try {
+      const joinGateway = processModelFacade.findJoinGatewayAfterSplitGateway(this.parallelGateway);
 
-    if (!joinGateway) {
-      throw new InternalServerError(`No matching Join Gateway was found for ParallelSplitGateway ${this.parallelGateway.id}!`);
+      if (!joinGateway) {
+        throw new InternalServerError(`No matching Join Gateway was found for ParallelSplitGateway ${this.parallelGateway.id}!`);
+      }
+
+      await this.flowNodeHandlerFactory.create(joinGateway, token);
+
+      processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, {});
+      await this.persistOnExit(token);
+
+      return processModelFacade.getNextFlowNodesFor(this.parallelGateway);
+    } catch (error) {
+      this.logger.error('Failed to discover Join Gateway!', error);
+      throw error;
     }
-
-    await this.flowNodeHandlerFactory.create(joinGateway, token);
-
-    processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, {});
-    await this.persistOnExit(token);
-
-    return processModelFacade.getNextFlowNodesFor(this.parallelGateway);
   }
 
 }
