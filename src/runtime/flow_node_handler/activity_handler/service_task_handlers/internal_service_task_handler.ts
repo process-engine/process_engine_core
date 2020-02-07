@@ -123,41 +123,63 @@ export class InternalServiceTaskHandler extends ActivityHandler<Model.Activities
 
     return new Promise<any>(async (resolve: Function, reject: Function, onCancel: Function): Promise<void> => {
 
-      const isMethodInvocation = this.serviceTask.invocation instanceof Model.Activities.Invocations.MethodInvocation;
-
-      if (!isMethodInvocation) {
-        const notSupportedErrorMessage = 'Internal ServiceTasks must use MethodInvocations!';
-        this.logger.error(notSupportedErrorMessage);
-
-        throw new UnprocessableEntityError(notSupportedErrorMessage);
-      }
-
-      const tokenData = processTokenFacade.getOldTokenFormat();
+      this.validateInvocation();
 
       const invocation = this.serviceTask.invocation as Model.Activities.Invocations.MethodInvocation;
 
       const serviceInstance = await this.container.resolveAsync(invocation.module);
 
-      const evaluateParamsFunction = new Function('context', 'token', `return ${invocation.params}`);
-      const argumentsToPassThrough = evaluateParamsFunction.call(tokenData, identity, tokenData) ?? [];
+      this.ensureServiceHasInvocationMethod(serviceInstance);
 
       const serviceMethod = serviceInstance[invocation.method];
 
-      if (!serviceMethod) {
-        const error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
-        await this.persistOnError(token, error);
-
-        return reject(error);
-      }
+      const argumentsToPassThrough = this.getArgumentsFromInvocation(processTokenFacade, identity);
 
       try {
         const result = await serviceMethod.call(serviceInstance, ...argumentsToPassThrough);
 
         return resolve(result);
       } catch (error) {
+        await this.persistOnError(token, error);
+
         return reject(error);
       }
     });
+  }
+
+  private validateInvocation(): void {
+    const isMethodInvocation = this.serviceTask.invocation instanceof Model.Activities.Invocations.MethodInvocation;
+    if (!isMethodInvocation) {
+      const notSupportedErrorMessage = 'Internal ServiceTasks must use MethodInvocations!';
+      this.logger.error(notSupportedErrorMessage);
+
+      throw new UnprocessableEntityError(notSupportedErrorMessage);
+    }
+  }
+
+  private ensureServiceHasInvocationMethod(serviceInstance: any): void {
+    const invocation = this.serviceTask.invocation as Model.Activities.Invocations.MethodInvocation;
+
+    const serviceMethod = serviceInstance[invocation.method];
+    if (!serviceMethod) {
+      const error = new Error(`Method '${invocation.method}' not found on target module '${invocation.module}'!`);
+
+      throw error;
+    }
+  }
+
+  private getArgumentsFromInvocation(
+    processTokenFacade: IProcessTokenFacade,
+    identity: IIdentity,
+  ): Array<unknown> {
+    const invocation = this.serviceTask.invocation as Model.Activities.Invocations.MethodInvocation;
+
+    const tokenData = processTokenFacade.getOldTokenFormat();
+
+    const evaluateParamsFunction = new Function('context', 'token', `return ${invocation.params}`);
+    const args = evaluateParamsFunction.call(tokenData, identity, tokenData) ?? [];
+
+    return Array.isArray(args) ? args : [args];
   }
 
 }
