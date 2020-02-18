@@ -85,7 +85,7 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
 
         token.payload = this.getFinalTokenPayloadFromInputValues(token, processTokenFacade, identity);
 
-        processTokenFacade.addResultForFlowNode(this.flowNode.id, this.flowNodeInstanceId, token.payload);
+        processTokenFacade.addResultForFlowNode(this.endEvent.id, this.flowNodeInstanceId, token.payload);
 
         // Event persisting
         if (flowNodeIsTerminateEndEvent) {
@@ -104,9 +104,15 @@ export class EndEventHandler extends EventHandler<Model.Events.EndEvent> {
 
           return reject(errorObj);
         }
+
         if (flowNodeIsTerminateEndEvent) {
           this.notifyAboutTermination(identity, token);
-        } else if (flowNodeIsMessageEndEvent) {
+          const terminationError = new InternalServerError(`Process was terminated through TerminateEndEvent '${this.endEvent.id}'`);
+
+          return reject(terminationError);
+        }
+
+        if (flowNodeIsMessageEndEvent) {
           this.sendMessage(identity, token);
         } else if (flowNodeIsSignalEndEvent) {
           this.sendSignal(identity, token);
