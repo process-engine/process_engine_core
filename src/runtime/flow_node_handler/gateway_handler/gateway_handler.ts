@@ -140,9 +140,12 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
       const token = flowNodeInstanceForHandler.tokens[0];
 
       try {
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
-        const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
-        await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        let nextFlowNodes: Array<Model.Base.FlowNode>;
+        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNode.id, async () => {
+          await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
+          nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
+          await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        });
 
         const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
