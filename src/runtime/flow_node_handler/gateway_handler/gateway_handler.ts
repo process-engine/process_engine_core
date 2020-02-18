@@ -68,7 +68,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
 
       try {
         let nextFlowNodes: Array<Model.Base.FlowNode>;
-        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNode.id, async () => {
+        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNodeInstanceId, async () => {
           await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
           nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
           await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
@@ -141,7 +141,7 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
 
       try {
         let nextFlowNodes: Array<Model.Base.FlowNode>;
-        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNode.id, async () => {
+        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNodeInstanceId, async () => {
           await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
           nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
           await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
