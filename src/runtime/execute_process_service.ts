@@ -307,7 +307,8 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
     return new Promise<EndEventReachedMessage>((resolve) => {
       const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
-        .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
+        .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
+        .replace(eventAggregatorSettings.messageParams.processModelId, processInstanceConfig.processModelId);
 
       const subscription = this
         .eventAggregator
