@@ -125,39 +125,28 @@ export class ExecuteProcessService implements IExecuteProcessService {
     endEventId?: string,
   ): Promise<EndEventReachedMessage> {
 
-    return new Promise<EndEventReachedMessage>(async (resolve: Function, reject: Function): Promise<void> => {
+    try {
+      const processInstanceConfig =
+        await this.createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
 
-      try {
-        const processInstanceConfig =
-          await this.createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
+      const executionPromise = this.executeProcess(identity, processInstanceConfig);
+      const eventSubscriptionPromise = this.awaitEndEvent(processInstanceConfig, endEventId);
 
-        const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
-          .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
-          .replace(eventAggregatorSettings.messageParams.processModelId, processModelId);
+      const results = await Promise.all([
+        executionPromise,
+        eventSubscriptionPromise,
+      ]);
 
-        const eventSubscription = this
-          .eventAggregator
-          .subscribe(processEndMessageName, (message: EndEventReachedMessage): void => {
-
-            const isAwaitedEndEvent = !endEventId || message.flowNodeId === endEventId;
-            if (isAwaitedEndEvent) {
-              this.eventAggregator.unsubscribe(eventSubscription);
-              resolve(message);
-            }
-          });
-
-        await this.executeProcess(identity, processInstanceConfig);
-      } catch (error) {
-        // Errors from @essential-project and ErrorEndEvents are thrown as they are.
-        // Everything else is thrown as an InternalServerError.
-        const isPresetError = isEssentialProjectsError(error) || error instanceof BpmnError;
-        if (isPresetError) {
-          reject(error);
-        } else {
-          reject(new InternalServerError(error.message));
-        }
+      return results[1];
+    } catch (error) {
+      // Errors from @essential-project and ErrorEndEvents are thrown as they are.
+      // Everything else is thrown as an InternalServerError.
+      const isPresetError = isEssentialProjectsError(error) || error instanceof BpmnError;
+      if (isPresetError) {
+        throw error;
       }
-    });
+      throw new InternalServerError(error.message);
+    }
   }
 
   private async validateStartRequest(
@@ -291,28 +280,6 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
     try {
-      const terminateEvent = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
-        .replace(eventAggregatorSettings.messageParams.processInstanceId, processInstanceConfig.processInstanceId);
-
-      this.eventAggregator.subscribeOnce(terminateEvent, async (message): Promise<void> => {
-        await this.processInstanceStateHandlingFacade.terminateSubprocesses(identity, processInstanceConfig.processInstanceId);
-
-        const processWasTerminatedByUser = message?.terminatedBy;
-
-        const errorMsg = processWasTerminatedByUser
-          ? `Process was terminated by user ${message.terminatedBy.userId}!`
-          : 'Process was terminated!';
-        const error = new InternalServerError(errorMsg);
-
-        if (processWasTerminatedByUser) {
-          error.additionalInformation = {
-            terminatedBy: message.terminatedBy,
-          };
-        }
-
-        throw error;
-      });
-
       await this.processInstanceStateHandlingFacade.saveProcessInstance(identity, processInstanceConfig);
 
       const startEventHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
@@ -334,6 +301,26 @@ export class ExecuteProcessService implements IExecuteProcessService {
 
       throw error;
     }
+  }
+
+  private async awaitEndEvent(processInstanceConfig: IProcessInstanceConfig, endEventId: string): Promise<EndEventReachedMessage> {
+
+    return new Promise<EndEventReachedMessage>((resolve) => {
+      const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
+        .replace(eventAggregatorSettings.messageParams.correlationId, processInstanceConfig.correlationId)
+        .replace(eventAggregatorSettings.messageParams.processModelId, processInstanceConfig.processModelId);
+
+      const subscription = this
+        .eventAggregator
+        .subscribe(processEndMessageName, (message: EndEventReachedMessage): void => {
+
+          const isAwaitedEndEvent = !endEventId || message.flowNodeId === endEventId;
+          if (isAwaitedEndEvent) {
+            this.eventAggregator.unsubscribe(subscription);
+            resolve(message);
+          }
+        });
+    });
   }
 
 }
