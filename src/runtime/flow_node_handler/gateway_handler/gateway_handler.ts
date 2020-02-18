@@ -1,3 +1,6 @@
+import * as AsyncLock from 'async-lock';
+import * as Bluebird from 'bluebird';
+
 import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -14,6 +17,8 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
+
+const lock = new AsyncLock({Promise: Bluebird});
 
 export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> extends FlowNodeHandler<TFlowNode> {
 
@@ -62,9 +67,12 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
       }
 
       try {
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
-        const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
-        await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        let nextFlowNodes: Array<Model.Base.FlowNode>;
+        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNode.id, async () => {
+          await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
+          nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
+          await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        });
 
         const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
