@@ -38,6 +38,7 @@
     "@types/clone": "^0.1.30",
     "@types/socket.io": "^2.1.2",
     "addict-ioc": "^2.5.1",
+    "async-lock": "^1.2.2",
     "bluebird": "^3.5.2",
     "bluebird-global": "^1.0.1",
     "clone": "^2.1.2",

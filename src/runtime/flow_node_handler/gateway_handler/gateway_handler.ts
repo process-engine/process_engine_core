@@ -1,3 +1,6 @@
+import * as AsyncLock from 'async-lock';
+import * as Bluebird from 'bluebird';
+
 import {InternalServerError, UnprocessableEntityError} from '@essential-projects/errors_ts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -14,6 +17,8 @@ import {
 } from '@process-engine/process_engine_contracts';
 
 import {FlowNodeHandler} from '../flow_node_handler';
+
+const lock = new AsyncLock({Promise: Bluebird});
 
 export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> extends FlowNodeHandler<TFlowNode> {
 
@@ -62,9 +67,12 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
       }
 
       try {
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
-        const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
-        await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        let nextFlowNodes: Array<Model.Base.FlowNode>;
+        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNodeInstanceId, async () => {
+          await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
+          nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
+          await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        });
 
         const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
@@ -90,17 +98,6 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
               identity,
             );
             nextFlowNodeExecutionPromises.push(handleNextFlowNodePromise);
-
-            // NOTE:
-            // This is a workaround for a problem with the resumption of multiple parallel branches that were executed right up to the JoinGateway.
-            // When multiple branches arrive at the JoinGateway at the EXACT same moment, it is possible
-            // that multiple instances for that same Gateway are created.
-            // Since the Gateway always waits for ALL incoming branches before moving on,
-            // this will result in the process instance getting stuck forever.
-            // Using a timeout helps us to get around this issue, but it is just a hacky workaround. We need a more permanent solution for this.
-            if (nextFlowNodes.length > 1) {
-              await new Promise((cb): NodeJS.Timeout => setTimeout(cb, 33));
-            }
           }
 
           await Promise.all(nextFlowNodeExecutionPromises);
@@ -132,9 +129,12 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
       const token = flowNodeInstanceForHandler.tokens[0];
 
       try {
-        await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
-        const nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
-        await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        let nextFlowNodes: Array<Model.Base.FlowNode>;
+        await lock.acquire<Array<Model.Base.FlowNode>>(this.flowNodeInstanceId, async () => {
+          await this.beforeExecute(token, processTokenFacade, processModelFacade, identity, reject);
+          nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
+          await this.afterExecute(token, processTokenFacade, processModelFacade, identity);
+        });
 
         const processIsNotYetFinished = nextFlowNodes?.length > 0;
         if (processIsNotYetFinished) {
@@ -167,11 +167,6 @@ export abstract class GatewayHandler<TFlowNode extends Model.Gateways.Gateway> e
               allFlowNodeInstances,
             );
             nextFlowNodeExecutionPromises.push(handleNextFlowNodePromise);
-
-            // See above
-            if (nextFlowNodes.length > 1) {
-              await new Promise((cb): NodeJS.Timeout => setTimeout(cb, 33));
-            }
           }
 
           await Promise.all(nextFlowNodeExecutionPromises);
