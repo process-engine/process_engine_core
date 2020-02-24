@@ -184,7 +184,7 @@ function assignLinkEventDefinition<TEvent extends Model.Events.Event>(event: TEv
 function assignMessageEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
   const eventDefinitonRaw = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
 
-  const messageDefinition = getDefinitionForEvent(eventDefinitonRaw?.messageRef);
+  const messageDefinition = getDefinitionForEvent<Model.Events.MessageEventDefinition>(eventDefinitonRaw?.messageRef);
 
   if (!messageDefinition) {
     // same as above
@@ -199,7 +199,7 @@ function assignMessageEventDefinition<TEvent extends Model.Events.Event>(event: 
 function assignSignalEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
   const eventDefinitonRaw = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
 
-  const signalDefinition = getDefinitionForEvent(eventDefinitonRaw?.signalRef);
+  const signalDefinition = getDefinitionForEvent<Model.Events.SignalEventDefinition>(eventDefinitonRaw?.signalRef);
 
   if (!signalDefinition) {
     // Same as above.
