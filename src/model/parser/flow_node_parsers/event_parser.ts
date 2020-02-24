@@ -102,9 +102,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
 
     const isCyclicTimerBoundaryEvent = boundaryEvent.timerEventDefinition?.timerType === Model.Events.Definitions.TimerType.timeCycle;
     if (isCyclicTimerBoundaryEvent) {
-      const errorMessage = 'Using cyclic timers for BoundaryEvents is not allowed!';
-      logger.error(errorMessage);
-      throw new UnprocessableEntityError(errorMessage);
+      createAndThrowValidationError(boundaryEvent, boundaryEventRaw, 'Using cyclic timers for BoundaryEvents is not allowed!');
     }
 
     events.push(boundaryEvent);
@@ -113,7 +111,7 @@ function parseBoundaryEvents(processData: any): Array<Model.Events.BoundaryEvent
   return events;
 }
 
-function assignEventDefinition(event: any, eventRaw: any): void {
+function assignEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
   const eventHasErrorEvent = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition] != undefined;
   const eventHasLinkEvent = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition] != undefined;
   const eventHasMessageEvent = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition] != undefined;
@@ -127,16 +125,7 @@ function assignEventDefinition(event: any, eventRaw: any): void {
 
   const eventHasTooManyDefinitions = allResults.filter((entry): boolean => entry === true).length > 1;
   if (eventHasTooManyDefinitions) {
-    const message = `Event '${event}' has more than one type of event definition! This is not permitted!`;
-    logger.error(message);
-
-    const error = new UnprocessableEntityError(message);
-    error.additionalInformation = {
-      eventObject: event,
-      rawEventData: eventRaw,
-    };
-
-    throw error;
+    createAndThrowValidationError(event, eventRaw, `Event '${event}' has more than one type of event definition! This is not permitted!`);
   }
 
   if (eventHasErrorEvent) {
@@ -148,15 +137,15 @@ function assignEventDefinition(event: any, eventRaw: any): void {
   } else if (eventHasTimerEvent) {
     assignTimerEventDefinition(event, eventRaw);
   } else if (eventHasTerminateEvent) {
-    event.terminateEventDefinition = {};
+    (event as any).terminateEventDefinition = {};
   } else if (eventHasLinkEvent) {
     assignLinkEventDefinition(event, eventRaw);
   }
 }
 
-function assignErrorEventDefinition(event: any, eventRaw: any): void {
+function assignErrorEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
 
-  const errorId = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition].errorRef;
+  const errorId = eventRaw[BpmnTags.FlowElementProperty.ErrorEventDefinition]?.errorRef;
 
   const defaultError = {
     id: '',
@@ -170,54 +159,59 @@ function assignErrorEventDefinition(event: any, eventRaw: any): void {
     : defaultError;
 
   if (!errorObject) {
-    const errorMessage = `Error reference on event ${event.id} is invalid!`;
-
-    logger.error(errorMessage);
-
-    const error = new UnprocessableEntityError(errorMessage);
-    error.additionalInformation = {
-      eventObject: event,
-      rawEventData: eventRaw,
-    };
-
-    throw error;
+    createAndThrowValidationError(event, eventRaw, `Error reference on event ${event.id} is invalid!`);
   }
 
-  event.errorEventDefinition = errorObject;
+  // TODO: Move base EventDefinition properties to base Event type.
+  (event as any).errorEventDefinition = errorObject;
 }
 
-function assignLinkEventDefinition(event: any, eventRaw: any): void {
-  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition];
-  event.linkEventDefinition = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonValue.name);
-}
+function assignLinkEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
+  const eventDefinitonRaw = eventRaw[BpmnTags.FlowElementProperty.LinkEventDefinition];
 
-function assignMessageEventDefinition(event: any, eventRaw: any): void {
-  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition].messageRef;
-  const messageDefinition = getDefinitionForEvent(eventDefinitonValue);
-
-  if (!messageDefinition) {
-    // TODO: Usually, this should throw an error. However, doing so would brek the "GetAllProcessModels" queries,
+  if (!eventDefinitonRaw?.name) {
+    // TODO: Usually, this should throw an error. However, doing so would break the "GetAllProcessModels" queries,
     // which would in turn break BPMN Studio and thus leaving the user without any way to fix the diagram.
     // Maybe we should think about introducting some kind of leniency setting for the parser, to be able to only throw errors in certain UseCases.
-    logger.warn(`Message reference '${eventDefinitonValue.messageRef}' on Event ${event.id} is invalid! The event will not be executable!`, event);
+    logger.warn(`LinkEvent with ID ${event.id} is missing a link name! The event will not be executable!`);
+    logger.warn('EventData: ', event);
   }
 
-  event.messageEventDefinition = messageDefinition;
+  // TODO: Move base EventDefinition properties to base Event type.
+  (event as any).linkEventDefinition = new Model.Events.Definitions.LinkEventDefinition(eventDefinitonRaw.name);
 }
 
-function assignSignalEventDefinition(event: any, eventRaw: any): void {
-  const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition].signalRef;
-  const signalDefinition = getDefinitionForEvent(eventDefinitonValue);
+function assignMessageEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
+  const eventDefinitonRaw = eventRaw[BpmnTags.FlowElementProperty.MessageEventDefinition];
+
+  const messageDefinition = getDefinitionForEvent<Model.Events.MessageEventDefinition>(eventDefinitonRaw?.messageRef);
+
+  if (!messageDefinition) {
+    // same as above
+    logger.warn(`Message reference '${eventDefinitonRaw?.messageRef}' on MessageEvent ${event.id} is invalid! The event will not be executable!`);
+    logger.warn('EventData: ', event);
+  }
+
+  // TODO: Move base EventDefinition properties to base Event type.
+  (event as any).messageEventDefinition = messageDefinition;
+}
+
+function assignSignalEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
+  const eventDefinitonRaw = eventRaw[BpmnTags.FlowElementProperty.SignalEventDefinition];
+
+  const signalDefinition = getDefinitionForEvent<Model.Events.SignalEventDefinition>(eventDefinitonRaw?.signalRef);
 
   if (!signalDefinition) {
     // Same as above.
-    logger.warn(`Signal reference '${eventDefinitonValue.signalRef}' on Event ${event.id} is invalid! The event will not be executable!`, event);
+    logger.warn(`Signal reference '${eventDefinitonRaw?.signalRef}' on SignalEvent ${event.id} is invalid! The event will not be executable!`);
+    logger.warn('EventData: ', event);
   }
 
-  event.signalEventDefinition = signalDefinition;
+  // TODO: Move base EventDefinition properties to base Event type.
+  (event as any).signalEventDefinition = signalDefinition;
 }
 
-function assignTimerEventDefinition(event: any, eventRaw: any): void {
+function assignTimerEventDefinition<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any): void {
 
   const eventDefinitonValue = eventRaw[BpmnTags.FlowElementProperty.TimerEventDefinition];
 
@@ -234,7 +228,8 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
 
   if (timerType == undefined || !(timerValue?.length > 0)) {
     // Same as above.
-    logger.warn(`The timer on event with ID ${event.id} is invalid! The event will not be executable!`, event, eventRaw);
+    logger.warn(`Timer reference on TimerEvent ${event.id} is invalid! The event will not be executable!`);
+    logger.warn('EventData: ', event);
   }
 
   const timerDefinition = new Model.Events.Definitions.TimerEventDefinition();
@@ -242,7 +237,8 @@ function assignTimerEventDefinition(event: any, eventRaw: any): void {
   timerDefinition.timerType = timerType;
   timerDefinition.value = timerValue;
 
-  event.timerEventDefinition = timerDefinition;
+  // TODO: Move base EventDefinition properties to base Event type.
+  (event as any).timerEventDefinition = timerDefinition;
 }
 
 function parseTimerDefinitionType(eventDefinition: any): Model.Events.Definitions.TimerType {
@@ -291,4 +287,16 @@ function getDefinitionForEvent<TEventDefinition extends Model.Events.Definitions
 
 function setInputValues<TEvent extends Model.Events.Event>(event: TEvent): void {
   (event as any).inputValues = findExtensionPropertyByName('inputValues', event.extensionElements.camundaExtensionProperties)?.value;
+}
+
+function createAndThrowValidationError<TEvent extends Model.Events.Event>(event: TEvent, eventRaw: any, message: string): void {
+  logger.error(message);
+
+  const error = new UnprocessableEntityError(message);
+  error.additionalInformation = {
+    eventObject: event,
+    rawEventData: eventRaw,
+  };
+
+  throw error;
 }
