@@ -95,6 +95,7 @@ function registerServices(container) {
       'EventAggregator',
       'FlowNodeHandlerFactory',
       'FlowNodeInstanceService',
+      'IdentityService',
       'ProcessInstanceStateHandlingFacade',
     );
 
