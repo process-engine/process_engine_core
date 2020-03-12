@@ -280,7 +280,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
     try {
-      await this.processInstanceStateHandlingFacade.saveProcessInstance(identity, processInstanceConfig);
+      await this.processInstanceStateHandlingFacade.saveProcessInstance(this.internalIdentity, processInstanceConfig);
 
       const startEventHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
@@ -295,9 +295,9 @@ export class ExecuteProcessService implements IExecuteProcessService {
       const allResults = processInstanceConfig.processTokenFacade.getAllResults();
       const resultToken = allResults.pop();
 
-      await this.processInstanceStateHandlingFacade.finishProcessInstance(identity, processInstanceConfig, resultToken);
+      await this.processInstanceStateHandlingFacade.finishProcessInstance(this.internalIdentity, processInstanceConfig, resultToken);
     } catch (error) {
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceWithError(identity, processInstanceConfig, error);
+      await this.processInstanceStateHandlingFacade.finishProcessInstanceWithError(this.internalIdentity, processInstanceConfig, error);
 
       throw error;
     }
