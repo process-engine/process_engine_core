@@ -280,7 +280,7 @@ export class ExecuteProcessService implements IExecuteProcessService {
   private async executeProcess(identity: IIdentity, processInstanceConfig: IProcessInstanceConfig): Promise<void> {
 
     try {
-      await this.processInstanceStateHandlingFacade.saveProcessInstance(this.internalIdentity, processInstanceConfig);
+      await this.processInstanceStateHandlingFacade.saveProcessInstance(identity, processInstanceConfig);
 
       const startEventHandler = await this.flowNodeHandlerFactory.create(processInstanceConfig.startEvent);
 
