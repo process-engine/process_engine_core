@@ -2,7 +2,7 @@ import {Logger} from 'loggerhythm';
 
 import {InternalServerError} from '@essential-projects/errors_ts';
 import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
-import {IIdentity} from '@essential-projects/iam_contracts';
+import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {
   BpmnType,
@@ -48,7 +48,12 @@ export class ResumeProcessService implements IResumeProcessService {
   private readonly eventAggregator: IEventAggregator;
   private readonly flowNodeHandlerFactory: IFlowNodeHandlerFactory;
   private readonly flowNodeInstanceService: IFlowNodeInstanceService;
+  private readonly identityService: IIdentityService;
   private readonly processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade;
+
+  // This identity is used to enable the `ResumeProcessService` to always get full ProcessModels.
+  // It needs those in order to be able to correctly resume a ProcessInstance.
+  private internalIdentity: IIdentity;
 
   constructor(
     bpmnModelParser: IModelParser,
@@ -56,6 +61,7 @@ export class ResumeProcessService implements IResumeProcessService {
     eventAggregator: IEventAggregator,
     flowNodeHandlerFactory: IFlowNodeHandlerFactory,
     flowNodeInstanceService: IFlowNodeInstanceService,
+    identityService: IIdentityService,
     processInstanceStateHandlingFacade: ProcessInstanceStateHandlingFacade,
   ) {
     this.bpmnModelParser = bpmnModelParser;
@@ -63,7 +69,13 @@ export class ResumeProcessService implements IResumeProcessService {
     this.eventAggregator = eventAggregator;
     this.flowNodeHandlerFactory = flowNodeHandlerFactory;
     this.flowNodeInstanceService = flowNodeInstanceService;
+    this.identityService = identityService;
     this.processInstanceStateHandlingFacade = processInstanceStateHandlingFacade;
+  }
+
+  public async initialize(): Promise<void> {
+    const internalToken = 'UHJvY2Vzc0VuZ2luZUludGVybmFsVXNlcg==';
+    this.internalIdentity = await this.identityService.getIdentity(internalToken);
   }
 
   public async findAndResumeInterruptedProcessInstances(identity: IIdentity): Promise<void> {
@@ -71,7 +83,7 @@ export class ResumeProcessService implements IResumeProcessService {
     logger.info('Resuming ProcessInstances that were not yet finished.');
 
     // First get all active FlowNodeInstances from every ProcessInstance.
-    const activeProcessInstances = await this.correlationService.getProcessInstancesByState(identity, CorrelationState.running);
+    const activeProcessInstances = await this.correlationService.getProcessInstancesByState(this.internalIdentity, CorrelationState.running);
 
     logger.verbose(`Found ${activeProcessInstances.length} ProcessInstances to resume.`);
 
@@ -92,7 +104,7 @@ export class ResumeProcessService implements IResumeProcessService {
 
     logger.info(`Attempting to resume ProcessInstance with instance ID ${processInstanceId} and model ID ${processModelId}`);
 
-    const processInstance = await this.correlationService.getByProcessInstanceId(identity, processInstanceId);
+    const processInstance = await this.correlationService.getByProcessInstanceId(this.internalIdentity, processInstanceId);
 
     // Safeguard, for when this function is called by CallActivities.
     if (processInstance.state !== CorrelationState.running) {
@@ -114,7 +126,7 @@ export class ResumeProcessService implements IResumeProcessService {
     if (processInstanceIsOrphaned) {
       logger.warn(`ProcessInstance ${processInstanceId} is not active anymore. It is likely something went wrong during final state transition.`);
       logger.warn(`Setting orphaned ProcessInstance ${processInstanceId} state to "finished", so it won't show up again.`);
-      return this.finishOrphanedProcessInstance(identity, flowNodeInstancesForProcessInstance, processInstanceId);
+      return this.finishOrphanedProcessInstance(this.internalIdentity, flowNodeInstancesForProcessInstance, processInstanceId);
     }
 
     return new Promise<EndEventReachedMessage>(async (resolve: Function, reject: Function): Promise<void> => {
@@ -155,7 +167,7 @@ export class ResumeProcessService implements IResumeProcessService {
     flowNodeInstances: Array<FlowNodeInstance>,
   ): Promise<IProcessInstanceConfig> {
 
-    const processInstance = await this.correlationService.getByProcessInstanceId(identity, processInstanceId);
+    const processInstance = await this.correlationService.getByProcessInstanceId(this.internalIdentity, processInstanceId);
 
     const processModelDefinitions = await this.bpmnModelParser.parseXmlToObjectModel(processInstance.xml);
     const processModel = processModelDefinitions.processes[0];
@@ -235,9 +247,9 @@ export class ResumeProcessService implements IResumeProcessService {
         throw new InternalServerError('Process was terminated!');
       });
 
-      await this.processInstanceStateHandlingFacade.finishProcessInstance(identity, processInstanceConfig, resultToken);
+      await this.processInstanceStateHandlingFacade.finishProcessInstance(this.internalIdentity, processInstanceConfig, resultToken);
     } catch (error) {
-      await this.processInstanceStateHandlingFacade.finishProcessInstanceWithError(identity, processInstanceConfig, error);
+      await this.processInstanceStateHandlingFacade.finishProcessInstanceWithError(this.internalIdentity, processInstanceConfig, error);
 
       throw error;
     }
