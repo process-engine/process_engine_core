@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {RequestTimeoutError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -72,7 +73,14 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
         handlerPromise.cancel();
       };
 
+      let responseReceived = false;
+
       const onResponseReceivedCallback = async (): Promise<void> => {
+
+        this.logger.verbose('A ReceiveTask as acknowledged the receit of the messasge. Continuing execution...');
+
+        responseReceived = true;
+
         processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
         await this.persistOnResume(token);
         await this.persistOnExit(token);
@@ -87,7 +95,29 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
       this.publishActivityReachedNotification(identity, token);
 
       this.waitForResponseFromReceiveTask(onResponseReceivedCallback);
-      this.sendMessage(identity, token);
+
+      this.logger.verbose('Start sending message. Waiting for a response from a ReceiveTask.');
+
+      const maxRetriesIsSet = this.sendTask.maxRetries > 0;
+      const retryInterval = this.sendTask.retryIntervalInMs ?? 500;
+
+      let currentAttempt = 0;
+
+      while (!responseReceived) {
+
+        this.logger.verbose('Sending message...');
+
+        this.sendMessage(identity, token);
+        currentAttempt++;
+        await this.wait(retryInterval);
+
+        const abort = !responseReceived && maxRetriesIsSet && currentAttempt >= this.sendTask.maxRetries;
+        if (abort) {
+          const timeoutError = new RequestTimeoutError('Did not receive a response from a ReceiveTask');
+          this.logger.error(timeoutError.message);
+          reject(timeoutError);
+        }
+      }
     });
 
     return handlerPromise;
@@ -106,6 +136,8 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
       .messagePaths
       .receiveTaskReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
+
+    this.logger.verbose(`Subscribing to ${messageEventName}.`);
 
     this.responseSubscription = this.eventAggregator.subscribeOnce(messageEventName, callback);
   }
@@ -137,6 +169,10 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
     );
 
     this.eventAggregator.publish(messageEventName, messageToSend);
+  }
+
+  private async wait(timeout: number): Promise<void> {
+    await new Promise((cb) => setTimeout(cb, timeout));
   }
 
 }
