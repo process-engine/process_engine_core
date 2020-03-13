@@ -68,55 +68,61 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
 
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      this.onInterruptedCallback = (): void => {
-        this.eventAggregator.unsubscribe(this.responseSubscription);
-        handlerPromise.cancel();
-      };
+      try {
+        this.onInterruptedCallback = (): void => {
+          this.eventAggregator.unsubscribe(this.responseSubscription);
+          handlerPromise.cancel();
+        };
 
-      let responseReceived = false;
+        let responseReceived = false;
 
-      const onResponseReceivedCallback = async (): Promise<void> => {
+        const onResponseReceivedCallback = async (): Promise<void> => {
 
-        this.logger.verbose('A ReceiveTask as acknowledged the receit of the messasge. Continuing execution...');
+          this.logger.verbose('A ReceiveTask as acknowledged the receit of the messasge. Continuing execution...');
 
-        responseReceived = true;
+          responseReceived = true;
 
-        processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
-        await this.persistOnResume(token);
-        await this.persistOnExit(token);
+          processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
+          await this.persistOnResume(token);
+          await this.persistOnExit(token);
 
-        this.publishActivityFinishedNotification(identity, token);
+          this.publishActivityFinishedNotification(identity, token);
 
-        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.sendTask);
+          const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.sendTask);
 
-        return resolve(nextFlowNodeInfo);
-      };
+          return resolve(nextFlowNodeInfo);
+        };
 
-      this.publishActivityReachedNotification(identity, token);
+        this.publishActivityReachedNotification(identity, token);
 
-      this.waitForResponseFromReceiveTask(onResponseReceivedCallback);
+        this.waitForResponseFromReceiveTask(onResponseReceivedCallback);
 
-      this.logger.verbose('Start sending message. Waiting for a response from a ReceiveTask.');
+        this.logger.verbose('Start sending message. Waiting for a response from a ReceiveTask.');
 
-      const maxRetriesIsSet = this.sendTask.maxRetries > 0;
-      const retryInterval = this.sendTask.retryIntervalInMs ?? 500;
+        const maxRetriesIsSet = this.sendTask.maxRetries > 0;
+        const retryInterval = this.sendTask.retryIntervalInMs ?? 500;
 
-      let currentAttempt = 0;
+        let currentAttempt = 0;
 
-      while (!responseReceived) {
+        while (!responseReceived) {
 
-        this.logger.verbose('Sending message...');
+          this.logger.verbose('Sending message...');
 
-        this.sendMessage(identity, token);
-        currentAttempt++;
-        await this.wait(retryInterval);
+          this.sendMessage(identity, token);
+          currentAttempt++;
+          await this.wait(retryInterval);
 
-        const abort = !responseReceived && maxRetriesIsSet && currentAttempt >= this.sendTask.maxRetries;
-        if (abort) {
-          const timeoutError = new RequestTimeoutError('Did not receive a response from a ReceiveTask');
-          this.logger.error(timeoutError.message);
-          reject(timeoutError);
+          const abort = !responseReceived && maxRetriesIsSet && currentAttempt >= this.sendTask.maxRetries;
+          if (abort) {
+            const timeoutError = new RequestTimeoutError('Did not receive a response from a ReceiveTask');
+            throw timeoutError;
+          }
         }
+      } catch (error) {
+        this.logger.error(error.message);
+        await this.persistOnError(token, error);
+
+        reject(error);
       }
     });
 
