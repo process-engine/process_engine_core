@@ -1,5 +1,6 @@
 import {Logger} from 'loggerhythm';
 
+import {RequestTimeoutError} from '@essential-projects/errors_ts';
 import {EventReceivedCallback, IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
@@ -67,27 +68,62 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
 
     const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      this.onInterruptedCallback = (): void => {
-        this.eventAggregator.unsubscribe(this.responseSubscription);
-        handlerPromise.cancel();
-      };
+      try {
+        this.onInterruptedCallback = (): void => {
+          this.eventAggregator.unsubscribe(this.responseSubscription);
+          handlerPromise.cancel();
+        };
 
-      const onResponseReceivedCallback = async (): Promise<void> => {
-        processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
-        await this.persistOnResume(token);
-        await this.persistOnExit(token);
+        let responseReceived = false;
 
-        this.publishActivityFinishedNotification(identity, token);
+        const onResponseReceivedCallback = async (): Promise<void> => {
 
-        const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.sendTask);
+          this.logger.verbose('A ReceiveTask as acknowledged the receit of the messasge. Continuing execution...');
 
-        return resolve(nextFlowNodeInfo);
-      };
+          responseReceived = true;
 
-      this.publishActivityReachedNotification(identity, token);
+          processTokenFacade.addResultForFlowNode(this.sendTask.id, this.flowNodeInstanceId, token.payload);
+          await this.persistOnResume(token);
+          await this.persistOnExit(token);
 
-      this.waitForResponseFromReceiveTask(onResponseReceivedCallback);
-      this.sendMessage(identity, token);
+          this.publishActivityFinishedNotification(identity, token);
+
+          const nextFlowNodeInfo = processModelFacade.getNextFlowNodesFor(this.sendTask);
+
+          return resolve(nextFlowNodeInfo);
+        };
+
+        this.publishActivityReachedNotification(identity, token);
+
+        this.waitForResponseFromReceiveTask(onResponseReceivedCallback);
+
+        this.logger.verbose('Start sending message. Waiting for a response from a ReceiveTask.');
+
+        const maxRetriesIsSet = this.sendTask.maxRetries > 0;
+        const retryInterval = this.sendTask.retryIntervalInMs ?? 500;
+
+        let currentAttempt = 0;
+
+        while (!responseReceived) {
+
+          this.logger.verbose('Sending message...');
+
+          this.sendMessage(identity, token);
+          currentAttempt++;
+          await this.wait(retryInterval);
+
+          const abort = !responseReceived && maxRetriesIsSet && currentAttempt >= this.sendTask.maxRetries;
+          if (abort) {
+            const timeoutError = new RequestTimeoutError('Did not receive a response from a ReceiveTask');
+            throw timeoutError;
+          }
+        }
+      } catch (error) {
+        this.logger.error(error.message);
+        await this.persistOnError(token, error);
+
+        reject(error);
+      }
     });
 
     return handlerPromise;
@@ -106,6 +142,8 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
       .messagePaths
       .receiveTaskReached
       .replace(eventAggregatorSettings.messageParams.messageReference, messageName);
+
+    this.logger.verbose(`Subscribing to ${messageEventName}.`);
 
     this.responseSubscription = this.eventAggregator.subscribeOnce(messageEventName, callback);
   }
@@ -137,6 +175,10 @@ export class SendTaskHandler extends ActivityHandler<Model.Activities.SendTask> 
     );
 
     this.eventAggregator.publish(messageEventName, messageToSend);
+  }
+
+  private async wait(timeout: number): Promise<void> {
+    await new Promise((cb) => setTimeout(cb, timeout));
   }
 
 }

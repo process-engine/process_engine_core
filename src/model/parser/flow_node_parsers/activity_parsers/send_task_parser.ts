@@ -4,6 +4,7 @@ import {BpmnTags, Model} from '@process-engine/persistence_api.contracts';
 
 import {getModelPropertyAsArray} from '../../../type_factory';
 import {createActivityInstance} from './activity_factory';
+import {findExtensionPropertyByName} from './extension_property_parser';
 
 export function parseSendTasks(
   processData: any,
@@ -24,8 +25,13 @@ export function parseSendTasks(
       throw new UnprocessableEntityError(`SendTask ${sendTaskRaw.id} does not have a messageRef!`);
     }
 
-    sendTask.messageEventDefinition = <Model.Events.MessageEventDefinition>
-      eventDefinitions.find((entry): boolean => entry.id === sendTaskRaw.messageRef);
+    const configuredRetryInterval = findExtensionPropertyByName('retryInvervalInMs', sendTask.extensionElements.camundaExtensionProperties)?.value;
+    const configuredMaxRetries = findExtensionPropertyByName('maxRetries', sendTask.extensionElements.camundaExtensionProperties)?.value;
+
+    sendTask.retryIntervalInMs = configuredRetryInterval ? parseInt(configuredRetryInterval) : 500;
+    sendTask.maxRetries = configuredMaxRetries ? parseInt(configuredMaxRetries) : -1;
+
+    sendTask.messageEventDefinition = <Model.Events.MessageEventDefinition> eventDefinitions.find((entry) => entry.id === sendTaskRaw.messageRef);
 
     return sendTask;
   });
