@@ -82,7 +82,9 @@ export abstract class BoundaryEventHandler implements IBoundaryEventHandler {
     return processModelFacade.getNextFlowNodesFor(this.boundaryEventModel).pop();
   }
 
-  protected async persistOnEnter(processToken: ProcessToken): Promise<void> {
+  protected async persistOnEnter(processToken: ProcessToken, decoratedFlowNodeInstanceId: string): Promise<void> {
+    this.attachedFlowNodeInstanceId = decoratedFlowNodeInstanceId;
+
     await this
       .flowNodePersistenceFacade
       .persistOnEnter(this.boundaryEventModel, this.boundaryEventInstanceId, processToken, this.attachedFlowNodeInstanceId);

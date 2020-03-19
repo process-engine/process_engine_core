@@ -51,9 +51,7 @@ export class ErrorBoundaryEventHandler extends BoundaryEventHandler {
     if (laneContainingCurrentFlowNode != undefined) {
       token.currentLane = laneContainingCurrentFlowNode.name;
     }
-    await this.persistOnEnter(token);
-
-    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
+    await this.persistOnEnter(token, attachedFlowNodeInstanceId);
   }
 
   public async resumeWait(

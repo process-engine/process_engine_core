@@ -23,9 +23,7 @@ export class SignalBoundaryEventHandler extends BoundaryEventHandler {
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
-    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
-
-    await this.persistOnEnter(token);
+    await this.persistOnEnter(token, attachedFlowNodeInstanceId);
 
     this.waitForSignal(onTriggeredCallback, token, processModelFacade);
   }

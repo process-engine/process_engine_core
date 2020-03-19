@@ -23,9 +23,7 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
-    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
-
-    await this.persistOnEnter(token);
+    await this.persistOnEnter(token, attachedFlowNodeInstanceId);
 
     this.waitForMessage(onTriggeredCallback, token, processModelFacade);
   }
