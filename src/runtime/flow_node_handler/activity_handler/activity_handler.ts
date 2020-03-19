@@ -1,5 +1,6 @@
+import * as Bluebird from 'bluebird';
+
 import {InternalServerError} from '@essential-projects/errors_ts';
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -317,7 +318,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     }
 
     try {
-      await Promise.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
+      await Bluebird.map(errorBoundaryEvents, async (errorHandler: ErrorBoundaryEventHandler): Promise<void> => {
         const flowNodeAfterBoundaryEvent = errorHandler.getNextFlowNode(processModelFacade);
         const errorHandlerId = errorHandler.getInstanceId();
         await this.continueAfterBoundaryEvent(errorHandlerId, flowNodeAfterBoundaryEvent, token, processTokenFacade, processModelFacade, identity);
@@ -338,25 +339,21 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     identity: IIdentity,
   ): Promise<void> {
     // Resume all Paths that follow the BoundaryEvents
-    const handlersToResume = await Promise.map(
-      flowNodeInstancesAfterBoundaryEvents,
-      async (entry: IFlowNodeModelInstanceAssociation): Promise<IFlowNodeHandler<Model.Base.FlowNode>> => {
-        return this.flowNodeHandlerFactory.create(entry.nextFlowNode);
-      },
-    );
+    const handlerResumptionPromises = flowNodeInstancesAfterBoundaryEvents.map(async (entry): Promise<any> => {
 
-    const handlerResumptionPromises = handlersToResume.map((handler: IFlowNodeHandler<Model.Base.FlowNode>): Promise<any> => {
-      const matchingEntry = flowNodeInstancesAfterBoundaryEvents.find((entry: IFlowNodeModelInstanceAssociation): boolean => {
-        return entry.nextFlowNodeInstance.id === handler.getInstanceId();
-      });
+      const handler = await this.flowNodeHandlerFactory.create(entry.nextFlowNode);
 
-      return handler.resume(matchingEntry.nextFlowNodeInstance, flowNodeInstances, processTokenFacade, processModelFacade, identity);
-    });
+      return handler.resume(
+        entry.nextFlowNodeInstance,
+        flowNodeInstances,
+        processTokenFacade,
+        processModelFacade,
+        identity,
+      );
+    }, this);
 
     // Check if one of the BoundaryEvents was interrupting. If so, the handler must not be resumed.
-    const noInterruptingBoundaryEventsTriggered = !flowNodeInstancesAfterBoundaryEvents
-      .some((entry: IFlowNodeModelInstanceAssociation): boolean => entry.boundaryEventModel.cancelActivity === true);
-
+    const noInterruptingBoundaryEventsTriggered = !flowNodeInstancesAfterBoundaryEvents.some((entry) => entry.boundaryEventModel.cancelActivity);
     if (noInterruptingBoundaryEventsTriggered) {
       handlerResumptionPromises.push(this.resumeFromState(currentFlowNodeInstance, processTokenFacade, processModelFacade, identity));
     }
@@ -378,33 +375,44 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
   ): Array<IFlowNodeModelInstanceAssociation> {
 
-    const getBoundaryEventPrecedingFlowNodeInstance = (flowNodeInstance: FlowNodeInstance): Model.Events.BoundaryEvent => {
-      const matchingBoundaryEventInstance =
-        flowNodeInstances.find((entry: FlowNodeInstance): boolean => entry.flowNodeId === flowNodeInstance.previousFlowNodeInstanceId);
+    const getBoundaryEventPrecedingFlowNodeInstance = (flowNodeInstance): Model.Events.BoundaryEvent => {
 
-      return boundaryEvents.find((entry: Model.Events.BoundaryEvent): boolean => entry.id === matchingBoundaryEventInstance.flowNodeId);
+      const matchingBoundaryEventInstance = flowNodeInstances
+        .find((entry) => entry.id === flowNodeInstance.previousFlowNodeInstanceId);
+
+      return boundaryEvents.find((entry) => entry.id === matchingBoundaryEventInstance.flowNodeId);
     };
 
+    // Get all BoundaryEvent Models attached to this handler
     const boundaryEvents = processModelFacade.getBoundaryEventsFor(this.flowNode);
     if (boundaryEvents.length === 0) {
       return [];
     }
 
-    // First get all FlowNodeInstances for the BoundaryEvents attached to this handler.
-    const boundaryEventInstances = flowNodeInstances.filter((fni: FlowNodeInstance): boolean => {
-      return boundaryEvents.some((boundaryEvent: Model.Events.BoundaryEvent): boolean => {
-        return boundaryEvent.id === fni.flowNodeId;
+    // Get all FlowNodeInstances for each BoundaryEvent
+    const boundaryEventInstances = flowNodeInstances.filter((flowNodeInstance) => {
+      return boundaryEvents.some((boundaryEventModel) => {
+        return boundaryEventModel.id === flowNodeInstance.flowNodeId;
       });
     });
 
-    // Then get all FlowNodeInstances that followed one of the BoundaryEventInstances.
-    const flowNodeInstancesAfterBoundaryEvents = flowNodeInstances.filter((fni: FlowNodeInstance): boolean => {
-      return boundaryEventInstances.some((boundaryInstance: FlowNodeInstance): boolean => {
-        return fni.previousFlowNodeInstanceId === boundaryInstance.id;
+    if (boundaryEventInstances.length === 0) {
+      return [];
+    }
+
+    // Get all FlowNodeInstances that followed one of the BoundaryEventInstances.
+    const flowNodeInstancesAfterBoundaryEvents = flowNodeInstances.filter((flowNodeInstance) => {
+      return boundaryEventInstances.some((boundaryEventInstance) => {
+        return flowNodeInstance.previousFlowNodeInstanceId === boundaryEventInstance.id;
       });
     });
 
-    const flowNodeModelInstanceAssociations = flowNodeInstancesAfterBoundaryEvents.map((fni: FlowNodeInstance): IFlowNodeModelInstanceAssociation => {
+    if (flowNodeInstancesAfterBoundaryEvents.length === 0) {
+      return [];
+    }
+
+    // Create configs for associating a FlowNodeInstance with its Model and the BoundaryEvent it is attached to
+    const flowNodeModelInstanceAssociations = flowNodeInstancesAfterBoundaryEvents.map((fni) => {
       return {
         boundaryEventModel: getBoundaryEventPrecedingFlowNodeInstance(fni),
         nextFlowNodeInstance: fni,
@@ -414,7 +422,6 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
 
     return flowNodeModelInstanceAssociations;
   }
-
   // TODO: Move to BoundaryEventService.
 
   /**

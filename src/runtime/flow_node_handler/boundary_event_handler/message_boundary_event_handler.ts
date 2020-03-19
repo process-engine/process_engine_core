@@ -1,7 +1,10 @@
-import {Subscription} from '@essential-projects/event_aggregator_contracts';
+import {Logger} from 'loggerhythm';
 
-import {FlowNodeInstance, ProcessToken} from '@process-engine/persistence_api.contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+
+import {FlowNodeInstance, Model, ProcessToken} from '@process-engine/persistence_api.contracts';
 import {
+  IFlowNodePersistenceFacade,
   IProcessModelFacade,
   IProcessTokenFacade,
   MessageEventReachedMessage,
@@ -13,7 +16,18 @@ import {BoundaryEventHandler} from './boundary_event_handler';
 
 export class MessageBoundaryEventHandler extends BoundaryEventHandler {
 
+  private readonly logger: Logger;
+
   private subscription: Subscription;
+
+  constructor(
+    eventAggregator: IEventAggregator,
+    flowNodePersistenceFacade: IFlowNodePersistenceFacade,
+    boundaryEventModel: Model.Events.BoundaryEvent,
+  ) {
+    super(eventAggregator, flowNodePersistenceFacade, boundaryEventModel);
+    this.logger = new Logger(`processengine:timer_boundary_event_handler:${boundaryEventModel.id}`);
+  }
 
   public async waitForTriggeringEvent(
     onTriggeredCallback: OnBoundaryEventTriggeredCallback,
@@ -23,9 +37,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
 
-    this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
-
-    await this.persistOnEnter(token);
+    this.logger.verbose(`Initializing BoundaryEvent on FlowNodeInstance ${attachedFlowNodeInstanceId} in ProcessInstance ${token.processInstanceId}`);
+    await this.persistOnEnter(token, attachedFlowNodeInstanceId);
 
     this.waitForMessage(onTriggeredCallback, token, processModelFacade);
   }
@@ -38,6 +51,8 @@ export class MessageBoundaryEventHandler extends BoundaryEventHandler {
     processModelFacade: IProcessModelFacade,
     attachedFlowNodeInstanceId: string,
   ): Promise<void> {
+
+    this.logger.verbose(`Resuming BoundaryEvent on FlowNodeInstance ${attachedFlowNodeInstanceId} in ProcessInstance ${token.processInstanceId}`);
 
     this.boundaryEventInstance = boundaryEventInstance;
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
