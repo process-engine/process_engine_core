@@ -6,7 +6,7 @@ import {
   NotFoundError,
   isEssentialProjectsError,
 } from '@essential-projects/errors_ts';
-import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 
 import {IProcessModelUseCases, Model} from '@process-engine/persistence_api.contracts';
@@ -66,25 +66,31 @@ export class ExecuteProcessService implements IExecuteProcessService {
     caller?: string,
   ): Promise<ProcessStartedMessage> {
 
-    await this.validateStartRequest(identity, processModelId, startEventId);
+    return new Promise(async (resolve, reject) => {
 
-    const processInstanceConfig =
-      await this.createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
+      try {
+        await this.validateStartRequest(identity, processModelId, startEventId);
 
-    // This UseCase is designed to resolve immediately after the ProcessInstance
-    // was started, so we must not await the execution here.
-    this.executeProcess(identity, processInstanceConfig);
+        const processInstanceConfig =
+          await this.createProcessInstanceConfig(identity, processModelId, correlationId, startEventId, initialPayload, caller);
 
-    return new ProcessStartedMessage(
-      correlationId,
-      processModelId,
-      processInstanceConfig.processInstanceId,
-      startEventId,
-      // We don't yet know the StartEvent's instanceId, because it hasn't been created yet.
-      undefined,
-      identity,
-      initialPayload,
-    );
+        // We must wait for the "ProcessStartedNotification", or this Use Case might resolve, before the Process Instance was actually created.
+        const subscription = this
+          .eventAggregator
+          .subscribe(eventAggregatorSettings.messagePaths.processStarted, (message: ProcessStartedMessage) => {
+
+            if (message.processInstanceId === processInstanceConfig.processInstanceId) {
+              this.eventAggregator.unsubscribe(subscription);
+              resolve(message);
+            }
+          });
+
+        // This UseCase is designed to resolve immediately after the ProcessInstance was started, so we must not await the execution here.
+        this.executeProcess(identity, processInstanceConfig);
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   public async startAndAwaitEndEvent(
