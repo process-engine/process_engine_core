@@ -31,6 +31,7 @@ export class TimerFacade implements ITimerFacade {
     timerEventDefinition: Model.Events.Definitions.TimerEventDefinition,
     processTokenFacade: IProcessTokenFacade,
     timerCallback: Function,
+    timerStartedDate?: Date
   ): Subscription {
 
     const timerValue = this.executeTimerExpressionIfNeeded(timerEventDefinition.value, processTokenFacade);
@@ -43,7 +44,7 @@ export class TimerFacade implements ITimerFacade {
       case Model.Events.Definitions.TimerType.timeDate:
         return this.startDateTimer(timerValue, timerCallback, timerExpiredEventName);
       case Model.Events.Definitions.TimerType.timeDuration:
-        return this.startDurationTimer(timerValue, timerCallback, timerExpiredEventName);
+        return this.startDurationTimer(timerValue, timerCallback, timerExpiredEventName, timerStartedDate);
       default:
         return undefined;
     }
@@ -115,7 +116,7 @@ export class TimerFacade implements ITimerFacade {
     return subscription;
   }
 
-  public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string): Subscription {
+  public startDurationTimer(timerValue: string, timerCallback: Function, timerExpiredEventName: string, timerStartedDate?: Date): Subscription {
 
     logger.verbose(`Starting new duration timer with definition ${timerValue} and event name ${timerExpiredEventName}`);
 
@@ -127,7 +128,7 @@ export class TimerFacade implements ITimerFacade {
     this.validateDurationTimer(timerValue);
 
     const duration = moment.duration(timerValue);
-    const date = moment().add(duration);
+    const date = moment(timerStartedDate).add(duration);
 
     const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);

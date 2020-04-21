@@ -59,7 +59,9 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     this.boundaryEventInstance = boundaryEventInstance;
     this.attachedFlowNodeInstanceId = attachedFlowNodeInstanceId;
 
-    this.initializeTimer(onTriggeredCallback, token, processTokenFacade, processModelFacade);
+    const timerStartedDate = token.createdAt;
+
+    this.initializeTimer(onTriggeredCallback, token, processTokenFacade, processModelFacade, timerStartedDate);
   }
 
   public async cancel(token: ProcessToken, processModelFacade: IProcessModelFacade): Promise<void> {
@@ -72,6 +74,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
     token: ProcessToken,
     processTokenFacade: IProcessTokenFacade,
     processModelFacade: IProcessModelFacade,
+    timerStartedDate?: Date,
   ): void {
 
     const laneContainingCurrentFlowNode = processModelFacade.getLaneForFlowNode(this.boundaryEventModel.id);
@@ -99,7 +102,7 @@ export class TimerBoundaryEventHandler extends BoundaryEventHandler {
 
     this.timerSubscription = this
       .timerFacade
-      .initializeTimer(this.boundaryEventModel, this.boundaryEventModel.timerEventDefinition, processTokenFacade, timerElapsed);
+      .initializeTimer(this.boundaryEventModel, this.boundaryEventModel.timerEventDefinition, processTokenFacade, timerElapsed, timerStartedDate);
   }
 
 }
