@@ -31,7 +31,7 @@ export class TimerFacade implements ITimerFacade {
     timerEventDefinition: Model.Events.Definitions.TimerEventDefinition,
     processTokenFacade: IProcessTokenFacade,
     timerCallback: Function,
-    timerStartedDate?: Date
+    timerStartedDate?: Date,
   ): Subscription {
 
     const timerValue = this.executeTimerExpressionIfNeeded(timerEventDefinition.value, processTokenFacade);
@@ -129,6 +129,13 @@ export class TimerFacade implements ITimerFacade {
 
     const duration = moment.duration(timerValue);
     const date = moment(timerStartedDate).add(duration);
+
+    const now = moment();
+
+    const dateIsPast = date.isBefore(now);
+    if (dateIsPast) {
+      return timerCallback({}, timerExpiredEventName);
+    }
 
     const subscription = this.eventAggregator.subscribeOnce(timerExpiredEventName, (eventPayload, eventName): void => {
       logger.verbose(`Duration timer ${eventName} has expired. Executing callback.`);
