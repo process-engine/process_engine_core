@@ -99,7 +99,9 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
           handlerPromise.cancel();
         };
 
-        await this.executeTimer(processTokenFacade);
+        const timerStartedDate = onSuspendToken.createdAt;
+
+        await this.executeTimer(processTokenFacade, timerStartedDate);
 
         processTokenFacade.addResultForFlowNode(this.timerCatchEvent.id, this.flowNodeInstanceId, onSuspendToken.payload);
 
@@ -125,7 +127,7 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
     return waitForTimerPromise;
   }
 
-  private async executeTimer(processTokenFacade: IProcessTokenFacade): Promise<void> {
+  private async executeTimer(processTokenFacade: IProcessTokenFacade, timerStartedDate?: Date): Promise<void> {
 
     return new Promise<void>(async (resolve: Function, reject: Function): Promise<void> => {
       try {
@@ -136,7 +138,7 @@ export class IntermediateTimerCatchEventHandler extends EventHandler<Model.Event
 
         this.timerSubscription = this
           .timerFacade
-          .initializeTimer(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed);
+          .initializeTimer(this.timerCatchEvent, this.timerCatchEvent.timerEventDefinition, processTokenFacade, timerElapsed, timerStartedDate);
       } catch (error) {
         reject(error);
       }
