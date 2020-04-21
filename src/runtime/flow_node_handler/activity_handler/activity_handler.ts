@@ -515,7 +515,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
           return handlerResolve(undefined);
         }
       } catch (error) {
-        handlerReject(error);
+        return handlerReject(error);
       }
     };
 
