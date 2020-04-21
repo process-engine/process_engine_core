@@ -60,7 +60,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
       try {
         this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
         this.processErrorSubscription = this.subscribeToProcessError(token, reject);
-        await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve);
+        await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve, reject);
 
         await this.beforeExecute(token, processTokenFacade, processModelFacade, identity);
         const nextFlowNodes = await this.startExecution(token, processTokenFacade, processModelFacade, identity);
@@ -131,7 +131,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         if (flowNodeInstancesAfterBoundaryEvents.length === 0) {
           this.terminationSubscription = this.subscribeToProcessTermination(token, reject);
           this.processErrorSubscription = this.subscribeToProcessError(token, reject);
-          await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve, allFlowNodeInstances);
+          await this.attachBoundaryEvents(token, processTokenFacade, processModelFacade, identity, resolve, reject, allFlowNodeInstances);
 
           nextFlowNodes = await this.resumeFromState(flowNodeInstanceForHandler, processTokenFacade, processModelFacade, identity);
         } else {
@@ -443,6 +443,7 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     handlerResolve: Function,
+    handlerReject: Function,
     flowNodeInstances?: Array<FlowNodeInstance>,
   ): Promise<void> {
 
@@ -459,7 +460,16 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
         return entry.flowNodeId === model.id && entry.previousFlowNodeInstanceId === this.flowNodeInstanceId;
       });
 
-      await this.createBoundaryEventHandler(model, processToken, processTokenFacade, processModelFacade, identity, handlerResolve, flowNodeInstance);
+      await this.createBoundaryEventHandler(
+        model,
+        processToken,
+        processTokenFacade,
+        processModelFacade,
+        identity,
+        handlerResolve,
+        handlerReject,
+        flowNodeInstance,
+      );
     }
   }
 
@@ -489,18 +499,23 @@ export abstract class ActivityHandler<TFlowNode extends Model.Base.FlowNode> ext
     processModelFacade: IProcessModelFacade,
     identity: IIdentity,
     handlerResolve: Function,
+    handlerReject: Function,
     flowNodeInstance?: FlowNodeInstance,
   ): Promise<void> {
     const boundaryEventHandler = await this.flowNodeHandlerFactory.createForBoundaryEvent(boundaryEventModel);
 
     // eslint-disable-next-line consistent-return
     const onBoundaryEventTriggeredCallback = async (eventData: OnBoundaryEventTriggeredData): Promise<void> => {
-      // To prevent the Promise-chain from being broken too soon, we must first await the execution of the BoundaryEvent's execution path.
-      // Interruption will already have happended, when this path is finished, so there is no danger of running this handler twice.
-      await this.handleBoundaryEvent(eventData, processToken, processTokenFacade, processModelFacade, identity);
+      try {
+        // To prevent the Promise-chain from being broken too soon, we must first await the execution of the BoundaryEvent's execution path.
+        // Interruption will already have happended, when this path is finished, so there is no danger of running this handler twice.
+        await this.handleBoundaryEvent(eventData, processToken, processTokenFacade, processModelFacade, identity);
 
-      if (eventData.interruptHandler) {
-        return handlerResolve(undefined);
+        if (eventData.interruptHandler) {
+          return handlerResolve(undefined);
+        }
+      } catch (error) {
+        return handlerReject(error);
       }
     };
 
