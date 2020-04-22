@@ -262,15 +262,17 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         reject(message.currentToken);
       });
 
-      const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached.replace(
-        eventAggregatorSettings.messageParams.processInstanceId,
-        this.subProcessInstanceId,
-      );
+      const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
+        .replace(eventAggregatorSettings.messageParams.correlationId, result.correlationId)
+        .replace(eventAggregatorSettings.messageParams.processModelId, result.processModelId);
 
-      this.subProcessEndedSubscription = this.eventAggregator.subscribeOnce(processEndMessageName, (message) => {
-        this.eventAggregator.unsubscribe(this.subProcessErroredSubscription);
-        this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
-        resolve(message);
+      this.subProcessEndedSubscription = this.eventAggregator.subscribe(processEndMessageName, (message) => {
+        if (message.processInstanceId === this.subProcessInstanceId) {
+          this.eventAggregator.unsubscribe(this.subProcessEndedSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessErroredSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
+          resolve(message);
+        }
       });
 
       const processInstanceErrored = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored.replace(
