@@ -229,9 +229,15 @@ export abstract class FlowNodeHandler<TFlowNode extends Model.Base.FlowNode> imp
       const terminatedByEndEvent = message?.flowNodeId != undefined;
       const terminationUserId = message?.terminatedBy?.userId ?? undefined;
 
-      const processTerminatedError = terminatedByEndEvent
-        ? `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`
-        : `Process was terminated by user ${terminationUserId}`;
+      let processTerminatedError;
+
+      if (terminatedByEndEvent) {
+        processTerminatedError = `Process was terminated through TerminateEndEvent '${message.flowNodeId}'`;
+      } else if (terminationUserId) {
+        processTerminatedError = `Process was terminated by user ${terminationUserId}`;
+      } else {
+        processTerminatedError = 'Process was terminated';
+      }
 
       token.payload = terminatedByEndEvent
         ? message.currentToken
