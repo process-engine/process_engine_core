@@ -36,9 +36,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   private resumeProcessService: IResumeProcessService;
 
   private subProcessInstanceId: string;
-  private terminatedSubscription: Subscription;
-  private erroredSubscription: Subscription;
-  private endSubscription: Subscription;
+  private subProcessTerminatedSubscription: Subscription;
+  private subProcessErroredSubscription: Subscription;
+  private subProcessEndedSubscription: Subscription;
 
   constructor(
     correlationService: ICorrelationService,
