@@ -1,7 +1,7 @@
 import {Logger} from 'loggerhythm';
 
 import {InternalServerError, NotFoundError} from '@essential-projects/errors_ts';
-import {IEventAggregator} from '@essential-projects/event_aggregator_contracts';
+import {IEventAggregator, Subscription} from '@essential-projects/event_aggregator_contracts';
 import {IIdentity} from '@essential-projects/iam_contracts';
 
 import {
@@ -34,6 +34,11 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
   private executeProcessService: IExecuteProcessService;
   private processModelUseCases: IProcessModelUseCases;
   private resumeProcessService: IResumeProcessService;
+
+  private subProcessInstanceId: string;
+  private terminatedSubscription: Subscription;
+  private erroredSubscription: Subscription;
+  private endSubscription: Subscription;
 
   constructor(
     correlationService: ICorrelationService,
@@ -78,60 +83,76 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    try {
-      // First we need to find out if the Subprocess was already started.
-      const processInstances = await this.correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      const noSubprocessesFound = !(processInstances?.length > 0);
+      try {
+        // First we need to find out if the Subprocess was already started.
+        const processInstances = await this.correlationService.getSubprocessesForProcessInstance(identity, flowNodeInstance.processInstanceId);
 
-      const matchingSubprocess = noSubprocessesFound
-        ? undefined
-        : processInstances.find((entry: ProcessInstance): boolean => entry.processModelId === this.callActivity.calledReference);
+        const matchingSubprocess = processInstances?.find((entry) => entry.processModelId === this.callActivity.calledReference);
 
-      let callActivityResult: EndEventReachedMessage;
+        this.subProcessInstanceId = matchingSubprocess?.processInstanceId;
 
-      this.publishActivityReachedNotification(identity, onSuspendToken);
+        this.onInterruptedCallback = async (): Promise<void> => {
+          this.eventAggregator.unsubscribe(this.erroredSubscription);
+          this.eventAggregator.unsubscribe(this.endSubscription);
+          this.eventAggregator.unsubscribe(this.terminatedSubscription);
 
-      if (matchingSubprocess == undefined) {
-        // Subprocess not yet started. We need to run the handler again.
-        callActivityResult = await this.executeSubprocess(identity, processTokenFacade, onSuspendToken);
-      } else {
-        // Subprocess was already started. Resume it and wait for the result:
-        callActivityResult = <EndEventReachedMessage> await this
-          .resumeProcessService
-          .resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
+          if (this.subProcessInstanceId) {
+            await this.terminateSubprocess(identity, flowNodeInstance.processInstanceId, this.subProcessInstanceId);
+          }
+          handlerPromise.cancel();
+        };
+
+        let callActivityResult: EndEventReachedMessage;
+
+        this.publishActivityReachedNotification(identity, onSuspendToken);
+
+        if (matchingSubprocess == undefined) {
+          // Subprocess not yet started. We need to run the handler again.
+          callActivityResult = await this.executeSubprocess(identity, processTokenFacade, onSuspendToken);
+        } else {
+          // Subprocess was already started. Resume it and wait for the result:
+          callActivityResult = <EndEventReachedMessage> await this
+            .resumeProcessService
+            .resumeProcessInstanceById(identity, matchingSubprocess.processModelId, matchingSubprocess.processInstanceId);
+        }
+
+        onSuspendToken.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
+
+        await this.persistOnResume(onSuspendToken);
+
+        processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
+        await this.persistOnExit(onSuspendToken);
+
+        this.publishActivityFinishedNotification(identity, onSuspendToken);
+
+        const nextFlowNodes = processModelFacade.getNextFlowNodesFor(this.callActivity);
+
+        return resolve(nextFlowNodes);
+      } catch (error) {
+        this.logger.error(error);
+
+        onSuspendToken.payload = {
+          error: error.message,
+          additionalInformation: error.additionalInformation,
+        };
+
+        const terminationRegex = /terminated/i;
+        const isTerminationMessage = terminationRegex.test(error.message);
+
+        if (isTerminationMessage) {
+          await this.persistOnTerminate(onSuspendToken);
+          this.terminateProcessInstance(identity, onSuspendToken);
+        } else {
+          await this.persistOnError(onSuspendToken, error);
+        }
+
+        return reject(error);
       }
+    });
 
-      onSuspendToken.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
-
-      await this.persistOnResume(onSuspendToken);
-
-      processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, callActivityResult);
-      await this.persistOnExit(onSuspendToken);
-
-      this.publishActivityFinishedNotification(identity, onSuspendToken);
-
-      return processModelFacade.getNextFlowNodesFor(this.callActivity);
-    } catch (error) {
-      this.logger.error(error);
-
-      onSuspendToken.payload = {
-        error: error.message,
-        additionalInformation: error.additionalInformation,
-      };
-
-      const terminationRegex = /terminated/i;
-      const isTerminationMessage = terminationRegex.test(error.message);
-
-      if (isTerminationMessage) {
-        await this.persistOnTerminate(onSuspendToken);
-        this.terminateProcessInstance(identity, onSuspendToken);
-      } else {
-        await this.persistOnError(onSuspendToken, error);
-      }
-
-      throw error;
-    }
+    return handlerPromise;
   }
 
   protected async executeHandler(
@@ -141,42 +162,60 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
     identity: IIdentity,
   ): Promise<Array<Model.Base.FlowNode>> {
 
-    try {
-      this.publishActivityReachedNotification(identity, token);
+    const handlerPromise = new Promise<Array<Model.Base.FlowNode>>(async (resolve: Function, reject: Function): Promise<void> => {
 
-      await this.persistOnSuspend(token);
+      try {
+        this.publishActivityReachedNotification(identity, token);
 
-      const callActivityResult = await this.executeSubprocess(identity, processTokenFacade, token);
+        this.onInterruptedCallback = async (): Promise<void> => {
+          this.eventAggregator.unsubscribe(this.erroredSubscription);
+          this.eventAggregator.unsubscribe(this.endSubscription);
+          this.eventAggregator.unsubscribe(this.terminatedSubscription);
 
-      token.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
+          if (this.subProcessInstanceId) {
+            await this.terminateSubprocess(identity, token.processInstanceId, this.subProcessInstanceId);
+          }
+          handlerPromise.cancel();
+        };
 
-      await this.persistOnResume(token);
-      processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
-      await this.persistOnExit(token);
+        await this.persistOnSuspend(token);
 
-      this.publishActivityFinishedNotification(identity, token);
+        const callActivityResult = await this.executeSubprocess(identity, processTokenFacade, token);
 
-      return processModelFacade.getNextFlowNodesFor(this.callActivity);
-    } catch (error) {
-      this.logger.error(error);
+        token.payload = this.createResultTokenPayloadFromCallActivityResult(callActivityResult);
 
-      token.payload = {
-        error: error.message,
-        additionalInformation: error.additionalInformation,
-      };
+        await this.persistOnResume(token);
+        processTokenFacade.addResultForFlowNode(this.callActivity.id, this.flowNodeInstanceId, token.payload);
+        await this.persistOnExit(token);
 
-      const terminationRegex = /terminated/i;
-      const isTerminationMessage = terminationRegex.test(error.message);
+        this.publishActivityFinishedNotification(identity, token);
 
-      if (isTerminationMessage) {
-        await this.persistOnTerminate(token);
-        this.terminateProcessInstance(identity, token);
-      } else {
-        await this.persistOnError(token, error);
+        const nextFlowNodes = processModelFacade.getNextFlowNodesFor(this.callActivity);
+
+        return resolve(nextFlowNodes);
+      } catch (error) {
+        this.logger.error(error);
+
+        token.payload = {
+          error: error.message,
+          additionalInformation: error.additionalInformation,
+        };
+
+        const terminationRegex = /terminated/i;
+        const isTerminationMessage = terminationRegex.test(error.message);
+
+        if (isTerminationMessage) {
+          await this.persistOnTerminate(token);
+          this.terminateProcessInstance(identity, token);
+        } else {
+          await this.persistOnError(token, error);
+        }
+
+        return reject(error);
       }
+    });
 
-      throw error;
-    }
+    return handlerPromise;
   }
 
   /**
@@ -207,9 +246,44 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
     const result = await this
       .executeProcessService
-      .startAndAwaitEndEvent(identity, processModelId, correlationId, startEventId, payload, parentProcessInstanceId);
+      .start(identity, processModelId, correlationId, startEventId, payload, parentProcessInstanceId);
 
-    return result;
+    this.subProcessInstanceId = result.processInstanceId;
+
+    return new Promise((resolve, reject) => {
+      const processInstanceTerminated = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated.replace(
+        eventAggregatorSettings.messageParams.processInstanceId,
+        this.subProcessInstanceId,
+      );
+
+      this.terminatedSubscription = this.eventAggregator.subscribeOnce(processInstanceTerminated, (message) => {
+        this.eventAggregator.unsubscribe(this.endSubscription);
+        this.eventAggregator.unsubscribe(this.erroredSubscription);
+        reject(message.currentToken);
+      });
+
+      const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached.replace(
+        eventAggregatorSettings.messageParams.processInstanceId,
+        this.subProcessInstanceId,
+      );
+
+      this.endSubscription = this.eventAggregator.subscribeOnce(processEndMessageName, (message) => {
+        this.eventAggregator.unsubscribe(this.erroredSubscription);
+        this.eventAggregator.unsubscribe(this.terminatedSubscription);
+        resolve(message);
+      });
+
+      const processInstanceErrored = eventAggregatorSettings.messagePaths.processInstanceWithIdErrored.replace(
+        eventAggregatorSettings.messageParams.processInstanceId,
+        this.subProcessInstanceId,
+      );
+
+      this.erroredSubscription = this.eventAggregator.subscribeOnce(processInstanceErrored, (message) => {
+        this.eventAggregator.unsubscribe(this.terminatedSubscription);
+        this.eventAggregator.unsubscribe(this.endSubscription);
+        reject(message.currentToken);
+      });
+    });
   }
 
   /**
@@ -316,6 +390,35 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       token.payload,
     );
     // ProcessInstance specific notification
+    this.eventAggregator.publish(eventName, message);
+    // Global notification
+    this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
+  }
+
+  private async terminateSubprocess(
+    identity: IIdentity,
+    processInstanceId: string,
+    subProcessInstanceId: string,
+  ): Promise<void> {
+    const processInstances = await this.correlationService.getSubprocessesForProcessInstance(identity, processInstanceId);
+
+    const subProcessToTerminate = processInstances.find((instance) => {
+      return instance.processInstanceId === subProcessInstanceId;
+    });
+
+    const eventName = eventAggregatorSettings.messagePaths.processInstanceWithIdTerminated
+      .replace(eventAggregatorSettings.messageParams.processInstanceId, subProcessToTerminate.processInstanceId);
+
+    const message = new ProcessTerminatedMessage(
+      subProcessToTerminate.correlationId,
+      subProcessToTerminate.processModelId,
+      subProcessToTerminate.processInstanceId,
+      this.flowNode.id,
+      this.flowNodeInstanceId,
+      identity,
+      new InternalServerError(`Process terminated by parent ProcessInstance ${processInstanceId}`),
+    );
+      // ProcessInstance specific notification
     this.eventAggregator.publish(eventName, message);
     // Global notification
     this.eventAggregator.publish(eventAggregatorSettings.messagePaths.processTerminated, message);
