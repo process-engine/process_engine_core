@@ -413,8 +413,8 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
       subProcessToTerminate.correlationId,
       subProcessToTerminate.processModelId,
       subProcessToTerminate.processInstanceId,
-      this.flowNode.id,
-      this.flowNodeInstanceId,
+      undefined,
+      undefined,
       identity,
       new InternalServerError(`Process terminated by parent ProcessInstance ${processInstanceId}`),
     );
