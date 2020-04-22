@@ -94,9 +94,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         this.subProcessInstanceId = matchingSubprocess?.processInstanceId;
 
         this.onInterruptedCallback = async (): Promise<void> => {
-          this.eventAggregator.unsubscribe(this.erroredSubscription);
-          this.eventAggregator.unsubscribe(this.endSubscription);
-          this.eventAggregator.unsubscribe(this.terminatedSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessErroredSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessEndedSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
 
           if (this.subProcessInstanceId) {
             await this.terminateSubprocess(identity, flowNodeInstance.processInstanceId, this.subProcessInstanceId);
@@ -168,9 +168,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         this.publishActivityReachedNotification(identity, token);
 
         this.onInterruptedCallback = async (): Promise<void> => {
-          this.eventAggregator.unsubscribe(this.erroredSubscription);
-          this.eventAggregator.unsubscribe(this.endSubscription);
-          this.eventAggregator.unsubscribe(this.terminatedSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessErroredSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessEndedSubscription);
+          this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
 
           if (this.subProcessInstanceId) {
             await this.terminateSubprocess(identity, token.processInstanceId, this.subProcessInstanceId);
@@ -256,9 +256,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         this.subProcessInstanceId,
       );
 
-      this.terminatedSubscription = this.eventAggregator.subscribeOnce(processInstanceTerminated, (message) => {
-        this.eventAggregator.unsubscribe(this.endSubscription);
-        this.eventAggregator.unsubscribe(this.erroredSubscription);
+      this.subProcessTerminatedSubscription = this.eventAggregator.subscribeOnce(processInstanceTerminated, (message) => {
+        this.eventAggregator.unsubscribe(this.subProcessEndedSubscription);
+        this.eventAggregator.unsubscribe(this.subProcessErroredSubscription);
         reject(message.currentToken);
       });
 
@@ -267,9 +267,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         this.subProcessInstanceId,
       );
 
-      this.endSubscription = this.eventAggregator.subscribeOnce(processEndMessageName, (message) => {
-        this.eventAggregator.unsubscribe(this.erroredSubscription);
-        this.eventAggregator.unsubscribe(this.terminatedSubscription);
+      this.subProcessEndedSubscription = this.eventAggregator.subscribeOnce(processEndMessageName, (message) => {
+        this.eventAggregator.unsubscribe(this.subProcessErroredSubscription);
+        this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
         resolve(message);
       });
 
@@ -278,9 +278,9 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
         this.subProcessInstanceId,
       );
 
-      this.erroredSubscription = this.eventAggregator.subscribeOnce(processInstanceErrored, (message) => {
-        this.eventAggregator.unsubscribe(this.terminatedSubscription);
-        this.eventAggregator.unsubscribe(this.endSubscription);
+      this.subProcessErroredSubscription = this.eventAggregator.subscribeOnce(processInstanceErrored, (message) => {
+        this.eventAggregator.unsubscribe(this.subProcessTerminatedSubscription);
+        this.eventAggregator.unsubscribe(this.subProcessEndedSubscription);
         reject(message.currentToken);
       });
     });
