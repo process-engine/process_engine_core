@@ -264,7 +264,7 @@ export class CallActivityHandler extends ActivityHandler<Model.Activities.CallAc
 
       const processEndMessageName = eventAggregatorSettings.messagePaths.endEventReached
         .replace(eventAggregatorSettings.messageParams.correlationId, result.correlationId)
-        .replace(eventAggregatorSettings.messageParams.processModelId, token.processModelId);
+        .replace(eventAggregatorSettings.messageParams.processModelId, result.processModelId);
 
       this.subProcessEndedSubscription = this.eventAggregator.subscribe(processEndMessageName, (message) => {
         if (message.processInstanceId === this.subProcessInstanceId) {
